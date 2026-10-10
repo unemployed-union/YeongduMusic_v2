@@ -1,0 +1,7 @@
+allowBuilds:
+  unrs-resolver: false
+overrides:
+  "@react-native/metro-config": 0.86.3
+nodeLinker: hoisted
+patchedDependencies:
+  expo-audio@57.0.5: patches/expo-audio@57.0.5.patch
