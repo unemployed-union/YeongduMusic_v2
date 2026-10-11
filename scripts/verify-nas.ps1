@@ -2,7 +2,8 @@ param(
   [Parameter(Mandatory = $true)][string]$BaseUrl,
   [string]$Account,
   [switch]$ApiOnly,
-  [switch]$LibraryOnly
+  [switch]$LibraryOnly,
+  [switch]$LyricsOnly
 )
 
 $ErrorActionPreference = 'Stop'
@@ -137,6 +138,7 @@ function InvokeNasLogin([System.Security.SecureString]$secret, [System.Security.
 
 try {
   $infoUrl = "$base/webapi/entry.cgi?api=SYNO.API.Info&version=1&method=query&query=SYNO.API.Auth,SYNO.AudioStation.Song,SYNO.AudioStation.Album,SYNO.AudioStation.Artist,SYNO.AudioStation.Cover,SYNO.AudioStation.Stream"
+  if ($LyricsOnly) { $infoUrl += ',SYNO.AudioStation.Lyrics' }
   $discovery = GetJson $infoUrl
   if ($discovery.success -ne $true) { throw "API discovery failed: code=$($discovery.error.code)" }
   $apis = $discovery.data
@@ -165,6 +167,36 @@ try {
   $token = $login.data.synotoken
   if (-not $sid) { throw 'Login response has no session ID.' }
   Write-Output 'Login success (session value hidden).'
+
+  if ($LyricsOnly) {
+    $lyricsInfo = $apis.'SYNO.AudioStation.Lyrics'
+    if (-not $lyricsInfo) { Write-Output 'Lyrics API not advertised by this NAS.'; return }
+    Write-Output "SYNO.AudioStation.Lyrics path=$($lyricsInfo.path) versions=$($lyricsInfo.minVersion)-$($lyricsInfo.maxVersion)"
+    $preferred['SYNO.AudioStation.Lyrics'] = 2
+    $sample = GetJson (ApiUrl 'SYNO.AudioStation.Song' 'list' @{ offset = 0; limit = 5; library = 'all' })
+    if ($sample.success -ne $true) { Write-Output "Song sample failed: code=$($sample.error.code)"; return }
+    $sampleIndex = 0
+    foreach ($sampleSong in @($sample.data.songs)) {
+      $sampleIndex++
+      # Read-only candidate probe. Its response must be verified before the
+      # application can rely on this method/parameter contract.
+      $result = GetJson (ApiUrl 'SYNO.AudioStation.Lyrics' 'getlyrics' @{ id = $sampleSong.id; library = 'all' })
+      if ($result.success -ne $true) { Write-Output "Lyrics sample=$sampleIndex success=False errorCode=$($result.error.code)"; continue }
+      Write-Output "Lyrics sample=$sampleIndex success=True dataFields=$(@($result.data.PSObject.Properties.Name) -join ',')"
+      foreach ($property in $result.data.PSObject.Properties) {
+        $value = $property.Value
+        if ($value -is [string]) {
+          $timestampCount = [regex]::Matches($value, '\[\d+:\d{2}(?:\.\d+)?\]').Count
+          Write-Output "Lyrics field=$($property.Name) type=string length=$($value.Length) timestamps=$timestampCount"
+        } elseif ($null -eq $value) {
+          Write-Output "Lyrics field=$($property.Name) type=null"
+        } else {
+          Write-Output "Lyrics field=$($property.Name) type=$($value.GetType().Name) childFields=$(@($value.PSObject.Properties.Name) -join ',')"
+        }
+      }
+    }
+    return
+  }
 
   if ($LibraryOnly) {
     # Probe candidate library scopes; do not assume success means the NAS

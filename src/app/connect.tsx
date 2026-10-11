@@ -32,7 +32,7 @@ export default function ConnectScreen() {
   const disabled = loading || !address || !account || !password || (needsOtp && !otp) || (isHttp && !allowHttp);
   const submit = async () => {
     setLoading(true); setError(null);
-    try { await connect(address, account, password, otp, allowHttp); setPassword(''); setOtp(''); router.replace('/(tabs)'); }
+    try { await connect(address, account, password, otp, allowHttp); setPassword(''); setOtp(''); router.replace('/(tabs)/(library)'); }
     catch (cause) { if (cause instanceof SynologyError && (cause.code === 403 || cause.code === 406)) setNeedsOtp(true); setError(cause instanceof Error ? cause.message : 'NAS 연결에 실패했습니다.'); }
     finally { setLoading(false); }
   };
@@ -64,7 +64,7 @@ export default function ConnectScreen() {
         <Pressable disabled={loading || !address || (isHttp && !allowHttp)} onPress={() => void testAddress()} style={[styles.testButton, { borderColor: colors.separator, opacity: loading || !address ? 0.5 : 1 }]}><Text style={[styles.testText, { color: colors.tint }]}>연결 테스트</Text></Pressable>
         <Pressable disabled={disabled} onPress={submit} style={[styles.button, { backgroundColor: colors.tint, opacity: disabled ? 0.55 : 1 }]}>{loading ? <ActivityIndicator color="white" /> : <Text style={styles.buttonText}>NAS 연결</Text>}</Pressable>
       </View>
-      <Pressable onPress={() => { enterDemo(); router.replace('/(tabs)'); }} style={styles.demo}><Text style={[styles.demoText, { color: colors.tint }]}>먼저 데모 둘러보기</Text><Ionicons name="arrow-forward" size={17} color={colors.tint} /></Pressable>
+      <Pressable onPress={() => { enterDemo(); router.replace('/(tabs)/(library)'); }} style={styles.demo}><Text style={[styles.demoText, { color: colors.tint }]}>먼저 데모 둘러보기</Text><Ionicons name="arrow-forward" size={17} color={colors.tint} /></Pressable>
       <Text style={[styles.note, { color: colors.muted }]}>HTTPS 연결을 권장합니다. 비밀번호는 기기에 저장하지 않습니다.</Text>
     </KeyboardAwareScrollView>
   </View>;

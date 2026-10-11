@@ -33,6 +33,7 @@ const preferred: Record<string, number> = {
   'SYNO.AudioStation.Artist': 4,
   'SYNO.AudioStation.Stream': 2,
   'SYNO.AudioStation.Cover': 3,
+  'SYNO.AudioStation.Lyrics': 2,
 };
 
 export function normalizeAddress(input: string, allowHttp = false): string {
@@ -185,6 +186,13 @@ export class SynologyClient {
     ]);
   }
   async logout(signal?: AbortSignal): Promise<void> { await this.call('SYNO.API.Auth', 'logout', { session: 'AudioStation' }, signal); }
+  async lyrics(songId: string, signal?: AbortSignal): Promise<string> {
+    // NAS diagnostic verified Lyrics v1-2, getlyrics(id, library=all),
+    // data.lyrics:string. Path and compatible version come from API discovery.
+    const data = await this.call('SYNO.AudioStation.Lyrics', 'getlyrics', { id: songId, library: AUDIO_STATION_LIBRARY }, signal);
+    if (typeof data.lyrics !== 'string') throw new SynologyRequestError('response', 'NAS 가사 응답 형식을 확인할 수 없습니다.');
+    return data.lyrics;
+  }
   private collection(data: Record<string, unknown>, key: string): { records: Record<string, unknown>[]; total: number } {
     const raw = data[key];
     if (!Array.isArray(raw)) throw new SynologyRequestError('response', `Audio Station 응답에 ${key} 목록이 없습니다. NAS 버전과 응답 형식을 확인해 주세요.`);
