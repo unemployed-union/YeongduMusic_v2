@@ -18,12 +18,27 @@ export interface AudioEngine {
 // SDK 57 Android maps this to ExoPlayer's maximum forward buffer (seconds).
 // Its default maximum is 50 seconds; leave startup/rebuffer thresholds to Expo.
 const ANDROID_FORWARD_BUFFER_SECONDS = 120;
+const STALL_TIMEOUT_MS = 20_000;
+const RETRY_DELAYS_MS = [1_000, 3_000, 6_000];
+const RECOVERY_ERROR = '음악 연결이 끊겼습니다. 네트워크를 확인한 뒤 다시 재생해 주세요.';
 
 export class ExpoAudioEngine implements AudioEngine {
   // Expo Go cannot apply this app's expo-audio config plugin to its native binary.
   // executionEnvironment cannot distinguish Expo Go from an expo-dev-client build.
   private readonly backgroundPlaybackAvailable = Constants.appOwnership !== AppOwnership.Expo;
   private lifecycle = 0;
+  private operation = 0;
+  private source: AudioSource = null;
+  private wantsPlayback = false;
+  private starting = false;
+  private position = 0;
+  private duration = 0;
+  private retries = 0;
+  private stableFrom: number | null = null;
+  private failure: string | null = null;
+  private stallTimer: ReturnType<typeof setTimeout> | null = null;
+  private retryTimer: ReturnType<typeof setTimeout> | null = null;
+  private resume: { operation: number; position: number; seeking: boolean } | null = null;
   private hasPlayed = false;
   private bufferingSince: number | null = null;
   private player: AudioPlayer | null = null;
@@ -48,8 +63,7 @@ export class ExpoAudioEngine implements AudioEngine {
       });
       this.subscription = this.player.addListener('playbackStatusUpdate', (status: AudioStatus) => {
         this.observeBuffering(status);
-        const normalized: EngineStatus = { playing: status.playing, buffering: status.isBuffering, position: status.currentTime, duration: status.duration, ended: status.didJustFinish, error: status.error };
-        this.listeners.forEach((listener) => listener(normalized));
+        this.handleStatus(status);
       });
       if (this.backgroundPlaybackAvailable && Platform.OS === 'android') {
         this.remoteSubscription = this.player.addListener('remoteTrackChange', ({ direction }) => {
@@ -60,6 +74,121 @@ export class ExpoAudioEngine implements AudioEngine {
       }
     }
     return this.player;
+  }
+
+  private publish(playing: boolean, buffering: boolean, ended = false): void {
+    const status: EngineStatus = { playing, buffering, position: this.position, duration: this.duration, ended, error: this.failure };
+    this.listeners.forEach((listener) => listener(status));
+  }
+
+  private clearRecoveryTimers(): void {
+    if (this.stallTimer !== null) clearTimeout(this.stallTimer);
+    if (this.retryTimer !== null) clearTimeout(this.retryTimer);
+    this.stallTimer = this.retryTimer = null;
+  }
+
+  private watchStall(): void {
+    // Android stops periodic status events while buffering. Start a deadline from
+    // the transition itself; do not depend on another native event arriving.
+    if (!this.wantsPlayback || this.stallTimer !== null || this.retryTimer !== null) return;
+    this.stallTimer = setTimeout(() => {
+      this.stallTimer = null;
+      this.scheduleRecovery();
+    }, STALL_TIMEOUT_MS);
+  }
+
+  private scheduleRecovery(): void {
+    if (!this.wantsPlayback || this.source === null || this.retryTimer !== null) return;
+    this.clearRecoveryTimers();
+    this.stableFrom = null;
+    this.failure = RECOVERY_ERROR;
+    if (this.retries >= RETRY_DELAYS_MS.length) {
+      this.wantsPlayback = false;
+      this.starting = false;
+      this.resume = null;
+      this.player?.pause();
+      this.publish(false, false);
+      return;
+    }
+    const operation = ++this.operation;
+    const delay = RETRY_DELAYS_MS[this.retries++];
+    this.retryTimer = setTimeout(() => {
+      this.retryTimer = null;
+      if (operation !== this.operation || !this.wantsPlayback || !this.player) return;
+      // replace() prepares a fresh connection. Wait for ready before seeking;
+      // seeking an unloaded AVPlayerItem can silently lose the resume position.
+      this.resume = { operation, position: this.position, seeking: false };
+      this.starting = true;
+      this.watchStall();
+      try { this.player.pause(); this.player.replace(this.source); }
+      catch { this.resume = null; this.scheduleRecovery(); }
+    }, delay);
+    this.publish(true, true);
+  }
+
+  private async resumePlayback(): Promise<void> {
+    const resume = this.resume;
+    const player = this.player;
+    if (!resume || resume.seeking || !player) return;
+    resume.seeking = true;
+    try {
+      // pause()/replace() can emit the previous item's ready status. Check the
+      // current native item after that replacement finishes, before seeking.
+      await Promise.resolve();
+      if (resume.operation !== this.operation || !this.wantsPlayback) return;
+      if (!player.isLoaded) { resume.seeking = false; return; }
+      if (resume.position > 0) await player.seekTo(resume.position, 0, 0);
+      if (resume.operation !== this.operation || !this.wantsPlayback) return;
+      this.resume = null;
+      player.play();
+    } catch {
+      if (resume.operation !== this.operation) return;
+      this.resume = null;
+      this.scheduleRecovery();
+    }
+  }
+
+  private handleStatus(status: AudioStatus): void {
+    if (status.error) { this.scheduleRecovery(); this.publish(this.wantsPlayback, this.wantsPlayback); return; }
+    if (this.resume) {
+      if (status.isLoaded) void this.resumePlayback();
+      this.publish(this.wantsPlayback, this.wantsPlayback);
+      return;
+    }
+    // Keep the last position and error through idle/loading events after a failure.
+    if (this.retryTimer !== null || (this.failure && !this.wantsPlayback)) {
+      this.publish(this.wantsPlayback, this.wantsPlayback);
+      return;
+    }
+    if (Number.isFinite(status.duration) && status.duration > 0) this.duration = status.duration;
+    if (Number.isFinite(status.currentTime) && (status.isLoaded || status.currentTime > 0) && !(this.failure && this.starting)) this.position = status.currentTime;
+    if (status.didJustFinish) {
+      this.wantsPlayback = this.starting = false;
+      this.clearRecoveryTimers();
+      this.publish(false, false, true);
+      return;
+    }
+    if (status.playing && !status.isBuffering) {
+      this.wantsPlayback = true; // Includes play from native lock screen controls.
+      this.starting = false;
+      this.failure = null;
+      this.position = status.currentTime;
+      this.clearRecoveryTimers();
+      // A brief successful resume must not create an unlimited retry loop.
+      this.stableFrom ??= this.position;
+      if (this.position - this.stableFrom >= 30) this.retries = 0;
+    } else if (!this.starting && !status.playing && status.isBuffering && status.timeControlStatus === 'paused') {
+      this.wantsPlayback = false;
+      this.clearRecoveryTimers();
+    } else if (status.isBuffering || this.starting || (!status.isLoaded && this.wantsPlayback)) {
+      this.stableFrom = null;
+      this.watchStall();
+    } else {
+      // A native pause/audio-focus interruption is not a broken connection.
+      this.wantsPlayback = false;
+      this.clearRecoveryTimers();
+    }
+    this.publish(status.playing || (this.wantsPlayback && this.starting), this.wantsPlayback && (status.isBuffering || this.starting || !status.isLoaded));
   }
   private resetBufferingObservation(): void {
     this.hasPlayed = false;
@@ -87,9 +216,20 @@ export class ExpoAudioEngine implements AudioEngine {
 
   async load(source: AudioSource, song: Song): Promise<void> {
     const lifecycle = this.lifecycle;
+    const operation = ++this.operation;
+    this.clearRecoveryTimers();
+    this.resume = null;
+    this.wantsPlayback = this.starting = true;
+    this.failure = null;
+    this.retries = 0;
+    this.stableFrom = null;
+    this.position = 0;
+    this.duration = song.duration;
     const player = await this.setup();
-    if (lifecycle !== this.lifecycle) return;
+    if (lifecycle !== this.lifecycle || operation !== this.operation) return;
+    this.source = source;
     this.resetBufferingObservation();
+    this.watchStall();
     player.replace(source);
     if (this.backgroundPlaybackAvailable) {
       // showSkip* and remoteTrackChange are provided by our pinned expo-audio pnpm patch.
@@ -103,9 +243,26 @@ export class ExpoAudioEngine implements AudioEngine {
     }
     player.play();
   }
-  play(): void { this.player?.play(); }
-  pause(): void { this.resetBufferingObservation(); this.player?.pause(); }
-  async seek(seconds: number): Promise<void> { this.resetBufferingObservation(); await this.player?.seekTo(seconds); }
+  play(): void {
+    this.wantsPlayback = true;
+    if (this.failure) { this.retries = 0; this.scheduleRecovery(); }
+    else { this.starting = true; this.watchStall(); this.player?.play(); }
+  }
+  pause(): void {
+    this.operation++;
+    this.wantsPlayback = this.starting = false;
+    this.resume = null;
+    this.clearRecoveryTimers();
+    this.resetBufferingObservation();
+    this.player?.pause();
+    this.publish(false, false);
+  }
+  async seek(seconds: number): Promise<void> {
+    this.resetBufferingObservation();
+    this.position = seconds;
+    if (this.resume) this.resume.position = seconds;
+    else if (!this.failure) await this.player?.seekTo(seconds);
+  }
   subscribe(listener: (status: EngineStatus) => void): () => void {
     this.listeners.add(listener);
     return () => { this.listeners.delete(listener); };
@@ -116,6 +273,11 @@ export class ExpoAudioEngine implements AudioEngine {
   }
   release(): void {
     this.lifecycle++;
+    this.operation++;
+    this.wantsPlayback = this.starting = false;
+    this.source = null;
+    this.resume = null;
+    this.clearRecoveryTimers();
     this.resetBufferingObservation();
     this.subscription?.remove();
     this.subscription = null;

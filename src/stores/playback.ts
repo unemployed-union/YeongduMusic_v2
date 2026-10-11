@@ -28,5 +28,5 @@ export const usePlaybackStore = create<PlaybackState>((set) => ({
   setStatus: (status) => set(status),
   toggleShuffle: () => set((state) => ({ shuffle: !state.shuffle })),
   cycleRepeat: () => set((state) => ({ repeat: state.repeat === 'off' ? 'all' : state.repeat === 'all' ? 'one' : 'off' })),
-  clear: () => set({ queue: [], index: -1, playing: false, position: 0, duration: 0, error: null }),
+  clear: () => set({ queue: [], index: -1, playing: false, buffering: false, position: 0, duration: 0, error: null }),
 }));
