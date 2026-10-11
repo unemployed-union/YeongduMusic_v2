@@ -1,0 +1,2 @@
+# pnpm patches must use LF, including on Windows.
+patches/*.patch text eol=lf

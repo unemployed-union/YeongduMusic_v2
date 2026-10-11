@@ -160,7 +160,7 @@ index 839aaef12d7699ea1a89037b31849775daa079f4..bae18e5c28302d703abe1b6f6855bdfe
  import androidx.media3.session.MediaSession
  import androidx.media3.session.SessionCommand
  import androidx.media3.session.SessionResult
-@@ -18,19 +17,7 @@ class AudioMediaSessionCallback : MediaSession.Callback {
+@@ -18,19 +17,10 @@ class AudioMediaSessionCallback : MediaSession.Callback {
      try {
        // Configure commands - custom layout buttons will be rendered from session
        return MediaSession.ConnectionResult.AcceptedResultBuilder(session)
@@ -177,7 +177,10 @@ index 839aaef12d7699ea1a89037b31849775daa079f4..bae18e5c28302d703abe1b6f6855bdfe
 -            .remove(Player.COMMAND_SEEK_TO_NEXT)
 -            .build()
 -        )
-+        .setAvailablePlayerCommands(session.player.availableCommands)
++        // Controller permissions must outlive the player's initial loading state.
++        // Media3 intersects these with the player's CURRENT commands automatically;
++        // snapshotting availableCommands here permanently disables seek after prepare().
++        .setAvailablePlayerCommands(MediaSession.ConnectionResult.DEFAULT_PLAYER_COMMANDS)
          .setAvailableSessionCommands(
            MediaSession.ConnectionResult.DEFAULT_SESSION_COMMANDS.buildUpon()
              .add(SessionCommand(AudioControlsService.ACTION_SEEK_BACKWARD, Bundle.EMPTY))

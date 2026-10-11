@@ -7,6 +7,7 @@ import { StatusBar } from 'expo-status-bar';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { useAuthStore } from '@/stores/auth';
 import { useHiddenMusicStore } from '@/stores/hidden-music';
+import { usePlaylistStore } from '@/stores/playlists';
 import { privacyScope } from '@/features/hidden-music/rules';
 import { reconcilePlaybackVisibility, stopPlayback } from '@/services/playback/controller';
 import { useColors } from '@/theme/tokens';
@@ -19,10 +20,12 @@ function Navigation() {
   const scheme = useColorScheme();
   const privacy = useHiddenMusicStore();
   const loadPrivacy = privacy.load;
+  const loadPlaylists = usePlaylistStore((state) => state.load);
   const scope = privacyScope(mode, session);
   useEffect(() => { void bootstrap(); }, [bootstrap]);
   useEffect(() => { if (ready && mode === 'setup') { stopPlayback(); router.replace('/connect'); } }, [ready, mode]);
   useEffect(() => { if (ready) void loadPrivacy(scope); }, [ready, scope, loadPrivacy]);
+  useEffect(() => { if (ready) void loadPlaylists(scope); }, [ready, scope, loadPlaylists]);
   useEffect(() => {
     const subscription = AppState.addEventListener('change', (state) => { if (state === 'background') useHiddenMusicStore.getState().lock(); });
     return () => subscription.remove();

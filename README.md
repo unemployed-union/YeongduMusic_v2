@@ -1,5 +1,15 @@
 # YeongduMusic
 
+## 저장하는 플레이리스트
+
+보관함의 **내 플레이리스트**에서 운동·드라이브처럼 이름을 붙인 목록을 여러 개 만들 수 있습니다. 목록을 열어 **곡 추가**에서 검색하고 여러 곡을 선택하거나, 보관함·검색·앨범·아티스트의 곡 옆 **⋯** 메뉴에서 새 목록 또는 기존 목록에 추가하세요. 같은 곡을 여러 플레이리스트에 저장할 수 있으며 한 목록 안에서는 중복되지 않습니다.
+
+플레이어의 현재 곡 메뉴에서도 목록에 추가할 수 있고, **목록 저장**은 현재 재생 대기열을 순서대로 저장합니다. 저장한 목록에서는 전체 재생, 곡별 재생, 이름 변경, 곡 편집(위/아래 이동·제거), 목록 삭제를 지원합니다. 목록에서 제거하거나 목록을 삭제해도 NAS의 음악 파일은 변경하지 않습니다.
+
+플레이리스트 프리셋은 `music-playlists.db`에 기기별·NAS 주소/계정별로 저장하고 데모는 별도로 관리합니다. 앱 재시작·로그아웃 후에도 같은 계정으로 돌아오면 복원됩니다. 곡 ID와 목록 이름만 저장하고 재생·커버 URL이나 인증 정보를 저장하지 않습니다. 최신 보관함에서 곡 정보를 찾아 재생하며 숨긴 곡이나 찾을 수 없는 곡은 표시·재생하지 않고, 목록의 ID는 유지하므로 다시 표시 가능해지면 복원됩니다. NAS 플레이리스트 동기화나 다른 기기 공유는 지원하지 않습니다.
+
+`node scripts/check-playlists.cjs`로 실제 SQLite SQL의 저장/복원, 다중 목록, 중복 방지, 순서 변경, 숨김/누락 곡 처리, 계정 전환, 동시 저장, 저장 실패 및 손상된 데이터 처리를 검증합니다. Expo SQLite는 테스트에서 Node SQLite로 연결하며 실제 모바일 UI·NAS 재생은 기기에서 별도로 확인해야 합니다.
+
 Expo SDK 57, React Native, TypeScript로 만든 iOS·Android용 개인 음악 앱입니다. 앱이 Synology NAS의 Audio Station에 직접 연결합니다. 별도 백엔드나 실제 NAS 계정 정보는 저장소에 없습니다.
 
 ## 시작하기
@@ -178,6 +188,14 @@ Android 13 이상은 표준 MediaSession 곡 이동 명령과 버튼 슬롯을 �
 삼성 One UI 실기기 확인: 대기열에 2곡 이상을 넣고 재생한 뒤 알림창을 확장하거나 잠금 화면의 음악 컨트롤을 열어 이전·다음 버튼과 실제 곡 이동, 곡 제목·앨범 아트 갱신, 일시정지 후 곡 이동, 빠른 연속 누름, 셔플·반복, NAS 세션 만료 시 오류 처리를 확인하세요. Android/One UI 버전과 잠금 화면 설정에 따른 실제 버튼 배치는 기기에서 확인해야 합니다.
 
 참고: [Expo Audio SDK 57](https://docs.expo.dev/versions/v57.0.0/sdk/audio/), [Android MediaSession 컨트롤](https://developer.android.com/media/media3/session/control-playback).
+
+### 삼성 잠금 화면·알림창 진행 바
+
+미디어 컨트롤러가 곡 로딩 중 연결되면 `COMMAND_SEEK_IN_CURRENT_MEDIA_ITEM`이 아직 없을 수 있습니다. 기존 패치는 이 시점의 `session.player.availableCommands`를 연결 권한으로 고정해, 음원의 길이와 탐색 가능 여부가 확인된 뒤에도 진행 바 탐색을 허용하지 않았습니다. 연결 권한은 `DEFAULT_PLAYER_COMMANDS`로 설정하고, Media3가 플레이어의 현재 지원 명령과 교집합을 계산하도록 수정했습니다. 따라서 탐색 가능한 곡은 로딩 후 진행 바를 사용할 수 있고, 라이브·탐색 불가 음원에는 탐색을 강제로 활성화하지 않습니다. 이전·다음 곡 명령은 기존 대기열 패치를 계속 사용합니다. [Media3 컨트롤러 명령 권한](https://developer.android.com/reference/androidx/media3/session/MediaSession.ConnectionResult.AcceptedResultBuilder#setAvailablePlayerCommands(androidx.media3.common.Player.Commands))
+
+패치 파일은 Windows에서도 LF 줄바꿈을 유지하도록 `.gitattributes`에 지정했고, 패치 해시를 잠금 파일에 갱신했습니다. **수정 반영에는 새 Android 앱 빌드 설치가 필요합니다.** 기존 EAS 프로필로 `npx eas-cli@latest build --platform android --profile preview`를 실행해 새 APK를 설치하세요.
+
+실기기 확인: MP3·FLAC를 각각 처음 재생하고 곡 길이가 표시된 뒤 잠금 화면과 확장 알림창에서 진행 바를 앞뒤로 끌어 실제 소리와 앱의 재생 위치가 함께 이동하는지 확인하세요. 일시정지 상태의 탐색, 재개 후 위치, 다음 곡 전환 후 길이·위치 갱신, 이전·다음 버튼도 확인해야 합니다. 패치 설치·린트·타입 검사와 기존 재생 엔진 회귀 검사는 통과했으며, 삼성 One UI 실기기 동작과 새 APK의 네이티브 실행은 별도로 확인해야 합니다.
 
 ## 앨범 아트 배경
 

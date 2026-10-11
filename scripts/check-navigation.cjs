@@ -26,6 +26,8 @@ assert.equal(library.initialRouteName, 'index');
 assert.deepEqual(Object.keys(config.screens['(tabs)'].screens).sort(), ['(library)', 'search', 'settings']);
 assert.ok(library.screens['album/[id]']);
 assert.ok(library.screens['artist/[id]']);
+assert.ok(library.screens['playlists/index']);
+assert.equal(library.screens['playlists/[id]'].path, 'playlists/:id');
 assert.equal(library.screens['album/[id]'].path, 'album/:id');
 assert.equal(library.screens['artist/[id]'].path, 'artist/:id');
 assert.equal(config.screens['album/[id]'], undefined);
