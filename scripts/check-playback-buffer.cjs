@@ -75,6 +75,7 @@ async function main() {
   assert.equal(options.updateInterval, 500);
   assert.equal(h.events.filter(event => event[0] === 'mode').length, 1);
   const lockscreen = h.events.find(event => event[0] === 'lockscreen');
+  assert.equal(lockscreen[3].isLiveStream, false, 'NAS songs are on-demand files, not live broadcasts');
   assert.equal(lockscreen[3].showSkipPrevious, true);
   assert.equal(lockscreen[3].showSkipNext, true);
 

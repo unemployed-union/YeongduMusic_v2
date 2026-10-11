@@ -3,6 +3,8 @@ import { StyleSheet, View, useColorScheme, type StyleProp, type ViewStyle } from
 import MaskedView from '@react-native-masked-view/masked-view';
 import { BlurTargetView, BlurView, type BlurTint } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useScrollEdges } from './use-scroll-edges';
+import { ScrollEdgeChild } from './scroll-edge-child';
 
 export type ScrollEdgeFadeProps = {
   children: ReactNode;
@@ -29,6 +31,7 @@ const EdgeBlur = memo(function EdgeBlur({ target, height, bottom, tint }: {
 
 /** Fade and blur the viewport edges; leave the original scroll component/ref/gestures intact. */
 export function ScrollEdgeFade({ children, style, fadeHeight = 28, tint, fill = true }: ScrollEdgeFadeProps) {
+  const { child, scrollProps, top, bottom } = useScrollEdges(children);
   const target = useRef<View | null>(null);
   const [height, setHeight] = useState<number | null>(null);
   const scheme = useColorScheme();
@@ -36,14 +39,14 @@ export function ScrollEdgeFade({ children, style, fadeHeight = 28, tint, fill = 
   const layout = fill ? styles.fill : styles.shrink;
   return <View style={[styles.frame, layout, style]} onLayout={(event) => setHeight(event.nativeEvent.layout.height)}>
     <MaskedView style={layout} androidRenderingMode="hardware" maskElement={<View style={styles.fill}>
-      <LinearGradient colors={FADE_COLORS} locations={LOCATIONS} style={{ height: edge }} />
+      <LinearGradient colors={FADE_COLORS} locations={LOCATIONS} style={{ height: top ? edge : 0 }} />
       <View style={styles.opaque} />
-      <LinearGradient colors={BLUR_COLORS} locations={LOCATIONS} style={{ height: edge }} />
+      <LinearGradient colors={BLUR_COLORS} locations={LOCATIONS} style={{ height: bottom ? edge : 0 }} />
     </View>}>
-      <BlurTargetView ref={target} collapsable={false} style={layout}>{children}</BlurTargetView>
+      <BlurTargetView ref={target} collapsable={false} style={layout}><ScrollEdgeChild element={child} scrollProps={scrollProps} /></BlurTargetView>
       {/* Render after dynamic lists and sample only their content, never the blur itself. */}
-      <EdgeBlur target={target} height={edge} tint={tint ?? (scheme === 'dark' ? 'dark' : 'light')} />
-      <EdgeBlur target={target} height={edge} bottom tint={tint ?? (scheme === 'dark' ? 'dark' : 'light')} />
+      {top && edge > 0 && <EdgeBlur target={target} height={edge} tint={tint ?? (scheme === 'dark' ? 'dark' : 'light')} />}
+      {bottom && edge > 0 && <EdgeBlur target={target} height={edge} bottom tint={tint ?? (scheme === 'dark' ? 'dark' : 'light')} />}
     </MaskedView>
   </View>;
 }

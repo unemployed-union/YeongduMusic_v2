@@ -237,7 +237,7 @@ export class ExpoAudioEngine implements AudioEngine {
       player.setActiveForLockScreen(true,
         { title: song.title, artist: song.artist, albumTitle: song.album, artworkUrl: song.artworkUrl },
         Platform.OS === 'android'
-          ? { showSkipPrevious: true, showSkipNext: true, showSeekBackward: false, showSeekForward: false }
+          ? { isLiveStream: false, showSkipPrevious: true, showSkipNext: true, showSeekBackward: false, showSeekForward: false }
           : undefined
       );
     }

@@ -134,7 +134,7 @@ index 196a5d57f887c2667a88543bd2f6a80044a044f2..0461056fa218863b6314590c53f822d4
 -          .build()
 -      }
 -    }
-+    return TrackNavigationPlayer(player, options, isLive)
++    return TrackNavigationPlayer(player, options)
    }
  
    private fun setActivePlayerInternal(
@@ -184,14 +184,195 @@ index 839aaef12d7699ea1a89037b31849775daa079f4..bae18e5c28302d703abe1b6f6855bdfe
          .setAvailableSessionCommands(
            MediaSession.ConnectionResult.DEFAULT_SESSION_COMMANDS.buildUpon()
              .add(SessionCommand(AudioControlsService.ACTION_SEEK_BACKWARD, Bundle.EMPTY))
+diff --git a/android/src/main/java/expo/modules/audio/service/MetadataInjectingPlayer.kt b/android/src/main/java/expo/modules/audio/service/MetadataInjectingPlayer.kt
+index 18203a3..fd45ebe 100644
+--- a/android/src/main/java/expo/modules/audio/service/MetadataInjectingPlayer.kt
++++ b/android/src/main/java/expo/modules/audio/service/MetadataInjectingPlayer.kt
+@@ -83,2 +83,2 @@ internal class MetadataInjectingPlayer(
+-    private val listener: Player.Listener
+-  ) : Player.Listener by listener {
++    listener: Player.Listener
++  ) : ForwardingPlayerListener(listener) {
+diff --git a/android/src/main/java/expo/modules/audio/service/ForwardingPlayerListener.java b/android/src/main/java/expo/modules/audio/service/ForwardingPlayerListener.java
+new file mode 100644
+index 0000000..cca25932f49482df03013670bb37b3ba8005ff2a
+--- /dev/null
++++ b/android/src/main/java/expo/modules/audio/service/ForwardingPlayerListener.java
+@@ -0,0 +1,165 @@
++package expo.modules.audio.service;
++
++import androidx.media3.common.Player;
++import androidx.media3.common.util.UnstableApi;
++
++// Kotlin 'Player.Listener by listener' does not delegate Java default methods.
++// Both session wrappers need all callbacks, including timeline and seek results.
++// Keep this forwarding list aligned with our pinned Media3 1.9.0 Player.Listener.
++@UnstableApi
++@SuppressWarnings("deprecation")
++abstract class ForwardingPlayerListener implements Player.Listener {
++  protected final Player.Listener listener;
++
++  ForwardingPlayerListener(Player.Listener listener) {
++    this.listener = listener;
++  }
++
++  @Override public void onEvents(androidx.media3.common.Player arg0, androidx.media3.common.Player.Events arg1) {
++    listener.onEvents(arg0, arg1);
++  }
++
++  @Override public void onTimelineChanged(androidx.media3.common.Timeline arg0, int arg1) {
++    listener.onTimelineChanged(arg0, arg1);
++  }
++
++  @Override public void onMediaItemTransition(androidx.media3.common.MediaItem arg0, int arg1) {
++    listener.onMediaItemTransition(arg0, arg1);
++  }
++
++  @Override public void onTracksChanged(androidx.media3.common.Tracks arg0) {
++    listener.onTracksChanged(arg0);
++  }
++
++  @Override public void onMediaMetadataChanged(androidx.media3.common.MediaMetadata arg0) {
++    listener.onMediaMetadataChanged(arg0);
++  }
++
++  @Override public void onPlaylistMetadataChanged(androidx.media3.common.MediaMetadata arg0) {
++    listener.onPlaylistMetadataChanged(arg0);
++  }
++
++  @Override public void onIsLoadingChanged(boolean arg0) {
++    listener.onIsLoadingChanged(arg0);
++  }
++
++  @Override public void onLoadingChanged(boolean arg0) {
++    listener.onLoadingChanged(arg0);
++  }
++
++  @Override public void onAvailableCommandsChanged(androidx.media3.common.Player.Commands arg0) {
++    listener.onAvailableCommandsChanged(arg0);
++  }
++
++  @Override public void onTrackSelectionParametersChanged(androidx.media3.common.TrackSelectionParameters arg0) {
++    listener.onTrackSelectionParametersChanged(arg0);
++  }
++
++  @Override public void onPlayerStateChanged(boolean arg0, int arg1) {
++    listener.onPlayerStateChanged(arg0, arg1);
++  }
++
++  @Override public void onPlaybackStateChanged(int arg0) {
++    listener.onPlaybackStateChanged(arg0);
++  }
++
++  @Override public void onPlayWhenReadyChanged(boolean arg0, int arg1) {
++    listener.onPlayWhenReadyChanged(arg0, arg1);
++  }
++
++  @Override public void onPlaybackSuppressionReasonChanged(int arg0) {
++    listener.onPlaybackSuppressionReasonChanged(arg0);
++  }
++
++  @Override public void onIsPlayingChanged(boolean arg0) {
++    listener.onIsPlayingChanged(arg0);
++  }
++
++  @Override public void onRepeatModeChanged(int arg0) {
++    listener.onRepeatModeChanged(arg0);
++  }
++
++  @Override public void onShuffleModeEnabledChanged(boolean arg0) {
++    listener.onShuffleModeEnabledChanged(arg0);
++  }
++
++  @Override public void onPlayerError(androidx.media3.common.PlaybackException arg0) {
++    listener.onPlayerError(arg0);
++  }
++
++  @Override public void onPlayerErrorChanged(androidx.media3.common.PlaybackException arg0) {
++    listener.onPlayerErrorChanged(arg0);
++  }
++
++  @Override public void onPositionDiscontinuity(int arg0) {
++    listener.onPositionDiscontinuity(arg0);
++  }
++
++  @Override public void onPositionDiscontinuity(androidx.media3.common.Player.PositionInfo arg0, androidx.media3.common.Player.PositionInfo arg1, int arg2) {
++    listener.onPositionDiscontinuity(arg0, arg1, arg2);
++  }
++
++  @Override public void onPlaybackParametersChanged(androidx.media3.common.PlaybackParameters arg0) {
++    listener.onPlaybackParametersChanged(arg0);
++  }
++
++  @Override public void onSeekBackIncrementChanged(long arg0) {
++    listener.onSeekBackIncrementChanged(arg0);
++  }
++
++  @Override public void onSeekForwardIncrementChanged(long arg0) {
++    listener.onSeekForwardIncrementChanged(arg0);
++  }
++
++  @Override public void onMaxSeekToPreviousPositionChanged(long arg0) {
++    listener.onMaxSeekToPreviousPositionChanged(arg0);
++  }
++
++  @Override public void onAudioSessionIdChanged(int arg0) {
++    listener.onAudioSessionIdChanged(arg0);
++  }
++
++  @Override public void onAudioAttributesChanged(androidx.media3.common.AudioAttributes arg0) {
++    listener.onAudioAttributesChanged(arg0);
++  }
++
++  @Override public void onVolumeChanged(float arg0) {
++    listener.onVolumeChanged(arg0);
++  }
++
++  @Override public void onSkipSilenceEnabledChanged(boolean arg0) {
++    listener.onSkipSilenceEnabledChanged(arg0);
++  }
++
++  @Override public void onDeviceInfoChanged(androidx.media3.common.DeviceInfo arg0) {
++    listener.onDeviceInfoChanged(arg0);
++  }
++
++  @Override public void onDeviceVolumeChanged(int arg0, boolean arg1) {
++    listener.onDeviceVolumeChanged(arg0, arg1);
++  }
++
++  @Override public void onVideoSizeChanged(androidx.media3.common.VideoSize arg0) {
++    listener.onVideoSizeChanged(arg0);
++  }
++
++  @Override public void onSurfaceSizeChanged(int arg0, int arg1) {
++    listener.onSurfaceSizeChanged(arg0, arg1);
++  }
++
++  @Override public void onRenderedFirstFrame() {
++    listener.onRenderedFirstFrame();
++  }
++
++  @Override public void onCues(java.util.List<androidx.media3.common.text.Cue> arg0) {
++    listener.onCues(arg0);
++  }
++
++  @Override public void onCues(androidx.media3.common.text.CueGroup arg0) {
++    listener.onCues(arg0);
++  }
++
++  @Override public void onMetadata(androidx.media3.common.Metadata arg0) {
++    listener.onMetadata(arg0);
++  }
++}
 diff --git a/android/src/main/java/expo/modules/audio/service/TrackNavigationPlayer.kt b/android/src/main/java/expo/modules/audio/service/TrackNavigationPlayer.kt
 new file mode 100644
-index 0000000000000000000000000000000000000000..ff1841400c7b3a97deabdc60f6d94988189f4b6c
+index 0000000..bb955cc2e982b4146ebb5bfee8e3a376928cca01
 --- /dev/null
 +++ b/android/src/main/java/expo/modules/audio/service/TrackNavigationPlayer.kt
-@@ -0,0 +1,67 @@
+@@ -0,0 +1,102 @@
 +package expo.modules.audio.service
 +
++import androidx.media3.common.FlagSet
 +import androidx.media3.common.ForwardingPlayer
 +import androidx.media3.common.Player
 +import androidx.media3.common.util.UnstableApi
@@ -199,19 +380,33 @@ index 0000000000000000000000000000000000000000..ff1841400c7b3a97deabdc60f6d94988
 +import expo.modules.audio.AudioPlayer
 +import java.util.IdentityHashMap
 +
-+// ExoPlayer holds one stream; the app's queue handles authenticated next/previous tracks.
-+// Advertise standard commands for Android 13+ System UI and keep listener state consistent.
++// ExoPlayer holds one stream; JS owns authenticated queue navigation.
 +@UnstableApi
 +internal class TrackNavigationPlayer(
 +  private val audioPlayer: AudioPlayer,
-+  private val options: AudioLockScreenOptions?,
-+  private val isLive: Boolean
++  private val options: AudioLockScreenOptions?
 +) : ForwardingPlayer(audioPlayer.ref) {
 +  private val listeners = IdentityHashMap<Player.Listener, Player.Listener>()
 +
++  private fun isLiveStream(): Boolean = options?.isLiveStream ?: audioPlayer.isLive
++
++  // App seekTo() already operates directly on this ExoPlayer. Expose the same
++  // operation for explicitly on-demand, finite music, even if its remote
++  // extractor omits the seek command. Never invent a duration or enable live/ad seek.
++  private fun canSeekOnDemand(): Boolean =
++    options?.isLiveStream == false &&
++      !audioPlayer.isLive &&
++      !super.isPlayingAd() &&
++      !super.getCurrentTimeline().isEmpty &&
++      super.getDuration() > 0
++
 +  override fun getAvailableCommands(): Player.Commands {
 +    val commands = super.getAvailableCommands().buildUpon()
-+    if (isLive) commands.remove(Player.COMMAND_SEEK_IN_CURRENT_MEDIA_ITEM)
++    if (isLiveStream()) {
++      commands.remove(Player.COMMAND_SEEK_IN_CURRENT_MEDIA_ITEM)
++    } else if (canSeekOnDemand()) {
++      commands.add(Player.COMMAND_SEEK_IN_CURRENT_MEDIA_ITEM)
++    }
 +    if (options?.showSkipNext == true) {
 +      commands.add(Player.COMMAND_SEEK_TO_NEXT).add(Player.COMMAND_SEEK_TO_NEXT_MEDIA_ITEM)
 +    }
@@ -240,12 +435,32 @@ index 0000000000000000000000000000000000000000..ff1841400c7b3a97deabdc60f6d94988
 +  }
 +
 +  override fun addListener(listener: Player.Listener) {
-+    val forwarding = object : Player.Listener by listener {
++    var reportedCommands = availableCommands
++    var commandsChanged = false
++    fun notifyCommandsIfChanged() {
++      val current = availableCommands
++      if (current != reportedCommands) {
++        reportedCommands = current
++        commandsChanged = true
++        listener.onAvailableCommandsChanged(current)
++      }
++    }
++    val forwarding = object : ForwardingPlayerListener(listener) {
 +      override fun onAvailableCommandsChanged(commands: Player.Commands) {
-+        listener.onAvailableCommandsChanged(this@TrackNavigationPlayer.availableCommands)
++        notifyCommandsIfChanged()
 +      }
 +      override fun onEvents(player: Player, events: Player.Events) {
-+        listener.onEvents(this@TrackNavigationPlayer, events)
++        // A network item may reveal its duration through a timeline event without
++        // changing ExoPlayer's original commands. MediaSession must observe ours.
++        notifyCommandsIfChanged()
++        val forwardedEvents = if (commandsChanged) {
++          val flags = FlagSet.Builder()
++          for (index in 0 until events.size()) flags.add(events.get(index))
++          flags.add(Player.EVENT_AVAILABLE_COMMANDS_CHANGED)
++          Player.Events(flags.build())
++        } else events
++        commandsChanged = false
++        listener.onEvents(this@TrackNavigationPlayer, forwardedEvents)
 +      }
 +    }
 +    val previous = listeners.put(listener, forwarding)

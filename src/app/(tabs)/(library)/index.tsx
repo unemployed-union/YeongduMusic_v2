@@ -1,4 +1,3 @@
-import { ScrollEdgeFade } from '@/components/scroll-edge-fade';
 import { useEffect, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { ScreenHeader } from '@/components/screen-header';
@@ -42,7 +41,7 @@ export default function LibraryScreen() {
     <Pressable accessibilityRole="button" onPress={() => router.push('/playlists')} style={{ marginHorizontal: 22, marginBottom: 14, padding: 14, borderRadius: 12, backgroundColor: colors.surface, flexDirection: 'row', alignItems: 'center', gap: 10 }}><Ionicons name="musical-notes-outline" size={22} color={colors.tint} /><Text style={{ flex: 1, color: colors.text, fontWeight: '700' }}>내 플레이리스트</Text><Ionicons name="chevron-forward" size={18} color={colors.muted} /></Pressable>
     <View style={styles.segments}>{LIBRARY_TABS.map((option) => <Pressable key={option} accessibilityRole="tab" accessibilityState={{ selected: tab === option }} onPress={() => selectTab(option)} style={[styles.segment, { backgroundColor: tab === option ? colors.tint : colors.surface, borderColor: tab === option ? colors.tint : colors.separator }]}><Text style={{ color: tab === option ? 'white' : colors.text, fontWeight: '700' }}>{option === 'albums' ? '앨범' : option === 'songs' ? '노래' : '아티스트'}</Text></Pressable>)}</View>
     {(refreshState.refreshing || refreshState.error || refreshState.message) && <Pressable accessibilityRole="button" disabled={!refreshState.error || refreshState.refreshing} onPress={() => void refreshState.refresh()} style={styles.refreshNotice}><Text style={{ color: refreshState.error ? colors.tint : colors.muted }}>{refreshState.refreshing ? (mode === 'mock' ? '데모 목록 확인 중…' : 'Audio Station 목록을 가져오는 중…') : refreshState.error ? refreshState.error + ' · 다시 시도' : refreshState.message}</Text></Pressable>}
-    <ScrollEdgeFade><ScrollView
+    <ScrollView
       ref={pager}
       style={styles.pager}
       contentContainerStyle={styles.pages}
@@ -62,7 +61,7 @@ export default function LibraryScreen() {
       }}
     >
       {LIBRARY_TABS.map((option) => <LibraryPage key={option} tab={option} query={queries[option]} width={width} refreshing={refreshState.refreshing} onRefresh={refreshState.refresh} />)}
-    </ScrollView></ScrollEdgeFade>
+    </ScrollView>
   </View>;
 }
 

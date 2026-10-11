@@ -187,6 +187,8 @@ Android 13 이상은 표준 MediaSession 곡 이동 명령과 버튼 슬롯을 �
 
 삼성 One UI 실기기 확인: 대기열에 2곡 이상을 넣고 재생한 뒤 알림창을 확장하거나 잠금 화면의 음악 컨트롤을 열어 이전·다음 버튼과 실제 곡 이동, 곡 제목·앨범 아트 갱신, 일시정지 후 곡 이동, 빠른 연속 누름, 셔플·반복, NAS 세션 만료 시 오류 처리를 확인하세요. Android/One UI 버전과 잠금 화면 설정에 따른 실제 버튼 배치는 기기에서 확인해야 합니다.
 
+일반 음악 파일은 잠금 화면 옵션에 `isLiveStream: false`를 명시합니다. Android 세션 어댑터는 실제 플레이어에 길이가 확인된 곡이 있을 때 앱 내부와 같은 위치 탐색 명령을 노출합니다. 로딩 중·길이 미확인·라이브·광고에는 탐색 권한을 추가하지 않으며, 네트워크 곡의 길이가 뒤늦게 확인되면 명령 변경 이벤트도 세션에 전달합니다. 미디어 세션의 탐색 권한과 HTTP Range 지원은 별개이며 이 수정은 NAS API 경로나 음원을 변경하지 않습니다. 삼성 알림창/잠금 화면에서 NAS MP3·FLAC 재생 중과 일시정지 상태의 앞뒤 탐색, 곡 전환 후 탐색을 새 네이티브 빌드에서 확인해야 합니다. 모의 플레이어 테스트는 실제 NAS의 탐색 정확도나 One UI 동작을 입증하지 않습니다. 회귀 검사는 `node scripts/check-android-media-session.cjs`와 `node scripts/check-playback-buffer.cjs`로 실행합니다. 네이티브 어댑터 검사는 실제 Kotlin 소스를 모의 Media3 인터페이스와 함께 컴파일하므로 JDK 17과 Android 빌드로 받은 Kotlin 2.1.20 Gradle 캐시가 필요합니다. 실제 Media3 API 컴파일은 Android 폴더에서 `gradlew.bat :expo-audio:compileDebugKotlin --offline`로 별도 확인합니다.
+
 참고: [Expo Audio SDK 57](https://docs.expo.dev/versions/v57.0.0/sdk/audio/), [Android MediaSession 컨트롤](https://developer.android.com/media/media3/session/control-playback).
 
 ### 삼성 잠금 화면·알림창 진행 바
@@ -195,7 +197,11 @@ Android 13 이상은 표준 MediaSession 곡 이동 명령과 버튼 슬롯을 �
 
 패치 파일은 Windows에서도 LF 줄바꿈을 유지하도록 `.gitattributes`에 지정했고, 패치 해시를 잠금 파일에 갱신했습니다. **수정 반영에는 새 Android 앱 빌드 설치가 필요합니다.** 기존 EAS 프로필로 `npx eas-cli@latest build --platform android --profile preview`를 실행해 새 APK를 설치하세요.
 
-실기기 확인: MP3·FLAC를 각각 처음 재생하고 곡 길이가 표시된 뒤 잠금 화면과 확장 알림창에서 진행 바를 앞뒤로 끌어 실제 소리와 앱의 재생 위치가 함께 이동하는지 확인하세요. 일시정지 상태의 탐색, 재개 후 위치, 다음 곡 전환 후 길이·위치 갱신, 이전·다음 버튼도 확인해야 합니다. 패치 설치·린트·타입 검사와 기존 재생 엔진 회귀 검사는 통과했으며, 삼성 One UI 실기기 동작과 새 APK의 네이티브 실행은 별도로 확인해야 합니다.
+2026-10-11 삼성 실기기 추가 진단에서 탐색 권한은 있었지만 시스템 메타데이터의 곡 길이가 `-1`, Media3 타임라인은 길이 미확인·탐색 불가로 남아 있었습니다. `MetadataInjectingPlayer`와 `TrackNavigationPlayer`의 Kotlin `Player.Listener by listener`가 Java 기본 메서드인 타임라인·위치 변경 등의 콜백을 전달하지 않는 것이 원인이었습니다. 패치에 Java `ForwardingPlayerListener`를 추가해 고정된 Media3 1.9.0의 37개 콜백을 모두 전달하고, 기존 메타데이터·명령·onEvents 처리만 각 래퍼에서 재정의합니다. 곡 길이를 임의로 만들어 넣거나 API/음원을 변경하지 않습니다.
+
+**확인 완료:** TypeScript·ESLint·재생 회귀 검사, 37개 기본 콜백 전달 및 뒤늦은 타임라인 갱신 검사, 로컬 Android Release APK 빌드·업데이트 설치. 연결된 삼성 Android 17 / One UI 9 기기의 실제 NAS 재생에서 시스템과 Media3 모두 곡 길이 `205348ms`, 탐색 가능 상태로 갱신됐고, 사용자가 알림 패널에서 손잡이 표시와 실제 탐색을 확인했습니다. 모의 테스트에서는 수정 전 Kotlin 어댑터가 타임라인 콜백 검사를 실패하는 것도 확인했습니다. 진단에는 곡 제목·주소·계정·토큰을 기록하지 않았으며 임시 진단 앱은 검사 후 제거합니다.
+
+**추가 확인:** 잠금 화면에서의 직접 드래그, MP3·FLAC 각각의 탐색 정확도, 일시정지·재개, 여러 곡 전환 뒤 길이 갱신과 이전·다음 버튼, 다른 Android/One UI 버전. 위 실기기 결과를 모든 파일 형식과 기기에서 검증된 것으로 확대하지 않습니다.
 
 ## 앨범 아트 배경
 
