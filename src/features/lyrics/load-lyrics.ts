@@ -9,13 +9,17 @@ type LyricsRequest = { song: Song; source: LyricsSource; mode: string; session: 
 
 export async function loadLyrics({ song, source, mode, session, generation, duration, signal }: LyricsRequest): Promise<LyricsDocument> {
   checkLyricsCancelled(signal);
+  if (song.source === 'local') {
+    if (source === 'nas') throw new Error('이 기기 음악은 NAS 가사를 사용할 수 없습니다. 자동 또는 온라인을 선택해 주세요.');
+    return onlineLyrics(song, duration, signal);
+  }
   if (mode === 'mock') return demoLyrics();
   if (source === 'online') return onlineLyrics(song, duration, signal);
   let nas: LyricsDocument | null = null;
   let nasError: unknown;
   if (session?.apis['SYNO.AudioStation.Lyrics']) {
     try {
-      const raw = await new SynologyClient(session).lyrics(song.id, signal);
+      const raw = await new SynologyClient(session).lyrics(song.nasId ?? song.id, signal);
       checkLyricsCancelled(signal);
       if (raw.length > 1000000) throw new Error('NAS 가사 응답이 너무 큽니다.');
       nas = parseLyrics(raw, 'nas');

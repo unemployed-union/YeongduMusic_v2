@@ -3,7 +3,8 @@ param(
   [string]$Account,
   [switch]$ApiOnly,
   [switch]$LibraryOnly,
-  [switch]$LyricsOnly
+  [switch]$LyricsOnly,
+  [switch]$QualityOnly
 )
 
 $ErrorActionPreference = 'Stop'
@@ -32,7 +33,7 @@ function QueryString([hashtable]$values) {
   }) -join '&')
 }
 
-function ApiUrl([string]$name, [string]$method, [hashtable]$parameters) {
+function ApiUrl([string]$name, [string]$method, [hashtable]$parameters, [string]$pathSuffix = '') {
   $info = $script:apis.$name
   if (-not $info) { throw "Missing API: $name" }
   $version = [Math]::Min([int]$script:preferred[$name], [int]$info.maxVersion)
@@ -41,7 +42,7 @@ function ApiUrl([string]$name, [string]$method, [hashtable]$parameters) {
   if ($script:sid) { $query['_sid'] = $script:sid }
   if ($script:token) { $query['SynoToken'] = $script:token }
   foreach ($key in $parameters.Keys) { $query[$key] = $parameters[$key] }
-  return "$script:base/webapi/$($info.path)?$(QueryString $query)"
+  return "$script:base/webapi/$($info.path)$($pathSuffix)?$(QueryString $query)"
 }
 
 function GetJson([string]$url) {
@@ -81,8 +82,8 @@ function ProbeList([string]$name, [string]$method, [string]$key, [hashtable]$par
   }
 }
 
-function ProbeBinary([string]$name, [string]$method, [hashtable]$parameters) {
-  $request = [System.Net.Http.HttpRequestMessage]::new([System.Net.Http.HttpMethod]::Get, (ApiUrl $name $method $parameters))
+function ProbeBinary([string]$name, [string]$method, [hashtable]$parameters, [string]$pathSuffix = '') {
+  $request = [System.Net.Http.HttpRequestMessage]::new([System.Net.Http.HttpMethod]::Get, (ApiUrl $name $method $parameters $pathSuffix))
   $request.Headers.Range = [System.Net.Http.Headers.RangeHeaderValue]::new(0, 1023)
   try {
     $response = $script:client.SendAsync($request, [System.Net.Http.HttpCompletionOption]::ResponseHeadersRead).GetAwaiter().GetResult()
@@ -195,6 +196,22 @@ try {
         }
       }
     }
+    return
+  }
+
+  if ($QualityOnly) {
+    # Official Audio Station 6.5.7 audio-core.js uses transcode/format=mp3,
+    # position=0 and a /0.mp3 path suffix. Verify this on the installed NAS.
+    $sample = GetJson (ApiUrl 'SYNO.AudioStation.Song' 'list' @{ offset = 0; limit = 30; library = 'all' })
+    if ($sample.success -ne $true) { Write-Output "Quality song sample failed: code=$($sample.error.code)"; return }
+    $songs = @($sample.data.songs)
+    $lossless = $songs | Where-Object { $_.path -match '\.(flac|alac|wav|aiff|ape)$' } | Select-Object -First 1
+    $qualitySong = if ($lossless) { $lossless } else { $songs | Select-Object -First 1 }
+    if (-not $qualitySong) { Write-Output 'Quality probe has no song to test.'; return }
+    Write-Output "Quality sample losslessExtension=$([bool]$lossless) (song values hidden)"
+    ProbeBinary 'SYNO.AudioStation.Stream' 'stream' @{ id = $qualitySong.id; library = 'all' }
+    ProbeBinary 'SYNO.AudioStation.Stream' 'transcode' @{ id = $qualitySong.id; library = 'all'; format = 'mp3'; position = 0 } '/0.mp3'
+    Write-Output 'Check MIME/HTTP results and actual device playback/seek; bitrate is not verified by this probe.'
     return
   }
 

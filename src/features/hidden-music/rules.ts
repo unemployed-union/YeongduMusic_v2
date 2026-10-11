@@ -16,7 +16,7 @@ export function hiddenMatcher(presets: readonly HiddenPreset[]): (song: Song) =>
   const active = presets.filter((preset) => preset.enabled);
   const ids = new Set(active.flatMap((preset) => preset.songIds));
   const folders = [...new Set(active.flatMap((preset) => preset.folders).map(normalizeFolder))];
-  return (song) => ids.has(song.id) || !!song.path && folders.some((folder) => normalizeFolder(song.path!).startsWith(folder + '/'));
+  return (song) => song.source !== 'local' && (ids.has(song.id) || !!song.path && folders.some((folder) => normalizeFolder(song.path!).startsWith(folder + '/')));
 }
 
 export function visibleSongs(library: Page<Song>, presets: readonly HiddenPreset[]): Page<Song> {

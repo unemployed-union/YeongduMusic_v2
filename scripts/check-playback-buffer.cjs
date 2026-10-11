@@ -271,6 +271,20 @@ async function checkRecovery() {
   idle.emit({ playing: false, currentTime: 0 }); await flush();
   assert.deepEqual(idle.events.filter(e => e[0] === 'seek').at(-1), ['seek', 37]); idle.engine.release();
 
+  for (const os of ['android', 'ios']) {
+    const local = harness({ os });
+    await local.engine.load({ uri: 'file:///documents/sample.flac' }, { ...song, source: 'local' });
+    local.emit({ currentTime: 4, error: 'unsupported codec', playing: false });
+    local.advance(60000);
+    assert.equal(local.states.at(-1).playing, false);
+    assert.match(local.states.at(-1).error, /로컬 음악/);
+    assert.equal(local.timers.size, 0, 'Local decode errors do not retry a network connection');
+    await local.engine.load(source, song);
+    local.emit({ error: 'network', playing: false }); local.advance(1000);
+    assert.equal(local.events.filter(e => e[0] === 'replace').length, 3, 'NAS recovery resumes when switching back');
+    assert.equal(local.events.filter(e => e[0] === 'create').length, 1, 'Native player shared across local/NAS sources');
+    local.engine.release();
+  }
   const bufferPause = harness({ os: 'ios' }); await bufferPause.engine.load(source, song); bufferPause.emit({ currentTime: 6 });
   bufferPause.emit({ playing: false, isBuffering: true, timeControlStatus: 'paused', currentTime: 6 }); bufferPause.advance(60000);
   assert.equal(bufferPause.events.filter(e => e[0] === 'replace').length, 1); bufferPause.engine.release();

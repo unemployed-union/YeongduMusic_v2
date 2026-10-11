@@ -10,9 +10,9 @@ import { hiddenMatcher } from '@/features/hidden-music/rules';
 import { useColors } from '@/theme/tokens';
 import type { Song } from '@/types/music';
 
-export function PlaylistSheet({ title, onClose, children }: { title: string; onClose: () => void; children: ReactNode }) {
+export function PlaylistSheet({ title, onClose, children, visible = true, onDismiss }: { title: string; onClose: () => void; children: ReactNode; visible?: boolean; onDismiss?: () => void }) {
   const colors = useColors(), insets = useSafeAreaInsets();
-  return <Modal transparent animationType="slide" onRequestClose={onClose}>
+  return <Modal transparent visible={visible} animationType="slide" onRequestClose={onClose} onDismiss={onDismiss}>
     <KeyboardAvoidingView style={styles.overlay} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <Pressable style={StyleSheet.absoluteFill} accessibilityLabel="닫기" onPress={onClose} />
       <View accessibilityViewIsModal style={[styles.sheet, { backgroundColor: colors.surface, paddingBottom: Math.max(insets.bottom, 16), maxHeight: '85%' }]}>
@@ -61,7 +61,7 @@ export function AddToPlaylistDialog({ songs, onClose, allowEnqueue = false }: { 
     if (!eligible[0]) return;
     try { await enqueue(eligible[0]); onClose(); } catch (cause) { setError(cause instanceof Error ? cause.message : '추가하지 못했습니다.'); }
   }
-  return <PlaylistSheet title="플레이리스트에 추가" onClose={onClose}><ScrollEdgeFade fill={false}><ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={[styles.body, styles.scrollBody]}>
+  return <PlaylistSheet title="플레이리스트에 추가" onClose={onClose}><ScrollEdgeFade fill={false} backgroundColor={colors.surface}><ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={[styles.body, styles.scrollBody]}>
     <Text style={{ color: colors.muted }}>{ids.length}곡 · 여러 목록에 저장할 수 있습니다.</Text>
     {allowEnqueue && <Pressable style={styles.option} onPress={() => void addToQueue()} disabled={!eligible.length}><Ionicons name="list" size={22} color={colors.tint} /><Text style={{ color: colors.text }}>다음 재생 대기열에 추가</Text></Pressable>}
     {!available ? <View><Text style={{ color: colors.muted }}>{store.error ?? '플레이리스트를 불러오는 중입니다.'}</Text>{store.error && <Pressable onPress={() => void store.load(privacy.scope)} style={styles.option}><Text style={{ color: colors.tint }}>다시 불러오기</Text></Pressable>}</View> : <>

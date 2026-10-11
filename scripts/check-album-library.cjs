@@ -62,12 +62,16 @@ const repository = () => {
   return { songs: page => client.songs(page), albums: page => client.albums(page), artists: page => client.artists(page) };
 };
 const repoModule = load('src/features/library/repository.ts', {
+    '@/stores/streaming-preferences': { useStreamingPreferences: { getState: () => ({ quality: 'original', load: async () => {} }) } },
   './mock-repository': { mockRepository },
   '@/services/synology/cache': {},
   '@/services/synology/api': load('src/services/synology/api.ts'),
   '@/stores/auth': { useAuthStore: { getState: () => state } },
 });
+const localFixture = { songs: [], ready: true, source: 'nas' };
 const queries = load('src/features/library/queries.ts', {
+  react: { useMemo: factory => factory(), useCallback: callback => callback },
+  '@/stores/local-music': { useLocalMusicStore: selector => selector(localFixture) },
   '@tanstack/react-query': { ...tanstack, useQuery: options => options },
   '../hidden-music/rules': { visibleSongs: library => library },
   '@/stores/hidden-music': { useHiddenMusicStore: selector => selector({ ready: true, profile: { presets: [] } }) },

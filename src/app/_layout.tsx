@@ -1,15 +1,16 @@
 import { useEffect } from 'react';
 import { ActivityIndicator, AppState, Pressable, Text, View, useColorScheme } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { DarkTheme, DefaultTheme, Stack, ThemeProvider, router } from 'expo-router';
+import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { StatusBar } from 'expo-status-bar';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { useAuthStore } from '@/stores/auth';
+import { useLocalMusicStore } from '@/stores/local-music';
 import { useHiddenMusicStore } from '@/stores/hidden-music';
 import { usePlaylistStore } from '@/stores/playlists';
 import { privacyScope } from '@/features/hidden-music/rules';
-import { reconcilePlaybackVisibility, stopPlayback } from '@/services/playback/controller';
+import { checkSleepTimer, reconcilePlaybackVisibility } from '@/services/playback/controller';
 import { useColors } from '@/theme/tokens';
 
 const queryClient = new QueryClient({ defaultOptions: { queries: { staleTime: 30000, retry: 2 } } });
@@ -22,12 +23,14 @@ function Navigation() {
   const loadPrivacy = privacy.load;
   const loadPlaylists = usePlaylistStore((state) => state.load);
   const scope = privacyScope(mode, session);
+  const loadLocalMusic = useLocalMusicStore((state) => state.load);
+  useEffect(() => { void loadLocalMusic(); }, [loadLocalMusic]);
   useEffect(() => { void bootstrap(); }, [bootstrap]);
-  useEffect(() => { if (ready && mode === 'setup') { stopPlayback(); router.replace('/connect'); } }, [ready, mode]);
+  useEffect(() => { if (ready && mode === 'setup') reconcilePlaybackVisibility(); }, [ready, mode]);
   useEffect(() => { if (ready) void loadPrivacy(scope); }, [ready, scope, loadPrivacy]);
   useEffect(() => { if (ready) void loadPlaylists(scope); }, [ready, scope, loadPlaylists]);
   useEffect(() => {
-    const subscription = AppState.addEventListener('change', (state) => { if (state === 'background') useHiddenMusicStore.getState().lock(); });
+    const subscription = AppState.addEventListener('change', (state) => { if (state === 'background') useHiddenMusicStore.getState().lock(); if (state === 'active') checkSleepTimer(); });
     return () => subscription.remove();
   }, []);
   useEffect(() => { if (privacy.ready && privacy.scope === scope) reconcilePlaybackVisibility(); }, [privacy.ready, privacy.scope, privacy.profile.presets, scope]);

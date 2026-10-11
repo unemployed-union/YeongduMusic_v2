@@ -29,6 +29,7 @@ export class ExpoAudioEngine implements AudioEngine {
   private lifecycle = 0;
   private operation = 0;
   private source: AudioSource = null;
+  private localSource = false;
   private wantsPlayback = false;
   private starting = false;
   private position = 0;
@@ -98,6 +99,15 @@ export class ExpoAudioEngine implements AudioEngine {
   }
 
   private scheduleRecovery(): void {
+    if (this.localSource) {
+      this.clearRecoveryTimers();
+      this.wantsPlayback = this.starting = false;
+      this.resume = null;
+      this.failure = '로컬 음악을 재생할 수 없습니다. 파일 접근·오디오 포맷을 확인하고 다시 가져와 주세요.';
+      this.player?.pause();
+      this.publish(false, false);
+      return;
+    }
     if (!this.wantsPlayback || this.source === null || this.retryTimer !== null) return;
     this.clearRecoveryTimers();
     this.stableFrom = null;
@@ -228,6 +238,7 @@ export class ExpoAudioEngine implements AudioEngine {
     const player = await this.setup();
     if (lifecycle !== this.lifecycle || operation !== this.operation) return;
     this.source = source;
+    this.localSource = song.source === 'local';
     this.resetBufferingObservation();
     this.watchStall();
     player.replace(source);

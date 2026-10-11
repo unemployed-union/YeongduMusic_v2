@@ -15,7 +15,7 @@ export function useLyrics(song: Song, source: LyricsSource, duration: number) {
   return useQuery({
     queryKey: ['lyrics', libraryIdentity(mode, session), generation, source, song.id, song.title, song.artist, song.album, trackDuration],
     queryFn: ({ signal }) => loadLyrics({ song, source, mode, session, generation, signal, duration: trackDuration }),
-    enabled: mode === 'mock' || (mode === 'nas' && !!session),
+    enabled: song.source === 'local' || mode === 'mock' || (mode === 'nas' && !!session),
     staleTime: 60 * 60 * 1000,
     gcTime: 60 * 60 * 1000,
     retry: (count, error) => count < 1 && ((error instanceof LyricsRequestError || error instanceof SynologyRequestError) && (error.kind === 'network' || error.kind === 'timeout' || (error.kind === 'http' && (error instanceof LyricsRequestError ? error.status ?? 0 : error.httpStatus ?? 0) >= 500))),

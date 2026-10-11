@@ -17,9 +17,9 @@ export default function HiddenMusicScreen() {
   if (profile.biometricLock && !unlocked) return <View style={[styles.gate, { backgroundColor: colors.background }]}>
     <Ionicons name="finger-print" size={64} color={colors.tint} />
     <Text style={[styles.title, { color: colors.text }]}>숨김 설정이 잠겨 있습니다</Text>
-    <Text style={[styles.note, { color: colors.muted }]}>프리셋과 선택 목록을 보려면 생체 인증으로 열어 주세요. 음악 숨김은 계속 적용됩니다.</Text>
+    <Text style={[styles.note, { color: colors.muted }]}>지문 또는 휴대전화에 설정된 PIN·암호·패턴으로 열어 주세요. 지문이 인식되지 않으면 시스템 인증 창에서 기기 암호를 사용할 수 있습니다. 음악 숨김은 계속 적용됩니다.</Text>
     {error && <Text style={[styles.note, { color: colors.tint }]}>{error}</Text>}
-    <Pressable accessibilityRole="button" disabled={busy} onPress={() => void unlock()} style={[styles.button, { backgroundColor: colors.tint }]}>{busy ? <ActivityIndicator color="white" /> : <Text style={styles.buttonText}>생체 인증으로 열기</Text>}</Pressable>
+    <Pressable accessibilityRole="button" disabled={busy} onPress={() => void unlock()} style={[styles.button, { backgroundColor: colors.tint }]}>{busy ? <ActivityIndicator color="white" /> : <Text style={styles.buttonText}>지문 · 기기 암호로 열기</Text>}</Pressable>
   </View>;
   return <KeyboardAvoidingView behavior="padding" style={[styles.screen, { backgroundColor: colors.background, paddingBottom: insets.bottom }]}><PresetManager /></KeyboardAvoidingView>;
 }

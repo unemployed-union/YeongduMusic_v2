@@ -1,4 +1,4 @@
-import { ScrollEdgeFade } from '@/components/scroll-edge-fade';
+import { LyricsEdgeFade } from './lyrics-edge-fade';
 import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
@@ -56,7 +56,7 @@ function LyricLines({ lines, synced }: { lines: LyricLine[]; synced: boolean }) 
     void seek(time).then(() => setFollowing(true)).catch(() => setError('재생 위치를 변경하지 못했습니다. 다시 눌러 주세요.'));
   }, [buffering, duration]);
   return <View style={styles.lines}>
-    <ScrollEdgeFade tint="dark"><FlatList ref={list} data={lines} extraData={{ active, duration, buffering }} keyExtractor={(line) => line.id}
+    <LyricsEdgeFade><FlatList ref={list} data={lines} extraData={{ active, duration, buffering }} keyExtractor={(line) => line.id}
       showsVerticalScrollIndicator={false} initialNumToRender={10} windowSize={7} contentContainerStyle={styles.listContent}
       onLayout={() => setLayoutReady(true)}
       onScrollBeginDrag={() => { target.current = null; stopRetry(); setFollowing(false); }}
@@ -71,7 +71,7 @@ function LyricLines({ lines, synced }: { lines: LyricLine[]; synced: boolean }) 
         }, 150);
       }}
       renderItem={({ item, index }) => <LyricRow line={item} active={index === active} past={active >= 0 && index < active} synced={synced} seekable={synced && !buffering && duration > 0 && item.time !== null && item.time <= duration} onSeek={seekToLine} />}
-    /></ScrollEdgeFade>
+    /></LyricsEdgeFade>
     {synced && !following && <Pressable accessibilityRole="button" onPress={() => setFollowing(true)} style={styles.follow}><Ionicons name="locate-outline" color="white" size={16} /><Text style={styles.followText}>현재 가사로</Text></Pressable>}
     {!!error && <Text style={styles.error}>{error}</Text>}
   </View>;

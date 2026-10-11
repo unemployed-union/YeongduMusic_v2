@@ -2,6 +2,7 @@ import { mockRepository } from './mock-repository';
 import { cachedPage, cachePage } from '@/services/synology/cache';
 import { AUDIO_STATION_LIBRARY, SessionExpiredError, SynologyClient, SynologyError, SynologyRequestError, throwIfRequestCancelled, type Session } from '@/services/synology/api';
 import { useAuthStore } from '@/stores/auth';
+import { useStreamingPreferences } from '@/stores/streaming-preferences';
 import type { Album, Artist, MusicRepository, Page, PageRequest, Song } from '@/types/music';
 
 // Versioned by scope so older shared-only query data cannot be reused.
@@ -45,6 +46,11 @@ export function musicRepository({ allowCachedFallback = true }: { allowCachedFal
     songs: (page) => cached<Song>(key('songs', page), () => client.songs(page), allowCachedFallback, session, generation, page.signal),
     albums: (page) => cached<Album>(key('albums', page), () => client.albums(page), allowCachedFallback, session, generation, page.signal),
     artists: (page) => cached<Artist>(key('artists', page), () => client.artists(page), allowCachedFallback, session, generation, page.signal),
-    streamSource: async (song) => client.streamSource(song),
+    streamSource: async (song) => {
+      await useStreamingPreferences.getState().load();
+      const current = useAuthStore.getState();
+      if (current.generation !== generation || current.session !== session) throw new Error('재생 요청이 취소되었습니다.');
+      return client.streamSource(song, useStreamingPreferences.getState().quality);
+    },
   };
 }

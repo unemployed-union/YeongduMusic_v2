@@ -45,7 +45,10 @@ const privacyModule = load('src/stores/hidden-music.ts', {
 });
 const privacy = privacyModule.useHiddenMusicStore;
 const auth = { mode: 'mock', session: null };
+const localFixture = { songs: [], ready: true, source: 'nas' };
 const queries = load('src/features/library/queries.ts', {
+  react: { useMemo: factory => factory(), useCallback: callback => callback },
+  '@/stores/local-music': { useLocalMusicStore: selector => selector(localFixture) },
   '@tanstack/react-query': { useQuery: options => options },
   './album-library': albumHelpers, './load-song-library': metadata, './search-songs': searchHelpers,
   './repository': { libraryIdentity: () => 'demo-query', musicRepository: () => ({ songs: async page => ({ items: songs.slice(page.offset, page.offset + page.limit), total: songs.length }) }) },
@@ -227,18 +230,19 @@ async function main() {
   // Native authentication options and failure paths, never actual biometrics.
   let options;
   let authResult = { success: true };
-  let hardware = true;
+  let enrolledLevel = 3;
   const biometrics = load('src/services/hidden-music/biometrics.ts', {
-    'expo-local-authentication': { hasHardwareAsync: async () => hardware, isEnrolledAsync: async () => true, authenticateAsync: async value => { options = value; return authResult; } },
+    'react-native': { Platform: { OS: 'android', Version: 37 } },
+    'expo-local-authentication': { SecurityLevel: { NONE: 0 }, getEnrolledLevelAsync: async () => enrolledLevel, authenticateAsync: async value => { options = value; return authResult; } },
   });
   await biometrics.authenticateHiddenSettings();
-  assert.equal(options.disableDeviceFallback, true);
+  assert.equal(options.disableDeviceFallback, false);
   assert.equal(options.biometricsSecurityLevel, 'strong');
   authResult = { success: false, error: 'user_cancel' };
   await assert.rejects(biometrics.authenticateHiddenSettings(), /완료하지/);
   authResult = { success: false, error: 'lockout' };
   await assert.rejects(biometrics.authenticateHiddenSettings(), /잠겼/);
-  hardware = false;
+  enrolledLevel = 0;
   await assert.rejects(biometrics.authenticateHiddenSettings(), /등록/);
 
   // Releasing an engine during its asynchronous audio setup cannot start playback later.

@@ -53,6 +53,7 @@ function harness(initial = null) {
   h.auth = load('src/stores/auth.ts', { 'expo-secure-store': secure, '@/services/synology/api': h.api }).useAuthStore;
   h.connect = account => h.auth.getState().connect('https://example.invalid', account, 'fixture-password');
   h.repository = load('src/features/library/repository.ts', {
+    '@/stores/streaming-preferences': { useStreamingPreferences: { getState: () => ({ quality: 'original', load: async () => {} }) } },
     './mock-repository': { mockRepository: {} }, '@/services/synology/api': h.api,
     '@/stores/auth': { useAuthStore: h.auth },
     '@/services/synology/cache': { cachePage: async () => {}, cachedPage: async () => null },

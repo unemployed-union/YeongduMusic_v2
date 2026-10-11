@@ -2,7 +2,7 @@ import { ExpoAudioEngine } from './audio-engine';
 import { SessionExpiredError, SynologyClient, SynologyError } from '@/services/synology/api';
 import { musicRepository } from '@/features/library/repository';
 import { useAuthStore } from '@/stores/auth';
-import { usePlaybackStore } from '@/stores/playback';
+import { usePlaybackStore, type SleepTimer } from '@/stores/playback';
 import { usePlayerBackgroundStore } from '@/stores/player-background';
 import { useHiddenMusicStore } from '@/stores/hidden-music';
 import { hiddenMatcher, privacyScope } from '@/features/hidden-music/rules';
@@ -10,12 +10,56 @@ import type { Song } from '@/types/music';
 
 let engine: ExpoAudioEngine | null = null;
 let generation = 0;
+let loadedSongId: string | null = null;
 let finishing = false;
 let checkingSession = false;
 let checkedGeneration = -1;
+let sleepTimeout: ReturnType<typeof setTimeout> | null = null;
+
+export function cancelSleepTimer(): void {
+  usePlaybackStore.getState().setSleepTimer(null);
+}
+export function startSleepTimer(minutes: number): void {
+  if (!Number.isInteger(minutes) || minutes < 1 || minutes > 1440) throw new Error('1~1440분 사이의 시간을 입력해 주세요.');
+  const state = usePlaybackStore.getState();
+  if (!state.queue[state.index]) throw new Error('먼저 재생할 곡을 선택해 주세요.');
+  state.setSleepTimer({ mode: 'time', minutes, endsAt: Date.now() + minutes * 60_000 });
+}
+export function stopAfterCurrentTrack(): void {
+  const state = usePlaybackStore.getState();
+  const song = state.queue[state.index];
+  if (!song) throw new Error('먼저 재생할 곡을 선택해 주세요.');
+  state.setSleepTimer({ mode: 'track', songId: song.id });
+}
+/** Check the deadline after delayed JS timers, native status events and foreground return. */
+export function checkSleepTimer(fromEnd = false): boolean {
+  const state = usePlaybackStore.getState();
+  const timer = state.sleepTimer;
+  if (!timer || !(timer.mode === 'time' ? Date.now() >= timer.endsAt : fromEnd && state.queue[state.index]?.id === timer.songId)) return false;
+  // Invalidate pending source loads and engine setup/recovery; retain queue and position.
+  generation++;
+  state.setSleepTimer(null);
+  engine?.pause();
+  state.setStatus({ playing: false, buffering: false });
+  return true;
+}
+function scheduleSleepTimer(timer: Extract<SleepTimer, { mode: 'time' }>): void {
+  sleepTimeout = setTimeout(() => {
+    if (usePlaybackStore.getState().sleepTimer !== timer) return;
+    sleepTimeout = null;
+    if (!checkSleepTimer()) scheduleSleepTimer(timer);
+  }, Math.max(0, timer.endsAt - Date.now()));
+}
+usePlaybackStore.subscribe((state, previousState) => {
+  if (state.sleepTimer === previousState.sleepTimer) return;
+  if (sleepTimeout !== null) clearTimeout(sleepTimeout);
+  sleepTimeout = null;
+  if (state.sleepTimer?.mode === 'time') scheduleSleepTimer(state.sleepTimer);
+});
 
 async function checkPlaybackSession(): Promise<void> {
   const { mode, session, generation: authGeneration, expire } = useAuthStore.getState();
+  if (usePlaybackStore.getState().queue[usePlaybackStore.getState().index]?.source === 'local') return;
   if (checkingSession || checkedGeneration === generation || mode !== 'nas' || !session) return;
   checkingSession = true;
   checkedGeneration = generation;
@@ -29,6 +73,12 @@ function activeEngine(): ExpoAudioEngine {
     engine = new ExpoAudioEngine();
     engine.subscribe((status) => {
       usePlaybackStore.getState().setStatus({ playing: status.playing, buffering: status.buffering, position: status.position, duration: status.duration, error: status.error });
+      const current = usePlaybackStore.getState().queue[usePlaybackStore.getState().index];
+      if (current?.source === 'local' && loadedSongId === current.id && status.duration > 0 && Math.abs(current.duration - status.duration) > 0.5) {
+        usePlaybackStore.setState((state) => ({ queue: state.queue.map((song, index) => index === state.index ? { ...song, duration: status.duration } : song) }));
+        void import('@/stores/local-music').then(({ useLocalMusicStore }) => useLocalMusicStore.getState().recordDuration(current.id, status.duration)).catch(() => {});
+      }
+      if (checkSleepTimer()) return;
       if (status.error) void checkPlaybackSession();
       if (status.ended && !finishing) {
         finishing = true;
@@ -49,12 +99,19 @@ async function loadIndex(index: number): Promise<void> {
   const state = usePlaybackStore.getState();
   const song = state.queue[index];
   if (!song || hiddenMatcher(useHiddenMusicStore.getState().profile.presets)(song)) { reconcilePlaybackVisibility(); return; }
+  if (state.sleepTimer?.mode === 'track') cancelSleepTimer();
   const currentGeneration = ++generation;
   state.setQueue(state.queue, index);
   usePlayerBackgroundStore.getState().selectArtwork(song);
   try {
-    const source = await musicRepository().streamSource(song);
+    loadedSongId = null;
+    engine?.pause();
+    state.setStatus({ buffering: true, playing: false });
+    const source = song.source === 'local'
+      ? await (await import('@/services/local-music/storage')).localSource(song)
+      : await musicRepository().streamSource(song);
     if (currentGeneration !== generation) return;
+    loadedSongId = song.id;
     await activeEngine().load(source, song);
   } catch (error) {
     if (currentGeneration === generation) state.setStatus({ buffering: false, playing: false, error: error instanceof Error ? error.message : '재생을 시작할 수 없습니다.' });
@@ -65,8 +122,9 @@ export async function playQueue(queue: Song[], index = 0): Promise<void> {
   if (!queue.length || !queue[index]) return;
   const privacy = useHiddenMusicStore.getState();
   const auth = useAuthStore.getState();
-  if (!privacy.ready || privacy.scope !== privacyScope(auth.mode, auth.session)) return;
-  const hidden = hiddenMatcher(privacy.profile.presets);
+  const nasReady = privacy.ready && privacy.scope === privacyScope(auth.mode, auth.session);
+  const match = hiddenMatcher(privacy.profile.presets);
+  const hidden = (song: Song) => song.source !== 'local' && (!nasReady || match(song));
   if (hidden(queue[index])) return;
   const visible = queue.filter((song) => !hidden(song));
   const selected = queue.slice(0, index).filter((song) => !hidden(song)).length;
@@ -76,8 +134,7 @@ export async function playQueue(queue: Song[], index = 0): Promise<void> {
 export async function enqueue(song: Song): Promise<void> {
   const privacy = useHiddenMusicStore.getState();
   const auth = useAuthStore.getState();
-  if (privacy.scope !== privacyScope(auth.mode, auth.session)) return;
-  if (!useHiddenMusicStore.getState().ready || hiddenMatcher(useHiddenMusicStore.getState().profile.presets)(song)) return;
+  if (song.source !== 'local' && (privacy.scope !== privacyScope(auth.mode, auth.session) || !privacy.ready || hiddenMatcher(privacy.profile.presets)(song))) return;
   const state = usePlaybackStore.getState();
   if (state.index < 0) { await playQueue([song]); return; }
   state.enqueue(song);
@@ -86,6 +143,7 @@ export function togglePlayback(): void {
   reconcilePlaybackVisibility();
   const state = usePlaybackStore.getState();
   if (state.index < 0) return;
+  if (state.queue[state.index]?.id !== loadedSongId || (state.queue[state.index]?.source === 'local' && state.error)) { void loadIndex(state.index); return; }
   if (state.playing) activeEngine().pause(); else activeEngine().play();
 }
 export async function seek(seconds: number): Promise<void> {
@@ -93,6 +151,7 @@ export async function seek(seconds: number): Promise<void> {
   usePlaybackStore.getState().setStatus({ position: seconds });
 }
 export async function next(fromEnd = false): Promise<void> {
+  if (checkSleepTimer(fromEnd)) return;
   reconcilePlaybackVisibility();
   const state = usePlaybackStore.getState();
   if (state.index < 0) return;
@@ -117,6 +176,7 @@ export async function previous(restartCurrent = true): Promise<void> {
 }
 export function stopPlayback(): void {
   generation++;
+  loadedSongId = null;
   engine?.pause();
   engine?.release();
   engine = null;
@@ -130,9 +190,14 @@ export function reconcilePlaybackVisibility(): void {
   const auth = useAuthStore.getState();
   const state = usePlaybackStore.getState();
   if (!state.queue.length) return;
-  if (!privacy.ready || privacy.scope !== privacyScope(auth.mode, auth.session)) { stopPlayback(); return; }
-  const hidden = hiddenMatcher(privacy.profile.presets);
   const current = state.queue[state.index];
+  if (!privacy.ready || privacy.scope !== privacyScope(auth.mode, auth.session)) {
+    if (current?.source !== 'local') { stopPlayback(); return; }
+    const queue = state.queue.filter((song) => song.source === 'local');
+    usePlaybackStore.setState({ queue, index: state.queue.slice(0, state.index).filter((song) => song.source === 'local').length });
+    return;
+  }
+  const hidden = hiddenMatcher(privacy.profile.presets);
   if (current && hidden(current)) { stopPlayback(); return; }
   const queue = state.queue.filter((song) => !hidden(song));
   if (queue.length !== state.queue.length) usePlaybackStore.setState({ queue, index: current ? state.queue.slice(0, state.index).filter((song) => !hidden(song)).length : -1 });

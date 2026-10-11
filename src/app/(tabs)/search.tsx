@@ -34,7 +34,7 @@ export default function SearchScreen() {
           {query.isRefetchError && <Pressable accessibilityRole="button" onPress={refresh} style={styles.notice}><Text style={{ color: colors.text }}>{query.error.message}</Text><Text style={{ color: colors.tint }}>다시 시도</Text></Pressable>}
         </View>}
         ListEmptyComponent={<Text style={[styles.empty, { color: colors.muted }]}>“{term.trim()}”에 대한 검색 결과가 없습니다.</Text>}
-        renderItem={({ item, index }) => <SongRow song={item} onPress={() => void playAndOpenPlayer(songs, index)} />} /></ScrollEdgeFade>
+        renderItem={({ item, index }) => <SongRow song={item} onPress={() => { Keyboard.dismiss(); void playAndOpenPlayer(songs, index); }} />} /></ScrollEdgeFade>
     </AsyncState>}
   </View>;
 }

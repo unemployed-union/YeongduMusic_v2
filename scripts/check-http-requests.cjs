@@ -71,6 +71,7 @@ function repository(h) {
   const auth = { mode: 'nas', session: h.session, generation: 1, expire: async () => { h.expired++; } };
   h.expired = 0; h.cached = 0; h.fallback = 0;
   return load('src/features/library/repository.ts', {
+    '@/stores/streaming-preferences': { useStreamingPreferences: { getState: () => ({ quality: 'original', load: async () => {} }) } },
     './mock-repository': { mockRepository: {} }, '@/services/synology/api': h.api,
     '@/stores/auth': { useAuthStore: { getState: () => auth } },
     '@/services/synology/cache': {

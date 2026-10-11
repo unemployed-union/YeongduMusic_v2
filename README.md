@@ -235,7 +235,7 @@ Android 13 이상은 표준 MediaSession 곡 이동 명령과 버튼 슬롯을 �
 
 프리셋과 잠금 상태는 별도 music-privacy.db에 NAS 주소·입력한 로그인 계정별로 저장하며 재로그인과 일반 보관함 캐시 삭제 후에도 유지됩니다. 주소를 다르게 입력하면 별도 설정으로 취급합니다. 로그인 계정명은 기존 SecureStore 세션에 보관하며 비밀번호를 저장하지 않습니다. 이전 버전의 세션에는 계정명이 없어 숨김 설정에서 재로그인을 안내합니다. 데모는 별도 프리셋을 사용합니다. 파일·음악 URL·NAS 권한은 변경하지 않습니다.
 
-생체 인증 잠금을 켜면 프리셋 화면을 열 때 등록된 지문/Touch ID/Face ID로 인증합니다. Android는 strong 생체 인증을 요청하고 PIN 대체를 허용하지 않습니다. 인증 실패·취소·미등록 기기는 성공으로 처리하지 않으며, 잠금 설정은 인증이 성공한 뒤 저장됩니다. 설정 화면을 떠나거나 앱이 백그라운드로 가면 다시 잠깁니다. 잠겨 있어도 활성 숨김 규칙은 유지됩니다. 프로필 읽기·파싱 실패 시 숨김 목록을 빈 값으로 바꿔 노출하지 않고 재시도를 제공합니다. 쓰기 실패 시 기존 프리셋을 유지합니다. 이것은 앱 내 숨김 설정의 접근 잠금이며 NAS 파일이나 SQLite 메타데이터를 암호화하는 기능은 아닙니다.
+설정 잠금을 켜면 프리셋 화면을 열 때 등록된 지문/Touch ID/Face ID 또는 휴대전화의 PIN·암호·패턴으로 인증합니다. Android 11 이상은 strong 생체 인증과 시스템 기기 암호 대체를 허용합니다. Android 10 이하는 strong+기기 암호 조합이 지원되지 않아 호환되는 weak+기기 암호 조합을 사용합니다. 지문이 없어도 화면 잠금 암호가 등록되어 있으면 사용할 수 있습니다. 인증 실패·취소 및 화면 잠금 미등록 기기는 성공으로 처리하지 않으며, 잠금 설정은 인증이 성공한 뒤 저장됩니다. 설정 화면을 떠나거나 앱이 백그라운드로 가면 다시 잠깁니다. 잠겨 있어도 활성 숨김 규칙은 유지됩니다. 프로필 읽기·파싱 실패 시 숨김 목록을 빈 값으로 바꿔 노출하지 않고 재시도를 제공합니다. 쓰기 실패 시 기존 프리셋을 유지합니다. 이것은 앱 내 숨김 설정의 접근 잠금이며 NAS 파일이나 SQLite 메타데이터를 암호화하는 기능은 아닙니다.
 
 expo-local-authentication ~57.0.3을 추가했습니다. **기존 앱을 다시 빌드하고 설치해야 생체 인증 모듈과 iOS 사용 설명이 반영됩니다.** pnpm exec expo run:android 또는 기존 EAS 프로필로 새 빌드를 설치하고, iOS는 macOS에서 빌드합니다. Android 네이티브 프로젝트를 삭제하거나 clean prebuild하지 않았습니다. Face ID는 Expo Go에서 검증할 수 없으므로 개발 빌드를 사용합니다. [Expo SDK 57 생체 인증 문서](https://docs.expo.dev/versions/v57.0.0/sdk/local-authentication/)
 
@@ -309,10 +309,132 @@ node scripts/check-lyrics.cjs
 Expo 라우트 타입은 오프라인 개발 서버로 다시 생성했습니다. 새 타입에 맞춰 로그인·세션 진입·플레이어 닫기의 보관함 목적지를 `/(tabs)/(library)`로 명시했습니다.
 
 
-## 스크롤 경계 블러와 페이드
+## 스크롤 경계 페이드
 
-보관함·검색·설정·로그인·앨범/아티스트/플레이리스트 상세·숨김 폴더/곡 선택·플레이리스트 다이얼로그·재생 대기열·가사의 위아래 스크롤 경계에 공통 ScrollEdgeFade를 적용합니다. 28pt 영역에서 실제 콘텐츠 블러를 투명도 그라데이션으로 혼합하고 경계에서는 완전히 사라지게 합니다. 스크롤 컴포넌트의 ref·이벤트·가상화·새로고침·키보드 처리와 버튼 동작은 유지합니다. 목록의 첫 항목과 마지막 항목은 기존 또는 추가된 콘텐츠 여백 안에서 읽을 수 있습니다.
+가사는 별도의 LyricsEdgeFade로 글자 자체를 위아래 28pt에서 투명하게 지웁니다. 앨범아트 배경색을 덮지 않으며, 네이티브에서는 처음부터 고정된 알파 마스크를 사용하고 Android의 hardware 모드를 유지합니다. 웹에서는 CSS 마스크를 사용합니다. 가사 목록의 ref·자동 스크롤·가사 선택 탐색은 유지합니다. 실제 삼성/iOS 기기에서 투명 경계와 스크롤 성능 확인이 필요합니다.
 
-Expo SDK 57 권장 MaskedView 0.3.2를 사용하며 Android에서는 BlurTargetView 한 개를 두 경계의 BlurView가 공유합니다. Android는 기존 메뉴바와 같은 dimezisBlurView 방식의 블러를 사용합니다. Android 12 이전은 GPU 경로 대신 비용이 더 큰 구현을 사용하므로 해당 기기의 스크롤 성능도 확인합니다. 블러 장식은 터치와 접근성 탐색을 가로채지 않습니다. 웹은 CSS 마스크와 기존 Expo BlurView를 사용합니다.
+보관함·검색·설정·로그인·앨범/아티스트/플레이리스트 상세·숨김 폴더/곡 선택·플레이리스트 다이얼로그·재생 대기열의 위아래 스크롤 경계에 공통 ScrollEdgeFade를 적용합니다. 실제 가우시안 블러 대신 배경색과 이어지는 28pt 그라데이션을 사용합니다. 목록 전체를 캡처하거나 마스크로 그리지 않고 두 경계의 투명도만 200ms 동안 UI 스레드에서 애니메이션합니다. 스크롤 컴포넌트의 ref·이벤트·가상화·새로고침·키보드 처리와 버튼 동작은 유지합니다.
 
-새 네이티브 의존성이 추가되어 기존 개발/릴리스 앱은 다시 빌드해야 합니다. JavaScript 재로드만으로 기존 바이너리에 MaskedView를 추가할 수 없습니다. iOS/Android에서 긴 목록·빠른 스크롤·보관함 좌우 넘김·아래로 당겨 새로고침·키보드·가사 자동 스크롤·다이얼로그 높이와 블러 렌더링을 확인해야 합니다.
+그라데이션 레이어 두 개를 최초 렌더에서 미리 생성하여 첫 스크롤 때 블러 생성·마스크 렌더링 방식 전환이 발생하지 않습니다. 스크롤 전·짧은 목록·빈 목록·새로고침 당김에서는 투명하며, 빠르게 방향을 바꿔도 현재 투명도에서 자연스럽게 이어집니다. 라이트/다크 배경색과 시트의 surface 색을 사용하고 재생 대기열은 어두운 페이드를 사용합니다. 경계 장식은 터치와 접근성 탐색을 가로채지 않습니다. 네이티브와 웹이 같은 경량 컴포넌트를 공유합니다.
+
+이번 경량화는 기존 expo-linear-gradient와 Reanimated를 사용하며 새 네이티브 의존성이나 빌드 설정을 추가하지 않습니다. node scripts/check-scroll-edges.cjs와 node scripts/check-scroll-edge-transition.cjs로 경계 조건·콜백/ref 유지·레이어 사전 생성·투명도 전환을 회귀 검사합니다. 실기기에서 첫 스크롤과 긴 목록의 프레임 시간은 아직 측정하지 않았습니다. iOS/Android에서 빠른 스크롤·보관함 좌우 넘김·아래로 당겨 새로고침·키보드·가사 자동 스크롤·다이얼로그 높이와 배경색 연결을 확인해야 합니다.
+
+## 수면 타이머
+
+재생 화면의 제목 옆 메뉴 → **수면 타이머**에서 5·15·30·60·90·120분 또는 1~1440분을 직접 지정할 수 있습니다. 설정한 시각까지의 실제 경과 시간을 사용하므로 일시정지 중에도 시간이 지나갑니다. 종료하면 음악만 일시정지하며 대기열·재생 위치는 유지합니다. 메뉴에서 남은 시간 확인·변경·해제가 가능합니다. 앱을 재시작하거나 로그아웃하면 타이머는 초기화합니다.
+
+**현재 곡 끝나면 종료**는 현재 곡의 정상 종료 시 다음 곡·셔플·한 곡/전체 반복보다 우선합니다. 곡을 직접 변경하면 이 설정은 해제됩니다. 시간 타이머는 직접 곡을 변경해도 계속 유지합니다. 타이머 만료 시 대기 중인 스트리밍 로드와 버퍼링 복구도 중단합니다.
+
+타이머는 화면과 분리된 전역 재생 컨트롤러에서 관리하며 예약 콜백·네이티브 재생 상태 이벤트·앱 전경 복귀에서 절대 시각을 확인합니다. 네이티브 알람을 추가하지 않았으므로 OS가 JavaScript 실행을 중단하면 시간 지정 종료가 지연될 수 있습니다. 실기기에서 Android/iOS 잠금 화면·백그라운드·절전 모드의 장시간 타이머, NAS 버퍼링 중 만료, 한 곡 반복 중 곡 종료를 검증해야 합니다. `node scripts/check-sleep-timer.cjs`는 Mock 오디오 엔진과 시계를 사용하는 회귀 검사이며 실제 NAS나 기기 검증을 대체하지 않습니다.
+
+
+## 스트리밍 음질
+
+설정 → 스트리밍 음질에서 **원본 · 무손실 유지**(기본값) 또는 **MP3 변환**을 선택합니다. iOS/Android에서는 인증 정보와 별개의 SecureStore 키에 옵션 이름만 저장하며, 웹에서는 localStorage를 사용합니다. 설정은 다음 곡을 불러올 때 적용되어 현재 재생과 대기열을 변경하지 않습니다. 데모 음원은 변환하지 않습니다.
+
+- 원본: 기존 Stream.stream 요청을 유지합니다. 원본이 FLAC·ALAC이면 무손실 파일을 그대로 전달하고, MP3를 무손실로 변환하지 않습니다. 실제 출력 품질은 기기·오디오 경로에도 영향을 받습니다.
+- MP3: NAS에서 변환합니다. 특정 비트레이트·샘플레이트를 보장하지 않고 NAS 기본 변환 값을 사용합니다. NAS 모델/패키지에 따라 지원이 다르며, 변환이 실패하면 원본을 선택하세요. 변환 스트림의 탐색과 잠금 화면 동작은 실기기 검증이 필요합니다.
+- 요청 근거: [Synology 공식 Audio Station 6.5.7-3384 배포본](https://archive.synology.com/download/Package/AudioStation/6.5.7-3384)의 app/audio-core.js에서 Stream v2의 method=transcode, format=mp3, position=0, /0.mp3 경로를 확인했습니다. 실제 경로와 호환 버전은 기존 API discovery를 사용합니다. 사용자가 실행한 실제 NAS 진단에서 MP3 원본과 MP3 변환 모두 HTTP 206, Content-Type audio/mpeg, Content-Range 응답을 확인했습니다. 출력 비트레이트는 아직 검증하지 않아 128/192/320 kbps 프리셋을 추가하지 않았습니다.
+- Mock 회귀 테스트는 요청 구성·설정 저장/복원·원본 기본값·데모 및 세션 보호를 검사합니다. 실제 NAS 변환 성공을 대신하지 않습니다.
+- 실제 NAS 결과(사용자 제공): 샘플의 losslessExtension=False, 원본 전체 길이 5,260,441 bytes, 변환 전체 길이 3,280,000 bytes. 부분 응답으로 일부 데이터만 읽었으며 전체 파일 다운로드·디코딩은 검사하지 않았습니다. 이 결과는 MP3 입력의 변환 경로와 Range 응답 확인이며, FLAC·ALAC 입력의 변환, 출력 비트레이트, 실제 재생·탐색·백그라운드 동작을 검증한 것으로 취급하지 않습니다.
+
+NAS 검증(주소·계정·토큰·곡명 없이 응답 상태만 출력, 최대 1 KiB 읽기):
+
+~~~powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\verify-nas.ps1 -BaseUrl '<본인 NAS HTTPS 주소>' -QualityOnly
+~~~
+
+원본/변환의 Content-Type 및 HTTP 상태를 비교하고, 앱에서 FLAC 원본과 MP3 변환 각각의 재생·탐색·곡 종료·이전/다음·백그라운드 재생을 확인하세요.
+
+
+## 휴대전화 로컬 음악 (1차 구현)
+
+### 사용 방법과 저장
+
+보관함의 **음악 소스 메뉴**(전체 음악 / NAS 음악 / 이 기기 음악 표시)를 눌러 소스를 선택하거나 음악을 가져옵니다. 시스템 파일 선택기로 MP3·M4A·FLAC·WAV·AAC·AIFF·OGG·OPUS 파일을 여러 개 선택할 수 있습니다. 이 목록은 가져오기 대상 확장자이며 모든 코덱 조합의 실제 재생을 보장하지 않습니다. 검색도 보관함에서 선택한 소스를 따릅니다. 연결하지 않은 상태에서도 보관함과 로컬 음악 재생을 사용할 수 있고, 음악 소스 메뉴의 NAS 연결 항목 또는 기존 연결 화면으로 로그인할 수 있습니다.
+
+선택기는 copyToCacheDirectory=true로 읽기 가능한 임시 복사본을 만듭니다. 이후 앱의 documentDirectory/local-music/에 영구 복사하고, 기존 music-library.db의 별도 local_tracks 테이블에 메타데이터를 저장합니다. NAS pages 캐시와 분리되어 캐시 삭제·계정 변경으로 로컬 음악이 지워지지 않습니다. 원본에는 쓰기·삭제·업로드를 수행하지 않으며, 임시 선택기 복사본만 정리합니다. 앱 삭제/데이터 초기화 시 앱의 복사본과 목록은 삭제되므로 원본에서 다시 가져와야 합니다. 파일 크기만큼 영구 저장 공간과 가져오는 동안 추가 임시 공간이 필요합니다.
+
+로컬 ID는 local:<파일 MD5>:<크기>이고, 내용과 크기가 같으면 이름이 달라도 중복으로 처리합니다. 이름이 같아도 내용이 다르면 별도 곡입니다. MD5는 중복 확인용이며 보안 해시 용도가 아닙니다. 앱 복사본이 사라진 곡을 다시 선택하면 같은 ID로 복원합니다. 복사 확인 후 SQLite에 등록하고 실패한 새 복사본을 정리합니다. 절대 URI 대신 상대 파일명을 저장하여 iOS 앱 컨테이너 경로가 달라져도 현재 documentDirectory로 재구성합니다. NAS ID는 기존 값을 유지하며, local: 예약 접두사와 겹치는 NAS ID만 내부에서 nas:로 구분하고 nasId 원본을 API에 전달합니다. API 경로·버전·파라미터 형식은 유지합니다.
+
+### 메타데이터와 재생
+
+파일명(확장자 제외)을 제목으로, 원본 파일명·크기·MIME 정보를 저장합니다. 이번 범위에서는 ID3/Vorbis 태그와 내장 앨범아트를 추출하지 않습니다. 아티스트는 알 수 없는 아티스트, 앨범은 이 기기 음악으로 표시하고 기존 Artwork 기본 그래픽을 재사용합니다. Android 전체 조회에서는 MediaStore 길이(밀리초)를 초로 변환해 저장합니다. 파일/폴더 선택에서 미확인 길이는 0이며, 기존 ExpoAudioEngine의 실제 길이 상태가 도착하면 SQLite에 저장합니다. 메타데이터 수집 때문에 별도 오디오 플레이어를 만들거나 음악을 자동 재생하지 않습니다.
+
+같은 Playback Controller·엔진·대기열·미니/전체 플레이어로 NAS↔로컬 전환, 재생/일시정지·이전/다음·탐색·셔플·반복·수면 타이머·백그라운드 설정을 사용합니다. 로컬 소스는 파일 존재·크기 검사 후 file URI를 반환하며 Synology Repository/스트리밍 인증을 호출하지 않습니다. 로컬 디코딩 오류는 NAS 네트워크 재시도와 구분합니다. 파일 접근/누락 오류는 플레이어에 표시하고 다시 가져오기 안내를 제공합니다.
+
+NAS 인증 만료/숨김 프로필 변경 중 현재 로컬 곡은 유지하고 접근할 수 없는 NAS 대기열 항목을 제거합니다. NAS 계정별 숨김 규칙은 로컬 곡에 적용하지 않습니다. 사용자가 설정에서 명시적으로 연결을 해제하며 재생 중단을 확인하는 기존 동작은 유지합니다. 전체 목록에서 NAS 조회가 실패하면 로컬 목록과 NAS 오류/재시도 안내를 함께 표시하며, 부분 목록으로 NAS Query 캐시를 덮어쓰지 않습니다. 로컬 음악의 가사는 자동/온라인에서 LRCLIB를 사용하고 NAS 가사 요청을 하지 않습니다. 파일명 기반 메타데이터만으로는 온라인 가사가 맞지 않을 수 있습니다.
+
+### 플랫폼 범위·빌드
+
+- **Android:** 음악 소스 메뉴의 기기의 음악 전체 가져오기는 오디오 권한을 요청한 뒤 Android MediaStore에 등록된 음악을 조회합니다. 파일·폴더 선택도 제공합니다. 다른 앱 전용 저장소와 색인되지 않은 파일까지 조회하는 전체 파일 접근 권한은 요청하지 않습니다. Media3 공식 자료에서 MP3·M4A·FLAC 컨테이너 지원을 확인했습니다. 실제 디코딩은 OS/기기의 코덱과 파일의 인코딩에 달려 있습니다. FLAC은 기본 추출기의 경우 플랫폼 디코더에 의존하며 API 27 이상 요구가 문서화되어 있으므로 구형 기기에서는 특히 확인해야 합니다. [Media3 지원 포맷](https://developer.android.com/media/media3/exoplayer/supported-formats), [Android 포맷](https://developer.android.com/media/platform/supported-formats).
+- **iOS:** Files/문서 제공자가 선택한 파일을 앱 저장소로 복사합니다. Apple의 공식 자료에 AAC·MP3 재생과 FLAC 포맷 정의가 있지만 이 앱의 AVPlayer에서 각 파일의 디코딩·탐색은 실기기로 검증해야 합니다. OGG/OPUS 및 특수 M4A 코덱은 Android와 지원 범위가 같다고 가정하지 않습니다. Apple Music 구독·DRM 음악·음악 앱 보관함 접근은 구현하지 않습니다. [Apple 오디오](https://developer.apple.com/library/archive/documentation/AudioVideo/Conceptual/MultimediaPG/UsingAudio/UsingAudio.html), [FLAC 정의](https://developer.apple.com/documentation/coreaudiotypes/kaudioformatflac).
+- **웹:** 기존 NAS/데모 UI는 유지하며 영구 로컬 가져오기는 지원하지 않고 안내 오류를 표시합니다.
+- SDK 57 호환 **expo-document-picker ~57.0.3 / expo-file-system ~57.0.7**을 Expo install과 pnpm으로 설치했습니다. 비동기 파일 해시·복사를 위해 SDK가 제공하는 expo-file-system/legacy API를 사용합니다. 기존 오디오 패치는 유지합니다. 전체 음악 조회에 필요한 새 오디오 권한 설정은 아래 절에 정리합니다. 파일 선택 모듈 자동 링크가 필요한 **새 개발/Release 빌드**가 필요하며 Metro 재시작만으로 기존 APK에 네이티브 모듈이 추가되지 않습니다. iCloud 앱 전용 저장소 기능과 entitlement는 추가하지 않았습니다. Expo Go의 백그라운드 제한은 기존과 같습니다. [파일 선택](https://docs.expo.dev/versions/v57.0.0/sdk/document-picker/), [파일 저장](https://docs.expo.dev/versions/v57.0.0/sdk/filesystem-legacy/), [오디오](https://docs.expo.dev/versions/v57.0.0/sdk/audio/).
+
+### 변경 파일
+
+- package.json, pnpm-lock.yaml: SDK 호환 의존성.
+- src/types/music.ts: NAS/로컬 Song 소스와 로컬 파일 모델.
+- src/services/local-music/storage.ts, src/stores/local-music.ts: 가져오기·영구 저장·복원·중복·길이 저장.
+- src/services/playback/controller.ts, src/services/playback/audio-engine.ts: 소스 분기·세션 독립성·파일 오류.
+- src/services/synology/api.ts: NAS 소스 표시·예약 ID 충돌 처리·로컬 요청 방지.
+- src/features/library/queries.ts, use-refresh-library.ts, local-music-controls.tsx: 공통 목록/검색에 소스 선택·로컬 결합·새로고침.
+- src/features/hidden-music/rules.ts: 로컬 곡을 NAS 숨김 규칙에서 제외.
+- src/app/index.tsx, _layout.tsx, connect.tsx, (tabs)/(library)/index.tsx: 로그인 없는 진입·가져오기 UI.
+- src/features/lyrics/load-lyrics.ts, use-lyrics.ts: 로컬 곡에 NAS 인증/가사 요청을 하지 않음.
+- scripts/check-local-music.cjs: 신규 회귀 검사. check-playback-buffer.cjs는 로컬 오류와 엔진 공유 검사 추가. check-album-library.cjs, check-hidden-music.cjs, check-library-performance.cjs는 NAS 전용 테스트에 로컬 상태 모의 추가.
+
+### 검증 결과와 남은 작업
+
+node scripts/check-local-music.cjs는 실제 저장 서비스·Zustand·Controller·Query 코드를 사용하고 선택기·파일시스템·SQLite·네이티브 오디오·NAS만 모의합니다. 여러 파일 가져오기·동일 내용 중복·동일 이름 다른 파일·재시작/컨테이너 이동 복원·원본 보존·빈/잘못된 파일·복사/DB 실패 정리·누락 파일 재가져오기·오프라인/로그인 없는 재생·혼합 대기열·이전/다음/탐색/반복/셔플·NAS 세션 변경 중 로컬 유지·과거 NAS 소스 완료 무시·길이 저장·소스별 검색·NAS 오류 시 로컬 표시를 검사합니다. 오디오 엔진 회귀 검사는 iOS/Android 모의 환경에서 플레이어 공유와 로컬 디코딩 오류 후 불필요한 네트워크 재시도 차단을 확인합니다. 이 검사는 실제 음악 포맷 재생 검증을 대신하지 않습니다.
+
+현재 ADB devices에 연결 기기가 없고 iOS 실행 환경도 없어 새 APK/IPA 설치 및 실제 재생은 수행하지 않았습니다. 실기기에서 확인할 항목:
+
+1. 시스템 선택기의 MP3/M4A/FLAC 복수 선택, 취소·권한 거부·파일 제공자 지연·큰 파일·저장 공간 부족.
+2. 실제 음원별 디코딩·길이·음질·탐색과 손상/DRM/미지원 코덱 오류. Android FLAC/ALAC 기기 차이, iOS OGG/OPUS 지원 차이.
+3. NAS→로컬→NAS, 혼합 대기열·잠금화면 이전/다음/탐색·백그라운드·블루투스/통화 중단.
+4. 재시작 후 목록/길이/재생 URI, 비행기 모드 로컬 재생, NAS 만료 중 현재 로컬 곡 유지, 계정 변경 시 NAS 숨김과 로컬 분리.
+5. 원본 삭제 후 앱 복사본 재생, 앱 복사본 누락 후 오류/재가져오기, 중복 이름/동일 내용 처리.
+
+다음 단계 후보는 태그·내장 커버 추출, 로컬 목록 삭제/저장 공간 관리, 로그인 없는 로컬 플레이리스트 저장입니다. 이번 단계에서는 별도로 구현하지 않았습니다.
+
+로컬 음악 작업 검증 결과: TypeScript 검사, ESLint(src 및 신규 테스트), Git diff 공백 검사, 신규 check-local-music 및 기존 회귀 검사 17개를 통과했습니다. 실제 기기/네이티브 Release 빌드 검증과 구분합니다.
+
+## 기기 전체 / 폴더 가져오기와 보관함 메뉴
+
+- **Android:** 보관함의 음악 소스 메뉴 → 기기의 음악 전체 가져오기. 사용자가 실행할 때만 `requestPermissionsAsync(false, ['audio'])`를 호출하며 사진·동영상 권한을 요청하지 않습니다. SDK 57의 새 Query API를 사용해 audio만 100개씩 조회합니다. MediaStore content URI로 읽고, 파일명 및 제공되는 길이를 수집합니다. 시스템에 등록되지 않은 음악은 폴더 선택을 사용하세요.
+- **iOS:** 음악 앱 전체 조회 대신 파일 앱에서 폴더를 선택합니다. 선택한 폴더의 하위 폴더도 포함하며 파일 여러 개 선택도 유지합니다. iOS Photos 라이브러리를 음악 라이브러리처럼 조회하지 않습니다. DRM/Apple Music 구독 음원은 대상이 아닙니다.
+- **폴더:** iOS·Android의 공식 `Directory.pickDirectoryAsync()` / `Directory.list()`를 사용합니다. Android 시스템이 저장소 루트나 Android/data 등의 선택을 제한할 수 있습니다. Music 등 허용된 폴더를 선택하세요. iCloud/파일 제공자 파일은 공급자가 접근·다운로드를 허용해야 합니다.
+- **저장:** 선택 폴더의 권한을 재시작 후에 의존하지 않습니다. 한 파일씩 임시 앱 파일로 복사해 해시/크기를 확인한 다음 기존 앱 문서 저장소·SQLite에 저장합니다. 재가져오기는 내용 기준 중복을 건너뜁니다. 원본은 삭제하지 않으며 실패한 임시 복사는 정리합니다. 가져오는 동안 진행 건수를 표시하고, 일부 폴더·페이지가 실패해도 이미 저장한 음악은 유지하고 오류를 표시합니다. 대량 복사는 원본 용량만큼 앱 공간과 처리 중 파일 한 개의 임시 공간이 필요합니다. 앱 종료 시 진행 중인 가져오기는 자동 재개되지 않으므로 다시 실행하세요.
+- **UI:** 상단 소스 세 개의 버튼과 가져오기 버튼을 하나의 소스 메뉴로 통합했습니다. 앨범·노래·아티스트 탭과 좌우 스와이프, 기존 플레이어·검색은 유지합니다.
+
+### 빌드와 검증
+
+expo-media-library ~57.0.5를 Expo install로 추가했습니다. app.json의 공식 플러그인에 granularPermissions=['audio'] 및 iOS 사진 설명 false를 설정하고, Android 사진·동영상·선택 사진 권한은 blockedPermissions로 제거합니다. 기존 로컬 AndroidManifest에도 Expo의 공식 권한 생성 함수를 이용해 필요한 권한만 반영하며 다른 네이티브 코드는 재생성하지 않습니다. EAS에는 app.json·package.json·pnpm-lock.yaml과 새 소스/스크립트를 포함해야 합니다. android 폴더가 제외되므로 EAS의 Prebuild가 공식 플러그인을 반영합니다. **새 개발/Release 빌드가 필요합니다.** 기존 APK에 Metro만 재시작하면 새 모듈이 추가되지 않습니다.
+
+새 파일: src/services/local-music/scan.ts, scripts/check-device-music.cjs. 수정: storage.ts, stores/local-music.ts, local-music-controls.tsx, PlaylistSheet의 선택적 visible/onDismiss, app.json, package.json, pnpm-lock.yaml, README.md.
+
+Mock 회귀 검사: `node scripts/check-device-music.cjs`는 205곡의 페이지 처리·오디오 전용 권한·길이 단위·중복·거부 시 미조회·iOS 전체 조회 차단·재귀/순환 폴더·접근 실패·취소·원본 보존·임시 복사 실패 정리·부분 조회 실패 보존·반복 페이지 종료·Store 진행 상태를 검사합니다. 기존 로컬 음악/재생·인증·Query 회귀 검사는 별도로 유지합니다. 실제 MediaStore/파일 제공자/포맷 디코딩 검증과 구분합니다.
+
+실기기 확인: Android 권한 최초 허용/거부 후 재시도, Music·SD카드의 전체 조회와 중복, 폴더 하위 파일, iOS 시트 닫힘 후 파일 선택기 표시·취소·파일 제공자 접근, 대량 가져오기 공간 부족, 재시작 후 재생, 혼합 NAS/로컬 대기열과 잠금화면 제어. 읽는 중 기기 라이브러리가 변경되면 목록이 달라질 수 있으므로 가져오기를 다시 실행하세요.
+
+공식 자료: [SDK 57 MediaLibrary](https://docs.expo.dev/versions/v57.0.0/sdk/media-library/), [SDK 57 FileSystem](https://docs.expo.dev/versions/v57.0.0/sdk/filesystem/).
+
+이번 기기 음악 확장 검증 결과: TypeScript, ESLint(src 및 신규 검사, 경고 0), Expo 설정 해석, Git diff 공백 검사, 회귀 검사 19개(신규 check-device-music 포함) 통과. Android :app:assembleRelease 빌드 성공(39초); 최종 병합 Manifest의 READ_MEDIA_AUDIO 포함 및 사진·동영상·선택 사진 권한 제외를 확인했습니다. 첫 offline 시도는 새 AndroidX 캐시 누락으로 실패했고 Maven 의존성을 받은 재시도에서 성공했습니다. APK: android/app/build/outputs/apk/release/app-release.apk. 기기에 설치/실행하지 않았으며 iOS 빌드와 실제 기기 음악 조회·파일 접근·재생은 아직 미검증입니다.
+
+## 기기 암호 인증과 제목 왼쪽 흐름
+
+숨김 설정의 지문 · 기기 암호 잠금은 휴대전화에 이미 설정한 PIN·암호·패턴을 사용합니다. 앱에 별도 암호를 만들거나 저장하지 않습니다. expo-local-authentication의 getEnrolledLevelAsync로 암호만 등록된 기기도 허용하고, disableDeviceFallback=false와 iOS fallbackLabel을 사용합니다. 지문 실패 시 시스템 인증 창에서 기기 암호를 선택할 수 있으며 화면 잠금 자체가 미등록이면 등록 안내를 표시합니다. Android 10 이하의 인증 조합 제한도 처리합니다. 기존 계정별 잠금 상태·숨김 규칙·취소/늦은 인증 무효화는 유지합니다. [공식 인증 옵션](https://docs.expo.dev/versions/v57.0.0/sdk/local-authentication/).
+
+재생 화면과 미니 플레이어의 긴 제목에 같은 MarqueeText를 사용합니다. 1.6초 후 초당 22pt로 왼쪽으로 반복 흐르며, 오른쪽 복사본이 이어져 반대 방향으로 되돌아가지 않습니다. 짧은 제목·동작 줄이기 설정·백그라운드는 자동 흐름을 중단합니다. 기기 암호와 실제 지문 실패 후 대체 UI, 두 플레이어의 긴 제목 방향/터치/동작 줄이기는 iOS·삼성 실기기에서 확인해야 합니다. 이번 수정은 기존 네이티브 모듈을 사용하며 새 의존성이나 빌드 설정 변경이 없습니다.
+
+Android 조합 근거: [Android 공식 생체/암호 인증 안내](https://developer.android.com/identity/sign-in/biometric-auth). 새 check-device-auth는 Android API 24/28/29/30/37 및 iOS 옵션을 모의해 암호만 등록된 기기·미등록·실패/취소·Store 잠금 해제를 확인합니다. check-marquee는 왼쪽 이동값·연속 복사본·두 플레이어 재사용·짧은 제목/동작 줄이기/백그라운드 중단을 확인합니다.
+
+이번 암호/제목 수정 검증: TypeScript·ESLint·Git diff 공백 검사 및 회귀 검사 21개 통과. 마지막 Android Release APK 빌드 성공(28초), android/app/build/outputs/apk/release/app-release.apk에 최신 인증 호환성과 제목 흐름 포함. 기기 암호 인증·생체 인증 실패 후 대체 및 제목 애니메이션의 실제 삼성/iOS 화면은 미검증입니다. 수정 파일: services/hidden-music/biometrics.ts, stores/hidden-music.ts, app/hidden-music.tsx, app/(tabs)/settings.tsx, features/hidden-music/preset-manager.tsx, components/marquee-text.tsx, components/mini-player.tsx, README.md 및 검사 스크립트 3개(신규 2개).
+
+## 보관함 정렬
+
+음악 소스 선택 옆의 정렬 버튼에서 **기본 / 오름차순 / 내림차순**을 선택합니다. 노래·앨범은 제목, 아티스트는 이름 기준이며 한글과 숫자를 자연스럽게 비교합니다. 각 탭의 선택은 화면이 유지되는 동안 개별 유지됩니다. 기본은 Repository의 원래 순서입니다. NAS·이 기기·전체 목록에 적용하며 이미 재생 중인 대기열과 앨범 안의 트랙 순서는 바꾸지 않습니다. 정렬된 노래를 새로 누르면 표시 순서로 대기열을 구성합니다.
+
+검사: `node scripts/check-library-sort.cjs` — 기본 순서 복원, 오름/내림, 한글·숫자, 동일 제목, 원본 불변, 재렌더 정렬 재사용, 새 목록 반영 및 정렬된 목록의 재생 인덱스를 Mock으로 검증합니다. 실제 기기 레이아웃은 별도 확인이 필요합니다.

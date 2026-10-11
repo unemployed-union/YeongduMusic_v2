@@ -28,7 +28,7 @@ export const useHiddenMusicStore = create<HiddenState>((set, get) => {
     const state = get();
     if (!state.ready || !state.scope) throw new Error('숨김 설정을 먼저 불러와 주세요. NAS 계정은 다시 로그인해야 할 수 있습니다.');
     if (state.busy) throw new Error('진행 중인 작업이 끝난 후 다시 시도해 주세요.');
-    if (state.profile.biometricLock && !state.unlocked) throw new Error('생체 인증으로 숨김 설정을 먼저 열어 주세요.');
+    if (state.profile.biometricLock && !state.unlocked) throw new Error('생체 인증 또는 기기 암호로 숨김 설정을 먼저 열어 주세요.');
     return state;
   }
   async function persist(change: (profile: HiddenMusicProfile) => HiddenMusicProfile, verify = false) {
