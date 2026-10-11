@@ -1,3 +1,4 @@
+import { ScrollEdgeFade } from '@/components/scroll-edge-fade';
 import { useState } from 'react';
 import { ActivityIndicator, Alert, Keyboard, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { KeyboardAwareScrollView, useKeyboardState } from 'react-native-keyboard-controller';
@@ -60,7 +61,7 @@ export default function SettingsScreen() {
 
   return <View style={{ flex: 1, backgroundColor: colors.background }}>
     <ScreenHeader title="설정" />
-    <KeyboardAwareScrollView style={{ flex: 1 }} bottomOffset={16} contentContainerStyle={[styles.screen, { paddingBottom: keyboardVisible ? 24 : 170 + insets.bottom }]} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
+    <ScrollEdgeFade><KeyboardAwareScrollView style={{ flex: 1 }} bottomOffset={16} contentContainerStyle={[styles.screen, { paddingBottom: keyboardVisible ? 24 : 170 + insets.bottom }]} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
     <Text style={[styles.section, { color: colors.muted, marginTop: 9 }]}>연결</Text>
     <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.separator }]}><View style={[styles.icon, { backgroundColor: colors.tint }]}><Ionicons name="server-outline" size={23} color="white" /></View><View style={{ flex: 1 }}><Text style={[styles.name, { color: colors.text }]}>{mode === 'mock' ? '데모 라이브러리' : 'Synology NAS'}</Text><Text numberOfLines={1} style={[styles.detail, { color: colors.muted }]}>{session?.baseUrl ?? '연결 없이 UI 둘러보기'}</Text></View><Ionicons name="checkmark-circle" size={22} color={colors.tint} /></View>
 
@@ -79,12 +80,12 @@ export default function SettingsScreen() {
     <Text style={[styles.helper, { color: colors.muted }]}>폴더·곡 선택 프리셋과 생체 인증 잠금</Text>
     <Text style={[styles.section, { color: colors.muted, marginTop: 34 }]}>정보</Text>
     <Text style={[styles.note, { color: colors.muted }]}>보관함은 공용 music과 로그인한 계정의 개인 home/music을 함께 조회합니다. 음악은 선택한 NAS 주소에서 직접 스트리밍됩니다. 메타데이터는 최근 조회 목록을 기기에 저장합니다. HTTPS 인증서가 유효해야 연결할 수 있습니다.</Text>
-    </KeyboardAwareScrollView>
+    </KeyboardAwareScrollView></ScrollEdgeFade>
   </View>;
 }
 
 const styles = StyleSheet.create({
-  screen: { paddingHorizontal: 22 },
+  screen: { paddingHorizontal: 22, paddingTop: 28 },
   section: { fontSize: 12, textTransform: 'uppercase', fontWeight: '800', letterSpacing: 1.2, marginTop: 31, marginBottom: 12 },
   card: { borderWidth: 1, borderRadius: 15, padding: 14, flexDirection: 'row', gap: 13, alignItems: 'center' },
   icon: { width: 45, height: 45, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },

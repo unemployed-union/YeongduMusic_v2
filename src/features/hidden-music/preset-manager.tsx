@@ -1,3 +1,4 @@
+import { ScrollEdgeFade } from '@/components/scroll-edge-fade';
 import { useMemo, useState } from 'react';
 import { Alert, FlatList, Pressable, RefreshControl, StyleSheet, Switch, Text, View } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -28,7 +29,7 @@ export function PresetManager() {
     ]);
   }
   return <AsyncState loading={query.isPending} error={query.isError && !query.data ? query.error.message : null} retry={() => void query.refetch()}>
-    {draft ? <PresetEditor key={draft.id} preset={draft} songs={songs ?? []} busy={busy} error={message ?? error} onCancel={() => { setDraft(null); setMessage(null); }} onSave={(preset) => void run(() => savePreset(preset), () => setDraft(null))} /> : <FlatList
+    {draft ? <PresetEditor key={draft.id} preset={draft} songs={songs ?? []} busy={busy} error={message ?? error} onCancel={() => { setDraft(null); setMessage(null); }} onSave={(preset) => void run(() => savePreset(preset), () => setDraft(null))} /> : <ScrollEdgeFade><FlatList
       data={profile.presets} keyExtractor={(preset) => preset.id} contentContainerStyle={styles.list} alwaysBounceVertical
       refreshControl={<RefreshControl refreshing={query.isRefetching} onRefresh={() => void query.refetch()} colors={[colors.tint]} tintColor={colors.tint} progressBackgroundColor={colors.surface} />}
       ListHeaderComponent={<View>
@@ -46,12 +47,12 @@ export function PresetManager() {
         <View style={styles.cardTop}><View style={styles.identity}><Text style={[styles.title, { color: colors.text }]}>{item.name}</Text><Text style={[styles.detail, { color: colors.muted }]}>폴더 {item.folders.length}개 · 곡 {item.songIds.length}개</Text></View><Switch accessibilityLabel={item.name + ' 프리셋 적용'} value={item.enabled} disabled={busy} onValueChange={() => void run(() => togglePreset(item.id))} trackColor={{ false: colors.separator, true: colors.tint }} thumbColor="#FFFFFF" ios_backgroundColor={colors.separator} /></View>
         <View style={styles.actions}><Pressable disabled={busy} onPress={() => { setMessage(null); setDraft({ ...item, songIds: [...item.songIds], folders: [...item.folders] }); }} style={styles.action}><Ionicons name="pencil-outline" size={17} color={colors.tint} /><Text style={{ color: colors.tint }}>선택 목록 편집</Text></Pressable><Pressable disabled={busy} onPress={() => remove(item)} style={styles.action}><Ionicons name="trash-outline" size={17} color={colors.muted} /><Text style={{ color: colors.muted }}>삭제</Text></Pressable></View>
       </View>}
-    />}
+    /></ScrollEdgeFade>}
   </AsyncState>;
 }
 
 const styles = StyleSheet.create({
-  list: { flexGrow: 1, padding: 22, paddingBottom: 40 }, heading: { fontSize: 26, fontWeight: '800', marginBottom: 10 }, note: { fontSize: 13, lineHeight: 20, marginBottom: 14 },
+  list: { flexGrow: 1, padding: 22, paddingTop: 28, paddingBottom: 40 }, heading: { fontSize: 26, fontWeight: '800', marginBottom: 10 }, note: { fontSize: 13, lineHeight: 20, marginBottom: 14 },
   lockRow: { flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderRadius: 14, padding: 14, marginBottom: 20 }, identity: { flex: 1, gap: 5 },
   title: { fontSize: 16, fontWeight: '700' }, detail: { fontSize: 12, lineHeight: 18 }, create: { height: 48, borderRadius: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginBottom: 22 }, createText: { color: 'white', fontSize: 15, fontWeight: '700' },
   card: { padding: 16, borderWidth: 1, borderRadius: 14, marginBottom: 12 }, cardTop: { flexDirection: 'row', alignItems: 'center', gap: 10 }, actions: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 13 }, action: { flexDirection: 'row', gap: 6, paddingVertical: 7 }, empty: { textAlign: 'center', lineHeight: 23, paddingVertical: 30 },

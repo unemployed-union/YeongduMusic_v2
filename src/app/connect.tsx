@@ -1,3 +1,4 @@
+import { ScrollEdgeFade } from '@/components/scroll-edge-fade';
 import { useRef, useState } from 'react';
 import { ActivityIndicator, Keyboard, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
@@ -45,7 +46,7 @@ export default function ConnectScreen() {
     finally { setLoading(false); }
   };
   return <View style={{ flex: 1, backgroundColor: colors.background }}>
-    <KeyboardAwareScrollView style={{ flex: 1 }} bottomOffset={16} contentContainerStyle={[styles.content, { paddingTop: 40 + insets.top, paddingBottom: 32 + insets.bottom }]} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
+    <ScrollEdgeFade><KeyboardAwareScrollView style={{ flex: 1 }} bottomOffset={16} contentContainerStyle={[styles.content, { paddingTop: 40 + insets.top, paddingBottom: 32 + insets.bottom }]} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
       <LinearGradient colors={['#E65B7C', '#613A80', '#182E5B']} style={styles.hero}><Ionicons name="musical-notes" size={74} color="white" /></LinearGradient>
       <Text style={[styles.eyebrow, { color: colors.tint }]}>YOUR MUSIC, YOUR SPACE</Text>
       <Text style={[styles.title, { color: colors.text }]}>내 음악이 있는 곳으로.</Text>
@@ -66,7 +67,7 @@ export default function ConnectScreen() {
       </View>
       <Pressable onPress={() => { enterDemo(); router.replace('/(tabs)/(library)'); }} style={styles.demo}><Text style={[styles.demoText, { color: colors.tint }]}>먼저 데모 둘러보기</Text><Ionicons name="arrow-forward" size={17} color={colors.tint} /></Pressable>
       <Text style={[styles.note, { color: colors.muted }]}>HTTPS 연결을 권장합니다. 비밀번호는 기기에 저장하지 않습니다.</Text>
-    </KeyboardAwareScrollView>
+    </KeyboardAwareScrollView></ScrollEdgeFade>
   </View>;
 }
 const styles = StyleSheet.create({ content: { paddingHorizontal: 26, alignItems: 'stretch' }, hero: { width: 112, height: 112, borderRadius: 27, alignItems: 'center', justifyContent: 'center', marginBottom: 34, shadowColor: '#9C486D', shadowOpacity: 0.35, shadowRadius: 18, shadowOffset: { width: 0, height: 10 } }, eyebrow: { fontSize: 11, fontWeight: '800', letterSpacing: 2, marginBottom: 9 }, title: { fontSize: 31, fontWeight: '800', letterSpacing: -1.2 }, intro: { fontSize: 15, lineHeight: 23, marginTop: 10, marginBottom: 29 }, form: { gap: 8 }, label: { fontSize: 13, fontWeight: '700', marginTop: 9 }, input: { height: 52, borderWidth: 1, borderRadius: 12, paddingHorizontal: 15, fontSize: 15 }, httpRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, paddingTop: 10 }, httpText: { flex: 1, fontSize: 12, lineHeight: 18 }, error: { color: '#DF3658', fontSize: 13, lineHeight: 19, marginTop: 7 }, feedback: { fontSize: 13, lineHeight: 19, marginTop: 7 }, testButton: { height: 44, borderWidth: 1, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginTop: 12 }, testText: { fontSize: 14, fontWeight: '700' }, button: { height: 54, borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginTop: 8 }, buttonText: { color: 'white', fontSize: 16, fontWeight: '800' }, demo: { flexDirection: 'row', alignItems: 'center', alignSelf: 'center', gap: 6, padding: 19 }, demoText: { fontSize: 15, fontWeight: '700' }, note: { textAlign: 'center', fontSize: 12, lineHeight: 18, marginTop: 2 } });

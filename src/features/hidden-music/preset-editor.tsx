@@ -1,3 +1,4 @@
+import { ScrollEdgeFade } from '@/components/scroll-edge-fade';
 import { useMemo, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -44,7 +45,7 @@ export function PresetEditor({ preset, songs, busy, error, onCancel, onSave }: P
     <TextInput accessibilityLabel="선택 목록 검색" value={term} onChangeText={setTerm} placeholder={tab === 'folder' ? '폴더 경로 검색' : '제목·아티스트·앨범 검색'} placeholderTextColor={colors.muted} autoCorrect={false} style={[styles.input, { backgroundColor: colors.surface, color: colors.text, borderColor: colors.separator }]} />
     <Text style={[styles.note, { color: colors.muted }]}>{tab === 'folder' ? '화살표로 하위 폴더를 펼치고, 체크박스로 숨길 폴더를 선택하세요. 선택한 폴더의 하위 폴더와 새 곡도 숨깁니다.' : '선택한 곡만 숨깁니다. 폴더 선택과 함께 사용할 수 있습니다.'}</Text>
     <Pressable accessibilityRole="checkbox" accessibilityState={{ checked: selectedOnly }} onPress={() => setSelectedOnly(!selectedOnly)} style={styles.selectionToggle}><Ionicons name={selectedOnly ? 'checkbox' : 'square-outline'} size={21} color={colors.tint} /><Text style={{ color: colors.text, fontSize: 13 }}>선택한 항목만 보기</Text></Pressable>
-    <FlatList data={choices} extraData={selectedFolders} keyExtractor={item => item.kind === 'folder' ? item.path : item.song.id} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" contentContainerStyle={styles.list}
+    <ScrollEdgeFade><FlatList data={choices} extraData={selectedFolders} keyExtractor={item => item.kind === 'folder' ? item.path : item.song.id} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" contentContainerStyle={styles.list}
       ListEmptyComponent={<Text style={[styles.empty, { color: colors.muted }]}>표시할 {tab === 'folder' ? '폴더' : '곡'}가 없습니다.</Text>}
       renderItem={({ item }) => {
         const selected = item.kind === 'folder' ? selectedFolders.has(item.path) : selectedSongs.has(item.song.id);
@@ -56,7 +57,7 @@ export function PresetEditor({ preset, songs, busy, error, onCancel, onSave }: P
             <Ionicons name={selected ? 'checkbox' : 'square-outline'} size={25} color={selected ? colors.tint : colors.muted} />
           </Pressable>
         </View>;
-      }} />
+      }} /></ScrollEdgeFade>
     <View style={[styles.footer, { borderTopColor: colors.separator }]}>
       <Text style={[styles.note, { color: colors.muted }]}>폴더 {folders.length}개 · 곡 {songIds.length}개 선택{preset.enabled ? ' · 저장하면 바로 적용' : ' · 현재 적용 안 함'}</Text>
       {error && <Text style={[styles.note, { color: colors.tint }]}>{error}</Text>}
@@ -70,7 +71,7 @@ const styles = StyleSheet.create({
   heading: { fontSize: 23, fontWeight: '800' }, smallButton: { padding: 10 },
   input: { height: 46, borderWidth: 1, borderRadius: 11, paddingHorizontal: 13, fontSize: 15, marginBottom: 10 },
   tabs: { flexDirection: 'row', gap: 8, marginBottom: 13 }, tab: { paddingHorizontal: 18, paddingVertical: 9, borderRadius: 18 },
-  note: { fontSize: 12, lineHeight: 18, marginBottom: 10 }, list: { flexGrow: 1, paddingBottom: 16 }, row: { minHeight: 70, borderBottomWidth: StyleSheet.hairlineWidth, flexDirection: 'row', alignItems: 'center' },
+  note: { fontSize: 12, lineHeight: 18, marginBottom: 10 }, list: { flexGrow: 1, paddingTop: 28, paddingBottom: 28 }, row: { minHeight: 70, borderBottomWidth: StyleSheet.hairlineWidth, flexDirection: 'row', alignItems: 'center' },
   expand: { width: 32, height: 44, alignItems: 'center', justifyContent: 'center' }, choice: { flex: 1, minHeight: 70, paddingVertical: 12, flexDirection: 'row', alignItems: 'center', gap: 10 },
   selectionToggle: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingBottom: 12 },
   identity: { flex: 1, gap: 4 }, title: { fontSize: 14, fontWeight: '600' }, detail: { fontSize: 12 }, empty: { textAlign: 'center', paddingVertical: 35 },

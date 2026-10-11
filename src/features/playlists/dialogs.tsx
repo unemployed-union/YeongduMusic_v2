@@ -1,3 +1,4 @@
+import { ScrollEdgeFade } from '@/components/scroll-edge-fade';
 import { useState, type ReactNode } from 'react';
 import { ActivityIndicator, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -60,7 +61,7 @@ export function AddToPlaylistDialog({ songs, onClose, allowEnqueue = false }: { 
     if (!eligible[0]) return;
     try { await enqueue(eligible[0]); onClose(); } catch (cause) { setError(cause instanceof Error ? cause.message : '추가하지 못했습니다.'); }
   }
-  return <PlaylistSheet title="플레이리스트에 추가" onClose={onClose}><ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.body}>
+  return <PlaylistSheet title="플레이리스트에 추가" onClose={onClose}><ScrollEdgeFade fill={false}><ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={[styles.body, styles.scrollBody]}>
     <Text style={{ color: colors.muted }}>{ids.length}곡 · 여러 목록에 저장할 수 있습니다.</Text>
     {allowEnqueue && <Pressable style={styles.option} onPress={() => void addToQueue()} disabled={!eligible.length}><Ionicons name="list" size={22} color={colors.tint} /><Text style={{ color: colors.text }}>다음 재생 대기열에 추가</Text></Pressable>}
     {!available ? <View><Text style={{ color: colors.muted }}>{store.error ?? '플레이리스트를 불러오는 중입니다.'}</Text>{store.error && <Pressable onPress={() => void store.load(privacy.scope)} style={styles.option}><Text style={{ color: colors.tint }}>다시 불러오기</Text></Pressable>}</View> : <>
@@ -70,6 +71,6 @@ export function AddToPlaylistDialog({ songs, onClose, allowEnqueue = false }: { 
     </>}
     {store.busy && <ActivityIndicator color={colors.tint} />}
     {(error || message) && <Text accessibilityRole={error ? 'alert' : undefined} accessibilityLiveRegion="polite" style={{ color: colors.tint }}>{error ?? message}</Text>}
-  </ScrollView></PlaylistSheet>;
+  </ScrollView></ScrollEdgeFade></PlaylistSheet>;
 }
-const styles = StyleSheet.create({ overlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: '#00000066' }, sheet: { borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingTop: 12 }, header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 22 }, heading: { flex: 1, fontSize: 20, fontWeight: '800' }, icon: { padding: 10 }, body: { padding: 22, gap: 16 }, input: { minHeight: 48, borderWidth: 1, borderRadius: 12, paddingHorizontal: 14, fontSize: 16 }, primary: { minHeight: 48, alignItems: 'center', justifyContent: 'center', borderRadius: 12 }, primaryText: { color: 'white', fontWeight: '700', fontSize: 15 }, option: { minHeight: 52, flexDirection: 'row', alignItems: 'center', gap: 12 } });
+const styles = StyleSheet.create({ overlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: '#00000066' }, sheet: { borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingTop: 12 }, header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 22 }, heading: { flex: 1, fontSize: 20, fontWeight: '800' }, icon: { padding: 10 }, body: { padding: 22, gap: 16 }, scrollBody: { paddingVertical: 28 }, input: { minHeight: 48, borderWidth: 1, borderRadius: 12, paddingHorizontal: 14, fontSize: 16 }, primary: { minHeight: 48, alignItems: 'center', justifyContent: 'center', borderRadius: 12 }, primaryText: { color: 'white', fontWeight: '700', fontSize: 15 }, option: { minHeight: 52, flexDirection: 'row', alignItems: 'center', gap: 12 } });
