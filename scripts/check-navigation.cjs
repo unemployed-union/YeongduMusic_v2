@@ -66,6 +66,7 @@ const ui = {
   'react-native-safe-area-context': { useSafeAreaInsets: () => ({ top: 24, bottom: 16 }) },
   'react-native-keyboard-controller': { useKeyboardState: selector => selector({ isVisible: false }) },
   '@/components/mini-player': { MINI_PLAYER_INSET: 12, MiniPlayer: 'MiniPlayer' },
+  '@/components/tab-bar-inset': { TAB_BAR_HEIGHT: 66, TabBarInsetContext: { Provider: 'TabBarInsetProvider' } },
   '@/theme/tokens': { useColors: () => ({ tint: '#f48' }) },
 };
 const TabsLayout = renderModule('src/app/(tabs)/_layout.tsx', ui).default;
@@ -74,6 +75,7 @@ assert.deepEqual(nodes(tabs).filter(node => node.type === 'TabScreen').map(node 
 const refs = new Set();
 for (const name of ['(library)', '(playlists)', 'search']) {
   const content = tabs.props.screenLayout({ children: jsx('Screen', {}), route: { name } });
+  assert.equal(nodes(content).find(node => node.type === 'TabBarInsetProvider').props.value, 82, 'Scroll indicators reserve the tab height and bottom safe area');
   refs.add(content.props.ref);
   const layout = tabs.props.layout({ children: content, state: { routes: [{ name }], index: 0 } });
   assert.equal(nodes(layout).find(node => node.type === 'MiniPlayer').props.blurTarget, content.props.ref, 'Mini player captures the selected tab');
@@ -81,6 +83,10 @@ for (const name of ['(library)', '(playlists)', 'search']) {
   assert.equal(nodes(background).find(node => node.type === 'BlurView').props.blurTarget, content.props.ref, 'Tab blur captures the selected tab');
 }
 assert.equal(refs.size, 3);
+const keyboardTabs = renderModule('src/app/(tabs)/_layout.tsx', { ...ui,
+  'react-native-keyboard-controller': { useKeyboardState: selector => selector({ isVisible: true }) },
+}).default();
+assert.equal(nodes(keyboardTabs.props.screenLayout({ children: jsx('Screen', {}), route: { name: 'search' } })).find(node => node.type === 'TabBarInsetProvider').props.value, 0, 'Hidden tabs do not shorten the search indicator');
 const settingsActions = [];
 const SettingsButton = renderModule('src/components/settings-button.tsx', { ...ui,
   'react-native': { ...ui['react-native'], Keyboard: { dismiss: () => settingsActions.push('dismiss') } },
@@ -101,13 +107,14 @@ let extrasEnabled = false;
 const settingsMocks = { ...ui,
   '@/features/settings/settings-ui': settingsUI,
   '@/features/settings/version-settings': { VersionSettings: 'VersionSettings' },
+  '@/features/library/album-display-settings': { AlbumDisplaySettings: 'AlbumDisplaySettings' },
   '@/stores/hidden-feature-access': { useHiddenFeatureAccess: selector => selector({ ready: true, enabled: extrasEnabled }) },
 };
 const Settings = renderModule('src/app/settings.tsx', settingsMocks).default;
 const links = tree => nodes(tree).filter(node => node.type === 'SettingsLink').map(node => [node.props.title, node.props.href]);
-assert.deepEqual(links(Settings()), [['클라우드 연결', '/settings/cloud'], ['재생 및 화면', '/settings/playback'], ['보관함', '/settings/library']]);
+assert.deepEqual(links(Settings()), [['클라우드 연결', '/settings/cloud'], ['재생 및 화면', '/settings/playback'], ['보관함', '/settings/library'], ['오픈소스 라이선스', '/settings/licenses']]);
 extrasEnabled = true;
-assert.deepEqual(links(Settings()).at(-1), ['기타', '/settings/other']);
+assert.deepEqual(links(Settings()).find(([title]) => title === '기타'), ['기타', '/settings/other']);
 assert.ok(nodes(Settings()).some(node => node.type === 'VersionSettings'), 'Version activation stays on the main settings page');
 const CloudSettings = renderModule('src/app/settings/cloud.tsx', { ...settingsMocks,
   '@/stores/auth': { useAuthStore: select => select({ mode: 'setup', session: null }) },

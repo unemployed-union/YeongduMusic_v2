@@ -9,6 +9,7 @@ import { libraryIdentity, musicRepository } from './repository';
 import { visibleSongs } from '../hidden-music/rules';
 import { useAuthStore } from '@/stores/auth';
 import { useHiddenMusicStore } from '@/stores/hidden-music';
+import { useLibraryPreferences } from '@/stores/library-preferences';
 import type { Album, Artist, Page, Song } from '@/types/music';
 
 function useSongLibrary<T>(select: (library: Page<Song>) => T, enabled = true, nasOnly = false) {
@@ -56,8 +57,10 @@ export function useSongs(enabled = true) {
 }
 export function useAlbums(enabled = true) {
   const presets = useHiddenMusicStore((state) => state.profile.presets);
-  const select = useCallback((library: Page<Song>) => albumsFromSongs(visibleSongs(library, presets)), [presets]);
-  return useSongLibrary(select, enabled);
+  const includeFolderAlbums = useLibraryPreferences((state) => state.includeFolderAlbums);
+  const ready = useLibraryPreferences((state) => state.ready);
+  const select = useCallback((library: Page<Song>) => albumsFromSongs(visibleSongs(library, presets), includeFolderAlbums), [presets, includeFolderAlbums]);
+  return useSongLibrary(select, enabled && ready);
 }
 export function useArtists(enabled = true) {
   const presets = useHiddenMusicStore((state) => state.profile.presets);

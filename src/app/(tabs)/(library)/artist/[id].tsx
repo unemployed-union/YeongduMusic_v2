@@ -1,4 +1,4 @@
-import { ScrollEdgeFade } from '@/components/scroll-edge-fade';
+import { TabScrollEdgeFade } from '@/components/tab-scroll-edge-fade';
 import { FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -19,7 +19,7 @@ export default function ArtistScreen() {
   const refresh = () => { void query.refetch(); };
   return <View style={[styles.screen, { backgroundColor: colors.background }]}>
     <AsyncState loading={query.isPending} error={query.isError && !query.data ? query.error.message : null} retry={refresh}>
-      <ScrollEdgeFade><FlatList data={songs} keyExtractor={(song) => song.id} contentContainerStyle={[styles.list, { paddingBottom: 180 + insets.bottom }]} alwaysBounceVertical
+      <TabScrollEdgeFade><FlatList data={songs} keyExtractor={(song) => song.id} contentContainerStyle={[styles.list, { paddingBottom: 180 + insets.bottom }]} alwaysBounceVertical
         refreshControl={<RefreshControl refreshing={query.isRefetching} onRefresh={refresh} colors={[colors.tint]} tintColor={colors.tint} progressBackgroundColor={colors.surface} />}
         ListHeaderComponent={songs.length ? <View style={styles.header}>
           <View style={[styles.icon, { backgroundColor: colors.surface }]}><Ionicons name="person" size={48} color={colors.tint} /></View>
@@ -32,7 +32,7 @@ export default function ArtistScreen() {
           {query.isRefetchError && <Pressable accessibilityRole="button" onPress={refresh} style={styles.error}><Text style={{ color: colors.text }}>{query.error.message}</Text><Text style={{ color: colors.tint }}>다시 시도</Text></Pressable>}
         </View> : null}
         ListEmptyComponent={<Text style={[styles.empty, { color: colors.muted }]}>이 아티스트의 노래가 없습니다. 아래로 당겨 다시 확인하세요.</Text>}
-        renderItem={({ item, index }) => <SongRow song={item} onPress={() => void playAndOpenPlayer(songs, index)} />} /></ScrollEdgeFade>
+        renderItem={({ item, index }) => <SongRow song={item} onPress={() => void playAndOpenPlayer(songs, index)} />} /></TabScrollEdgeFade>
     </AsyncState>
   </View>;
 }

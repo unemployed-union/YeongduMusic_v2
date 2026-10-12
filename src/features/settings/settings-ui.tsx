@@ -1,4 +1,4 @@
-import type { ComponentProps, ReactNode } from 'react';
+import { Children, type ComponentProps, type ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -20,7 +20,9 @@ export function SettingsPage({ children }: { children: ReactNode }) {
 export function SettingsSection({ title, children }: { title: string; children: ReactNode }) {
   const colors = useColors();
   return <View style={styles.section}><Text style={[styles.heading, { color: colors.muted }]}>{title}</Text>
-    <View style={[styles.group, { backgroundColor: colors.surface, borderColor: colors.separator }]}>{children}</View>
+    <View style={[styles.group, { backgroundColor: colors.surface, borderColor: colors.separator }]}>
+      {Children.toArray(children).map((child, index) => <View key={index} style={index > 0 ? { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.separator } : undefined}>{child}</View>)}
+    </View>
   </View>;
 }
 
@@ -29,7 +31,7 @@ export function SettingsLink({ title, description, icon, href }: {
 }) {
   const colors = useColors();
   return <Pressable accessibilityRole="button" onPress={() => router.push(href)} style={({ pressed }) => [styles.row, { opacity: pressed ? 0.55 : 1 }]}>
-    <Ionicons name={icon} size={23} color={colors.tint} />
+    <View style={styles.icon}><Ionicons name={icon} size={23} color={colors.tint} /></View>
     <View style={styles.copy}><Text style={[styles.title, { color: colors.text }]}>{title}</Text>
       {!!description && <Text numberOfLines={2} style={[styles.description, { color: colors.muted }]}>{description}</Text>}
     </View><Ionicons name="chevron-forward" size={19} color={colors.muted} />
@@ -41,7 +43,8 @@ const styles = StyleSheet.create({
   section: { marginBottom: 24 },
   heading: { fontSize: 12, fontWeight: '800', letterSpacing: 1.2, marginBottom: 12, marginTop: 8 },
   group: { borderWidth: 1, borderRadius: 15, overflow: 'hidden' },
-  row: { minHeight: 68, flexDirection: 'row', alignItems: 'center', gap: 12, padding: 15 },
+  row: { minHeight: 68, flexDirection: 'row', alignItems: 'center', gap: 18, padding: 15 },
+  icon: { width: 28, height: 28, alignItems: 'center', justifyContent: 'center' },
   copy: { flex: 1 }, title: { fontSize: 16, fontWeight: '600' },
   description: { fontSize: 12, lineHeight: 18, marginTop: 5 },
 });

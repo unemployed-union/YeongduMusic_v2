@@ -70,7 +70,9 @@ const repoModule = load('src/features/library/repository.ts', {
   '@/stores/auth': { useAuthStore: { getState: () => state } },
 });
 const localFixture = { songs: [], ready: true, source: 'nas' };
+const libraryPreferences = { ready: true, includeFolderAlbums: true };
 const queries = load('src/features/library/queries.ts', {
+  '@/stores/library-preferences': { useLibraryPreferences: selector => selector(libraryPreferences) },
   react: { useMemo: factory => factory(), useCallback: callback => callback },
   '@/stores/google-drive': { useGoogleDriveStore: selector => selector({ songs: [], loading: false, error: null }) },
   '@/stores/local-music': { useLocalMusicStore: selector => selector(localFixture) },
@@ -146,6 +148,28 @@ async function main() {
     assert.deepEqual(mockResult.items.find(item => item.id === album.id).palette, album.palette);
   }
   assert.equal(albumHelpers.albumsFromSongs({ items: [], total: 0 }).total, 0);
+  const folderRecords = [
+    { ...record('folder-fallback', '', 'Artist'), album: 'Folder Name' },
+    { ...record('real-tag', 'Folder Name', 'Artist'), album: 'Server fallback' },
+    { ...record('blank-tag', ' \t ', 'Artist'), album: 'Blank Tag Folder' },
+  ];
+  const folderOffset = records.length;
+  records.push(...folderRecords);
+  const folderLibrary = await repository().songs({ offset: folderOffset, limit: 3 });
+  records.splice(folderOffset);
+  assert.deepEqual(folderLibrary.items.map(song => [song.album, song.albumSource]), [['Folder Name', 'fallback'], ['Folder Name', 'tag'], ['Blank Tag Folder', 'fallback']]);
+  const taggedAlbums = albumHelpers.albumsFromSongs(folderLibrary, false);
+  assert.equal(taggedAlbums.total, 1);
+  assert.equal(taggedAlbums.items[0].songCount, 1, 'Folder songs must not join a tagged album with the same title');
+  libraryPreferences.includeFolderAlbums = false;
+  assert.equal(queries.useAlbums().select(folderLibrary).total, 1);
+  assert.equal(queries.useSongs().select(folderLibrary).items.length, 3, 'The toggle must preserve songs');
+  assert.equal(albumHelpers.songsForAlbum(folderLibrary, taggedAlbums.items[0]).items.length, 1);
+  libraryPreferences.includeFolderAlbums = true;
+  assert.equal(queries.useAlbums().select(folderLibrary).total, 3);
+  libraryPreferences.ready = false;
+  assert.equal(queries.useAlbums().enabled, false);
+  libraryPreferences.ready = true;
   assert.equal(albumHelpers.albumsFromSongs({ ...mockLibrary, stale: true }).stale, true);
   const stale = albumHelpers.songsForAlbum({ ...mockLibrary, stale: true }, mockAlbums[0]);
   assert.equal(stale.stale, true);

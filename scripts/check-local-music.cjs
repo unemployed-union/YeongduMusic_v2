@@ -65,6 +65,17 @@ async function main() {
   assert.ok(songs.every(song => song.source === 'local' && song.id.startsWith('local:') && !('path' in song)));
   assert.ok(songs.every(song => !JSON.stringify(song).includes('file:///') && !JSON.stringify(song).includes('content:///')));
   assert.equal(songs[0].title, 'sample'); assert.equal(songs[0].duration, 0);
+  assert.ok(songs.every(song => song.albumSource === 'fallback'), 'Device imports are not treated as confirmed album tags');
+  const storedBeforeMigration = rows.get(songs[0].id);
+  const legacy = { ...songs[0], album: 'Original Folder', local: { ...songs[0].local, downloadedFrom: 'nas' } };
+  delete legacy.albumSource;
+  rows.set(legacy.id, JSON.stringify(legacy));
+  const restoredLegacy = (await freshStorage().readLocalSongs()).find(song => song.id === legacy.id);
+  assert.equal(restoredLegacy.albumSource, 'fallback', 'Legacy local folder names are normalized on reload');
+  const tagged = { ...legacy, albumSource: 'tag' };
+  rows.set(tagged.id, JSON.stringify(tagged));
+  assert.equal((await freshStorage().readLocalSongs()).find(song => song.id === tagged.id).albumSource, 'tag', 'Reload preserves confirmed album tags');
+  rows.set(songs[0].id, storedBeforeMigration);
   selection = { canceled: false, assets: [asset('renamed.mp3', 'original bytes')] };
   assert.equal((await storage.importLocalSongs()).duplicates, 1); assert.equal(rows.size, 3);
   selection = { canceled: false, assets: [asset('sample.mp3', 'different bytes')] };
@@ -195,8 +206,10 @@ async function main() {
   const albums = load('src/features/library/album-library.ts');
   const search = load('src/features/library/search-songs.ts');
   const localState = { source: 'all', ready: true, songs: [a, b] };
+  const libraryPreferences = { ready: true, includeFolderAlbums: true };
   let queryResult = null;
   const hooks = load('src/features/library/queries.ts', {
+    '@/stores/library-preferences': { useLibraryPreferences: selector => selector(libraryPreferences) },
     react: { useCallback: fn => fn, useMemo: fn => fn() },
     '@tanstack/react-query': { useQuery: options => queryResult ?? options },
     '@/stores/google-drive': { useGoogleDriveStore: selector => selector({ songs: [], loading: false, error: null }) },
@@ -212,6 +225,23 @@ async function main() {
   assert.equal(hooks.useRawSongLibrary().select(page).total, 1);
   localState.source = 'local'; assert.deepEqual(hooks.useSongs().select(page).items.map(song => song.id), [a.id, b.id]);
   assert.equal((await hooks.useSongs().queryFn({})).total, 0, 'Device selection never calls NAS');
+  const importedSongs = localState.songs;
+  const localFolder = { ...a, album: 'Same Album', albumSource: 'fallback', albumId: undefined };
+  const localTag = { ...b, album: 'Same Album', albumSource: 'tag', albumId: undefined };
+  const legacyFolder = { ...localFolder, id: 'legacy-local-folder', albumSource: undefined };
+  localState.songs = [localFolder, localTag, legacyFolder];
+  assert.equal(hooks.useAlbums().select(page).total, 2, 'Tagged and folder albums with the same name remain separate');
+  libraryPreferences.includeFolderAlbums = false;
+  const onlyTagged = hooks.useAlbums().select(page);
+  assert.equal(onlyTagged.total, 1);
+  assert.equal(onlyTagged.items[0].songCount, 1, 'Only the confirmed local album remains with the option off');
+  assert.deepEqual(hooks.useAlbumSongs(onlyTagged.items[0]).select(page).items.map(song => song.id), [localTag.id]);
+  assert.equal(hooks.useSongs().select(page).total, 3, 'Turning off folder albums keeps all local songs accessible');
+  localState.source = 'all';
+  assert.equal(hooks.useAlbums().select(page).total, 2, 'All-sources view also filters local folder albums');
+  libraryPreferences.includeFolderAlbums = true;
+  assert.equal(hooks.useAlbums().select(page).total, 3, 'Turning the option back on restores local folder albums');
+  localState.songs = importedSongs;
   localState.source = 'nas'; assert.equal(hooks.useSongs().select(page).total, 1);
   localState.source = 'all'; assert.equal(hooks.useSearch('sample').select(page).total, 2);
   queryResult = { isError: true, isPending: false, data: undefined, error: new Error('offline') };

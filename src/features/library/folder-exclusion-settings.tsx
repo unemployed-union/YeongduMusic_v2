@@ -44,10 +44,12 @@ export function FolderExclusionSettings() {
     else void pickFolder();
   }
   return <>
-    <Pressable accessibilityRole="button" onPress={() => { setOpen(true); void exclusions.load(); }} style={[styles.settingsRow, { borderBottomColor: colors.separator }]}>
-      <Ionicons name="folder-open-outline" size={23} color={colors.tint} /><Text style={[styles.settingsTitle, { color: colors.text }]}>기기 음악 제외 폴더</Text><Text style={{ color: colors.muted }}>{exclusions.folders.length}개</Text><Ionicons name="chevron-forward" size={19} color={colors.muted} />
+    <Pressable accessibilityRole="button" onPress={() => { setOpen(true); void exclusions.load(); }} style={styles.settingsRow}>
+      <View style={styles.settingsIcon}><Ionicons name="folder-open-outline" size={23} color={colors.tint} /></View>
+      <View style={styles.settingsCopy}><Text style={[styles.settingsTitle, { color: colors.text }]}>기기 음악 제외 폴더</Text>
+        <Text style={[styles.note, { color: colors.muted, marginTop: 5 }]}>통화녹음 등 가져오지 않을 폴더를 지정합니다. 하위 폴더도 제외합니다.</Text>
+      </View><Text style={{ color: colors.muted, fontSize: 12 }}>{exclusions.folders.length}개</Text><Ionicons name="chevron-forward" size={19} color={colors.muted} />
     </Pressable>
-    <Text style={[styles.note, { color: colors.muted, marginTop: 10 }]}>통화녹음 등 가져오지 않을 폴더를 지정합니다. 하위 폴더도 제외합니다.</Text>
     <PlaylistSheet title="기기 음악 제외 폴더" visible={open} onClose={() => setOpen(false)} onDismiss={() => { if (pendingPick) { setPendingPick(false); void pickFolder(); } }}>
       <View style={styles.body}>
         <Text style={[styles.note, { color: colors.muted }]}>체크한 폴더는 앞으로 가져오지 않고, 폴더 정보가 있는 기존 곡도 보관함·검색에서 제외합니다. 해제하면 앱에 저장된 곡은 다시 나타납니다. 원본 파일은 유지합니다.</Text>
@@ -72,4 +74,4 @@ export function FolderExclusionSettings() {
     </PlaylistSheet>
   </>;
 }
-const styles = StyleSheet.create({ settingsRow: { minHeight: 57, flexDirection: 'row', alignItems: 'center', gap: 12, borderBottomWidth: StyleSheet.hairlineWidth }, settingsTitle: { flex: 1, fontSize: 16, fontWeight: '600' }, body: { paddingHorizontal: 22, paddingVertical: 14, gap: 12, flexShrink: 1 }, note: { fontSize: 12, lineHeight: 18 }, button: { minHeight: 44, borderRadius: 12, borderWidth: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 }, refresh: { minHeight: 40, flexDirection: 'row', alignItems: 'center', gap: 8 }, progress: { flexDirection: 'row', alignItems: 'center', gap: 8 }, input: { minHeight: 44, borderWidth: 1, borderRadius: 10, paddingHorizontal: 12 }, list: { maxHeight: 280 }, listContent: { flexGrow: 1, paddingVertical: 28 }, row: { minHeight: 56, flexDirection: 'row', alignItems: 'center', borderBottomWidth: StyleSheet.hairlineWidth }, expand: { width: 28, height: 44, alignItems: 'center', justifyContent: 'center' }, choice: { minHeight: 56, flex: 1, flexDirection: 'row', alignItems: 'center', gap: 9, paddingVertical: 8 } });
+const styles = StyleSheet.create({ settingsRow: { minHeight: 68, flexDirection: 'row', alignItems: 'center', gap: 18, padding: 15 }, settingsIcon: { width: 28, height: 28, alignItems: 'center', justifyContent: 'center' }, settingsCopy: { flex: 1 }, settingsTitle: { fontSize: 16, fontWeight: '600' }, body: { paddingHorizontal: 22, paddingVertical: 14, gap: 12, flexShrink: 1 }, note: { fontSize: 12, lineHeight: 18 }, button: { minHeight: 44, borderRadius: 12, borderWidth: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 }, refresh: { minHeight: 40, flexDirection: 'row', alignItems: 'center', gap: 8 }, progress: { flexDirection: 'row', alignItems: 'center', gap: 8 }, input: { minHeight: 44, borderWidth: 1, borderRadius: 10, paddingHorizontal: 12 }, list: { maxHeight: 280 }, listContent: { flexGrow: 1, paddingVertical: 28 }, row: { minHeight: 56, flexDirection: 'row', alignItems: 'center', borderBottomWidth: StyleSheet.hairlineWidth }, expand: { width: 28, height: 44, alignItems: 'center', justifyContent: 'center' }, choice: { minHeight: 56, flex: 1, flexDirection: 'row', alignItems: 'center', gap: 9, paddingVertical: 8 } });

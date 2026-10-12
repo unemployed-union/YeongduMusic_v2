@@ -9,6 +9,8 @@ export type Song = {
   title: string;
   artist: string;
   album: string;
+  /** Whether the album name came from embedded tags or a folder/default label. */
+  albumSource?: 'tag' | 'fallback';
   albumId?: string;
   albumArtist?: string;
   discNumber?: number;

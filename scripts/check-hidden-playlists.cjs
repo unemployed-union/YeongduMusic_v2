@@ -46,9 +46,11 @@ const uiModules = {
   'react-native-safe-area-context': { useSafeAreaInsets: () => ({ bottom: 0 }) },
   'react-native-keyboard-controller': { KeyboardAvoidingView: 'KeyboardAvoidingView' },
   '@expo/vector-icons/Ionicons': { default: 'Icon', __esModule: true },
+  '@/components/tab-scroll-edge-fade': { TabScrollEdgeFade: 'ScrollEdgeFade' },
   '@/components/scroll-edge-fade': { ScrollEdgeFade: 'ScrollEdgeFade' },
   '@/components/animated-switch': { AnimatedSwitch: 'Switch' },
   '@/components/screen-header': { ScreenHeader: 'ScreenHeader' }, '@/components/settings-button': { SettingsButton: 'SettingsButton' },
+  '@/components/list-loading': { ListLoading: 'ListLoading' },
   '@/components/artwork': { Artwork: 'Artwork' }, '@/components/async-state': { AsyncState: 'AsyncState' },
   '@/theme/tokens': { useColors: () => colors }, '@/stores/hidden-music': { useHiddenMusicStore: selectPrivacy },
   '@/stores/playlists': { usePlaylistStore: () => playlistState },
@@ -103,7 +105,7 @@ async function main() {
   // Normal lists always hide private playlists, including while management is unlocked.
   const List = load('src/app/(tabs)/(playlists)/playlists/index.tsx', uiModules).default;
   assert.deepEqual(flatList(List()).props.data.map(item => item.id), ['public']);
-  assert.ok(text(flatList(List()).props.ListHeaderComponent).includes('숨김 관리'));
+  assert.ok(!text(flatList(List()).props.ListHeaderComponent).includes('숨김 관리'), 'Management stays in settings even when concealed features are enabled');
   featureAccess.enabled = false;
   assert.ok(!text(flatList(List()).props.ListHeaderComponent).includes('숨김 관리'));
   assert.deepEqual(flatList(List()).props.data.map(item => item.id), ['public'], 'Concealing the feature preserves playlist filtering');

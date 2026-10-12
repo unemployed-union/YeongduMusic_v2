@@ -102,7 +102,7 @@ export async function loadDriveSongs(accountId: string, folderId: string, token:
         }
         if (file.mimeType === 'application/vnd.google-apps.shortcut' || (!file.mimeType.startsWith('audio/') && !EXTENSION.test(file.name)) || (record(file.capabilities) && file.capabilities.canDownload === false)) continue;
         const id = 'drive:' + encodeURIComponent(accountId) + ':' + encodeURIComponent(file.id);
-        songs.set(id, { id, source: 'drive', title: file.name.replace(EXTENSION, ''), artist: '알 수 없는 아티스트', album: 'Google Drive', albumId: 'drive:' + encodeURIComponent(accountId), duration: 0,
+        songs.set(id, { id, source: 'drive', title: file.name.replace(EXTENSION, ''), artist: '알 수 없는 아티스트', album: 'Google Drive', albumSource: 'fallback', albumId: 'drive:' + encodeURIComponent(accountId), duration: 0,
           drive: { fileId: file.id, accountId, mimeType: file.mimeType, size: typeof file.size === 'string' && Number.isFinite(Number(file.size)) ? Number(file.size) : undefined, modifiedTime: typeof file.modifiedTime === 'string' ? file.modifiedTime : undefined } });
       }
       nextPage = page.nextPageToken;

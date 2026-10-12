@@ -1,10 +1,11 @@
-import { ScrollEdgeFade } from '@/components/scroll-edge-fade';
+import { TabScrollEdgeFade } from '@/components/tab-scroll-edge-fade';
 import { memo, useCallback, useMemo } from 'react';
 import { FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Artwork } from '@/components/artwork';
 import { AsyncState } from '@/components/async-state';
+import { ListLoading } from '@/components/list-loading';
 import { SongRow } from '@/components/song-row';
 import { playAndOpenPlayer } from '@/features/playback/play-and-open-player';
 import { useColors } from '@/theme/tokens';
@@ -39,9 +40,10 @@ export const LibraryPage = memo(function LibraryPage({ tab, sortOrder, data, isP
     const artist = item as Artist;
     return <Pressable accessibilityRole="button" accessibilityLabel={artist.name + ' 노래 보기'} onPress={() => router.push({ pathname: '/artist/[id]', params: { id: artist.id, name: artist.name } })} style={[styles.artist, { borderBottomColor: colors.separator }]}><View style={[styles.artistIcon, { backgroundColor: colors.surface }]}><Ionicons name="person" size={22} color={colors.tint} /></View><Text style={[styles.artistName, { color: colors.text }]}>{artist.name}</Text><Text style={{ color: colors.muted }}>{artist.albumCount ? `${artist.albumCount}개 앨범` : ''}</Text><Ionicons name="chevron-forward" size={18} color={colors.muted} /></Pressable>;
   }, [tab, cardWidth, colors, items]);
+  if (isPending) return <View style={{ width }}><ListLoading /></View>;
   return <View style={{ width }}>
-    <AsyncState loading={isPending} error={isError && !data ? (error as Error).message : null} retry={() => void onRefresh()}>
-      <ScrollEdgeFade><FlatList windowSize={7} maxToRenderPerBatch={6} style={styles.fill} nestedScrollEnabled data={items} keyExtractor={(item) => item.id} numColumns={tab === 'albums' ? 2 : 1} columnWrapperStyle={tab === 'albums' ? styles.columns : undefined} contentContainerStyle={styles.list} alwaysBounceVertical refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void onRefresh()} colors={[colors.tint]} tintColor={colors.tint} progressBackgroundColor={colors.surface} />} ListHeaderComponent={<View>{data && <Text style={[styles.stale, { color: colors.muted }]}>{data.total ?? 0}{tab === 'songs' ? '곡' : tab === 'albums' ? '개 앨범' : '명 아티스트'}</Text>}{data?.stale ? <Text style={[styles.stale, { color: colors.muted }]}>오프라인 보관함 · 마지막으로 저장된 목록</Text> : null}{isRefetchError ? <Pressable accessibilityRole="button" onPress={() => void onRefresh()} style={styles.refreshError}><Text style={{ color: colors.text }}>{error?.message}</Text><Text style={[styles.retry, { color: colors.tint }]}>다시 시도</Text></Pressable> : null}</View>} ListEmptyComponent={<View style={styles.empty}><Text style={{ color: colors.muted, textAlign: 'center' }}>표시할 음악이 없습니다.{'\n'}아래로 당겨 다시 확인하세요.</Text></View>} renderItem={renderItem} /></ScrollEdgeFade>
+    <AsyncState error={isError && !data ? (error as Error).message : null} retry={() => void onRefresh()}>
+      <TabScrollEdgeFade><FlatList windowSize={7} maxToRenderPerBatch={6} style={styles.fill} nestedScrollEnabled data={items} keyExtractor={(item) => item.id} numColumns={tab === 'albums' ? 2 : 1} columnWrapperStyle={tab === 'albums' ? styles.columns : undefined} contentContainerStyle={styles.list} alwaysBounceVertical refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void onRefresh()} colors={[colors.tint]} tintColor={colors.tint} progressBackgroundColor={colors.surface} />} ListHeaderComponent={<View>{data && <Text style={[styles.stale, { color: colors.muted }]}>{data.total ?? 0}{tab === 'songs' ? '곡' : tab === 'albums' ? '개 앨범' : '명 아티스트'}</Text>}{data?.stale ? <Text style={[styles.stale, { color: colors.muted }]}>오프라인 보관함 · 마지막으로 저장된 목록</Text> : null}{isRefetchError ? <Pressable accessibilityRole="button" onPress={() => void onRefresh()} style={styles.refreshError}><Text style={{ color: colors.text }}>{error?.message}</Text><Text style={[styles.retry, { color: colors.tint }]}>다시 시도</Text></Pressable> : null}</View>} ListEmptyComponent={<View style={styles.empty}><Text style={{ color: colors.muted, textAlign: 'center' }}>표시할 음악이 없습니다.{'\n'}아래로 당겨 다시 확인하세요.</Text></View>} renderItem={renderItem} /></TabScrollEdgeFade>
     </AsyncState>
   </View>;
 });

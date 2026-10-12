@@ -79,7 +79,7 @@ const downloader = load('src/services/offline-music/download.ts', {
   './formats': formats, '@/services/local-music/storage': storage,
   '@/services/synology/api': realApi, '@/stores/auth': { useAuthStore: auth }, '@/stores/google-drive': driveModule,
 });
-const nas = { id: 'nas-song', source: 'nas', title: 'Offline song', artist: 'Artist', album: 'Album', albumArtist: 'Album Artist', duration: 180, trackNumber: 2, path: '/private/music/song.flac', artworkUrl: 'https://nas.example.invalid/cover?_sid=private-fixture-sid' };
+const nas = { id: 'nas-song', source: 'nas', title: 'Offline song', artist: 'Artist', album: 'Album', albumSource: 'tag', albumArtist: 'Album Artist', duration: 180, trackNumber: 2, path: '/private/music/song.flac', artworkUrl: 'https://nas.example.invalid/cover?_sid=private-fixture-sid' };
 const cloud = { id: 'drive:fixture:file', source: 'drive', title: 'Cloud song', artist: 'Cloud artist', album: 'Google Drive', duration: 0, drive: { accountId: 'drive-account', fileId: 'file', mimeType: 'audio/mpeg' } };
 function run(song, controller = new AbortController()) { return downloader.downloadSong(song, controller.signal, () => {}, () => {}); }
 function assertNoParts() { assert.ok([...files.keys()].every(uri => !uri.includes('offline-download-')), 'Partial files must be cleaned'); }
@@ -90,6 +90,7 @@ async function main() {
   assert.equal(saved.song.source, 'local'); assert.equal(saved.song.title, nas.title);
   assert.equal(saved.song.artist, nas.artist); assert.equal(saved.song.album, nas.album);
   assert.equal(saved.song.duration, nas.duration); assert.equal(saved.song.local.downloadedFrom, 'nas');
+  assert.equal(saved.song.albumSource, 'tag', 'Local downloads retain confirmed album tags');
   assert.ok(saved.song.local.fileName.endsWith('.flac'));
   const nasRequest = new URL(requests[0].url);
   assert.equal(nasRequest.searchParams.get('method'), 'stream', 'Always original NAS stream');
@@ -111,6 +112,7 @@ async function main() {
   plan = { bytes: 'ID3cloud fixture' };
   const downloadedDrive = await run(cloud);
   assert.equal(downloadedDrive.song.local.downloadedFrom, 'drive');
+  assert.equal(downloadedDrive.song.albumSource, 'fallback', 'Downloads without album provenance obey the folder-album setting');
   assert.equal(requests.at(-1).options.headers.Authorization, 'Bearer private-fixture-drive-token');
   assert.ok(!rows.get(downloadedDrive.song.id).includes('drive-account')); assert.ok(!rows.get(downloadedDrive.song.id).includes('Bearer'));
   plan = [{ status: 401 }, { bytes: 'ID3new-token retry' }];

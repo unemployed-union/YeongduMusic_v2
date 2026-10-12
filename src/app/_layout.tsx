@@ -9,6 +9,7 @@ import { useAuthStore } from '@/stores/auth';
 import { useGoogleDriveStore } from '@/stores/google-drive';
 import { useLocalMusicStore } from '@/stores/local-music';
 import { useDisplayPreferences } from '@/stores/display-preferences';
+import { useLibraryPreferences } from '@/stores/library-preferences';
 import { useHiddenMusicStore } from '@/stores/hidden-music';
 import { usePlaylistStore } from '@/stores/playlists';
 import { privacyScope } from '@/features/hidden-music/rules';
@@ -25,6 +26,8 @@ function Navigation() {
   const displayReady = useDisplayPreferences((state) => state.ready);
   const loadDisplayPreferences = useDisplayPreferences((state) => state.load);
   useEffect(() => { void loadDisplayPreferences(); }, [loadDisplayPreferences]);
+  const loadLibraryPreferences = useLibraryPreferences((state) => state.load);
+  useEffect(() => { void loadLibraryPreferences(); }, [loadLibraryPreferences]);
   const scheme = useColorScheme();
   const privacy = useHiddenMusicStore();
   const loadPrivacy = privacy.load;
@@ -100,6 +103,7 @@ function Navigation() {
       <Stack.Screen name="settings/cloud/google-drive" options={{ headerShown: true, title: 'Google Drive', headerBackTitle: '클라우드 연결', headerTintColor: colors.tint, headerStyle: { backgroundColor: colors.background } }} />
       <Stack.Screen name="settings/playback" options={{ headerShown: true, title: '재생 및 화면', headerBackTitle: '설정', headerTintColor: colors.tint, headerStyle: { backgroundColor: colors.background } }} />
       <Stack.Screen name="settings/library" options={{ headerShown: true, title: '보관함 설정', headerBackTitle: '설정', headerTintColor: colors.tint, headerStyle: { backgroundColor: colors.background } }} />
+      <Stack.Screen name="settings/licenses" options={{ headerShown: true, title: '오픈소스 라이선스', headerBackTitle: '설정', headerTintColor: colors.tint, headerStyle: { backgroundColor: colors.background } }} />
       <Stack.Screen name="settings/other" options={{ headerShown: true, title: '기타', headerBackTitle: '설정', headerTintColor: colors.tint, headerStyle: { backgroundColor: colors.background } }} />
       <Stack.Screen name="hidden-music" options={{ headerShown: true, title: '음악 숨기기', headerBackTitle: '기타', headerTintColor: colors.tint, headerStyle: { backgroundColor: colors.background } }} />
       <Stack.Screen name="hidden-playlists" options={{ headerShown: true, title: '플레이리스트 숨기기', headerBackTitle: '기타', headerTintColor: colors.tint, headerStyle: { backgroundColor: colors.background } }} />

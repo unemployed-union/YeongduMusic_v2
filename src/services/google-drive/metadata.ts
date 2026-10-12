@@ -25,7 +25,7 @@ function artworkDirectory() {
 }
 function apply(song: Song, fields: MusicTags, artworkUrl?: string): Song {
   if (song.source !== 'drive') return song;
-  const updated = { ...song, ...fields, artworkUrl };
+  const updated: Song = { ...song, ...fields, artworkUrl, albumSource: fields.album?.trim() ? 'tag' : 'fallback' };
   // A Drive account must not collapse all albums into the old single Drive album ID.
   updated.albumId = JSON.stringify(['drive', song.drive.accountId, updated.album, updated.albumArtist || updated.artist]);
   return updated;

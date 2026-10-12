@@ -47,6 +47,7 @@ const privacy = privacyModule.useHiddenMusicStore;
 const auth = { mode: 'mock', session: null };
 const localFixture = { songs: [], ready: true, source: 'nas' };
 const queries = load('src/features/library/queries.ts', {
+  '@/stores/library-preferences': { useLibraryPreferences: selector => selector({ ready: true, includeFolderAlbums: true }) },
   react: { useMemo: factory => factory(), useCallback: callback => callback },
   '@/stores/google-drive': { useGoogleDriveStore: selector => selector({ songs: [], loading: false, error: null }) },
   '@/stores/local-music': { useLocalMusicStore: selector => selector(localFixture) },

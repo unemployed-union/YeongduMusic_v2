@@ -73,6 +73,7 @@ async function main() {
       'react-native': { View: 'View', Text: 'Text', Pressable: 'Pressable', Alert: { alert: () => { alerts++; } }, StyleSheet: { create: x => x, hairlineWidth: 1 } },
       'expo-router': { useFocusEffect: fn => { cleanup = fn(); } },
       'expo-constants': { __esModule: true, default: { expoConfig: { version: '1.0.0', extra: { buildVersion: '20261012C' } } } },
+      '@expo/vector-icons/Ionicons': { __esModule: true, default: 'Icon' },
       '@/stores/hidden-feature-access': { useHiddenFeatureAccess: hook },
       '@/stores/hidden-music': { useHiddenMusicStore: { getState: () => ({ lock: () => { locked++; } }) } },
       '@/theme/tokens': { useColors: () => ({ text: '#fff', muted: '#aaa', separator: '#333', tint: '#f48' }) },

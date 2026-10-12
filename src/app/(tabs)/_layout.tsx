@@ -6,9 +6,8 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useKeyboardState } from 'react-native-keyboard-controller';
 import { MINI_PLAYER_INSET, MiniPlayer } from '@/components/mini-player';
+import { TAB_BAR_HEIGHT, TabBarInsetContext } from '@/components/tab-bar-inset';
 import { useColors } from '@/theme/tokens';
-
-const TAB_BAR_HEIGHT = 66;
 
 export default function TabsLayout() {
   const colors = useColors();
@@ -22,7 +21,9 @@ export default function TabsLayout() {
 
   return <Tabs
     // Capture screen content only; both chrome surfaces share the active target.
-    screenLayout={({ children, route }) => <BlurTargetView ref={targetFor(route.name)} style={styles.content}>{children}</BlurTargetView>}
+    screenLayout={({ children, route }) => <BlurTargetView ref={targetFor(route.name)} style={styles.content}>
+      <TabBarInsetContext.Provider value={keyboardVisible ? 0 : TAB_BAR_HEIGHT + insets.bottom}>{children}</TabBarInsetContext.Provider>
+    </BlurTargetView>}
     layout={({ children, state }) => <View style={styles.content}>
       {children}
       {!keyboardVisible && <View pointerEvents="box-none" style={[styles.mini, { bottom: TAB_BAR_HEIGHT + insets.bottom + MINI_PLAYER_INSET }]}><MiniPlayer blurTarget={targetFor(state.routes[state.index].name)} /></View>}

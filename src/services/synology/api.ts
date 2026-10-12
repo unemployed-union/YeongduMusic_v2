@@ -211,7 +211,9 @@ export class SynologyClient {
     const tag = item.additional && typeof item.additional === 'object' ? (item.additional as Record<string, unknown>).song_tag : undefined;
     const tags = tag && typeof tag === 'object' ? tag as Record<string, unknown> : {};
     const artist = [string(item.artist), string(tags.artist)].find(value => value.trim()) ?? '알 수 없는 아티스트';
-    return { id: (id.startsWith('local:') || id.startsWith('drive:')) ? 'nas:' + id : id, nasId: (id.startsWith('local:') || id.startsWith('drive:')) ? id : undefined, source: 'nas', path: string(item.path) || undefined, title: string(item.title, '제목 없음'), artist, album: string(item.album, string(tags.album, '알 수 없는 앨범')), albumArtist: string(tags.album_artist) || undefined, discNumber: number(tags.disc) || undefined, year: number(tags.year) || undefined, duration: number(item.duration), trackNumber: number(item.track, number(tags.track)) || undefined, artworkUrl: this.coverUrl(id) };
+    const taggedAlbum = string(tags.album).trim();
+    const album = taggedAlbum || string(item.album).trim() || '알 수 없는 앨범';
+    return { id: (id.startsWith('local:') || id.startsWith('drive:')) ? 'nas:' + id : id, nasId: (id.startsWith('local:') || id.startsWith('drive:')) ? id : undefined, source: 'nas', path: string(item.path) || undefined, title: string(item.title, '제목 없음'), artist, album, albumSource: taggedAlbum ? 'tag' : 'fallback', albumArtist: string(tags.album_artist) || undefined, discNumber: number(tags.disc) || undefined, year: number(tags.year) || undefined, duration: number(item.duration), trackNumber: number(item.track, number(tags.track)) || undefined, artworkUrl: this.coverUrl(id) };
   }
   async albums({ offset, limit, signal }: PageRequest): Promise<Page<Album>> {
     const result = this.collection(await this.call('SYNO.AudioStation.Album', 'list', { offset, limit, library: AUDIO_STATION_LIBRARY }, signal), 'albums');

@@ -3,12 +3,25 @@ import type { Album, Page, Song } from '@/types/music';
 // Song.list/song_tag and getsongcover have been checked against the NAS.
 // Do not depend on an Album.list cover field or a server-side album filter.
 export function albumId(song: Song): string {
-  return song.albumId ?? JSON.stringify([song.album, song.albumArtist || song.artist]);
+  const id = song.albumId ?? JSON.stringify([song.album, song.albumArtist || song.artist]);
+  const fallback = song.albumSource === 'fallback' || (song.source === 'local' && !hasAlbumTag(song));
+  return fallback ? JSON.stringify(['fallback', id]) : id;
 }
 
-export function albumsFromSongs(library: Page<Song>): Page<Album> {
+export function hasAlbumTag(song: Song): boolean {
+  if (song.albumSource) return song.albumSource === 'tag';
+  // Legacy local imports/downloads may carry a folder name as their album.
+  // Without provenance, a nonempty name alone does not confirm an album tag.
+  if (song.source === 'local') return false;
+  // Older saved songs do not carry provenance. Only exclude known default labels;
+  // a real album can have exactly the same name as its containing folder.
+  return !!song.album.trim() && !['알 수 없는 앨범', '이 기기 음악', 'Google Drive'].includes(song.album.trim());
+}
+
+export function albumsFromSongs(library: Page<Song>, includeFolderAlbums = true): Page<Album> {
   const albums = new Map<string, Album>();
   for (const song of library.items) {
+    if (!includeFolderAlbums && !hasAlbumTag(song)) continue;
     const id = albumId(song);
     const previous = albums.get(id);
     if (previous) {

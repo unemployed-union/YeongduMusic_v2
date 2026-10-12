@@ -1,0 +1,242 @@
+[
+  {
+    "id": "apache-2",
+    "name": "Apache License 2.0",
+    "version": "",
+    "license": "Apache-2.0",
+    "file": "assets/legal/upstream/apache-2.txt",
+    "url": "https://www.apache.org/licenses/LICENSE-2.0.txt"
+  },
+  {
+    "id": "appauth",
+    "name": "AppAuth",
+    "version": "~> 2.0 (iOS)",
+    "license": "Apache-2.0",
+    "file": "assets/legal/upstream/appauth.txt",
+    "url": "https://raw.githubusercontent.com/openid/AppAuth-iOS/master/LICENSE"
+  },
+  {
+    "id": "appcheck",
+    "name": "AppCheckCore",
+    "version": "~> 11.0 (iOS)",
+    "license": "Apache-2.0",
+    "file": "assets/legal/upstream/appcheck.txt",
+    "url": "https://raw.githubusercontent.com/google/app-check/main/LICENSE"
+  },
+  {
+    "id": "bolts",
+    "name": "Bolts Tasks",
+    "version": "1.4.0",
+    "license": "BSD-3-Clause",
+    "file": "assets/legal/upstream/bolts.txt",
+    "url": "https://raw.githubusercontent.com/BoltsFramework/Bolts-Android/1.4.0/LICENSE"
+  },
+  {
+    "id": "brotli",
+    "name": "Brotli",
+    "version": "0.1.2",
+    "license": "MIT",
+    "file": "assets/legal/upstream/brotli.txt",
+    "url": "https://raw.githubusercontent.com/google/brotli/master/LICENSE"
+  },
+  {
+    "id": "double-conversion",
+    "name": "double-conversion",
+    "version": "1.1.6",
+    "license": "BSD-3-Clause",
+    "file": "assets/legal/upstream/double-conversion.txt",
+    "url": "https://raw.githubusercontent.com/google/double-conversion/v1.1.6/LICENSE"
+  },
+  {
+    "id": "expo",
+    "name": "Expo",
+    "version": "57",
+    "license": "MIT",
+    "file": "assets/legal/upstream/expo.txt",
+    "url": "https://raw.githubusercontent.com/expo/expo/sdk-57/LICENSE"
+  },
+  {
+    "id": "fast-float",
+    "name": "fast_float",
+    "version": "8.0.0",
+    "license": "MIT",
+    "file": "assets/legal/upstream/fast-float.txt",
+    "url": "https://raw.githubusercontent.com/fastfloat/fast_float/v8.0.0/LICENSE-MIT"
+  },
+  {
+    "id": "fmt",
+    "name": "fmt",
+    "version": "12.1.0",
+    "license": "MIT",
+    "file": "assets/legal/upstream/fmt.txt",
+    "url": "https://raw.githubusercontent.com/fmtlib/fmt/12.1.0/LICENSE"
+  },
+  {
+    "id": "folly",
+    "name": "Folly",
+    "version": "2024.11.18.00",
+    "license": "Apache-2.0",
+    "file": "assets/legal/upstream/folly.txt",
+    "url": "https://raw.githubusercontent.com/facebook/folly/v2024.11.18.00/LICENSE"
+  },
+  {
+    "id": "fresco",
+    "name": "Fresco",
+    "version": "3.6.0",
+    "license": "MIT",
+    "file": "assets/legal/upstream/fresco.txt",
+    "url": "https://raw.githubusercontent.com/facebook/fresco/v3.6.0/LICENSE"
+  },
+  {
+    "id": "glog",
+    "name": "glog",
+    "version": "0.3.5",
+    "license": "BSD-3-Clause",
+    "file": "assets/legal/upstream/glog.txt",
+    "url": "https://raw.githubusercontent.com/google/glog/v0.3.5/COPYING"
+  },
+  {
+    "id": "google-signin",
+    "name": "GoogleSignIn",
+    "version": "~> 9.0 (iOS)",
+    "license": "Apache-2.0",
+    "file": "assets/legal/upstream/google-signin.txt",
+    "url": "https://raw.githubusercontent.com/google/GoogleSignIn-iOS/9.0.0/LICENSE"
+  },
+  {
+    "id": "google-utilities",
+    "name": "GoogleUtilities",
+    "version": "~> 8.0 (iOS)",
+    "license": "Apache-2.0",
+    "file": "assets/legal/upstream/google-utilities.txt",
+    "url": "https://raw.githubusercontent.com/google/GoogleUtilities/8.0.0/LICENSE"
+  },
+  {
+    "id": "gtmappauth",
+    "name": "GTMAppAuth",
+    "version": "~> 5.0 (iOS)",
+    "license": "Apache-2.0",
+    "file": "assets/legal/upstream/gtmappauth.txt",
+    "url": "https://raw.githubusercontent.com/google/GTMAppAuth/master/LICENSE"
+  },
+  {
+    "id": "gtmsessionfetcher",
+    "name": "GTMSessionFetcher",
+    "version": "~> 3.3 (iOS)",
+    "license": "Apache-2.0",
+    "file": "assets/legal/upstream/gtmsessionfetcher.txt",
+    "url": "https://raw.githubusercontent.com/google/gtm-session-fetcher/main/LICENSE"
+  },
+  {
+    "id": "hermes",
+    "name": "Hermes",
+    "version": "0.17.0",
+    "license": "MIT",
+    "file": "assets/legal/upstream/hermes.txt",
+    "url": "https://raw.githubusercontent.com/facebook/hermes/hermes-v0.17.0/LICENSE"
+  },
+  {
+    "id": "hermes-regex",
+    "name": "Regular expression code (Hermes)",
+    "version": "0.17.0",
+    "license": "BSD-3-Clause",
+    "file": "assets/legal/upstream/hermes-regex.txt",
+    "url": "https://raw.githubusercontent.com/facebook/hermes/hermes-v0.17.0/include/hermes/Regex/LICENSE.TXT"
+  },
+  {
+    "id": "icu",
+    "name": "ICU (Hermes)",
+    "version": "0.17.0",
+    "license": "Unicode / ICU",
+    "file": "assets/legal/upstream/icu.txt",
+    "url": "https://raw.githubusercontent.com/facebook/hermes/hermes-v0.17.0/doc/icu_license.txt"
+  },
+  {
+    "id": "infer",
+    "name": "Infer annotations",
+    "version": "0.18.0",
+    "license": "MIT",
+    "file": "assets/legal/upstream/infer.txt",
+    "url": "https://raw.githubusercontent.com/facebook/infer/infer-annotation-0.18.0/LICENSE"
+  },
+  {
+    "id": "llvh",
+    "name": "LLVM Support (Hermes)",
+    "version": "0.17.0",
+    "license": "Apache-2.0 WITH LLVM-exception / NCSA",
+    "file": "assets/legal/upstream/llvh.txt",
+    "url": "https://raw.githubusercontent.com/facebook/hermes/hermes-v0.17.0/external/llvh/LICENSE.txt"
+  },
+  {
+    "id": "llvh-support",
+    "name": "LLVM Support third-party code (Hermes)",
+    "version": "0.17.0",
+    "license": "BSD / MIT",
+    "file": "assets/legal/upstream/llvh-support.txt",
+    "url": "https://raw.githubusercontent.com/facebook/hermes/hermes-v0.17.0/external/llvh/include/llvh/Support/LICENSE.TXT"
+  },
+  {
+    "id": "mpl-2",
+    "name": "Public Suffix List (OkHttp)",
+    "version": "",
+    "license": "MPL-2.0",
+    "file": "assets/legal/upstream/mpl-2.txt",
+    "url": "https://www.mozilla.org/media/MPL/2.0/index.txt"
+  },
+  {
+    "id": "pika",
+    "name": "Pika",
+    "version": "0.3.2",
+    "license": "MIT",
+    "file": "assets/legal/upstream/pika.txt",
+    "url": "https://raw.githubusercontent.com/lukmccall/pika/main/LICENSE.txt"
+  },
+  {
+    "id": "promises",
+    "name": "PromisesObjC",
+    "version": "~> 2.4 (iOS)",
+    "license": "Apache-2.0",
+    "file": "assets/legal/upstream/promises.txt",
+    "url": "https://raw.githubusercontent.com/google/promises/2.4.0/LICENSE"
+  },
+  {
+    "id": "react-navigation",
+    "name": "React Navigation (bundled in Expo Router)",
+    "version": "57.0.25",
+    "license": "MIT",
+    "file": "assets/legal/upstream/react-navigation.txt",
+    "url": "https://raw.githubusercontent.com/react-navigation/react-navigation/main/packages/core/LICENSE"
+  },
+  {
+    "id": "slider",
+    "name": "@react-native-community/slider",
+    "version": "5.2.0",
+    "license": "MIT",
+    "file": "assets/legal/upstream/slider.txt",
+    "url": "https://raw.githubusercontent.com/callstack/react-native-slider/v5.2.0/LICENSE.md"
+  },
+  {
+    "id": "standard-navigation",
+    "name": "standard-navigation",
+    "version": "0.0.5",
+    "license": "MIT",
+    "file": "assets/legal/upstream/standard-navigation.txt",
+    "url": "https://raw.githubusercontent.com/react-navigation/standard-navigation/main/LICENSE"
+  },
+  {
+    "id": "swiftdraw",
+    "name": "SwiftDraw",
+    "version": "~> 0.27 (iOS)",
+    "license": "Zlib",
+    "file": "assets/legal/upstream/swiftdraw.txt",
+    "url": "https://raw.githubusercontent.com/swhitty/SwiftDraw/main/LICENSE.txt"
+  },
+  {
+    "id": "yoga",
+    "name": "Yoga",
+    "version": "1.19.0 / React Native 0.86.3",
+    "license": "MIT",
+    "file": "assets/legal/upstream/yoga.txt",
+    "url": "https://raw.githubusercontent.com/facebook/yoga/v1.19.0/LICENSE"
+  }
+]

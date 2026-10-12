@@ -31,7 +31,7 @@ export async function readLocalSongs(): Promise<Song[]> {
     const song = JSON.parse(row.value) as Song;
     if (!song || song.source !== 'local' || typeof song.title !== 'string' || typeof song.artist !== 'string' || typeof song.album !== 'string' || !Number.isFinite(song.duration) || song.duration < 0 || !Number.isFinite(song.local?.size) || song.local.size <= 0 || !/^local:[a-f0-9]{32}:\d+$/.test(song.id) || !/^[a-f0-9]{32}-\d+\.(mp3|m4a|flac|wav|aac|aiff|aif|ogg|opus|alac)$/.test(song.local?.fileName ?? '')) throw new Error('저장된 로컬 음악 목록 형식을 확인할 수 없습니다.');
     if (song.local.originalFolders !== undefined && (!Array.isArray(song.local.originalFolders) || song.local.originalFolders.some(folder => typeof folder !== 'string' || !folder || localFolderKey(folder) !== folder))) throw new Error('저장된 원본 폴더 정보를 확인할 수 없습니다.');
-    return song;
+    return { ...song, albumSource: song.albumSource ?? 'fallback' };
   });
 }
 async function save(song: Song) {
@@ -89,7 +89,7 @@ export function storeDownloadedSong(original: Song, uri: string, extension: stri
       // Explicit fields only: never persist source URLs, tokens, account IDs or NAS paths.
       const song: Song = previous ?? {
         id, source: 'local',
-        title: original.title, artist: original.artist, album: original.album,
+        title: original.title, artist: original.artist, album: original.album, albumSource: original.albumSource ?? 'fallback',
         albumArtist: original.albumArtist, discNumber: original.discNumber, year: original.year,
         duration: original.duration, trackNumber: original.trackNumber, palette: original.palette,
         local: { fileName, originalName: original.title + '.' + extension, size: info.size, mimeType, downloadedFrom: original.source === 'drive' ? 'drive' : 'nas' },
@@ -183,7 +183,7 @@ export function importLocalSongs(kind: ImportKind = 'files', onProgress?: (proce
           if (!copied.exists || copied.isDirectory || copied.size !== info.size || copied.md5?.toLowerCase() !== digest) throw new Error('파일 복사를 완료하지 못했습니다. 저장 공간을 확인해 주세요.');
           const song: Song = previous ?? {
             id, source: 'local', local: { fileName, originalName: asset.name, size: info.size, mimeType: asset.mimeType, originalFolders: originFolder ? [originFolder] : undefined },
-            title: asset.name.replace(/\.[^.]+$/, ''), artist: '알 수 없는 아티스트', album: '이 기기 음악',
+            title: asset.name.replace(/\.[^.]+$/, ''), artist: '알 수 없는 아티스트', album: '이 기기 음악', albumSource: 'fallback',
             albumId: 'local:device', duration: Number.isFinite(asset.duration) && (asset.duration ?? 0) > 0 ? asset.duration! : 0,
           };
           await save(song);

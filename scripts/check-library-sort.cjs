@@ -25,8 +25,9 @@ const modules = {
   'react/jsx-runtime': { jsx, jsxs: jsx },
   'react-native': { FlatList: 'FlatList', View: 'View', Text: 'Text', Pressable: 'Pressable', RefreshControl: 'RefreshControl', StyleSheet: { create: value => value, hairlineWidth: 1 } },
   'expo-router': { router: { push() {} } }, '@expo/vector-icons/Ionicons': 'Ionicons',
-  '@/components/scroll-edge-fade': { ScrollEdgeFade: 'ScrollEdgeFade' }, '@/components/artwork': { Artwork: 'Artwork' },
+  '@/components/tab-scroll-edge-fade': { TabScrollEdgeFade: 'ScrollEdgeFade' }, '@/components/artwork': { Artwork: 'Artwork' },
   '@/components/async-state': { AsyncState: 'AsyncState' }, '@/components/song-row': { SongRow: 'SongRow' },
+  '@/components/list-loading': { ListLoading: 'ListLoading' },
   '@/features/playback/play-and-open-player': { playAndOpenPlayer: (items, index) => { queue = { items, index }; } },
   '@/theme/tokens': { useColors: () => ({}) }, './sort-library': { sortLibraryItems: (...args) => { calls++; return sort(...args); } },
 };

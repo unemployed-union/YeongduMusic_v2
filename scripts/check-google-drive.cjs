@@ -322,6 +322,7 @@ async function main() {
   const driveState = { songs: tracks, loading: false, error: null }, localState = { source: 'all', songs: [local], ready: true };
   let queryResult;
   const hooks = load('src/features/library/queries.ts', {
+    '@/stores/library-preferences': { useLibraryPreferences: selector => selector({ ready: true, includeFolderAlbums: true }) },
     react: { useMemo: f => f(), useCallback: f => f }, '@tanstack/react-query': { useQuery: options => queryResult ?? options },
     '@/stores/google-drive': { useGoogleDriveStore: selector => selector(driveState) }, '@/stores/local-music': { useLocalMusicStore: selector => selector(localState) },
     '@/stores/auth': { useAuthStore: selector => selector({ mode: 'nas', session: {} }) }, '@/stores/hidden-music': { useHiddenMusicStore: selector => selector({ ready: true, profile: { presets: [] } }) },

@@ -28,6 +28,7 @@ const callbacks = new Map();
 const EMPTY_DRIVE_SONGS = [];
 const localFixture = { songs: [], ready: true, source: 'nas' };
 const queries = load(process.argv[2] || path.join(root, 'src/features/library/queries.ts'), {
+  '@/stores/library-preferences': { useLibraryPreferences: selector => selector({ ready: true, includeFolderAlbums: true }) },
   react: { useMemo: factory => factory(), useCallback: (callback, dependencies) => {
     const previous = callbacks.get(activeHook + ':' + hookSlot++);
     if (previous && previous.dependencies.length === dependencies.length && dependencies.every((value, index) => Object.is(value, previous.dependencies[index]))) return previous.callback;

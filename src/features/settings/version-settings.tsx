@@ -2,6 +2,7 @@ import { useCallback, useEffect } from 'react';
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import Constants from 'expo-constants';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { useHiddenFeatureAccess } from '@/stores/hidden-feature-access';
 import { useHiddenMusicStore } from '@/stores/hidden-music';
 import { useColors } from '@/theme/tokens';
@@ -20,7 +21,8 @@ export function VersionSettings() {
     Alert.alert('설정', enabled ? '숨김 기능 메뉴를 켰습니다.' : '숨김 기능 메뉴를 감췄습니다. 기존 숨김 목록은 유지됩니다.');
   }
   return <View>
-    <Pressable accessibilityRole="button" accessibilityLabel={`버전 ${version}`} disabled={!ready || busy} onPress={() => void onPress()} style={[styles.row, { borderBottomColor: colors.separator }]}>
+    <Pressable accessibilityRole="button" accessibilityLabel={`버전 ${version}`} disabled={!ready || busy} onPress={() => void onPress()} style={styles.row}>
+      <View style={styles.icon}><Ionicons name="information-circle-outline" size={23} color={colors.tint} /></View>
       <Text style={[styles.label, { color: colors.text }]}>버전</Text>
       <Text style={[styles.version, { color: colors.muted }]}>{version}</Text>
     </Pressable>
@@ -28,6 +30,8 @@ export function VersionSettings() {
   </View>;
 }
 const styles = StyleSheet.create({
-  row: { minHeight: 57, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderBottomWidth: StyleSheet.hairlineWidth, gap: 12, marginBottom: 14 },
-  label: { fontSize: 16, fontWeight: '600' }, version: { fontSize: 14 }, error: { fontSize: 12, lineHeight: 18, marginBottom: 14 },
+  // Match the visible icon's inset (a 23px glyph centered in a 28px slot).
+  row: { minHeight: 68, flexDirection: 'row', alignItems: 'center', gap: 18, padding: 15, paddingRight: 15 + (28 - 23) / 2 },
+  icon: { width: 28, height: 28, alignItems: 'center', justifyContent: 'center' },
+  label: { flex: 1, fontSize: 16, fontWeight: '600' }, version: { fontSize: 14, flexShrink: 1 }, error: { fontSize: 12, lineHeight: 18, paddingHorizontal: 15, paddingBottom: 15 },
 });
