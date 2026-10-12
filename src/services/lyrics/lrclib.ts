@@ -30,12 +30,13 @@ function wait(milliseconds: number, signal?: AbortSignal): Promise<void> {
   });
 }
 
-async function requestLyrics(song: Song, duration: number, signal?: AbortSignal): Promise<LyricsDocument> {
+async function requestLyrics(song: Song, duration: number, signal?: AbortSignal, search = false): Promise<LyricsDocument> {
   checkLyricsCancelled(signal);
   if (!song.title.trim() || !song.artist.trim()) return missing();
   const parameters = new URLSearchParams({ track_name: song.title, artist_name: song.artist });
-  if (song.album.trim()) parameters.set('album_name', song.album);
-  if (Number.isFinite(duration) && duration >= 1 && duration <= 3600) parameters.set('duration', String(duration));
+  if (!search && song.album.trim()) parameters.set('album_name', song.album);
+  const knownDuration = Number.isFinite(duration) && duration >= 1 && duration <= 3600;
+  if (!search && knownDuration) parameters.set('duration', String(duration));
   const controller = new AbortController();
   const deadline = Date.now() + 15000;
   let stopped: LyricsRequestError | null = null;
@@ -59,7 +60,7 @@ async function requestLyrics(song: Song, duration: number, signal?: AbortSignal)
     check();
     let response: Response;
     try {
-      response = await fetch(`https://lrclib.net/api/get?${parameters}`, {
+      response = await fetch(`https://lrclib.net/api/${search ? 'search' : 'get'}?${parameters}`, {
         signal: controller.signal,
         // Native defaults such as okhttp receive HTTP 520 despite Lrclib-Client.
         // Browsers control User-Agent, so keep the supported alternative there.
@@ -89,33 +90,41 @@ async function requestLyrics(song: Song, duration: number, signal?: AbortSignal)
     try { raw = JSON.parse(body); }
     catch { check(); throw new LyricsRequestError('response', '온라인 가사 응답을 읽을 수 없습니다.'); }
     check();
-    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) throw new LyricsRequestError('response', '온라인 가사 형식이 올바르지 않습니다.');
-    const record = raw as Record<string, unknown>;
-    if (typeof record.trackName !== 'string' || typeof record.artistName !== 'string' || typeof record.instrumental !== 'boolean' ||
-      !(record.syncedLyrics === null || typeof record.syncedLyrics === 'string') || !(record.plainLyrics === null || typeof record.plainLyrics === 'string')) {
-      throw new LyricsRequestError('response', '온라인 가사 형식이 올바르지 않습니다.');
+    if (search ? !Array.isArray(raw) : (!raw || typeof raw !== 'object' || Array.isArray(raw))) throw new LyricsRequestError('response', '온라인 가사 형식이 올바르지 않습니다.');
+    const records: unknown[] = search ? raw as unknown[] : [raw];
+    if (records.length > 100) throw new LyricsRequestError('response', '가사 검색 결과가 너무 많습니다.');
+    const candidates: { document: LyricsDocument; albumMatch: boolean }[] = [];
+    for (const value of records) {
+      if (!value || typeof value !== 'object' || Array.isArray(value)) throw new LyricsRequestError('response', '온라인 가사 형식이 올바르지 않습니다.');
+      const record = value as Record<string, unknown>;
+      if (typeof record.trackName !== 'string' || typeof record.artistName !== 'string' || typeof record.instrumental !== 'boolean' ||
+        !(record.syncedLyrics === null || typeof record.syncedLyrics === 'string') || !(record.plainLyrics === null || typeof record.plainLyrics === 'string')) {
+        throw new LyricsRequestError('response', '온라인 가사 형식이 올바르지 않습니다.');
+      }
+      if (normalize(record.trackName) !== normalize(song.title) || normalize(record.artistName) !== normalize(song.artist)) continue;
+      if (knownDuration && (typeof record.duration !== 'number' || !Number.isFinite(record.duration) || Math.abs(record.duration - duration) > 2)) continue;
+      const synced = parseLyrics(typeof record.syncedLyrics === 'string' ? record.syncedLyrics : '', 'lrclib');
+      const document: LyricsDocument = record.instrumental ? { provider: 'lrclib', kind: 'instrumental', lines: [] } : synced.kind === 'synced' ? synced : parseLyrics(typeof record.plainLyrics === 'string' ? record.plainLyrics : '', 'lrclib');
+      candidates.push({ document, albumMatch: typeof record.albumName === 'string' && normalize(record.albumName) === normalize(song.album) });
     }
-    if (normalize(record.trackName) !== normalize(song.title) || normalize(record.artistName) !== normalize(song.artist)) return missing();
-    if (parameters.has('duration') && (typeof record.duration !== 'number' || !Number.isFinite(record.duration) || Math.abs(record.duration - duration) > 2)) return missing();
-    if (record.instrumental) return { provider: 'lrclib', kind: 'instrumental', lines: [] };
-    const synced = parseLyrics(typeof record.syncedLyrics === 'string' ? record.syncedLyrics : '', 'lrclib');
-    const result = synced.kind === 'synced' ? synced : parseLyrics(typeof record.plainLyrics === 'string' ? record.plainLyrics : '', 'lrclib');
+    const rank = (candidate: typeof candidates[number]) => (candidate.document.kind === 'synced' ? 4 : candidate.document.kind === 'plain' ? 2 : 0) + Number(candidate.albumMatch);
+    candidates.sort((a, b) => rank(b) - rank(a));
     check();
-    return result;
+    return candidates[0]?.document ?? missing();
   }
   try { return await Promise.race([interruption, fetchLyrics()]); }
   finally { clearTimeout(timer); signal?.removeEventListener('abort', onAbort); }
 }
 
 // Sequential, on-demand requests only; respect the provider's Retry-After.
-export function onlineLyrics(song: Song, duration: number, signal?: AbortSignal): Promise<LyricsDocument> {
+export function onlineLyrics(song: Song, duration: number, signal?: AbortSignal, search = false): Promise<LyricsDocument> {
   const result = requests.then(async () => {
     checkLyricsCancelled(signal);
     const delay = nextRequestAt - Date.now();
     if (delay > 500) throw new LyricsRequestError('rate-limit', '가사 서버가 잠시 쉬고 있습니다. 잠시 후 다시 시도해 주세요.');
     if (delay > 0) await wait(delay, signal);
     checkLyricsCancelled(signal);
-    try { return await requestLyrics(song, duration, signal); }
+    try { return await requestLyrics(song, duration, signal, search); }
     finally { nextRequestAt = Math.max(nextRequestAt, Date.now() + 250); }
   });
   requests = result.catch(() => {});

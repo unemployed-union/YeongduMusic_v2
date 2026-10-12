@@ -7,6 +7,8 @@ const { Buffer } = require('node:buffer');
 const root = path.resolve(__dirname, '..');
 const ts = require(path.join(root, 'node_modules/typescript'));
 const { create } = require(path.join(root, 'node_modules/zustand'));
+const folderRules = load('src/services/local-music/folders.ts', {});
+const exclusions = create(() => ({ folders: [], ready: true, load: async () => {} }));
 function load(file, modules = {}, globals = {}) {
   const code = ts.transpileModule(fs.readFileSync(path.join(root, file), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX } }).outputText;
   const mod = { exports: {} };
@@ -35,6 +37,8 @@ const db = {
   runAsync: async (statement, id, value) => { sql.push(statement); if (databaseFails) throw Error('DB failure'); rows.set(id, value); },
 };
 const storageModules = {
+  '@/stores/folder-exclusions': { useFolderExclusionStore: exclusions },
+  './folders': folderRules,
   'react-native': { Platform: { get OS() { return platform; } } },
   'expo-sqlite': { openDatabaseAsync: async name => { assert.equal(name, 'music-library.db'); return db; } },
   'expo-file-system/legacy': fileSystem,
@@ -96,7 +100,7 @@ async function main() {
   platform = 'web'; assert.deepEqual(await storage.readLocalSongs(), []); await assert.rejects(storage.importLocalSongs(), /iOS/); platform = 'android';
   console.log('PASS: multi-file selection, persistent app copies/SQLite, content duplicates, same-name distinct files, restart/container relocation, missing-file restore, cancellation, unsupported/empty files, copy/DB rollback, original preservation and web guard.');
 
-  const localStore = load('src/stores/local-music.ts', { '@/services/local-music/storage': storage }).useLocalMusicStore;
+  const localStore = load('src/stores/local-music.ts', { '@/services/local-music/storage': storage, './folder-exclusions': { useFolderExclusionStore: exclusions }, '@/services/local-music/folders': folderRules }).useLocalMusicStore;
   await localStore.getState().load();
   assert.equal(localStore.getState().songs.length, 4);
   await localStore.getState().recordDuration(songs[1].id, 99);
@@ -126,7 +130,7 @@ async function main() {
   const nas = { id: 'nas-song', source: 'nas', title: 'NAS fixture', album: 'Album', artist: 'Artist', duration: 180 };
   const controller = load('src/services/playback/controller.ts', {
     './audio-engine': { ExpoAudioEngine: Engine },
-    '@/services/local-music/storage': storage,
+    '@/services/local-music/storage': storage, './folder-exclusions': { useFolderExclusionStore: exclusions }, '@/services/local-music/folders': folderRules,
     '@/stores/local-music': { useLocalMusicStore: localStore },
     '@/services/synology/api': { SessionExpiredError, SynologyError, SynologyClient: class { async checkSession() { checks++; } } },
     '@/features/library/repository': { musicRepository: () => { assert.ok(auth.session); nasRequests++; return { streamSource: async () => pendingNas ? pendingNas.promise : { uri: 'https://example.invalid/stream' } }; } },
@@ -177,6 +181,13 @@ async function main() {
   playback.setState({ repeat: 'off', shuffle: true }); await controller.next(); assert.equal(playback.getState().index, 1);
   remoteCallback('previous'); await flush(); assert.equal(instances, 1);
   controller.stopPlayback();
+  auth.mode = 'nas'; privacy.setState({ ready: true, scope: rules.privacyScope(auth.mode, auth.session) });
+  await controller.playQueue([a, b], 0);
+  controller.reconcilePlaybackVisibility(song => song.source === 'local' && song.id === b.id);
+  assert.deepEqual(playback.getState().queue.map(song => song.id), [a.id]);
+  assert.equal(playback.getState().index, 0);
+  controller.reconcilePlaybackVisibility(song => song.source === 'local' && song.id === a.id);
+  assert.equal(playback.getState().queue.length, 0, 'Excluding current local song stops and clears playback');
   console.log('PASS: actual controller/store with Mock audio: unauthenticated/offline local playback, NAS↔local transitions, shared queue, seek/pause/next/previous, repeat/shuffle/remote commands, session-change survival, no local NAS auth checks, duration persistence, missing-file retry and stale source protection.');
 
   const metadata = load('src/features/library/load-song-library.ts');

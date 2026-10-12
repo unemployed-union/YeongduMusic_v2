@@ -9,6 +9,9 @@ import { hiddenMatcher, privacyScope } from '@/features/hidden-music/rules';
 import type { Song } from '@/types/music';
 
 let engine: ExpoAudioEngine | null = null;
+export function getPlaybackAudioSessionId(): number | null {
+  return engine?.getAudioSessionId() ?? null;
+}
 let generation = 0;
 let loadedSongId: string | null = null;
 let finishing = false;
@@ -185,11 +188,20 @@ export function stopPlayback(): void {
 }
 
 // Keep hidden tracks out of existing queues, including native previous/next commands.
-export function reconcilePlaybackVisibility(): void {
+export function reconcilePlaybackVisibility(excludedLocal?: (song: Song) => boolean): void {
   const privacy = useHiddenMusicStore.getState();
   const auth = useAuthStore.getState();
   const state = usePlaybackStore.getState();
   if (!state.queue.length) return;
+  if (excludedLocal) {
+    const current = state.queue[state.index];
+    if (current && excludedLocal(current)) { stopPlayback(); return; }
+    const queue = state.queue.filter(song => !excludedLocal(song));
+    if (queue.length !== state.queue.length) {
+      usePlaybackStore.setState({ queue, index: current ? state.queue.slice(0, state.index).filter(song => !excludedLocal(song)).length : -1 });
+      reconcilePlaybackVisibility(); return;
+    }
+  }
   const current = state.queue[state.index];
   if (!privacy.ready || privacy.scope !== privacyScope(auth.mode, auth.session)) {
     if (current?.source !== 'local') { stopPlayback(); return; }

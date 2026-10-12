@@ -7,6 +7,8 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { router } from 'expo-router';
 import { ScreenHeader } from '@/components/screen-header';
 import { StreamingQualitySettings } from '@/features/playback/streaming-quality-settings';
+import { PlaybackOptionsSettings } from '@/features/playback/playback-options-settings';
+import { FolderExclusionSettings } from '@/features/library/folder-exclusion-settings';
 import { discover, normalizeAddress } from '@/services/synology/api';
 import { clearLibraryCache } from '@/services/synology/cache';
 import { stopPlayback } from '@/services/playback/controller';
@@ -77,9 +79,11 @@ export default function SettingsScreen() {
 
     <Pressable disabled={busy} style={[styles.action, { borderBottomColor: colors.separator }]} onPress={leave}><Text style={[styles.actionText, { color: colors.tint }]}>{mode === 'mock' ? '데모 종료' : 'NAS 연결 해제'}</Text><Ionicons name="chevron-forward" size={19} color={colors.muted} /></Pressable>
     <StreamingQualitySettings />
+    <PlaybackOptionsSettings />
     <Text style={[styles.section, { color: colors.muted, marginTop: 34 }]}>보관함</Text>
     <Pressable accessibilityRole="button" onPress={() => router.push('/hidden-music')} style={[styles.action, { borderBottomColor: colors.separator, marginTop: 0 }]}><Ionicons name="eye-off-outline" size={23} color={colors.tint} /><Text style={[styles.actionText, { color: colors.text, flex: 1, marginLeft: 12 }]}>음악 숨기기</Text><Ionicons name="chevron-forward" size={19} color={colors.muted} /></Pressable>
     <Text style={[styles.helper, { color: colors.muted }]}>폴더·곡 선택 프리셋과 지문·기기 암호 잠금</Text>
+    <FolderExclusionSettings />
     <Text style={[styles.section, { color: colors.muted, marginTop: 34 }]}>정보</Text>
     <Text style={[styles.note, { color: colors.muted }]}>보관함은 공용 music과 로그인한 계정의 개인 home/music을 함께 조회합니다. 음악은 선택한 NAS 주소에서 직접 스트리밍됩니다. 메타데이터는 최근 조회 목록을 기기에 저장합니다. HTTPS 인증서가 유효해야 연결할 수 있습니다.</Text>
     </KeyboardAwareScrollView></ScrollEdgeFade>

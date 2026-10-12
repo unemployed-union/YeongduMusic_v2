@@ -1,4 +1,5 @@
 import { Platform } from 'react-native';
+import { localFolderKey, sourceFolder } from './folders';
 import { Directory } from 'expo-file-system';
 import { AssetField, MediaType, Query, requestPermissionsAsync } from 'expo-media-library';
 import { isAudioFile, type ImportAsset } from './storage';
@@ -23,9 +24,11 @@ export async function* deviceAssets(failures: string[]): AsyncGenerator<ImportAs
         const name = await asset.getFilename();
         if (!isAudioFile(name)) continue;
         const duration = await asset.getDuration().catch(() => null);
+        const location = await asset.getUri().catch(() => null);
+        const originFolder = location ? sourceFolder(location) : undefined;
         // Android Asset.id is the MediaStore content URI; avoid relying on raw storage paths.
         if (!asset.id.startsWith('content://')) throw new Error('오디오 접근 주소를 확인할 수 없습니다.');
-        yield { uri: asset.id, name, duration: duration === null ? undefined : duration / 1000, stage: true };
+        yield { uri: asset.id, name, originFolder, duration: duration === null ? undefined : duration / 1000, stage: true };
       } catch (error) { failures.push('기기 음악 · ' + describe(error)); }
     }
     if (page.length < PAGE_SIZE) return;
@@ -46,15 +49,16 @@ export async function folderAssets(failures: string[]): Promise<AsyncIterable<Im
 }
 
 async function* walk(root: Directory, failures: string[]): AsyncGenerator<ImportAsset> {
-  const pending = [root], seen = new Set<string>();
+  const pending = [{ directory: root, path: localFolderKey(root.uri) }], seen = new Set<string>();
   while (pending.length) {
-    const folder = pending.pop()!;
+    const location = pending.pop()!;
+    const folder = location.directory;
     if (seen.has(folder.uri)) continue;
     seen.add(folder.uri);
     try {
       for (const entry of folder.list()) {
-        if (entry instanceof Directory) pending.push(entry);
-        else if (isAudioFile(entry.name)) yield { uri: entry.uri, name: entry.name, stage: true };
+        if (entry instanceof Directory) pending.push({ directory: entry, path: location.path + '/' + entry.name });
+        else if (isAudioFile(entry.name)) yield { uri: entry.uri, name: entry.name, stage: true, originFolder: location.path };
       }
     } catch (error) { failures.push(folder.name + ' · ' + describe(error)); }
     // Directory.list is synchronous. Yield between folders so the import UI remains responsive.

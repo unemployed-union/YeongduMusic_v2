@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { useDisplayPreferences } from './display-preferences';
 import { requireOptionalNativeModule } from 'expo';
 import type { ImageColorsResult } from 'react-native-image-colors';
 import type { Song } from '@/types/music';
@@ -17,6 +18,7 @@ type BackgroundState = {
 // Memory only, shared across player mounts. URLs may contain a NAS session token.
 const cache = new Map<string, GradientColors>();
 const pending = new Map<string, Promise<GradientColors>>();
+let selectedSong: Song | null = null;
 let selection = 0;
 let epoch = 0;
 let delay: ReturnType<typeof setTimeout> | undefined;
@@ -53,6 +55,8 @@ export const usePlayerBackgroundStore = create<BackgroundState>((set, get) => ({
   colors: DEFAULT_PLAYER_COLORS,
   artworkKey: null,
   selectArtwork: (song) => {
+    selectedSong = song;
+    if (useDisplayPreferences.getState().hideArtwork) return;
     const uri = song.artworkUrl;
     const fallback = song.palette ? createArtworkGradient(song.palette[0], song.palette[1]) : DEFAULT_PLAYER_COLORS;
     const key = uri ?? JSON.stringify([song.id, song.palette ?? null]);
@@ -72,6 +76,7 @@ export const usePlayerBackgroundStore = create<BackgroundState>((set, get) => ({
     }, 120);
   },
   reset: () => {
+    selectedSong = null;
     selection++;
     epoch++;
     clearTimeout(delay);
@@ -81,3 +86,10 @@ export const usePlayerBackgroundStore = create<BackgroundState>((set, get) => ({
     set({ artworkKey: null, colors: DEFAULT_PLAYER_COLORS });
   },
 }));
+
+useDisplayPreferences.subscribe((state, previous) => {
+  if (state.hideArtwork === previous.hideArtwork) return;
+  const song = selectedSong;
+  usePlayerBackgroundStore.getState().reset();
+  if (song) usePlayerBackgroundStore.getState().selectArtwork(song);
+});

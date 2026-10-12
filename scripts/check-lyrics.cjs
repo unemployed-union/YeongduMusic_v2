@@ -167,6 +167,25 @@ async function main() {
   assert.equal(client.calls.length, 1, 'Do not send another request during Retry-After');
   await client.tick(30000); client.setFetch(async () => response());
   await client.exports.onlineLyrics(song, 120); assert.equal(client.calls.length, 2);
+  const searching = runtime();
+  searching.setFetch(async () => response([
+    record({ trackName: 'Other Song' }), record({ artistName: 'Other Artist' }), record({ duration: 130 }),
+    record({ albumName: 'Alternate Album', syncedLyrics: null }), record({ albumName: 'Alternate Album' }),
+  ]));
+  assert.equal((await searching.exports.onlineLyrics(song, 120, undefined, true)).kind, 'synced');
+  const searchUrl = new URL(searching.calls[0].url);
+  assert.equal(searchUrl.pathname, '/api/search');
+  assert.deepEqual([...searchUrl.searchParams.keys()].sort(), ['artist_name', 'track_name']);
+  assert(!searching.calls[0].url.includes(song.id)); assert(!searching.calls[0].url.includes(song.path));
+  const noMatch = runtime(); noMatch.setFetch(async () => response([record({ artistName: 'Other Artist' })]));
+  assert.equal((await noMatch.exports.onlineLyrics(song, 120, undefined, true)).kind, 'missing');
+  const malformedSearch = runtime(); malformedSearch.setFetch(async () => response(record()));
+  await assert.rejects(malformedSearch.exports.onlineLyrics(song, 120, undefined, true), error => error.kind === 'response');
+  const emptySearch = runtime(); emptySearch.setFetch(async () => response([]));
+  assert.equal((await emptySearch.exports.onlineLyrics(song, 120, undefined, true)).kind, 'missing');
+  const unknownDuration = runtime(); unknownDuration.setFetch(async () => response([record()]));
+  assert.equal((await unknownDuration.exports.onlineLyrics(song, 0, undefined, true)).kind, 'synced');
+  console.log('PASS: manual search uses documented endpoint without album/duration params; unrelated titles/artists/versions rejected, synced alternate-album result preferred, empty/malformed/unknown-duration results handled.');
   console.log('PASS: headers/body timeout, external cancellation, first interruption wins, late completions, timer cleanup, sequential throttling and Retry-After.');
 
   // Test the actual Synology adapter against Mock fetch, including discovery's
@@ -253,6 +272,19 @@ async function main() {
   assert.equal(oldQuery.retry(0, new api.SessionExpiredError(106)), false);
   assert.equal(oldQuery.retry(0, new onlineTypes.LyricsRequestError('rate-limit', 'rate')), false);
   assert.equal(oldQuery.retry(0, new onlineTypes.LyricsRequestError('network', 'network')), true);
+  const manualQuery = hook.useLyrics(song, 'online', 120, true);
+  assert.equal(manualQuery.staleTime, 0); assert.equal(manualQuery.refetchOnWindowFocus, false);
+  assert.notDeepEqual(manualQuery.queryKey, hook.useLyrics(song, 'online', 120).queryKey);
+  await manualQuery.queryFn({ signal: queryAbort.signal }); assert.equal(lastRequest.searchOnline, true);
+  const { QueryClient, QueryObserver } = require(path.join(root, 'node_modules/@tanstack/react-query'));
+  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  queryClient.setQueryData(manualQuery.queryKey, parser.parseLyrics('', 'lrclib'));
+  lastRequest = null;
+  const observer = new QueryObserver(queryClient, manualQuery), unsubscribe = observer.subscribe(() => {});
+  await flush();
+  assert.equal(lastRequest.searchOnline, true, 'Opening manual search refetches even a fresh cached miss');
+  assert.equal(observer.getCurrentResult().data.kind, onlineDocument.kind);
+  unsubscribe(); observer.destroy(); queryClient.clear();
   console.log('PASS: query cache separates tracks/providers/sessions; AbortSignal and captured generation forwarded; auth/rate-limit errors are not retried.');
   console.log('Native lyric scrolling/animation and real online song matching require device verification. No NAS credentials or lyric contents are printed.');
 }

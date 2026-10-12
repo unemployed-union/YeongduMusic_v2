@@ -5,6 +5,8 @@ const { Buffer } = require('node:buffer');
 const root = path.resolve(__dirname, '..');
 const ts = require(path.join(root, 'node_modules/typescript'));
 const { create } = require(path.join(root, 'node_modules/zustand'));
+const folderRules = load('src/services/local-music/folders.ts', {});
+const exclusions = create(() => ({ folders: [], ready: true, load: async () => {} }));
 function load(file, modules) {
   const mod = { exports: {} };
   const code = ts.transpileModule(fs.readFileSync(path.join(root, file), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
@@ -42,21 +44,23 @@ class Query {
 const media = { Query, AssetField: { MEDIA_TYPE: 'mediaType', CREATION_TIME: 'creationTime' }, MediaType: { AUDIO: 'audio' }, requestPermissionsAsync: async (...args) => { permissions.push(args); return { granted }; } };
 let scan;
 const storage = load('src/services/local-music/storage.ts', {
+  '@/stores/folder-exclusions': { useFolderExclusionStore: exclusions },
+  './folders': folderRules,
   'react-native': platform,
   'expo-file-system/legacy': legacy,
   'expo-file-system': { File },
   'expo-document-picker': { getDocumentAsync: async () => { throw Error('Bulk import must not open multi-file picker'); } },
-  'expo-sqlite': { openDatabaseAsync: async () => ({ execAsync: async () => {}, getAllAsync: async () => [...rows.values()].map(value => ({ value })), runAsync: async (_, id, value) => rows.set(id, value) }) },
+  'expo-sqlite': { openDatabaseAsync: async () => ({ execAsync: async () => {}, getAllAsync: async () => [...rows.values()].map(value => ({ value })), getFirstAsync: async (_, id) => rows.has(id) ? { value: rows.get(id) } : null, runAsync: async (_, id, value) => rows.set(id, value) }) },
   get './scan'() { return scan; },
 });
-scan = load('src/services/local-music/scan.ts', { 'react-native': platform, 'expo-file-system': { Directory }, 'expo-media-library': media, './storage': storage });
+scan = load('src/services/local-music/scan.ts', { './folders': folderRules, 'react-native': platform, 'expo-file-system': { Directory }, 'expo-media-library': media, './storage': storage });
 function original(uri, name, bytes) { files.set(uri, Buffer.from(bytes)); return new File(uri, name); }
 let selectedFolder = new Directory('file:///selected');
 async function main() {
   for (let i = 0; i < 205; i++) {
     const id = 'content://media/external/audio/media/' + i;
     original(id, 'track-' + i + '.mp3', 'audio fixture ' + i);
-    device.push({ id, getFilename: async () => 'track-' + i + '.mp3', getDuration: async () => 120000 });
+    device.push({ id, getFilename: async () => 'track-' + i + '.mp3', getDuration: async () => 120000, getUri: async () => 'file:///storage/emulated/0/Music/track-' + i + '.mp3' });
   }
   const progress = [];
   let result = await storage.importLocalSongs('device', count => progress.push(count));
@@ -90,7 +94,7 @@ async function main() {
   rows.clear(); pageFail = true;
   result = await storage.importLocalSongs('device'); assert.equal(result.added, 100); assert.match(result.failures[0], /query failed/); assert.equal((await storage.readLocalSongs()).length, 100); pageFail = false;
   repeating = true; result = await storage.importLocalSongs('device'); assert.match(result.failures[0], /반복/); repeating = false;
-  const store = load('src/stores/local-music.ts', { zustand: { create }, '@/services/local-music/storage': storage }).useLocalMusicStore;
+  const store = load('src/stores/local-music.ts', { zustand: { create }, '@/services/local-music/storage': storage, './folder-exclusions': { useFolderExclusionStore: exclusions }, '@/services/local-music/folders': folderRules }).useLocalMusicStore;
   await store.getState().importFiles('device'); assert.equal(store.getState().busy, false); assert.equal(store.getState().source, 'local'); assert.equal(store.getState().processed, 205); assert.equal(store.getState().songs.length, 205);
   assert.ok(copies.every(([, uri]) => uri.startsWith(legacy.cacheDirectory) || uri.startsWith(legacy.documentDirectory)));
   const config = JSON.parse(fs.readFileSync(path.join(root, 'app.json'), 'utf8')).expo;

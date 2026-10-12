@@ -79,13 +79,21 @@ function LyricLines({ lines, synced }: { lines: LyricLine[]; synced: boolean }) 
 
 export function LyricsPanel({ song, source, onSourceChange }: { song: Song; source: LyricsSource; onSourceChange: (source: LyricsSource) => void }) {
   const duration = usePlaybackStore((state) => state.duration);
-  const lyrics = useLyrics(song, source, duration);
+  const [searchOnline, setSearchOnline] = useState(false);
+  const lyrics = useLyrics(song, source, duration, searchOnline);
+  const findAgain = () => {
+    if (lyrics.isFetching) return;
+    if (source !== 'nas' && !searchOnline) setSearchOnline(true);
+    else void lyrics.refetch();
+  };
+  const changeSource = (value: LyricsSource) => { setSearchOnline(false); onSourceChange(value); };
   const data = lyrics.data;
   const sourceName = data?.provider === 'nas' ? 'NAS' : data?.provider === 'demo' ? '데모 가사' : 'LRCLIB';
   const lyricsKey = `${song.id}:${source}:${data?.provider}:${data?.kind}`;
   return <View style={styles.panel}>
-    <View style={styles.header}><Text style={styles.heading}>가사</Text><View style={styles.sources}>{sources.map((option) => <Pressable key={option.value} accessibilityRole="button" accessibilityState={{ selected: source === option.value }} onPress={() => onSourceChange(option.value)} style={[styles.source, source === option.value && styles.selectedSource]}><Text style={[styles.sourceText, source === option.value && styles.selectedText]}>{option.label}</Text></Pressable>)}</View></View>
-    {lyrics.isPending || lyrics.isFetching && !data ? <View style={styles.message}><ActivityIndicator color="white" /><Text style={styles.messageText}>가사를 찾고 있어요</Text></View> : lyrics.isError && !data ? <View style={styles.message}><Ionicons name="cloud-offline-outline" size={32} color="#FFFFFFAA" /><Text style={styles.messageText}>{lyrics.error instanceof Error ? lyrics.error.message : '가사를 불러오지 못했습니다.'}</Text><Pressable accessibilityRole="button" onPress={() => void lyrics.refetch()} style={styles.retry}><Text style={styles.retryText}>다시 시도</Text></Pressable></View> : data?.kind === 'missing' || data?.kind === 'instrumental' ? <View style={styles.message}><Ionicons name="musical-note-outline" size={34} color="#FFFFFF99" /><Text style={styles.messageText}>{data.kind === 'instrumental' ? '가사가 없는 연주곡입니다' : '이 곡의 가사를 찾지 못했어요'}</Text><Text style={styles.hint}>{source === 'nas' ? 'NAS에 저장된 가사가 있는지 확인하거나 온라인 가사를 선택해 주세요.' : '곡 제목·아티스트·앨범 태그가 정확한지 확인해 주세요.'}</Text><Pressable accessibilityRole="button" onPress={() => void lyrics.refetch()} style={styles.retry}><Text style={styles.retryText}>다시 찾기</Text></Pressable></View> : data ? <LyricLines key={lyricsKey} lines={data.lines} synced={data.kind === 'synced'} /> : null}
+    <View style={styles.header}><Text style={styles.heading}>가사</Text><Pressable accessibilityRole="button" accessibilityLabel="가사 다시 찾기" disabled={lyrics.isFetching} onPress={findAgain} style={styles.findAgain}>{lyrics.isFetching ? <ActivityIndicator color="white" size="small" /> : <Ionicons name="refresh-outline" size={20} color="white" />}</Pressable><View style={styles.sources}>{sources.map((option) => <Pressable key={option.value} accessibilityRole="button" accessibilityState={{ selected: source === option.value }} onPress={() => changeSource(option.value)} style={[styles.source, source === option.value && styles.selectedSource]}><Text style={[styles.sourceText, source === option.value && styles.selectedText]}>{option.label}</Text></Pressable>)}</View></View>
+    {lyrics.isPending || lyrics.isFetching && (!data || data.kind === 'missing' || data.kind === 'instrumental') ? <View style={styles.message}><ActivityIndicator color="white" /><Text style={styles.messageText}>가사를 찾고 있어요</Text></View> : lyrics.isError && (!data || data.kind === 'missing' || data.kind === 'instrumental') ? <View style={styles.message}><Ionicons name="cloud-offline-outline" size={32} color="#FFFFFFAA" /><Text style={styles.messageText}>{lyrics.error instanceof Error ? lyrics.error.message : '가사를 불러오지 못했습니다.'}</Text><Pressable accessibilityRole="button" disabled={lyrics.isFetching} onPress={findAgain} style={styles.retry}><Text style={styles.retryText}>다시 시도</Text></Pressable></View> : data?.kind === 'missing' || data?.kind === 'instrumental' ? <View style={styles.message}><Ionicons name="musical-note-outline" size={34} color="#FFFFFF99" /><Text style={styles.messageText}>{data.kind === 'instrumental' ? '가사가 없는 연주곡입니다' : '이 곡의 가사를 찾지 못했어요'}</Text><Text style={styles.hint}>{source === 'nas' ? 'NAS에 저장된 가사가 있는지 확인하거나 온라인 가사를 선택해 주세요.' : '곡 제목·아티스트·앨범 태그가 정확한지 확인해 주세요.'}</Text><Pressable accessibilityRole="button" disabled={lyrics.isFetching} onPress={findAgain} style={styles.retry}><Text style={styles.retryText}>다시 찾기</Text></Pressable></View> : data ? <LyricLines key={lyricsKey} lines={data.lines} synced={data.kind === 'synced'} /> : null}
+    {lyrics.isRefetchError && data && (data.kind === 'plain' || data.kind === 'synced') && <Text accessibilityRole="alert" style={styles.error}>{lyrics.error.message}</Text>}
     {data && data.kind !== 'missing' && <Text style={styles.credit}>{sourceName} · {data.kind === 'synced' ? '재생 시간에 맞춰 표시 · 가사를 눌러 이동' : data.kind === 'plain' ? '시간 정보가 없는 일반 가사' : '연주곡'}</Text>}
   </View>;
 }
@@ -93,6 +101,7 @@ export function LyricsPanel({ song, source, onSourceChange }: { song: Song; sour
 const styles = StyleSheet.create({
   panel: { flex: 1, paddingTop: 16, paddingBottom: 16 },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 },
+  findAgain: { marginRight: 'auto', marginLeft: 8, minWidth: 40, minHeight: 40, alignItems: 'center', justifyContent: 'center' },
   heading: { color: 'white', fontSize: 20, fontWeight: '800' },
   sources: { flexDirection: 'row', borderRadius: 18, padding: 3, backgroundColor: '#FFFFFF14' },
   source: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 15 },

@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { ActivityIndicator, AppState, Pressable, Text, View, useColorScheme } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
@@ -7,6 +7,7 @@ import { StatusBar } from 'expo-status-bar';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { useAuthStore } from '@/stores/auth';
 import { useLocalMusicStore } from '@/stores/local-music';
+import { useDisplayPreferences } from '@/stores/display-preferences';
 import { useHiddenMusicStore } from '@/stores/hidden-music';
 import { usePlaylistStore } from '@/stores/playlists';
 import { privacyScope } from '@/features/hidden-music/rules';
@@ -18,12 +19,22 @@ const queryClient = new QueryClient({ defaultOptions: { queries: { staleTime: 30
 function Navigation() {
   const { ready, mode, session, bootstrap } = useAuthStore();
   const colors = useColors();
+  const displayReady = useDisplayPreferences((state) => state.ready);
+  const loadDisplayPreferences = useDisplayPreferences((state) => state.load);
+  useEffect(() => { void loadDisplayPreferences(); }, [loadDisplayPreferences]);
   const scheme = useColorScheme();
   const privacy = useHiddenMusicStore();
   const loadPrivacy = privacy.load;
   const loadPlaylists = usePlaylistStore((state) => state.load);
   const scope = privacyScope(mode, session);
   const loadLocalMusic = useLocalMusicStore((state) => state.load);
+  const allLocalSongs = useLocalMusicStore((state) => state.allSongs);
+  const localSongs = useLocalMusicStore((state) => state.songs);
+  const excludedLocalIds = useMemo(() => {
+    const visibleIds = new Set(localSongs.map(song => song.id));
+    return new Set(allLocalSongs.filter(song => !visibleIds.has(song.id)).map(song => song.id));
+  }, [allLocalSongs, localSongs]);
+  useEffect(() => { reconcilePlaybackVisibility(song => song.source === 'local' && excludedLocalIds.has(song.id)); }, [excludedLocalIds]);
   useEffect(() => { void loadLocalMusic(); }, [loadLocalMusic]);
   useEffect(() => { void bootstrap(); }, [bootstrap]);
   useEffect(() => { if (ready && mode === 'setup') reconcilePlaybackVisibility(); }, [ready, mode]);
@@ -34,7 +45,7 @@ function Navigation() {
     return () => subscription.remove();
   }, []);
   useEffect(() => { if (privacy.ready && privacy.scope === scope) reconcilePlaybackVisibility(); }, [privacy.ready, privacy.scope, privacy.profile.presets, scope]);
-  if (!ready) return <View style={{ flex: 1, justifyContent: 'center', backgroundColor: colors.background }}><ActivityIndicator color={colors.tint} /></View>;
+  if (!ready || !displayReady) return <View style={{ flex: 1, justifyContent: 'center', backgroundColor: colors.background }}><ActivityIndicator color={colors.tint} /></View>;
   if (!privacy.ready || privacy.scope !== scope) return <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 28, backgroundColor: colors.background }}>{privacy.error ? <><Text style={{ color: colors.text, textAlign: 'center', marginBottom: 16 }}>{privacy.error}</Text><Pressable onPress={() => void privacy.load(scope)}><Text style={{ color: colors.tint }}>숨김 설정 다시 불러오기</Text></Pressable></> : <ActivityIndicator color={colors.tint} />}</View>;
   return <ThemeProvider value={scheme === 'dark' ? DarkTheme : DefaultTheme}>
     <StatusBar style="auto" />

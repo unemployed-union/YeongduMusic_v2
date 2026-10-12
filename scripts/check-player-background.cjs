@@ -1,3 +1,4 @@
+/* global __dirname */
 const fs = require('node:fs');
 const path = require('node:path');
 const assert = require('node:assert/strict');
@@ -25,7 +26,9 @@ const layers = load('src/features/playback/background-layers.ts', () => { throw 
 let available = true;
 const requests = [];
 const native = { getColors: (uri) => new Promise((resolve, reject) => requests.push({ uri, resolve, reject })) };
+const display = require(path.join(root, 'node_modules/zustand')).create(() => ({ hideArtwork: false, ready: true }));
 const { usePlayerBackgroundStore: store } = load('src/stores/player-background.ts', (name) => {
+  if (name === './display-preferences') return { useDisplayPreferences: display };
   if (name === 'zustand') return require(path.join(root, 'node_modules/zustand'));
   if (name === 'expo') return { requireOptionalNativeModule: () => available ? native : null };
   if (name === '@/features/playback/artwork-colors') return palette;
@@ -132,6 +135,19 @@ async function check() {
   evicted.resolve(result('#0000FF')); await flush();
   store.getState().reset();
   assert.equal(timers.size, 0);
+  const hideRequest = await start('hide-pending');
+  display.setState({ hideArtwork: true });
+  assert.deepEqual(store.getState().colors, defaults);
+  hideRequest.resolve(result('#FF0000')); await flush();
+  assert.deepEqual(store.getState().colors, defaults, 'Hiding artwork invalidates pending color results');
+  const beforeHidden = requests.length;
+  select('hidden-next'); tick(120); await flush();
+  assert.equal(requests.length, beforeHidden, 'No image extraction while artwork is hidden');
+  display.setState({ hideArtwork: false }); tick(120); await flush();
+  assert.equal(requests.length, beforeHidden + 1, 'Showing artwork restores the current selection');
+  requests.at(-1).resolve(result('#0000FF')); await flush();
+  assert.deepEqual(store.getState().colors, blue);
+  store.getState().reset();
   console.log('PASS: reopen without default fade, retained loading colors, stable rapid-transition layers, stale results/completions, shared requests, synchronous cache hits, logout, errors, timeout, mock fallback and bounded cache. Native image extraction and UI-thread animation are mocked.');
 }
 check().catch((error) => { console.error(error); process.exitCode = 1; });

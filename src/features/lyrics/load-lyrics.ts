@@ -5,16 +5,16 @@ import { useAuthStore } from '@/stores/auth';
 import type { LyricsDocument, LyricsSource } from '@/types/lyrics';
 import type { Song } from '@/types/music';
 
-type LyricsRequest = { song: Song; source: LyricsSource; mode: string; session: Session | null; generation: number; duration: number; signal?: AbortSignal };
+type LyricsRequest = { song: Song; source: LyricsSource; mode: string; session: Session | null; generation: number; duration: number; signal?: AbortSignal; searchOnline?: boolean };
 
-export async function loadLyrics({ song, source, mode, session, generation, duration, signal }: LyricsRequest): Promise<LyricsDocument> {
+export async function loadLyrics({ song, source, mode, session, generation, duration, signal, searchOnline = false }: LyricsRequest): Promise<LyricsDocument> {
   checkLyricsCancelled(signal);
   if (song.source === 'local') {
     if (source === 'nas') throw new Error('이 기기 음악은 NAS 가사를 사용할 수 없습니다. 자동 또는 온라인을 선택해 주세요.');
-    return onlineLyrics(song, duration, signal);
+    return onlineLyrics(song, duration, signal, searchOnline);
   }
   if (mode === 'mock') return demoLyrics();
-  if (source === 'online') return onlineLyrics(song, duration, signal);
+  if (source === 'online') return onlineLyrics(song, duration, signal, searchOnline);
   let nas: LyricsDocument | null = null;
   let nasError: unknown;
   if (session?.apis['SYNO.AudioStation.Lyrics']) {
@@ -39,7 +39,7 @@ export async function loadLyrics({ song, source, mode, session, generation, dura
   }
   if (nas?.kind === 'synced') return nas;
   try {
-    const online = await onlineLyrics(song, duration, signal);
+    const online = await onlineLyrics(song, duration, signal, searchOnline);
     checkLyricsCancelled(signal);
     if (online.kind === 'synced') return online;
     if (nas?.kind === 'plain') return nas;

@@ -254,6 +254,11 @@ export class ExpoAudioEngine implements AudioEngine {
     }
     player.play();
   }
+  getAudioSessionId(): number | null {
+    // Android-only property supplied by our pinned expo-audio patch; absent in older binaries.
+    const id = Platform.OS === 'android' ? this.player?.audioSessionId : undefined;
+    return typeof id === 'number' && Number.isInteger(id) && id > 0 ? id : null;
+  }
   play(): void {
     this.wantsPlayback = true;
     if (this.failure) { this.retries = 0; this.scheduleRecovery(); }

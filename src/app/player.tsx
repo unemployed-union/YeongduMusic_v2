@@ -16,6 +16,7 @@ import { useArtworkSwipe, type ArtworkSwipeDirection } from '@/features/playback
 import Slider from '@react-native-community/slider';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Artwork } from '@/components/artwork';
+import { openSystemEqualizer } from '@/services/playback/equalizer';
 import { next, playQueue, previous, seek, togglePlayback } from '@/services/playback/controller';
 import { usePlaybackStore } from '@/stores/playback';
 import { AddToPlaylistDialog } from '@/features/playlists/dialogs';
@@ -57,6 +58,7 @@ export default function PlayerScreen() {
   const selectMenuAction = (action: PlayerMenuAction) => {
     setMenuOpen(false);
     if (action === 'lyrics') setPanel(panel === 'lyrics' ? 'artwork' : 'lyrics');
+    else if (action === 'equalizer') void openSystemEqualizer();
     else setSaveList(action === 'add-song' ? 'song' : 'queue');
   };
   const artSize = Math.max(150, Math.min(width - 52, height * 0.43, height - insets.top - insets.bottom - 350, 390));

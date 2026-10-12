@@ -528,3 +528,33 @@ index 7e7537173d067fecef767a03dc0f1860c8aca7ac..eabea1a6c7e1fdd33668d84aa819050c
    /** Fired when the player's status changes (play/pause/seek/load and so on.). */
    playbackStatusUpdate(status: AudioStatus): void;
    /** Fired when audio sampling is enabled and new sample data is available. */
+
+diff --git a/android/src/main/java/expo/modules/audio/AudioModule.kt b/android/src/main/java/expo/modules/audio/AudioModule.kt
+--- a/android/src/main/java/expo/modules/audio/AudioModule.kt
++++ b/android/src/main/java/expo/modules/audio/AudioModule.kt
+@@ -379,1 +379,6 @@
+-      Property("isBuffering") { player ->
++      // YeongduMusic: provide the existing ExoPlayer session to the system effects panel.
++      Property("audioSessionId") { player ->
++        runOnMain { player.ref.audioSessionId }
++      }
++
++      Property("isBuffering") { player ->
+
+diff --git a/src/AudioModule.types.ts b/src/AudioModule.types.ts
+--- a/src/AudioModule.types.ts
++++ b/src/AudioModule.types.ts
+@@ -42,1 +42,3 @@
+-export declare class AudioPlayer extends SharedObject<AudioEvents> {
++export declare class AudioPlayer extends SharedObject<AudioEvents> {
++  /** YeongduMusic patch: current Android ExoPlayer session; absent on iOS/web. */
++  readonly audioSessionId?: number;
+
+diff --git a/build/AudioModule.types.d.ts b/build/AudioModule.types.d.ts
+--- a/build/AudioModule.types.d.ts
++++ b/build/AudioModule.types.d.ts
+@@ -24,1 +24,3 @@
+-export declare class AudioPlayer extends SharedObject<AudioEvents> {
++export declare class AudioPlayer extends SharedObject<AudioEvents> {
++  /** YeongduMusic patch: current Android ExoPlayer session; absent on iOS/web. */
++  readonly audioSessionId?: number;

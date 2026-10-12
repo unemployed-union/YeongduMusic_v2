@@ -6,7 +6,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { usePlaybackStore } from '@/stores/playback';
 import { SleepTimerOptions } from './sleep-timer-options';
 
-export type PlayerMenuAction = 'lyrics' | 'add-song' | 'save-queue';
+export type PlayerMenuAction = 'lyrics' | 'add-song' | 'save-queue' | 'equalizer';
 interface Props {
   blurTarget: RefObject<View | null>;
   panel: 'artwork' | 'queue' | 'lyrics';
@@ -36,6 +36,7 @@ export function PlayerMenu({ blurTarget, panel, bottom, maxHeight, onClose, onSe
     { action: 'lyrics', label: panel === 'lyrics' ? '가사 닫기' : '가사 보기', icon: 'chatbox-ellipses-outline', selected: panel === 'lyrics' },
     { action: 'add-song', label: '플레이리스트에 추가', icon: 'add-circle-outline' },
     { action: 'save-queue', label: '대기열을 플레이리스트로 저장', icon: 'save-outline' },
+    { action: 'equalizer', label: '시스템 이퀄라이저', icon: 'options-outline' },
     { action: 'sleep-timer', label: timerLabel, icon: 'moon-outline', selected: !!timer },
   ];
   return <Animated.View collapsable={false} entering={ENTER_OVERLAY} exiting={EXIT_OVERLAY} style={StyleSheet.absoluteFill} pointerEvents="box-none" accessibilityViewIsModal>
