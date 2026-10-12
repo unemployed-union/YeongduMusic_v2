@@ -68,13 +68,13 @@ function Navigation() {
       try {
         const playback = usePlaybackStore.getState();
         if (playback.queue[playback.index]) {
-          router.navigate('/player');
+          router.navigate(playback.playing ? '/player' : '/(tabs)/(library)');
           return;
         }
         const saved = await readRestoredPlayback();
         if (cancelled || !saved || usePlaybackStore.getState().queue.length) return;
         const restored = await restorePlayback(saved.queue, saved.index, saved.position, saved.playing, saved.shuffle, saved.repeat);
-        if (restored && !cancelled) router.navigate('/player');
+        if (restored && !cancelled) router.navigate(usePlaybackStore.getState().playing ? '/player' : '/(tabs)/(library)');
       } catch { /* Playback recovery must not block the library. */ }
       finally {
         if (!cancelled) {
@@ -95,8 +95,14 @@ function Navigation() {
       <Stack.Screen name="connect" />
       <Stack.Screen name="(tabs)" />
       <Stack.Screen name="settings" options={{ headerShown: true, title: '설정', headerBackTitle: '뒤로', headerTintColor: colors.tint, headerStyle: { backgroundColor: colors.background } }} />
-      <Stack.Screen name="hidden-music" options={{ headerShown: true, title: '음악 숨기기', headerBackTitle: '설정', headerTintColor: colors.tint, headerStyle: { backgroundColor: colors.background } }} />
-      <Stack.Screen name="hidden-playlists" options={{ headerShown: true, title: '플레이리스트 숨기기', headerBackTitle: '설정', headerTintColor: colors.tint, headerStyle: { backgroundColor: colors.background } }} />
+      <Stack.Screen name="settings/cloud" options={{ headerShown: true, title: '클라우드 연결', headerBackTitle: '설정', headerTintColor: colors.tint, headerStyle: { backgroundColor: colors.background } }} />
+      <Stack.Screen name="settings/cloud/synology" options={{ headerShown: true, title: 'Synology', headerBackTitle: '클라우드 연결', headerTintColor: colors.tint, headerStyle: { backgroundColor: colors.background } }} />
+      <Stack.Screen name="settings/cloud/google-drive" options={{ headerShown: true, title: 'Google Drive', headerBackTitle: '클라우드 연결', headerTintColor: colors.tint, headerStyle: { backgroundColor: colors.background } }} />
+      <Stack.Screen name="settings/playback" options={{ headerShown: true, title: '재생 및 화면', headerBackTitle: '설정', headerTintColor: colors.tint, headerStyle: { backgroundColor: colors.background } }} />
+      <Stack.Screen name="settings/library" options={{ headerShown: true, title: '보관함 설정', headerBackTitle: '설정', headerTintColor: colors.tint, headerStyle: { backgroundColor: colors.background } }} />
+      <Stack.Screen name="settings/other" options={{ headerShown: true, title: '기타', headerBackTitle: '설정', headerTintColor: colors.tint, headerStyle: { backgroundColor: colors.background } }} />
+      <Stack.Screen name="hidden-music" options={{ headerShown: true, title: '음악 숨기기', headerBackTitle: '기타', headerTintColor: colors.tint, headerStyle: { backgroundColor: colors.background } }} />
+      <Stack.Screen name="hidden-playlists" options={{ headerShown: true, title: '플레이리스트 숨기기', headerBackTitle: '기타', headerTintColor: colors.tint, headerStyle: { backgroundColor: colors.background } }} />
       <Stack.Screen name="player" options={{ presentation: 'transparentModal', animation: 'none', gestureEnabled: false, contentStyle: { backgroundColor: 'transparent' } }} />
     </Stack>
   </ThemeProvider>;

@@ -1,0 +1,47 @@
+import type { ComponentProps, ReactNode } from 'react';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Ionicons from '@expo/vector-icons/Ionicons';
+import { router, type Href } from 'expo-router';
+import { ScrollEdgeFade } from '@/components/scroll-edge-fade';
+import { useColors } from '@/theme/tokens';
+
+export function SettingsPage({ children }: { children: ReactNode }) {
+  const colors = useColors();
+  const insets = useSafeAreaInsets();
+  return <View style={{ flex: 1, backgroundColor: colors.background }}>
+    <ScrollEdgeFade><KeyboardAwareScrollView style={{ flex: 1 }} bottomOffset={16} contentContainerStyle={[styles.screen, { paddingBottom: 24 + insets.bottom }]} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
+      {children}
+    </KeyboardAwareScrollView></ScrollEdgeFade>
+  </View>;
+}
+
+export function SettingsSection({ title, children }: { title: string; children: ReactNode }) {
+  const colors = useColors();
+  return <View style={styles.section}><Text style={[styles.heading, { color: colors.muted }]}>{title}</Text>
+    <View style={[styles.group, { backgroundColor: colors.surface, borderColor: colors.separator }]}>{children}</View>
+  </View>;
+}
+
+export function SettingsLink({ title, description, icon, href }: {
+  title: string; description?: string; icon: ComponentProps<typeof Ionicons>['name']; href: Href;
+}) {
+  const colors = useColors();
+  return <Pressable accessibilityRole="button" onPress={() => router.push(href)} style={({ pressed }) => [styles.row, { opacity: pressed ? 0.55 : 1 }]}>
+    <Ionicons name={icon} size={23} color={colors.tint} />
+    <View style={styles.copy}><Text style={[styles.title, { color: colors.text }]}>{title}</Text>
+      {!!description && <Text numberOfLines={2} style={[styles.description, { color: colors.muted }]}>{description}</Text>}
+    </View><Ionicons name="chevron-forward" size={19} color={colors.muted} />
+  </Pressable>;
+}
+
+const styles = StyleSheet.create({
+  screen: { paddingHorizontal: 22, paddingTop: 16 },
+  section: { marginBottom: 24 },
+  heading: { fontSize: 12, fontWeight: '800', letterSpacing: 1.2, marginBottom: 12, marginTop: 8 },
+  group: { borderWidth: 1, borderRadius: 15, overflow: 'hidden' },
+  row: { minHeight: 68, flexDirection: 'row', alignItems: 'center', gap: 12, padding: 15 },
+  copy: { flex: 1 }, title: { fontSize: 16, fontWeight: '600' },
+  description: { fontSize: 12, lineHeight: 18, marginTop: 5 },
+});

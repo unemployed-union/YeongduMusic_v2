@@ -54,8 +54,12 @@ export default function PlayerScreen() {
   const [controlsTop, setControlsTop] = useState(0);
   const [saveList, setSaveList] = useState<'song' | 'queue' | null>(null);
   const detailTarget = useRef<Href | null>(null);
-  const dismissToLibrary = useCallback(() => router.dismissTo(detailTarget.current ?? '/(tabs)/(library)'), []);
-  const { gesture, animatedStyle, close, ready, closing } = usePlayerDismiss(height + insets.bottom, dismissToLibrary);
+  const dismissPlayer = useCallback(() => {
+    if (detailTarget.current) router.dismissTo(detailTarget.current);
+    else if (router.canGoBack()) router.back();
+    else router.replace('/(tabs)/(library)');
+  }, []);
+  const { gesture, animatedStyle, close, ready, closing } = usePlayerDismiss(height + insets.bottom, dismissPlayer);
   const openDetail = (detail: 'artist' | 'album') => {
     if (!song || closing.get()) return;
     detailTarget.current = detail === 'artist'

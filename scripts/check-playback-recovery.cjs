@@ -37,10 +37,12 @@ new Function('require', 'exports', 'setTimeout', 'clearTimeout', code)(name => {
   return modules[name];
 }, moduleExports, setTimeout, clearTimeout);
 
-async function checkRootRemount() {
+async function checkRootRemount({ playing = true, cold = false } = {}) {
   const effects = [], navigation = [];
   let privacyLoads = 0, stopped = 0, savedReads = 0, persistenceStarts = 0;
-  const live = { queue: [{ id: 'nas-live', source: 'nas' }], index: 0, playing: true };
+  const saved = { queue: [{ id: 'nas-live', source: 'nas' }], index: 0, playing, position: 37, shuffle: false, repeat: 'off' };
+  const live = { queue: cold ? [] : saved.queue, index: cold ? -1 : 0, playing: cold ? false : playing };
+  let restores = 0;
   const hidden = { ready: true, scope: 'current-account', profile: { presets: [] },
     load: async () => {
       privacyLoads++;
@@ -81,8 +83,13 @@ async function checkRootRemount() {
     '@/stores/playlists': { usePlaylistStore: store({ load: async () => {} }) },
     '@/stores/playback': { usePlaybackStore: store(live) },
     '@/features/hidden-music/rules': { privacyScope: () => 'current-account' },
-    '@/services/playback/controller': { reconcilePlaybackVisibility: reconcile, checkSleepTimer() {}, restorePlayback: async () => assert.fail('Live playback must not be reloaded') },
-    '@/services/playback/persistence': { readRestoredPlayback: async () => { savedReads++; return null; }, startPlaybackPersistence: () => { persistenceStarts++; return () => {}; } },
+    '@/services/playback/controller': { reconcilePlaybackVisibility: reconcile, checkSleepTimer() {}, restorePlayback: async (queue, index, position, wasPlaying) => {
+      assert.equal(live.queue.length, 0, 'Live playback must not be reloaded');
+      restores++;
+      Object.assign(live, { queue, index, position, playing: wasPlaying });
+      return true;
+    } },
+    '@/services/playback/persistence': { readRestoredPlayback: async () => { savedReads++; return saved; }, startPlaybackPersistence: () => { persistenceStarts++; return () => {}; } },
     '@/theme/tokens': { useColors: () => ({}) },
   };
   const rootCode = ts.transpileModule(fs.readFileSync(path.join(__dirname, '..', 'src/app/_layout.tsx'), 'utf8'), {
@@ -102,9 +109,11 @@ async function checkRootRemount() {
     for (let i = 0; i < 8; i++) await Promise.resolve();
     assert.equal(privacyLoads, 0, 'Remount must not clear the loaded account profile');
     assert.equal(stopped, 0, 'Remount and local-library refresh must retain the live NAS player');
-    assert.equal(savedReads, 0, 'A live queue takes precedence over the persisted snapshot');
-    assert.equal(live.playing, true);
-    assert.equal(navigation.at(-1), '/player', 'Remount returns to the live player');
+    assert.equal(savedReads, cold ? 1 : 0, 'A live queue takes precedence over the persisted snapshot');
+    assert.equal(restores, cold ? 1 : 0);
+    assert.equal(live.playing, playing);
+    assert.equal(live.queue[0].id, 'nas-live', 'Paused queue remains available to the mini player');
+    assert.equal(navigation.at(-1), playing ? '/player' : '/(tabs)/(library)', 'Only active playback opens the player at startup');
     cleanups.forEach(cleanup => { if (typeof cleanup === 'function') cleanup(); });
   }
   assert.equal(persistenceStarts, 2, 'Each mounted root resumes snapshot updates');
@@ -151,6 +160,9 @@ async function main() {
   assert.equal(values.size, 0, 'Explicitly cleared playback also clears saved playback');
   stop();
   await checkRootRemount();
+  await checkRootRemount({ playing: false });
+  await checkRootRemount({ playing: true, cold: true });
+  await checkRootRemount({ playing: false, cold: true });
   console.log('Playback recovery checks passed.');
 }
 main().catch(error => { console.error(error); process.exitCode = 1; });

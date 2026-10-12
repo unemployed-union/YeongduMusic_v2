@@ -122,17 +122,29 @@ async function main() {
     '@/features/google-drive/settings': { GoogleDriveSettings: 'GoogleDriveSettings' },
     '@/features/library/folder-exclusion-settings': { FolderExclusionSettings: 'FolderExclusionSettings' },
     '@/features/settings/version-settings': { VersionSettings: 'VersionSettings' },
+    '@/features/settings/settings-ui': { SettingsLink: 'SettingsLink', SettingsPage: 'SettingsPage', SettingsSection: 'SettingsSection' },
     '@/services/synology/api': { discover: async () => ({}), normalizeAddress: x => x },
     '@/services/synology/cache': { clearLibraryCache: async () => {} },
     '@/services/playback/controller': { stopNasPlayback: () => {} },
     '@/stores/auth': { useAuthStore: selector => selector({ mode: 'mock', session: null, disconnect: async () => {} }) },
   }).default;
-  assert.ok(text(Settings()).includes('음악 숨기기')); assert.ok(text(Settings()).includes('플레이리스트 숨기기'));
+  assert.ok(nodes(Settings()).some(node => node.type === 'SettingsLink' && node.props.title === '기타'));
+  assert.ok(!text(Settings()).includes('음악 숨기기')); assert.ok(!text(Settings()).includes('플레이리스트 숨기기'), 'Hidden controls live only in Other');
   featureAccess.enabled = false;
+  assert.ok(!nodes(Settings()).some(node => node.type === 'SettingsLink' && node.props.title === '기타'));
   assert.ok(!text(Settings()).includes('음악 숨기기')); assert.ok(!text(Settings()).includes('플레이리스트 숨기기'));
   assert.ok(nodes(Settings()).some(node => node.type === 'VersionSettings'));
-  assert.ok(nodes(Settings()).some(node => node.type === 'FolderExclusionSettings'), 'Ordinary folder exclusions remain available');
+  assert.ok(nodes(Settings()).some(node => node.type === 'SettingsLink' && node.props.href === '/settings/library'), 'Ordinary library settings remain available');
+  const Other = load('src/app/settings/other.tsx', {
+    ...uiModules,
+    '@/features/settings/settings-ui': { SettingsLink: 'SettingsLink', SettingsPage: 'SettingsPage', SettingsSection: 'SettingsSection' },
+  }).default;
+  assert.equal(Other().props.href, '/settings', 'Direct Other route requires feature activation');
+  featureAccess.ready = false;
+  assert.ok(!nodes(Other()).some(node => node.type === 'SettingsLink'));
+  featureAccess.ready = true;
   featureAccess.enabled = true;
+  assert.deepEqual(nodes(Other()).filter(node => node.type === 'SettingsLink').map(node => node.props.href), ['/hidden-music', '/hidden-playlists']);
   const Detail = load('src/app/(tabs)/(playlists)/playlists/[id].tsx', uiModules).default;
   assert.equal(flatList(Detail()), undefined, 'A direct hidden route must not reveal tracks');
   assert.ok(!text(Detail()).includes('Private'));

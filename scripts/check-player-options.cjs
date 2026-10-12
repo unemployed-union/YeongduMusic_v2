@@ -67,6 +67,7 @@ async function main() {
     'react-native': { ...native, Pressable: 'Pressable', ActivityIndicator: 'Spinner' },
     'react-native-reanimated': { default: { Text: 'AnimatedText' }, __esModule: true }, '@expo/vector-icons/Ionicons': 'Icon',
     './lyrics-edge-fade': { LyricsEdgeFade: 'Fade' }, '@/services/lyrics/parse-lyrics': {},
+    './use-active-lyric-index': { useActiveLyricIndex: () => -1 },
     './use-lyrics': { useLyrics: () => result }, '@/stores/playback': { usePlaybackStore: selector => selector({ duration: 120 }) }, '@/services/playback/controller': {},
   };
   const { LyricsPanel } = load('src/features/lyrics/lyrics-panel.tsx', panelModules);

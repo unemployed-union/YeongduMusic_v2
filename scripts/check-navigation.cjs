@@ -39,6 +39,9 @@ assert.equal(library.screens['artist/[id]'].path, 'artist/:id');
 assert.equal(config.screens['album/[id]'], undefined);
 assert.equal(config.screens['artist/[id]'], undefined);
 assert.ok(config.screens.player, 'Player remains outside tabs as a full-screen modal');
+for (const route of ['settings/cloud', 'settings/cloud/synology', 'settings/cloud/google-drive', 'settings/playback', 'settings/library', 'settings/other']) {
+  assert.equal(config.screens[route].path, route, 'Settings destinations resolve through the real route tree');
+}
 
 // Render actual tab layout and settings button against native view stubs.
 const jsx = (type, props) => ({ type, props });
@@ -93,6 +96,43 @@ const titleRow = nodes(header).find(node => node.props?.children?.includes?.(but
 assert.ok(titleRow && titleRow.props.children[1] === button, 'Settings sits to the right of the heading');
 assert.ok(!fs.readFileSync(path.join(root, 'src/app/(tabs)/(library)/index.tsx'), 'utf8').includes('내 플레이리스트'), 'Library no longer duplicates the playlist tab');
 
+const settingsUI = { SettingsLink: 'SettingsLink', SettingsPage: 'SettingsPage', SettingsSection: 'SettingsSection' };
+let extrasEnabled = false;
+const settingsMocks = { ...ui,
+  '@/features/settings/settings-ui': settingsUI,
+  '@/features/settings/version-settings': { VersionSettings: 'VersionSettings' },
+  '@/stores/hidden-feature-access': { useHiddenFeatureAccess: selector => selector({ ready: true, enabled: extrasEnabled }) },
+};
+const Settings = renderModule('src/app/settings.tsx', settingsMocks).default;
+const links = tree => nodes(tree).filter(node => node.type === 'SettingsLink').map(node => [node.props.title, node.props.href]);
+assert.deepEqual(links(Settings()), [['클라우드 연결', '/settings/cloud'], ['재생 및 화면', '/settings/playback'], ['보관함', '/settings/library']]);
+extrasEnabled = true;
+assert.deepEqual(links(Settings()).at(-1), ['기타', '/settings/other']);
+assert.ok(nodes(Settings()).some(node => node.type === 'VersionSettings'), 'Version activation stays on the main settings page');
+const CloudSettings = renderModule('src/app/settings/cloud.tsx', { ...settingsMocks,
+  '@/stores/auth': { useAuthStore: select => select({ mode: 'setup', session: null }) },
+  '@/stores/google-drive': { useGoogleDriveStore: select => select({ account: null }) },
+}).default;
+assert.deepEqual(links(CloudSettings()), [['Synology', '/settings/cloud/synology'], ['Google Drive', '/settings/cloud/google-drive']]);
+const openedSettings = [];
+const SettingsLink = renderModule('src/features/settings/settings-ui.tsx', { ...ui,
+  'expo-router': { router: { push: href => openedSettings.push(href) } },
+  'react-native-keyboard-controller': { KeyboardAwareScrollView: 'Scroll' },
+  '@/components/scroll-edge-fade': { ScrollEdgeFade: 'Fade' },
+}).SettingsLink;
+for (const [title, href] of [...links(Settings()), ...links(CloudSettings())]) {
+  const row = SettingsLink({ title, href, icon: 'cloud-outline' }); row.props.onPress();
+  assert.equal(openedSettings.at(-1), href, 'Settings rows open their advertised screen');
+}
+for (const [file, modulePath, component] of [
+  ['src/app/settings/cloud/synology.tsx', '@/features/settings/synology-settings', 'SynologySettings'],
+  ['src/app/settings/cloud/google-drive.tsx', '@/features/google-drive/settings', 'GoogleDriveSettings'],
+  ['src/app/settings/library.tsx', '@/features/library/folder-exclusion-settings', 'FolderExclusionSettings'],
+]) {
+  const Screen = renderModule(file, { ...settingsMocks, [modulePath]: { [component]: component } }).default;
+  assert.ok(nodes(Screen()).some(node => node.type === component), 'Detailed settings reuse the existing controls');
+}
+
 let state = { queue: [], index: -1 }, calls = [], navigation = [], finish;
 let action = async (songs, index) => { state = { queue: songs, index }; };
 const modules = {
@@ -104,6 +144,33 @@ const code = ts.transpileModule(fs.readFileSync(path.join(root, 'src/features/pl
 const actions = {};
 new Function('require', 'exports', code)(name => modules[name], actions);
 async function main() {
+  // Run the real dismissal callback in isolation from native player rendering.
+  const playerSource = ts.createSourceFile('player.tsx', fs.readFileSync(path.join(root, 'src/app/player.tsx'), 'utf8'), ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+  let dismissCallback;
+  function findDismiss(node) {
+    if (ts.isVariableDeclaration(node) && node.name.getText(playerSource) === 'dismissPlayer') dismissCallback = node.initializer.arguments[0].getText(playerSource);
+    ts.forEachChild(node, findDismiss);
+  }
+  findDismiss(playerSource);
+  assert.ok(dismissCallback, 'Player provides an animated dismissal callback');
+  const detailTarget = { current: null }, dismissCalls = [];
+  let history = [];
+  const dismissRouter = {
+    canGoBack: () => history.length > 1,
+    back: () => { history.pop(); dismissCalls.push(['back', history.at(-1)]); },
+    replace: route => dismissCalls.push(['replace', route]),
+    dismissTo: route => dismissCalls.push(['detail', route]),
+  };
+  const dismissPlayer = new Function('router', 'detailTarget', `return (${dismissCallback});`)(dismissRouter, detailTarget);
+  for (const origin of ['/album/selected-album', '/artist/selected-artist', '/search', '/(tabs)/(library)']) {
+    history = [origin, '/player']; dismissPlayer();
+    assert.deepEqual(dismissCalls.at(-1), ['back', origin], 'Closing returns to the actual selection screen');
+  }
+  history = ['/player']; dismissPlayer();
+  assert.deepEqual(dismissCalls.at(-1), ['replace', '/(tabs)/(library)'], 'Direct player entry falls back to the library');
+  detailTarget.current = { pathname: '/(tabs)/(library)/album/[id]', params: { id: 'another-album' } };
+  history = ['/artist/original', '/player']; dismissPlayer();
+  assert.deepEqual(dismissCalls.at(-1), ['detail', detailTarget.current], 'Explicit album/artist menu navigation retains its target');
   const songs = [{ id: 'one' }, { id: 'two' }];
   await actions.playAndOpenPlayer(songs, 1);
   assert.equal(calls[0][0], songs);
