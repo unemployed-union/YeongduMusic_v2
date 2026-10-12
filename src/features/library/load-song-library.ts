@@ -17,7 +17,12 @@ export async function loadSongLibrary(repository: Pick<MusicRepository, 'songs'>
   return { items, total: items.length, stale };
 }
 
+// Keep existing nonblank names unchanged; old cached empty tags still need a usable route/group.
+export function artistName(name: string): string {
+  return name.trim() ? name : '알 수 없는 아티스트';
+}
+
 export function songsForArtist(library: Page<Song>, name: string): Page<Song> {
-  const items = library.items.filter((song) => song.artist === name);
+  const items = library.items.filter((song) => artistName(song.artist) === artistName(name));
   return { items, total: items.length, stale: library.stale };
 }

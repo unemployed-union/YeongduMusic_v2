@@ -18,6 +18,7 @@ type HiddenState = {
   savePreset: (preset: HiddenPreset) => Promise<void>;
   togglePreset: (id: string) => Promise<void>;
   removePreset: (id: string) => Promise<void>;
+  setPlaylistHidden: (id: string, hidden: boolean) => Promise<void>;
 };
 
 let generation = 0;
@@ -87,5 +88,11 @@ export const useHiddenMusicStore = create<HiddenState>((set, get) => {
     },
     togglePreset: (id) => persist((profile) => ({ ...profile, presets: profile.presets.map((preset) => preset.id === id ? { ...preset, enabled: !preset.enabled } : preset) })),
     removePreset: (id) => persist((profile) => ({ ...profile, presets: profile.presets.filter((preset) => preset.id !== id) })),
+    setPlaylistHidden: (id, hidden) => {
+      if (!id) return Promise.reject(new Error('플레이리스트를 확인해 주세요.'));
+      return persist((profile) => ({ ...profile, hiddenPlaylistIds: hidden
+        ? [...new Set([...(profile.hiddenPlaylistIds ?? []), id])]
+        : (profile.hiddenPlaylistIds ?? []).filter((value) => value !== id) }));
+    },
   };
 });

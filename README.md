@@ -31,7 +31,7 @@ pnpm exec expo run:ios
 
 Android에서 `Failed to start the expo-audio playback service` 또는 `service binding failed`가 나타나면, Expo Go가 아닌 **YeongduMusic** 앱을 실행 중인지 확인하세요. 이미 개발 빌드를 설치했다면 위 명령으로 현재 `app.json`을 반영한 앱을 다시 빌드하고 설치하세요. 저장소의 `expo-audio` 플러그인은 `enableBackgroundPlayback: true`로 설정되어 있으며, Expo 설정 검사에서 Android `AudioControlsService` 선언과 foreground service 권한을 확인했습니다. 실제 기기의 서비스 동작과 잠금 화면 컨트롤은 별도로 검증해야 합니다.
 
-Android Release 스플래시는 `app.json`의 `expo-splash-screen` 플러그인이 `assets/images/splash-logo.png`를 사용해 생성합니다. 이 PNG는 기존 음파 모양을 유지합니다. 앱 아이콘은 로그인 화면과 같은 그라데이션·음표이며 `node scripts/generate-icon.js`로 기본 PNG와 Android adaptive 레이어를 다시 만들 수 있습니다. `android/`는 생성 파일이라 Git과 EAS 업로드에서 제외됩니다. EAS Build는 업로드된 이미지와 설정으로 Prebuild를 실행합니다. Git 기반 빌드에서는 새 이미지와 설정을 커밋해야 합니다.
+Android Release 스플래시는 `app.json`의 `expo-splash-screen` 플러그인이 `assets/images/splash-logo.png`를 사용해 생성합니다. 아이콘과 스플래시는 제공된 구름·음표 이미지 `assets/branding/app-logo.png`를 원본으로 사용합니다. `node scripts/generate-icon.js`로 기본 아이콘, 스플래시 PNG와 Android adaptive 레이어를 다시 만들 수 있습니다. `android/`는 생성 파일이라 Git과 EAS 업로드에서 제외됩니다. EAS Build는 업로드된 이미지와 설정으로 Prebuild를 실행합니다. Git 기반 빌드에서는 새 이미지와 설정을 커밋해야 합니다.
 
 입력 화면의 자동 스크롤에는 `react-native-keyboard-controller`를 사용합니다. 네이티브 의존성이 추가되었으므로 개발 빌드를 새로 설치해야 합니다. 키보드가 열리면 탭바와 미니 플레이어가 숨겨지며 재생 상태는 유지됩니다. iOS·Android 실기기에서 작은 화면과 여러 입력창 이동을 확인해야 합니다.
 
@@ -263,13 +263,13 @@ iOS 57.0.5 구현은 생성 시의 AVPlayerItem에만 해당 옵션을 적용합
 
 ## 앱 아이콘과 상세 화면 탐색
 
-앱 아이콘은 로그인 화면의 흰색 Ionicons musical-notes와 분홍·보라·남색 세로 그라데이션을 사용합니다. 1024px 기본 아이콘과 Android adaptive foreground/background, Android 13 이상 단색 음표를 구성했습니다. glyph 윤곽은 설치된 Ionicons 폰트에서 추출해 assets/branding/musical-notes.json에 보관합니다. 음표는 Ionicons의 MIT 라이선스를 따르며 원문을 assets/branding/LICENSE에 포함했습니다. PNG 생성은 추가 의존성 없이 node scripts/generate-icon.js로 재현됩니다. 기존 스플래시는 유지합니다.
+앱 아이콘과 스플래시는 `assets/branding/app-logo.png`의 구름·음표 디자인을 사용합니다. `node scripts/generate-icon.js`는 설치된 Expo 이미지 도구로 1024px 기본 아이콘, 스플래시, Android adaptive foreground/background를 생성하며 원본 파일은 보존합니다. 기본 아이콘의 투명 영역은 스플래시와 같은 남색(`#17132D`)으로 채우고, adaptive foreground에는 런처 마스크에 필요한 여백을 둡니다. 컬러 이미지를 단색 아이콘으로 잘못 표시하지 않도록 기존 monochrome 설정은 제거했습니다. 이전 Ionicons 윤곽과 라이선스 파일은 그대로 보관합니다.
 
 앨범·아티스트 상세는 (tabs)/(library)의 Stack에 포함되어 보관함·검색·설정 탭과 미니 플레이어가 유지됩니다. 상세 목록의 끝에 하단 메뉴와 안전 영역 공간을 확보합니다. /album/[id]와 /artist/[id] URL은 유지되며 Android 뒤로가기는 상세에서 보관함으로 돌아갑니다. 곡 선택 또는 전체 재생은 기존 대기열 로직을 거친 뒤 전체 플레이어를 엽니다. 플레이어 내부의 대기열 선택과 알림 곡 이동은 화면을 새로 열지 않습니다.
 
-아이콘은 Metro 새로고침으로 홈 화면에 반영되지 않습니다. 생성된 android 폴더가 있는 로컬 프로젝트에는 Expo의 아이콘 생성 함수로 해당 리소스만 갱신했습니다. clean prebuild는 실행하지 않았습니다. EAS에는 app.json, PNG 세 개, glyph JSON, 생성 스크립트를 포함해 새 빌드를 설치하세요. 런처가 이전 이미지를 캐시하면 앱 재설치 또는 런처 캐시 갱신이 필요할 수 있습니다. [Expo 아이콘 설정](https://docs.expo.dev/develop/user-interface/splash-screen-and-app-icon/)
+아이콘과 스플래시는 Metro 새로고침으로 반영되지 않으므로 새 네이티브 빌드를 설치해야 합니다. 생성된 android 폴더에는 Expo의 생성 함수로 아이콘과 스플래시 이미지 리소스만 갱신하며 clean prebuild는 실행하지 않습니다. EAS에는 app.json, 생성 PNG 네 개, 원본 app-logo.png, 생성 스크립트를 포함하세요. 런처가 이전 이미지를 캐시하면 런처 캐시 갱신이 필요할 수 있습니다. 스플래시는 Expo Go 대신 실제 빌드에서 확인하세요. [Expo 아이콘 설정](https://docs.expo.dev/develop/user-interface/splash-screen-and-app-icon/)
 
-실기기 확인: 로그인 아이콘과 홈 화면 아이콘, 삼성 adaptive/테마 아이콘, 상세에서 탭 이동 및 뒤로가기, 상세의 마지막 곡 터치, 보관함·검색·앨범·아티스트에서 곡 선택과 전체 플레이어, 플레이어 닫기·미니 플레이어·재생 지속을 확인합니다.
+실기기 확인: 홈 화면 아이콘과 시작 스플래시, 삼성 adaptive 아이콘의 잘림 여부, 상세에서 탭 이동 및 뒤로가기, 상세의 마지막 곡 터치, 보관함·검색·앨범·아티스트에서 곡 선택과 전체 플레이어, 플레이어 닫기·미니 플레이어·재생 지속을 확인합니다.
 
 검증: TypeScript·린트, iOS/Android 번들 생성, Android :app:processReleaseResources가 통과했습니다. node scripts/check-navigation.cjs는 실제 파일 경로에서 Expo Router가 만든 보관함 Stack과 상세 경로, 곡 선택·취소·늦은 재생 완료의 화면 전환을 검사합니다. 화면 렌더링과 실제 기기의 조작·재생은 별도 확인이 필요하며 APK 설치나 원격 EAS 빌드는 수행하지 않았습니다.
 
@@ -322,6 +322,8 @@ Expo 라우트 타입은 오프라인 개발 서버로 다시 생성했습니다
 ## 수면 타이머
 
 재생 화면의 제목 옆 메뉴 → **수면 타이머**에서 5·15·30·60·90·120분 또는 1~1440분을 직접 지정할 수 있습니다. 설정한 시각까지의 실제 경과 시간을 사용하므로 일시정지 중에도 시간이 지나갑니다. 종료하면 음악만 일시정지하며 대기열·재생 위치는 유지합니다. 메뉴에서 남은 시간 확인·변경·해제가 가능합니다. 앱을 재시작하거나 로그아웃하면 타이머는 초기화합니다.
+
+시간 타이머는 **시간이 되면 즉시 정지** 또는 **시간이 되면 현재 곡 끝까지** 중 종료 방식을 고른 뒤 시간을 선택합니다. 기본값은 즉시 정지입니다. 곡 끝까지 옵션은 만료 시점에 실제 재생 중인 곡을 대상으로 하고, 해당 곡의 정상 종료 후 다음 곡·셔플·반복 재생을 차단합니다. 만료 후 곡을 직접 넘기면 바로 멈추며, 현재 곡의 일시정지·재개와 탐색은 사용할 수 있습니다. 만료 당시 곡을 불러오는 중이거나 재생 오류가 있으면 새 곡을 시작하지 않고 멈춥니다.
 
 **현재 곡 끝나면 종료**는 현재 곡의 정상 종료 시 다음 곡·셔플·한 곡/전체 반복보다 우선합니다. 곡을 직접 변경하면 이 설정은 해제됩니다. 시간 타이머는 직접 곡을 변경해도 계속 유지합니다. 타이머 만료 시 대기 중인 스트리밍 로드와 버퍼링 복구도 중단합니다.
 
@@ -465,3 +467,117 @@ Android 조합 근거: [Android 공식 생체/암호 인증 안내](https://deve
 검증: TypeScript·ESLint(src 및 변경/신규 검사)·회귀 스크립트 24개·Git diff 공백 검사 통과. 신규 check-folder-exclusions.cjs는 경로/하위 폴더·저장/재시작·실패/재시도·제외 파일 복사 생략·기존 파일 내용 연결·동일 이름 다른 파일·목록/대기열·제외 해제·원본/앱 복사본 보존을 Mock으로 확인합니다. 실제 삼성 기기의 통화녹음 경로 선택, MediaStore 폴더 정보 갱신, SD 카드 및 iOS 파일 제공자 선택·재시작·재생은 기기 검증이 필요합니다.
 
 폴더 제외 기능을 포함한 Android :app:assembleRelease --offline 빌드 성공(31초). APK: android/app/build/outputs/apk/release/app-release.apk. 실제 기기 설치·폴더 선택·조회·재생 및 iOS 빌드는 이번 작업에서 수행하지 않았습니다.
+
+## Google Drive 음악 스트리밍
+
+### 사용 방법
+
+새 네이티브 빌드를 설치한 뒤 **설정 → Google Drive → Google Drive 연결**에서 로그인하고 **음악 폴더 선택**으로 음악을 보관한 폴더를 엽니다. **이 폴더 선택**을 누르면 선택한 폴더와 하위 폴더의 음악만 불러옵니다. 내 드라이브 전체를 선택하거나 폴더 바로가기를 따라가지는 않습니다. 보관함의 음악 소스 메뉴에서 **Google Drive** 또는 **전체 음악**을 선택합니다. Drive 곡도 기존 검색, 앨범/아티스트 화면, 미니/전체 플레이어와 하나의 대기열을 사용합니다. 아래로 당기면 선택한 폴더의 Drive 목록도 갱신합니다. NAS 로그인 없이 사용할 수 있으며 NAS 세션 만료는 Drive/로컬 재생을 종료하지 않습니다.
+
+폴더 선택은 연결 계정과 함께 SecureStore에 저장됩니다. 앱을 다시 열면 복원하며 계정 변경·연결 해제 시 제거합니다. 기존 연결에도 최초 한 번 폴더를 선택해야 하며, 선택 전에는 음악 목록을 조회하지 않습니다. 폴더가 삭제되거나 권한이 없어지면 오류와 재시도를 제공하고 Drive 전체 조회로 돌아가지 않습니다. 폴더 변경은 보관함·검색·앨범/아티스트의 새 목록에 적용되며, 이미 재생 중인 대기열이나 기기 보관 파일을 삭제하지 않습니다. OAuth 권한 자체는 여전히 `drive.readonly`로 Drive 전체에 적용됩니다.
+
+2026-10-12 폴더 범위 검증: TypeScript·ESLint 및 Google Drive/기기 보관/재생 복원/인증 경쟁 상태 회귀 검사가 통과했습니다. `scripts/check-google-drive.cjs`에서 하위 폴더 순회·페이지 중복·취소·삭제된 폴더·선택 저장/복원·폴더 및 계정 변경 중 오래된 응답을 Mock으로 검증했습니다. 실제 계정의 폴더 탐색, 선택 범위 밖 곡이 목록에 없는지, 앱 재시작 후 선택 복원 및 해당 곡의 재생은 기기에서 추가 확인해야 합니다. 패키지·네이티브 설정 변경은 없습니다.
+
+- 요청: Drive v3 `files.list`, 페이지당 200개, 다음 페이지 토큰 순회. [공식 폴더 검색 조건](https://developers.google.com/workspace/drive/api/guides/search-files)을 사용하여 모든 음악 목록 요청에 `'folderId' in parents`를 적용하고 선택한 하위 폴더만 순회합니다. 폴더 선택 화면도 현재 위치의 폴더만 페이지 단위로 조회합니다. 휴지통/다운로드 금지 파일과 비음악 파일은 제외합니다. 동일 파일 ID는 중복 표시하지 않습니다.
+- 스트림: `files/{id}?alt=media`, `Authorization: Bearer …` 헤더. 토큰을 URL에 붙이지 않고 음원을 앱 파일로 다운로드하거나 서버에 업로드하지 않습니다. Range 지원은 [공식 다운로드 문서](https://developers.google.com/workspace/drive/api/guides/manage-downloads)를 따릅니다.
+- MP3(ID3v1/v2)·M4A(MP4)·FLAC 파일 내부의 곡 제목·아티스트·앨범·트랙 번호와 내장 JPEG/PNG 앨범아트를 읽습니다. 지원되는 태그의 앨범 아티스트·연도·디스크 번호도 적용합니다. 태그가 없거나 읽지 못한 항목은 파일명·기본 표지를 유지합니다. 외부 이미지 검색이나 파일 변경은 하지 않습니다. FLAC STREAMINFO와 MP3 TLEN에 길이가 있으면 사용하며, 나머지 길이는 오디오 엔진이 재생 시 확인합니다. WAV·OGG 등은 이번 태그 추출 대상에 포함되지 않습니다.
+- Drive 목록을 먼저 표시한 뒤 파일을 두 개씩 처리합니다. [공식 부분 다운로드](https://developers.google.com/workspace/drive/api/guides/manage-downloads)의 `Range`와 Bearer 헤더를 사용하며, 서버가 Range를 무시하면 전체 음원을 다운로드하지 않고 기본 정보로 표시합니다. 곡당 20초, 요청당 최대 4MiB, 누적 최대 8MiB, 앨범아트 최대 2MiB로 제한합니다. 태그 때문에 재생 오디오를 다시 로드하지 않고 현재 대기열과 잠금화면 표시 정보만 갱신합니다.
+- 태그는 기기의 `music-library.db` 내 별도 `drive_metadata` 테이블에, 이미지는 앱의 `cacheDirectory/drive-artwork/`에 보관합니다. 토큰·스트리밍 URL은 이 캐시에 저장하지 않습니다. 계정·파일 ID·수정 시간·크기로 캐시를 구분하며 파일이 변경되거나 OS가 표지 캐시를 지우면 다시 읽습니다. 수정 시간이 없는 항목의 캐시는 1시간 후 갱신합니다. 연결 해제 시 인증 정보는 삭제되며 태그 캐시는 기기에 남지만 다른 계정에 적용되지 않습니다. 이미지 캐시는 OS가 정리할 수 있고 태그 캐시는 앱 데이터 삭제 시 제거됩니다. 기기 보관 기능은 아래 별도 항목을 참고하세요.
+- 설정의 Google Drive 영역에 태그 조회 상태와 실패 안내를 표시합니다. 일부 파일 실패는 목록·재생을 막지 않으며 **음악 목록 다시 불러오기**로 재시도합니다. 폴더·계정 변경 및 취소 이후 도착한 태그는 목록과 대기열에 적용하지 않습니다.
+- `node scripts/check-drive-metadata.cjs`는 실제 jsmediatags 파서로 만든 MP3·M4A·FLAC 샘플의 태그/표지, 부분 읽기, 캐시·파일 변경, 본문 지연·취소·토큰 갱신을 Mock HTTP/SQLite/FileSystem으로 검증합니다. `node scripts/check-google-drive.cjs`는 비동기 태그 반영 시 기존 재생 위치 유지와 연결 해제 후 오래된 태그 차단을 검증합니다. 실제 Drive 계정과 Android/iOS의 표지 표시·잠금화면·셀룰러 트래픽은 기기에서 추가 확인해야 합니다. 순수 JavaScript 라이브러리 `jsmediatags`를 추가했으며 네이티브 설정과 `node_modules` 파일은 직접 수정하지 않습니다.
+- JSON 메타데이터 요청에는 본문/파싱까지 15초 제한과 취소가 적용됩니다. 스트림 전체에는 이 제한을 적용하지 않습니다. HTTP 401은 SDK 토큰 재발급 후 한 번 재시도합니다. 최종 재생 오류 시 토큰을 새로 받아 동일 위치에서 한 번 복구하고, 계속 실패하면 플레이어 오류와 재시도를 제공합니다.
+- 지원 여부는 기기 디코더에 따릅니다. MP3/M4A/FLAC 등의 목록 조회를 지원하지만 모든 파일의 실제 디코딩을 보장하지 않습니다. NAS MP3 변환 설정은 Drive에 적용하지 않습니다. DRM 음악과 Google 문서/바로가기의 변환·재생은 지원하지 않습니다.
+
+### Google Cloud 설정
+
+1. 동일 Google Cloud 프로젝트에서 **Google Drive API**를 활성화합니다.
+2. OAuth 동의 화면에 Drive 읽기 전용 범위 `https://www.googleapis.com/auth/drive.readonly`를 등록합니다. 앱은 음악만 조회하지만 이 OAuth 권한 자체는 Drive 전체 파일의 읽기·다운로드 권한입니다. [공식 권한 설명](https://developers.google.com/workspace/drive/api/guides/api-specific-auth)에 따르면 제한 범위(restricted scope)이며, 공개 배포 시 Google 검증 요건을 확인해야 합니다. 테스트 모드에서는 로그인할 계정을 테스트 사용자로 등록합니다.
+3. iOS의 **웹 클라이언트 ID**는 `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID`로 지정합니다. 제공받은 공개 ID를 기본값으로 적용했습니다. Android는 Drive 접근용 액세스 토큰만 요청하고 사용하지 않는 서버용 ID 토큰은 요청하지 않으므로 웹 클라이언트 ID를 전달하지 않습니다. 클라이언트 비밀키(client_secret), 서비스 계정 키, OAuth JSON 파일은 앱과 Git에 포함하지 않습니다. 별도 개발자 서버나 Firebase가 필요하지 않습니다.
+4. Android OAuth 클라이언트를 같은 프로젝트에 만들고 패키지명 `xyz.yeongdu.yeongdumusic`과 설치할 앱의 **서명 SHA-1**을 등록합니다. 로컬 현재 설정은 debug.keystore로 Release도 서명합니다. 현재 로컬 SHA-1은 `5E:8F:16:06:2E:A3:CD:2C:4A:0D:54:78:76:BA:A6:F3:8C:AB:F6:25`입니다. EAS 배포/Play App Signing은 다른 서명이므로 각 SHA-1도 등록해야 합니다. Android OAuth ID를 런타임 설정에 넣지 않습니다.
+5. iOS는 실제 Bundle ID에 맞는 **iOS OAuth 클라이언트**를 만들고 `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID`에 지정합니다. `app.config.ts`가 이 ID의 역순 URL scheme을 공식 플러그인에 전달합니다. 현재 iOS ID는 제공되지 않아 iOS Drive 로그인은 설정 안내를 표시합니다. 설정 후 새 iOS 빌드가 필요합니다.
+6. 로컬은 `pnpm android` / `pnpm ios`, EAS는 `pnpm dlx eas-cli@latest build --platform android` 등으로 새 바이너리를 만듭니다(EAS CLI 필요). EAS 환경에도 필요한 공개 ID를 설정합니다. Google 로그인은 [Expo 공식 안내](https://docs.expo.dev/guides/google-authentication/)처럼 Expo Go에서 지원되지 않습니다. 기존 Android 수동 변경 보존을 위해 이번 작업은 prebuild --clean을 실행하지 않았습니다.
+
+### 인증 정보·데이터 처리
+
+Google 로그인은 `@react-native-google-signin/google-signin` 네이티브 SDK로 수행합니다. Google 비밀번호는 앱이 받거나 저장하지 않습니다. 앱은 계정 ID·이메일·현재 액세스 토큰을 `expo-secure-store`의 `yeongdu-google-drive-v1`에 저장하며, SDK/운영체제도 로그인을 유지하기 위한 자체 정보를 관리합니다. 앱이 refresh token이나 client_secret을 저장하거나 개발자 서버로 보내지는 않습니다. 목록은 메모리에만 보관하고 재시작 시 같은 계정인지 확인한 뒤 다시 조회합니다. 계정 변경·연결 해제는 이전 작업을 무효화하고 Drive 목록과 해당 곡 재생을 제거합니다. 연결 해제 시 앱 SecureStore 항목을 삭제하고 SDK 권한 철회와 로그아웃을 시도합니다. 네트워크/저장소 실패는 별도로 안내하고 재시도를 제공합니다.
+
+NAS 로그인/로그아웃은 Google 연결 정보를 삭제하지 않습니다. Google 연결 해제는 NAS/로컬 인증·파일을 삭제하지 않습니다. 연결된 Google 계정의 이메일은 설정 화면에 표시됩니다. Google 인증/Drive 요청은 Google로 직접 전송되며, 별도 분석·광고·개발자 서버는 추가하지 않았습니다. 기존 온라인 가사 기능을 사용하면 곡 제목 등 메타데이터가 LRCLIB로 전달되는 기존 동작이 유지됩니다.
+
+### 검증 범위
+
+- `node scripts/check-google-drive.cjs`: 실제 API/store/controller/Query 코드를 Mock fetch·Google SDK·SecureStore·오디오 엔진으로 실행합니다. 목록 페이지/중복/권한, 401 재발급, JSON/HTTP 오류, 본문 지연/취소, 로그인 취소·복원·경쟁 상태, 토큰 저장/삭제 실패, NAS↔Drive↔로컬 혼합 대기열, NAS 세션 만료 격리와 탐색 위치 복구를 검증합니다. 실제 Google 계정이나 음원을 읽지 않습니다.
+- 기존 회귀 검사, TypeScript, Expo lint 및 Android Release 빌드 결과는 작업 결과에 보고합니다.
+- 실제 기기: Google 로그인 동의/권한, MP3/M4A/FLAC 스트리밍, Range 탐색, 잠금화면·백그라운드 및 1시간 이상 재생 시 토큰 갱신, 앱 재시작/계정 변경/해제, 삭제·접근 제한 파일, 대용량/공유 파일과 요청 한도를 확인해야 합니다. iOS는 iOS ID 등록 후 별도 기기 빌드 검증이 필요합니다.
+
+### Android OAuth 오류 확인
+
+Android는 패키지명·서명 SHA-1로 등록된 Android OAuth 클라이언트와 Drive 읽기 권한을 사용합니다. Drive 요청에는 `getTokens()`의 `accessToken`을 사용하며 `idToken`은 사용하지 않습니다. `webClientId`를 전달하면 네이티브 SDK가 서버용 ID 토큰도 요청하므로 Android에서는 전달하지 않습니다. iOS의 기존 클라이언트 설정은 유지합니다. [Google ID 토큰 API 설명](https://developers.google.com/android/reference/com/google/android/gms/auth/api/signin/GoogleSignInOptions.Builder#requestIdToken(java.lang.String)), [로그인 SDK 설정](https://react-native-google-signin.github.io/docs/original#configure).
+
+코드 10이 계속 발생하면 오류가 난 **실제 설치 APK**의 패키지명·서명 SHA-1과 Google Cloud의 Android OAuth 항목을 비교합니다. 로컬·EAS·Play 서명은 서로 다를 수 있습니다. Android OAuth 클라이언트가 등록된 프로젝트에서 Drive API 활성화와 동의 화면·테스트 사용자를 확인합니다. `GoogleSignin.configure()`에서 발생한 오류를 모듈 누락으로 덮어쓰지 않고 원래 OAuth 오류로 안내합니다. Google Cloud 설정과 실제 로그인 성공은 Mock 검사로 확인할 수 없습니다.
+
+연결 중에는 설정에 현재 단계(계정 선택·권한 승인, Drive 접근 토큰 발급, 인증 정보 저장 등)와 요청 취소 버튼을 표시합니다. 계정 선택·권한 승인은 120초, 최초 토큰 발급은 60초, 나머지 기기 인증 단계는 30초 이내 응답이 없으면 오류로 전환합니다. Drive JSON 요청의 기존 15초 제한은 유지합니다. 네이티브 SDK는 호출 중단 API가 없으므로 취소·시간 초과 후 늦은 결과는 사용하지 않고, 실제 요청이 끝날 때까지 후속 인증·저장 작업을 겹쳐 실행하지 않습니다. 이전 요청을 기다리는 재시도도 30초 제한을 두며, 요청이 끝나지 않으면 인증 창 닫기와 앱 재시작을 안내합니다. 늦게 끝난 인증 저장의 정리는 새 인증 정보가 저장되기 전에 완료되도록 보호합니다.
+
+`node scripts/check-google-drive.cjs`에 가짜 타이머와 지연된 SDK·SecureStore 응답으로 무한 대기 방지, 취소 즉시 UI 해제, 재시도 대기 제한, 늦은 로그인/토큰 무시, 늦은 저장이 새로운 자격 증명을 삭제하지 않는 검사를 포함합니다. Google 서버나 기기의 네이티브 호출 자체가 응답하지 않는 원인은 실제 기기에서 표시된 단계와 네트워크를 확인해야 합니다.
+
+2026-10-12 검증: TypeScript·ESLint, Google Drive·기기 보관·재생 복원 회귀 검사와 Android Release 빌드가 통과했습니다. `20261012C`를 연결된 삼성 휴대전화에 설치한 뒤 사용자가 실제 Google 로그인과 음악 목록 표시 성공을 확인했습니다. 이전 무응답이 로그인과 토큰 발급 중 어느 네이티브 호출에서 발생했는지는 당시 단계 정보가 없어 확정하지 않았습니다. 이번 확인은 로그인·목록 조회이며 실제 Drive 음원 스트리밍·탐색과 iOS 동작은 별도 확인이 필요합니다.
+
+## NAS·Google Drive 음악 기기 보관
+
+재생 화면의 제목 옆 메뉴 → **이 기기에 보관**으로 현재 곡을 내려받습니다.
+완료 후 보관함의 음악 소스 메뉴에서 **이 기기 음악**을 선택하면 로그인이나 인터넷 없이 기존 플레이어로 재생합니다.
+NAS는 원본 스트림을 보관하므로 NAS의 MP3 변환 설정은 다운로드에 적용하지 않습니다.
+
+- 진행률, 취소와 오류 후 재시도를 제공합니다. 한 번에 한 곡씩 보관합니다.
+- 파일은 임시 다운로드를 검증한 뒤 앱 문서 영역의 `local-music/`에 복사하고 기존 SQLite `local_tracks`에 등록합니다.
+- 파일 내용 MD5와 크기로 중복을 확인합니다. 같은 내용의 기기 음악이 있으면 복사본을 추가하지 않습니다.
+- 제목·가수·앨범·길이는 보존하고, NAS 주소/경로·Google 계정 ID·인증 토큰·인증된 앨범아트 URL은 로컬 메타데이터에 저장하지 않습니다. 앨범아트는 기본 이미지입니다.
+- ‘이 기기 음악’의 곡을 재생한 뒤 메뉴 → **기기의 음악 복사본 삭제**로 앱 복사본과 메타데이터를 삭제합니다. 원본은 변경하지 않습니다.
+- 보관된 곡은 계정 연결 해제 후에도 유지됩니다. 앱 데이터 삭제/앱 제거 시 OS 동작에 따라 삭제됩니다.
+- 지원 형식은 MP3/M4A/FLAC/WAV/AAC/AIFF/OGG/Opus/ALAC이며 실제 디코딩은 OS에 따릅니다.
+- 다운로드 목록/재개 정보를 디스크에 저장하지 않습니다. 앱 강제 종료 뒤 자동 재개는 지원하지 않습니다. 다운로드 중 앱을 열어 두세요.
+
+### 기기 보관 검증
+
+Mock 회귀 검사: `node scripts/check-offline-music.cjs`, 기존 로컬 음악/Google Drive/인증 검사.
+실제 기기에서 NAS·Drive 파일의 전체 다운로드, 원본과 길이/크기 비교, 비행기 모드 재생·탐색·백그라운드,
+취소·계정 변경·저장 공간 부족 및 앱 재시작을 확인해야 합니다. 실제 계정/음원 다운로드는 개발 검증에서 자동 실행하지 않습니다.
+
+개인정보처리방침에는 NAS·Drive 다운로드, 앱 전용 파일 보관 및 앱 메뉴의 복사본 삭제 방법을 반영해야 합니다.
+
+## 플레이리스트 숨기기
+
+숨김 기능 메뉴를 활성화한 뒤 설정 → 플레이리스트 숨기기(또는 플레이리스트 탭 → 숨김 관리)에서 목록별로 숨김을 켜고 끌 수 있습니다. 보관함과 곡의 플레이리스트 추가 창에서는 숨긴 목록을 표시하지 않으며, 숨긴 목록의 직접 링크도 열 수 없습니다. 목록에 속한 곡과 현재 재생에는 영향을 주지 않습니다.
+
+음악 숨기기의 지문·기기 PIN/암호/패턴 인증과 잠금 설정을 공유합니다. 잠금을 켜면 관리 화면 접근과 숨김 변경에 인증이 필요하며, 화면을 나가거나 앱이 백그라운드로 이동하면 다시 잠급니다. 기본 잠금 설정은 기존 음악 숨기기 설정을 따릅니다. 숨김은 현재 기기의 NAS 계정(또는 데모)에 저장되어 재시작 후 유지됩니다. 파일 암호화 기능은 아니며 NAS 파일이나 플레이리스트를 삭제·변경하지 않습니다. 실제 iOS/Android 인증 창과 백그라운드 복귀는 기기 검증이 필요합니다.
+
+## 메인 메뉴와 설정
+
+하단 탭 순서는 보관함 → 플레이리스트 → 검색입니다. 각 메인 화면 상단 오른쪽의 설정 아이콘으로 설정을 열고, 뒤로 가기로 이전 화면에 돌아갈 수 있습니다. 보관함의 내 플레이리스트 바로가기 대신 전용 플레이리스트 탭을 사용합니다. 플레이리스트 상세 화면에서는 하단 탭과 미니 플레이어를 계속 사용할 수 있으며 기존 `/playlists`·`/playlists/[id]` 주소와 숨김 기능은 유지합니다.
+
+## 최근 앱 제거와 재생 복원
+
+Android에서 최근 앱 목록의 화면을 제거해도 재생 중인 오디오 서비스는 유지합니다. 앱 아이콘으로 다시 열면 살아 있는 재생 엔진과 대기열을 그대로 사용하고 재생 화면을 표시합니다. 같은 계정의 숨김 설정을 다시 초기화하지 않아 재진입 도중 NAS 재생이 종료되는 경쟁 상태를 방지합니다. `expo-audio`의 서비스 변경은 pnpm 패치에 포함되므로 네이티브 앱을 다시 빌드해야 합니다.
+
+프로세스가 실제로 종료된 경우를 위해 대기열·위치·재생 여부·셔플·반복을 기기의 SQLite 키값 저장소에 보관합니다. 24시간 이내의 기록만 복원하며 NAS와 Google Drive 곡은 같은 계정일 때만, 로컬 곡은 현재 보관함에서 접근 가능한 항목만 복원합니다. 숨긴 곡은 복원하지 않고 인증 정보가 포함될 수 있는 앨범아트 URL은 저장하지 않습니다. 프로세스가 종료된 후에는 음원 연결을 다시 열어야 하므로 무중단 재생을 보장하지 않습니다.
+
+검증: `node scripts/check-playback-recovery.cjs`는 저장·계정 구분·숨김/누락 파일·기록 삭제와 React 화면 재생성 시 기존 플레이어 유지 및 재생 화면 복귀를 Mock으로 확인합니다. `node scripts/check-playback-buffer.cjs`는 새 엔진으로 복원할 때 저장된 위치로 먼저 탐색한 후 재생하는 동작을 확인합니다. 2026-10-12 연결된 삼성 휴대전화의 Release APK에서 NAS 곡 재생 → 최근 앱 제거 → 앱 아이콘 재진입 시 끊김 없이 재생 화면으로 돌아오는 동작을 사용자 확인으로 검증했습니다.
+
+Android의 강제 중지·재부팅·배터리 관리에 의한 프로세스 종료는 최근 앱 화면 제거와 별도로 확인해야 합니다. iOS의 앱 강제 종료와 장시간 백그라운드 동작은 아직 기기 검증하지 않았습니다.
+
+## 숨김 기능 메뉴와 빌드 버전
+
+음악 숨기기·플레이리스트 숨기기 메뉴는 기본적으로 표시하지 않습니다. 설정 → 정보의 **버전**을 연속 **15번** 누르면 두 메뉴와 플레이리스트 탭의 숨김 관리가 표시됩니다. 활성화된 상태에서 버전을 **5번** 누르면 다시 감춥니다. 입력 간격이 3초를 넘거나 설정 화면을 나가면 누른 횟수는 초기화됩니다. 메뉴 활성화 여부는 기기에 저장되어 앱 재시작 후에도 유지됩니다.
+
+메뉴를 감춰도 기존 음악·플레이리스트 숨김 규칙은 계속 적용되고 삭제되지 않습니다. 관리 화면의 직접 링크도 비활성화 상태에서는 설정으로 돌아갑니다. 메뉴 활성화는 기존 지문·기기 암호 인증을 해제하지 않으며, 메뉴를 감추면 관리 잠금도 다시 잠급니다. 일반 폴더 제외 기능은 계속 표시합니다.
+
+설정의 표시 버전은 한국 시간 기준 `YYYYMMDD` + 당일 빌드 순서 문자입니다. `A=1`, `B=2`, `C=3`, `Z=26`, `AA=27`이며 날짜가 바뀌면 A부터 시작합니다. 기존 빌드는 일별 횟수가 기록되지 않았으므로 새 기록은 `20261012A`부터 시작합니다. `build-version.json`을 Git에 함께 보관해 빌드 기록을 이어갑니다.
+
+- 이후 로컬 Release 빌드: `pnpm build:android` / `pnpm build:ios`(iOS는 macOS 필요).
+- EAS 빌드: `pnpm build:eas --platform android --profile preview` 등. 로컬에서 버전 기록을 증가시킨 뒤 EAS로 전달합니다.
+- Gradle 또는 EAS를 직접 실행할 때는 먼저 `pnpm version:build`를 한 번 실행합니다. 동일 빌드에서 중복 실행하지 않습니다.
+- 위 빌드 명령은 빌드 시도마다 번호를 예약하므로 실패한 빌드도 횟수에 포함됩니다. 병렬 빌드는 하나의 기록을 동시에 증가시키지 않도록 순차 예약합니다.
+- Metro 실행이나 Expo 설정 조회로는 횟수가 증가하지 않습니다. 표시 버전은 `extra.buildVersion`을 사용합니다. iOS가 요구하는 숫자 형식의 앱 버전과 Android `versionCode`/iOS `buildNumber`(EAS remote autoIncrement)는 별도로 유지합니다.
+
+Mock 검사: `node scripts/check-hidden-feature-access.cjs`(15/5회 입력, 시간·화면 이동 초기화, 재시작·저장 실패·중복 입력, 버전 표기·일별 빌드 증가), `node scripts/check-hidden-playlists.cjs`(설정·플레이리스트 메뉴 표시와 직접 접근 차단, 기존 목록 필터·잠금 유지). 실제 기기에서는 버전 연속 터치와 저장 후 재시작, 지문·기기 암호 인증을 확인해야 합니다.
+
+2026-10-12 검증: TypeScript·ESLint(경고 없음), 위 검사 및 기존 숨김 음악·내비게이션 검사가 통과했습니다. Android Release 빌드에 `20261012A`가 실제 포함된 것을 APK에서 확인하고 연결된 삼성 휴대전화에 업데이트 설치했습니다. 15/5회 실제 터치와 iOS 기기 동작은 아직 확인하지 않았습니다.

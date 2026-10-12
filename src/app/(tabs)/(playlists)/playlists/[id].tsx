@@ -8,7 +8,7 @@ import { AsyncState } from '@/components/async-state';
 import { useSongs } from '@/features/library/queries';
 import { PlaylistNameDialog } from '@/features/playlists/dialogs';
 import { PlaylistSongPicker } from '@/features/playlists/song-picker';
-import { playlistSongs } from '@/features/playlists/rules';
+import { playlistSongs, visiblePlaylists } from '@/features/playlists/rules';
 import { playAndOpenPlayer } from '@/features/playback/play-and-open-player';
 import { usePlaylistStore } from '@/stores/playlists';
 import { useHiddenMusicStore } from '@/stores/hidden-music';
@@ -17,12 +17,13 @@ import { useColors } from '@/theme/tokens';
 export default function PlaylistScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const colors = useColors(), store = usePlaylistStore(), query = useSongs();
-  const scope = useHiddenMusicStore((state) => state.scope);
-  const preset = store.profile.presets.find((item) => item.id === id);
+  const privacy = useHiddenMusicStore();
+  const scope = privacy.scope;
+  const preset = visiblePlaylists(store.profile.presets, privacy.profile.hiddenPlaylistIds).find((item) => item.id === id);
   const songs = useMemo(() => preset ? playlistSongs(preset, query.data?.items ?? []) : [], [preset, query.data]);
   const [rename, setRename] = useState(false), [adding, setAdding] = useState(false), [editing, setEditing] = useState(false), [error, setError] = useState<string | null>(null);
   async function run(operation: () => Promise<unknown>) { setError(null); try { await operation(); } catch (cause) { setError(cause instanceof Error ? cause.message : '변경하지 못했습니다.'); } }
-  if (!store.ready || store.scope !== scope) return <View style={styles.center}>{store.error ? <Pressable onPress={() => void store.load(scope)}><Text style={{ color: colors.tint }}>{store.error} · 다시 불러오기</Text></Pressable> : <ActivityIndicator color={colors.tint} />}</View>;
+  if (!privacy.ready || !store.ready || store.scope !== scope) return <View style={styles.center}>{store.error ? <Pressable onPress={() => void store.load(scope)}><Text style={{ color: colors.tint }}>{store.error} · 다시 불러오기</Text></Pressable> : <ActivityIndicator color={colors.tint} />}</View>;
   if (!preset) return <View style={styles.center}><Text style={{ color: colors.muted }}>플레이리스트를 찾을 수 없습니다.</Text><Pressable style={styles.action} onPress={() => router.replace('/playlists')}><Text style={{ color: colors.tint }}>목록으로 돌아가기</Text></Pressable></View>;
   return <View style={styles.fill}>
     <AsyncState loading={query.isPending} error={query.isError && !query.data ? query.error.message : null} retry={() => void query.refetch()}>

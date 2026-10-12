@@ -2,6 +2,10 @@ import type { PlaylistProfile, PlaylistPreset } from '@/types/playlists';
 import type { Song } from '@/types/music';
 
 export const emptyPlaylists = (): PlaylistProfile => ({ version: 1, presets: [] });
+export function visiblePlaylists(presets: readonly PlaylistPreset[], hiddenIds: readonly string[] = []): PlaylistPreset[] {
+  const hidden = new Set(hiddenIds);
+  return presets.filter((preset) => !hidden.has(preset.id));
+}
 export function playlistName(name: string): string {
   const clean = name.trim();
   if (!clean || clean.length > 60) throw new Error('플레이리스트 이름을 1~60자로 입력해 주세요.');

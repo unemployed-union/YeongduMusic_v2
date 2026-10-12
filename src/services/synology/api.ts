@@ -210,7 +210,8 @@ export class SynologyClient {
     if (!id) throw new SynologyRequestError('response', '곡 응답에 ID가 없습니다.');
     const tag = item.additional && typeof item.additional === 'object' ? (item.additional as Record<string, unknown>).song_tag : undefined;
     const tags = tag && typeof tag === 'object' ? tag as Record<string, unknown> : {};
-    return { id: id.startsWith('local:') ? 'nas:' + id : id, nasId: id.startsWith('local:') ? id : undefined, source: 'nas', path: string(item.path) || undefined, title: string(item.title, '제목 없음'), artist: string(item.artist, string(tags.artist, '알 수 없는 아티스트')), album: string(item.album, string(tags.album, '알 수 없는 앨범')), albumArtist: string(tags.album_artist) || undefined, discNumber: number(tags.disc) || undefined, year: number(tags.year) || undefined, duration: number(item.duration), trackNumber: number(item.track, number(tags.track)) || undefined, artworkUrl: this.coverUrl(id) };
+    const artist = [string(item.artist), string(tags.artist)].find(value => value.trim()) ?? '알 수 없는 아티스트';
+    return { id: (id.startsWith('local:') || id.startsWith('drive:')) ? 'nas:' + id : id, nasId: (id.startsWith('local:') || id.startsWith('drive:')) ? id : undefined, source: 'nas', path: string(item.path) || undefined, title: string(item.title, '제목 없음'), artist, album: string(item.album, string(tags.album, '알 수 없는 앨범')), albumArtist: string(tags.album_artist) || undefined, discNumber: number(tags.disc) || undefined, year: number(tags.year) || undefined, duration: number(item.duration), trackNumber: number(item.track, number(tags.track)) || undefined, artworkUrl: this.coverUrl(id) };
   }
   async albums({ offset, limit, signal }: PageRequest): Promise<Page<Album>> {
     const result = this.collection(await this.call('SYNO.AudioStation.Album', 'list', { offset, limit, library: AUDIO_STATION_LIBRARY }, signal), 'albums');
@@ -221,7 +222,7 @@ export class SynologyClient {
     return { total: result.total, items: result.records.map((item) => ({ id: string(item.id, string(item.name)), name: string(item.name, '이름 없음'), albumCount: number(item.album_count) || undefined })) };
   }
   streamSource(song: Song, quality: StreamingQuality = 'original'): { uri: string } {
-    if (song.source === 'local') throw new Error('로컬 음악은 NAS 스트리밍 API를 사용하지 않습니다.');
+    if (song.source === 'local' || song.source === 'drive') throw new Error('로컬 음악과 Google Drive 음악은 NAS 스트리밍 API를 사용하지 않습니다.');
     if (quality === 'mp3') {
       if ((this.session.apis['SYNO.AudioStation.Stream']?.maxVersion ?? 0) < 2) throw new SynologyError('MP3 변환에는 Stream API v2가 필요합니다. 원본 음질을 선택해 주세요.');
       // Official Audio Station 6.5.7 app/audio-core.js uses transcode,

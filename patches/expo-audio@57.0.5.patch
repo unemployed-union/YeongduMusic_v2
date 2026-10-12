@@ -1,3 +1,19 @@
+diff --git a/android/src/main/java/expo/modules/audio/AudioModule.kt b/android/src/main/java/expo/modules/audio/AudioModule.kt
+index 992239ba7631ce0c97c0b41c5fbf61cc842386fe..a60b526c972cf17bc5eed9c4216ef50c9e970c69 100644
+--- a/android/src/main/java/expo/modules/audio/AudioModule.kt
++++ b/android/src/main/java/expo/modules/audio/AudioModule.kt
+@@ -376,6 +376,11 @@ class AudioModule : Module() {
+         player.id
+       }
+ 
++      // YeongduMusic: provide the existing ExoPlayer session to the system effects panel.
++      Property("audioSessionId") { player ->
++        runOnMain { player.ref.audioSessionId }
++      }
++
+       Property("isBuffering") { player ->
+         runOnMain {
+           player.ref.playbackState == Player.STATE_BUFFERING
 diff --git a/android/src/main/java/expo/modules/audio/AudioPlayer.kt b/android/src/main/java/expo/modules/audio/AudioPlayer.kt
 index c76a9fd2a53743a691782e0f67d0d71401df58f6..df59e81533c32c7b40904941ae564896f5a1ffa8 100644
 --- a/android/src/main/java/expo/modules/audio/AudioPlayer.kt
@@ -30,7 +46,7 @@ index 86880d92fd5b6413e8596e1b2b8ae28f2981addd..9272a21d1ea3547966f7e82a9be646cc
  
  enum class InterruptionMode(val value: String) : Enumerable {
 diff --git a/android/src/main/java/expo/modules/audio/service/AudioControlsService.kt b/android/src/main/java/expo/modules/audio/service/AudioControlsService.kt
-index 196a5d57f887c2667a88543bd2f6a80044a044f2..0461056fa218863b6314590c53f822d407978e8e 100644
+index 196a5d57f887c2667a88543bd2f6a80044a044f2..fb569e2968c3d544e8d7a7cc9d3e5382697bed9b 100644
 --- a/android/src/main/java/expo/modules/audio/service/AudioControlsService.kt
 +++ b/android/src/main/java/expo/modules/audio/service/AudioControlsService.kt
 @@ -15,7 +15,6 @@ import android.os.Bundle
@@ -50,7 +66,27 @@ index 196a5d57f887c2667a88543bd2f6a80044a044f2..0461056fa218863b6314590c53f822d4
          ACTION_SEEK_FORWARD -> currentPlayerRef.seekTo(currentPlayerRef.currentPosition + SEEK_INTERVAL_MS)
          ACTION_SEEK_BACKWARD -> currentPlayerRef.seekTo(currentPlayerRef.currentPosition - SEEK_INTERVAL_MS)
        }
-@@ -192,7 +193,14 @@ class AudioControlsService : MediaSessionService() {
+@@ -132,6 +133,19 @@ class AudioControlsService : MediaSessionService() {
+     createNotificationChannelIfNeeded()
+   }
+ 
++  // Expo's custom notification calls startForeground directly. Media3's default
++  // onTaskRemoved check can still decide playback is not ongoing and pause it.
++  // Keep an actively playing session when the user dismisses the UI task.
++  override fun onTaskRemoved(rootIntent: Intent?) {
++    val player = currentPlayer?.ref
++    if (player != null && player.playWhenReady &&
++      player.playbackState != Player.STATE_ENDED && player.playbackState != Player.STATE_IDLE) {
++      ensureForegroundNotification()
++      return
++    }
++    super.onTaskRemoved(rootIntent)
++  }
++
+   private fun shouldPlayInSilentMode(): Boolean {
+     return playsInSilentMode || audioManager.ringerMode == AudioManager.RINGER_MODE_NORMAL
+   }
+@@ -192,7 +206,14 @@ class AudioControlsService : MediaSessionService() {
        val compactViewIndices = mutableListOf<Int>()
        var currentIndex = 0
  
@@ -66,7 +102,7 @@ index 196a5d57f887c2667a88543bd2f6a80044a044f2..0461056fa218863b6314590c53f822d4
          builder.addAction(
            NotificationCompat.Action(
              androidx.media3.session.R.drawable.media3_icon_skip_back,
-@@ -218,7 +226,14 @@ class AudioControlsService : MediaSessionService() {
+@@ -218,7 +239,14 @@ class AudioControlsService : MediaSessionService() {
        compactViewIndices.add(currentIndex)
        currentIndex++
  
@@ -82,7 +118,7 @@ index 196a5d57f887c2667a88543bd2f6a80044a044f2..0461056fa218863b6314590c53f822d4
          builder.addAction(
            NotificationCompat.Action(
              androidx.media3.session.R.drawable.media3_icon_skip_forward,
-@@ -241,7 +256,16 @@ class AudioControlsService : MediaSessionService() {
+@@ -241,7 +269,16 @@ class AudioControlsService : MediaSessionService() {
      val mediaButtons = mutableListOf<CommandButton>()
  
      // Add seek backward button if enabled
@@ -100,7 +136,7 @@ index 196a5d57f887c2667a88543bd2f6a80044a044f2..0461056fa218863b6314590c53f822d4
        mediaButtons.add(
          CommandButton.Builder(CommandButton.ICON_SKIP_BACK_10)
            .setDisplayName("Seek Backward")
-@@ -263,7 +287,16 @@ class AudioControlsService : MediaSessionService() {
+@@ -263,7 +300,16 @@ class AudioControlsService : MediaSessionService() {
      )
  
      // Add seek forward button if enabled
@@ -118,7 +154,7 @@ index 196a5d57f887c2667a88543bd2f6a80044a044f2..0461056fa218863b6314590c53f822d4
        mediaButtons.add(
          CommandButton.Builder(CommandButton.ICON_SKIP_FORWARD_10)
            .setDisplayName("Seek Forward")
-@@ -322,17 +355,10 @@ class AudioControlsService : MediaSessionService() {
+@@ -322,17 +368,10 @@ class AudioControlsService : MediaSessionService() {
  
    private fun resolveSessionPlayer(player: AudioPlayer, options: AudioLockScreenOptions?): Player {
      val isLive = options?.isLiveStream ?: player.isLive
@@ -138,7 +174,7 @@ index 196a5d57f887c2667a88543bd2f6a80044a044f2..0461056fa218863b6314590c53f822d4
    }
  
    private fun setActivePlayerInternal(
-@@ -556,6 +582,9 @@ class AudioControlsService : MediaSessionService() {
+@@ -556,6 +595,9 @@ class AudioControlsService : MediaSessionService() {
      private const val ACTION_PAUSE = "expo.modules.audio.action.PAUSE"
      private const val ACTION_TOGGLE = "expo.modules.audio.action.TOGGLE"
  
@@ -149,7 +185,7 @@ index 196a5d57f887c2667a88543bd2f6a80044a044f2..0461056fa218863b6314590c53f822d4
      const val ACTION_SEEK_BACKWARD = "expo.modules.audio.action.SEEK_BACKWARD"
  
 diff --git a/android/src/main/java/expo/modules/audio/service/AudioMediaSessionCallback.kt b/android/src/main/java/expo/modules/audio/service/AudioMediaSessionCallback.kt
-index 839aaef12d7699ea1a89037b31849775daa079f4..bae18e5c28302d703abe1b6f6855bdfe60fc223b 100644
+index 839aaef12d7699ea1a89037b31849775daa079f4..5ce5276c1fe45022a815d42cdc4d0bde472b3cd7 100644
 --- a/android/src/main/java/expo/modules/audio/service/AudioMediaSessionCallback.kt
 +++ b/android/src/main/java/expo/modules/audio/service/AudioMediaSessionCallback.kt
 @@ -1,7 +1,6 @@
@@ -184,18 +220,9 @@ index 839aaef12d7699ea1a89037b31849775daa079f4..bae18e5c28302d703abe1b6f6855bdfe
          .setAvailableSessionCommands(
            MediaSession.ConnectionResult.DEFAULT_SESSION_COMMANDS.buildUpon()
              .add(SessionCommand(AudioControlsService.ACTION_SEEK_BACKWARD, Bundle.EMPTY))
-diff --git a/android/src/main/java/expo/modules/audio/service/MetadataInjectingPlayer.kt b/android/src/main/java/expo/modules/audio/service/MetadataInjectingPlayer.kt
-index 18203a3..fd45ebe 100644
---- a/android/src/main/java/expo/modules/audio/service/MetadataInjectingPlayer.kt
-+++ b/android/src/main/java/expo/modules/audio/service/MetadataInjectingPlayer.kt
-@@ -83,2 +83,2 @@ internal class MetadataInjectingPlayer(
--    private val listener: Player.Listener
--  ) : Player.Listener by listener {
-+    listener: Player.Listener
-+  ) : ForwardingPlayerListener(listener) {
 diff --git a/android/src/main/java/expo/modules/audio/service/ForwardingPlayerListener.java b/android/src/main/java/expo/modules/audio/service/ForwardingPlayerListener.java
 new file mode 100644
-index 0000000..cca25932f49482df03013670bb37b3ba8005ff2a
+index 0000000000000000000000000000000000000000..cca25932f49482df03013670bb37b3ba8005ff2a
 --- /dev/null
 +++ b/android/src/main/java/expo/modules/audio/service/ForwardingPlayerListener.java
 @@ -0,0 +1,165 @@
@@ -364,9 +391,24 @@ index 0000000..cca25932f49482df03013670bb37b3ba8005ff2a
 +    listener.onMetadata(arg0);
 +  }
 +}
+diff --git a/android/src/main/java/expo/modules/audio/service/MetadataInjectingPlayer.kt b/android/src/main/java/expo/modules/audio/service/MetadataInjectingPlayer.kt
+index 18203a364d17dcf3de95d22a20175308e3363889..fd45ebe07d4b3b1b1cd79580a5cb22db790ac7c3 100644
+--- a/android/src/main/java/expo/modules/audio/service/MetadataInjectingPlayer.kt
++++ b/android/src/main/java/expo/modules/audio/service/MetadataInjectingPlayer.kt
+@@ -80,8 +80,8 @@ internal class MetadataInjectingPlayer(
+   }
+ 
+   private inner class MetadataForwardingListener(
+-    private val listener: Player.Listener
+-  ) : Player.Listener by listener {
++    listener: Player.Listener
++  ) : ForwardingPlayerListener(listener) {
+     override fun onMediaMetadataChanged(mediaMetadata: MediaMetadata) {
+       listener.onMediaMetadataChanged(this@MetadataInjectingPlayer.mediaMetadata)
+     }
 diff --git a/android/src/main/java/expo/modules/audio/service/TrackNavigationPlayer.kt b/android/src/main/java/expo/modules/audio/service/TrackNavigationPlayer.kt
 new file mode 100644
-index 0000000..bb955cc2e982b4146ebb5bfee8e3a376928cca01
+index 0000000000000000000000000000000000000000..bb955cc2e982b4146ebb5bfee8e3a376928cca01
 --- /dev/null
 +++ b/android/src/main/java/expo/modules/audio/service/TrackNavigationPlayer.kt
 @@ -0,0 +1,102 @@
@@ -488,10 +530,19 @@ index cfd92ad0ff5765254c4e6db974fe44bce34aad06..cb7efe8477a203e631b174975b1fcb35
       * Whether the seek backward button should be displayed on the lock screen.
       */
 diff --git a/build/AudioModule.types.d.ts b/build/AudioModule.types.d.ts
-index f3ae4ee4044d86032cd5c6dbcfee6f905d1ce99f..cb70e7ff72f92c4b8bcc95b1cbc47f1fe803c6a4 100644
+index f3ae4ee4044d86032cd5c6dbcfee6f905d1ce99f..c34c53a8dc978c451c28149bdcdd389ceeb2b0a2 100644
 --- a/build/AudioModule.types.d.ts
 +++ b/build/AudioModule.types.d.ts
-@@ -218,6 +218,8 @@ export type AudioSampleChannel = {
+@@ -22,6 +22,8 @@ export declare class NativeAudioModule extends NativeModule {
+     readonly AudioStream: typeof AudioStream;
+ }
+ export declare class AudioPlayer extends SharedObject<AudioEvents> {
++  /** YeongduMusic patch: current Android ExoPlayer session; absent on iOS/web. */
++  readonly audioSessionId?: number;
+     /**
+      * Initializes a new audio player instance with the given source.
+      * @hidden
+@@ -218,6 +220,8 @@ export type AudioSampleChannel = {
   * Use `player.addListener()` to subscribe to these events.
   */
  export type AudioEvents = {
@@ -516,10 +567,19 @@ index dcc0452f7cae66b1bfaf77ed211416b092965bd9..2eab12a1a7027ee36dd99bbfd9f15e88
     * Whether the seek backward button should be displayed on the lock screen.
     */
 diff --git a/src/AudioModule.types.ts b/src/AudioModule.types.ts
-index 7e7537173d067fecef767a03dc0f1860c8aca7ac..eabea1a6c7e1fdd33668d84aa819050ce0463282 100644
+index 7e7537173d067fecef767a03dc0f1860c8aca7ac..ffd97ba93009e640b1c6bd51c9007168beacaa10 100644
 --- a/src/AudioModule.types.ts
 +++ b/src/AudioModule.types.ts
-@@ -276,6 +276,8 @@ export type AudioSampleChannel = {
+@@ -40,6 +40,8 @@ export declare class NativeAudioModule extends NativeModule {
+ }
+ 
+ export declare class AudioPlayer extends SharedObject<AudioEvents> {
++  /** YeongduMusic patch: current Android ExoPlayer session; absent on iOS/web. */
++  readonly audioSessionId?: number;
+   /**
+    * Initializes a new audio player instance with the given source.
+    * @hidden
+@@ -276,6 +278,8 @@ export type AudioSampleChannel = {
   * Use `player.addListener()` to subscribe to these events.
   */
  export type AudioEvents = {
@@ -528,33 +588,3 @@ index 7e7537173d067fecef767a03dc0f1860c8aca7ac..eabea1a6c7e1fdd33668d84aa819050c
    /** Fired when the player's status changes (play/pause/seek/load and so on.). */
    playbackStatusUpdate(status: AudioStatus): void;
    /** Fired when audio sampling is enabled and new sample data is available. */
-
-diff --git a/android/src/main/java/expo/modules/audio/AudioModule.kt b/android/src/main/java/expo/modules/audio/AudioModule.kt
---- a/android/src/main/java/expo/modules/audio/AudioModule.kt
-+++ b/android/src/main/java/expo/modules/audio/AudioModule.kt
-@@ -379,1 +379,6 @@
--      Property("isBuffering") { player ->
-+      // YeongduMusic: provide the existing ExoPlayer session to the system effects panel.
-+      Property("audioSessionId") { player ->
-+        runOnMain { player.ref.audioSessionId }
-+      }
-+
-+      Property("isBuffering") { player ->
-
-diff --git a/src/AudioModule.types.ts b/src/AudioModule.types.ts
---- a/src/AudioModule.types.ts
-+++ b/src/AudioModule.types.ts
-@@ -42,1 +42,3 @@
--export declare class AudioPlayer extends SharedObject<AudioEvents> {
-+export declare class AudioPlayer extends SharedObject<AudioEvents> {
-+  /** YeongduMusic patch: current Android ExoPlayer session; absent on iOS/web. */
-+  readonly audioSessionId?: number;
-
-diff --git a/build/AudioModule.types.d.ts b/build/AudioModule.types.d.ts
---- a/build/AudioModule.types.d.ts
-+++ b/build/AudioModule.types.d.ts
-@@ -24,1 +24,3 @@
--export declare class AudioPlayer extends SharedObject<AudioEvents> {
-+export declare class AudioPlayer extends SharedObject<AudioEvents> {
-+  /** YeongduMusic patch: current Android ExoPlayer session; absent on iOS/web. */
-+  readonly audioSessionId?: number;

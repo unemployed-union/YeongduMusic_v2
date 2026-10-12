@@ -1,27 +1,29 @@
 import { ScrollEdgeFade } from '@/components/scroll-edge-fade';
 import { useState } from 'react';
 import { ActivityIndicator, Alert, Keyboard, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
-import { KeyboardAwareScrollView, useKeyboardState } from 'react-native-keyboard-controller';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { router } from 'expo-router';
-import { ScreenHeader } from '@/components/screen-header';
 import { StreamingQualitySettings } from '@/features/playback/streaming-quality-settings';
 import { PlaybackOptionsSettings } from '@/features/playback/playback-options-settings';
+import { GoogleDriveSettings } from '@/features/google-drive/settings';
 import { FolderExclusionSettings } from '@/features/library/folder-exclusion-settings';
+import { VersionSettings } from '@/features/settings/version-settings';
+import { useHiddenFeatureAccess } from '@/stores/hidden-feature-access';
 import { discover, normalizeAddress } from '@/services/synology/api';
 import { clearLibraryCache } from '@/services/synology/cache';
-import { stopPlayback } from '@/services/playback/controller';
+import { stopNasPlayback } from '@/services/playback/controller';
 import { useAuthStore } from '@/stores/auth';
 import { useColors } from '@/theme/tokens';
 
 export default function SettingsScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const keyboardVisible = useKeyboardState((state) => state.isVisible);
   const mode = useAuthStore((state) => state.mode);
   const session = useAuthStore((state) => state.session);
   const disconnect = useAuthStore((state) => state.disconnect);
+  const showHiddenFeatures = useHiddenFeatureAccess((state) => state.ready && state.enabled);
   const [address, setAddress] = useState(session?.baseUrl ?? '');
   const [allowHttp, setAllowHttp] = useState(session?.baseUrl.startsWith('http://') ?? false);
   const [busy, setBusy] = useState(false);
@@ -49,7 +51,7 @@ export default function SettingsScreen() {
     if (normalized === session?.baseUrl) { Keyboard.dismiss(); return; }
     setBusy(true);
     try {
-      stopPlayback();
+      stopNasPlayback();
       await disconnect(normalized);
       await clearLibraryCache();
       router.replace('/connect');
@@ -57,14 +59,13 @@ export default function SettingsScreen() {
     finally { setBusy(false); }
   };
 
-  const leave = () => Alert.alert(mode === 'mock' ? '데모 종료' : 'NAS 연결 해제', '재생을 멈추고 연결 화면으로 돌아갑니다.', [
+  const leave = () => Alert.alert(mode === 'mock' ? '데모 종료' : 'NAS 연결 해제', 'NAS 재생과 연결을 종료하고 연결 화면으로 돌아갑니다. 이 기기·Google Drive 연결은 유지합니다.', [
     { text: '취소', style: 'cancel' },
-    { text: '계속', onPress: () => { void (async () => { setBusy(true); setError(null); try { stopPlayback(); await disconnect(); await clearLibraryCache(); router.replace('/connect'); } catch (cause) { setError(cause instanceof Error ? cause.message : '연결을 해제하지 못했습니다.'); } finally { setBusy(false); } })(); } },
+    { text: '계속', onPress: () => { void (async () => { setBusy(true); setError(null); try { stopNasPlayback(); await disconnect(); await clearLibraryCache(); router.replace('/connect'); } catch (cause) { setError(cause instanceof Error ? cause.message : '연결을 해제하지 못했습니다.'); } finally { setBusy(false); } })(); } },
   ]);
 
   return <View style={{ flex: 1, backgroundColor: colors.background }}>
-    <ScreenHeader title="설정" />
-    <ScrollEdgeFade><KeyboardAwareScrollView style={{ flex: 1 }} bottomOffset={16} contentContainerStyle={[styles.screen, { paddingBottom: keyboardVisible ? 24 : 170 + insets.bottom }]} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
+    <ScrollEdgeFade><KeyboardAwareScrollView style={{ flex: 1 }} bottomOffset={16} contentContainerStyle={[styles.screen, { paddingBottom: 24 + insets.bottom }]} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
     <Text style={[styles.section, { color: colors.muted, marginTop: 9 }]}>연결</Text>
     <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.separator }]}><View style={[styles.icon, { backgroundColor: colors.tint }]}><Ionicons name="server-outline" size={23} color="white" /></View><View style={{ flex: 1 }}><Text style={[styles.name, { color: colors.text }]}>{mode === 'mock' ? '데모 라이브러리' : 'Synology NAS'}</Text><Text numberOfLines={1} style={[styles.detail, { color: colors.muted }]}>{session?.baseUrl ?? '연결 없이 UI 둘러보기'}</Text></View><Ionicons name="checkmark-circle" size={22} color={colors.tint} /></View>
 
@@ -78,13 +79,16 @@ export default function SettingsScreen() {
     <Text style={[styles.helper, { color: colors.muted }]}>주소를 바꾸면 현재 세션을 종료하고 새 주소에서 Synology 계정으로 다시 로그인합니다.</Text>
 
     <Pressable disabled={busy} style={[styles.action, { borderBottomColor: colors.separator }]} onPress={leave}><Text style={[styles.actionText, { color: colors.tint }]}>{mode === 'mock' ? '데모 종료' : 'NAS 연결 해제'}</Text><Ionicons name="chevron-forward" size={19} color={colors.muted} /></Pressable>
+    <GoogleDriveSettings />
     <StreamingQualitySettings />
     <PlaybackOptionsSettings />
     <Text style={[styles.section, { color: colors.muted, marginTop: 34 }]}>보관함</Text>
-    <Pressable accessibilityRole="button" onPress={() => router.push('/hidden-music')} style={[styles.action, { borderBottomColor: colors.separator, marginTop: 0 }]}><Ionicons name="eye-off-outline" size={23} color={colors.tint} /><Text style={[styles.actionText, { color: colors.text, flex: 1, marginLeft: 12 }]}>음악 숨기기</Text><Ionicons name="chevron-forward" size={19} color={colors.muted} /></Pressable>
-    <Text style={[styles.helper, { color: colors.muted }]}>폴더·곡 선택 프리셋과 지문·기기 암호 잠금</Text>
+    {showHiddenFeatures && <><Pressable accessibilityRole="button" onPress={() => router.push('/hidden-music')} style={[styles.action, { borderBottomColor: colors.separator, marginTop: 0 }]}><Ionicons name="eye-off-outline" size={23} color={colors.tint} /><Text style={[styles.actionText, { color: colors.text, flex: 1, marginLeft: 12 }]}>음악 숨기기</Text><Ionicons name="chevron-forward" size={19} color={colors.muted} /></Pressable>
+    <Pressable accessibilityRole="button" onPress={() => router.push('/hidden-playlists')} style={[styles.action, { borderBottomColor: colors.separator, marginTop: 0 }]}><Ionicons name="eye-off-outline" size={23} color={colors.tint} /><Text style={[styles.actionText, { color: colors.text, flex: 1, marginLeft: 12 }]}>플레이리스트 숨기기</Text><Ionicons name="chevron-forward" size={19} color={colors.muted} /></Pressable>
+    <Text style={[styles.helper, { color: colors.muted }]}>폴더·곡 선택 프리셋과 지문·기기 암호 잠금</Text></>}
     <FolderExclusionSettings />
     <Text style={[styles.section, { color: colors.muted, marginTop: 34 }]}>정보</Text>
+    <VersionSettings />
     <Text style={[styles.note, { color: colors.muted }]}>보관함은 공용 music과 로그인한 계정의 개인 home/music을 함께 조회합니다. 음악은 선택한 NAS 주소에서 직접 스트리밍됩니다. 메타데이터는 최근 조회 목록을 기기에 저장합니다. HTTPS 인증서가 유효해야 연결할 수 있습니다.</Text>
     </KeyboardAwareScrollView></ScrollEdgeFade>
   </View>;

@@ -131,6 +131,7 @@ async function main() {
   const controller = load('src/services/playback/controller.ts', {
     './audio-engine': { ExpoAudioEngine: Engine },
     '@/services/local-music/storage': storage, './folder-exclusions': { useFolderExclusionStore: exclusions }, '@/services/local-music/folders': folderRules,
+    '@/stores/google-drive': { useGoogleDriveStore: selector => selector({ songs: [], loading: false, error: null }) },
     '@/stores/local-music': { useLocalMusicStore: localStore },
     '@/services/synology/api': { SessionExpiredError, SynologyError, SynologyClient: class { async checkSession() { checks++; } } },
     '@/features/library/repository': { musicRepository: () => { assert.ok(auth.session); nasRequests++; return { streamSource: async () => pendingNas ? pendingNas.promise : { uri: 'https://example.invalid/stream' } }; } },
@@ -198,6 +199,7 @@ async function main() {
   const hooks = load('src/features/library/queries.ts', {
     react: { useCallback: fn => fn, useMemo: fn => fn() },
     '@tanstack/react-query': { useQuery: options => queryResult ?? options },
+    '@/stores/google-drive': { useGoogleDriveStore: selector => selector({ songs: [], loading: false, error: null }) },
     '@/stores/local-music': { useLocalMusicStore: selector => selector(localState) },
     '@/stores/auth': { useAuthStore: selector => selector(auth) },
     '@/stores/hidden-music': { useHiddenMusicStore: selector => selector(privacy.getState()) },

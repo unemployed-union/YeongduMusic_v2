@@ -1,8 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { ScreenHeader } from '@/components/screen-header';
-import { router } from 'expo-router';
-import Ionicons from '@expo/vector-icons/Ionicons';
+import { SettingsButton } from '@/components/settings-button';
 import { LIBRARY_TABS, LibraryPage, type LibraryTab } from '@/features/library/library-page';
 import { LocalMusicControls } from '@/features/library/local-music-controls';
 import { LibrarySortControl } from '@/features/library/library-sort-control';
@@ -38,11 +37,10 @@ export default function LibraryScreen() {
   }
 
   return <View style={[styles.screen, { backgroundColor: colors.background }]}>
-    <ScreenHeader title="보관함">
+    <ScreenHeader title="보관함" action={<SettingsButton />}>
       <Text style={[styles.kicker, { color: colors.tint }]}>{mode === 'mock' ? 'DEMO LIBRARY' : mode === 'setup' ? 'ON THIS DEVICE' : 'SYNOLOGY AUDIO STATION'}</Text>
       <Text style={[styles.subheading, { color: colors.muted }]}>{mode === 'mock' ? '좋아하는 음악을 다시 만나는 곳' : mode === 'setup' ? '로그인 없이 즐기는 내 음악' : '공용 music · 내 home/music · 이 기기'}</Text>
     </ScreenHeader>
-    <Pressable accessibilityRole="button" onPress={() => router.push('/playlists')} style={{ marginHorizontal: 22, marginBottom: 14, padding: 14, borderRadius: 12, backgroundColor: colors.surface, flexDirection: 'row', alignItems: 'center', gap: 10 }}><Ionicons name="musical-notes-outline" size={22} color={colors.tint} /><Text style={{ flex: 1, color: colors.text, fontWeight: '700' }}>내 플레이리스트</Text><Ionicons name="chevron-forward" size={18} color={colors.muted} /></Pressable>
     <LocalMusicControls sortControl={<LibrarySortControl tab={tab} order={sortOrders[tab]} onChange={(order) => setSortOrders((current) => ({ ...current, [tab]: order }))} />} />
     <View style={styles.segments}>{LIBRARY_TABS.map((option) => <Pressable key={option} accessibilityRole="tab" accessibilityState={{ selected: tab === option }} onPress={() => selectTab(option)} style={[styles.segment, { backgroundColor: tab === option ? colors.tint : colors.surface, borderColor: tab === option ? colors.tint : colors.separator }]}><Text style={{ color: tab === option ? 'white' : colors.text, fontWeight: '700' }}>{option === 'albums' ? '앨범' : option === 'songs' ? '노래' : '아티스트'}</Text></Pressable>)}</View>
     {(refreshState.refreshing || refreshState.error || refreshState.message) && <Pressable accessibilityRole="button" disabled={!refreshState.error || refreshState.refreshing} onPress={() => void refreshState.refresh()} style={styles.refreshNotice}><Text style={{ color: refreshState.error ? colors.tint : colors.muted }}>{refreshState.refreshing ? (mode === 'mock' ? '데모 목록 확인 중…' : 'Audio Station 목록을 가져오는 중…') : refreshState.error ? refreshState.error + ' · 다시 시도' : refreshState.message}</Text></Pressable>}

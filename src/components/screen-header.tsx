@@ -3,17 +3,18 @@ import { StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColors } from '@/theme/tokens';
 
-export function ScreenHeader({ title, children }: { title: string; children?: ReactNode }) {
+export function ScreenHeader({ title, children, action }: { title: string; children?: ReactNode; action?: ReactNode }) {
   const colors = useColors();
   const insets = useSafeAreaInsets();
 
   return <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
-    <Text accessibilityRole="header" style={[styles.title, { color: colors.text }]}>{title}</Text>
+    <View style={styles.titleRow}><Text accessibilityRole="header" style={[styles.title, { color: colors.text }]}>{title}</Text>{action}</View>
     {children}
   </View>;
 }
 
 const styles = StyleSheet.create({
   header: { paddingHorizontal: 22, paddingBottom: 22 },
-  title: { fontSize: 38, fontWeight: '800', letterSpacing: -1.6, lineHeight: 46, includeFontPadding: false },
+  titleRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  title: { flex: 1, fontSize: 38, fontWeight: '800', letterSpacing: -1.6, lineHeight: 46, includeFontPadding: false },
 });

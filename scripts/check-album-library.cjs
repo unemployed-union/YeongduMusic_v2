@@ -1,3 +1,4 @@
+/* global __dirname */
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
@@ -71,6 +72,7 @@ const repoModule = load('src/features/library/repository.ts', {
 const localFixture = { songs: [], ready: true, source: 'nas' };
 const queries = load('src/features/library/queries.ts', {
   react: { useMemo: factory => factory(), useCallback: callback => callback },
+  '@/stores/google-drive': { useGoogleDriveStore: selector => selector({ songs: [], loading: false, error: null }) },
   '@/stores/local-music': { useLocalMusicStore: selector => selector(localFixture) },
   '@tanstack/react-query': { ...tanstack, useQuery: options => options },
   '../hidden-music/rules': { visibleSongs: library => library },
@@ -149,6 +151,32 @@ async function main() {
   assert.equal(stale.stale, true);
   const fallbackArt = albumHelpers.albumsFromSongs({ items: [{ ...mockLibrary.items[0], artworkUrl: undefined }, { ...mockLibrary.items[1], artworkUrl: 'https://example.invalid/cover' }], total: 2 });
   assert.equal(fallbackArt.items[0].artworkUrl, 'https://example.invalid/cover');
+
+  // Older cached pages may contain empty/whitespace artist tags. Keep those tracks accessible.
+  const unknownName = '알 수 없는 아티스트';
+  const artistFixture = { items: ['', '  \t', unknownName, 'Known Artist'].map((name, index) => ({ ...mockLibrary.items[0], id: 'artist-fixture-' + index, artist: name })), total: 4, stale: true };
+  const grouped = queries.useArtists().select(artistFixture);
+  assert.equal(grouped.total, 2);
+  assert(grouped.items.every(item => item.id.trim() && item.name.trim()), 'Every artist has a usable nonempty route ID');
+  assert.equal(grouped.items.filter(item => item.name === unknownName).length, 1);
+  const unknownArtist = grouped.items.find(item => item.name === unknownName);
+  const unknownSongs = queries.useArtistSongs(unknownArtist).select(artistFixture);
+  assert.deepEqual(unknownSongs.items.map(item => item.id), ['artist-fixture-0', 'artist-fixture-1', 'artist-fixture-2']);
+  assert.equal(unknownSongs.stale, true);
+  assert.equal(metadata.songsForArtist(artistFixture, 'Known Artist').total, 1);
+  assert.equal(metadata.artistName('Known Artist'), 'Known Artist');
+  assert.equal(metadata.songsForArtist({ items: [], total: 0 }, unknownName).total, 0);
+  // Exercise the real NAS adapter with missing/empty tags, not fabricated success from a NAS.
+  const noTag = record('empty-artist', 'Fixture', '');
+  const tagFallback = { ...record('tag-artist', 'Fixture', 'Tag Artist'), artist: '   ' };
+  const noArtist = { id: 'missing-artist', title: 'Fixture' };
+  const blankTag = record('blank-artist', 'Fixture', ' \t ');
+  const fixtureOffset = records.length;
+  records.push(noTag, tagFallback, noArtist, blankTag);
+  const mapped = await repository().songs({ offset: fixtureOffset, limit: 4 });
+  assert.deepEqual(mapped.items.map(item => item.artist), [unknownName, 'Tag Artist', unknownName, unknownName]);
+  records.splice(fixtureOffset);
+  console.log('PASS: empty/whitespace/missing NAS artist mapping, song-tag fallback, old cached unknown-artist grouping with nonempty route IDs and matching detail songs; known artists unchanged.');
 
   const abort = new AbortController();
   let calls = 0;

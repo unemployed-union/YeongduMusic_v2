@@ -9,7 +9,5 @@ export default function LibraryLayout() {
     <Stack.Screen name="index" options={{ headerShown: false }} />
     <Stack.Screen name="album/[id]" options={{ title: '앨범' }} />
     <Stack.Screen name="artist/[id]" options={{ title: '아티스트' }} />
-    <Stack.Screen name="playlists/index" options={{ title: '플레이리스트' }} />
-    <Stack.Screen name="playlists/[id]" options={{ title: '플레이리스트' }} />
   </Stack>;
 }

@@ -36,6 +36,10 @@ Docs: https://docs.expo.dev/eas/index.md
 
 ## Rules
 
+- Never edit dependency files directly inside `node_modules/`, including `.pnpm/` directories and symlink targets. Prefer application source or configuration changes.
+- If a library change is unavoidable, use `pnpm patch <package>@<version> --edit-dir <temporary-directory-outside-node_modules>` and edit only that temporary copy. Run `pnpm patch-commit <temporary-directory>` and retain the patch file, `pnpm-workspace.yaml` registration, and `pnpm-lock.yaml` together. Do not use scripts or config plugins to overwrite dependency files after installation.
+- Before deleting or reinstalling dependencies, inspect and preserve any existing dependency modifications. Verify necessary patches survive a fresh install using the lockfile; distinguish package build outputs and upstream build-script writes from manual source edits.
+
 - If `ios/` and `android/` directories do not exist, they are generated (Continuous Native Generation). Never create or edit them by hand — configure native behavior in `app.json` and config plugins.
 - Expo Go only includes its bundled native modules. After adding a library with native code, the app needs a development build: `npx expo run:ios|android` locally, or `eas build --profile development`.
 - Prefer recommended Expo modules over third-party libraries, and check your available skills before adding dependencies. Docs: https://docs.expo.dev/versions/latest/index.md

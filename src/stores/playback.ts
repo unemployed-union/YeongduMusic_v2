@@ -2,7 +2,8 @@ import { create } from 'zustand';
 import type { Song } from '@/types/music';
 
 export type RepeatMode = 'off' | 'all' | 'one';
-export type SleepTimer = { mode: 'time'; endsAt: number; minutes: number } | { mode: 'track'; songId: string };
+export type SleepTimerStopMode = 'immediate' | 'track-end';
+export type SleepTimer = { mode: 'time'; endsAt: number; minutes: number; stopMode?: SleepTimerStopMode } | { mode: 'track'; songId: string; afterDeadline?: boolean };
 type PlaybackState = {
   queue: Song[];
   index: number;

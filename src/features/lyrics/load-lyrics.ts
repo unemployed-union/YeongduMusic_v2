@@ -9,8 +9,8 @@ type LyricsRequest = { song: Song; source: LyricsSource; mode: string; session: 
 
 export async function loadLyrics({ song, source, mode, session, generation, duration, signal, searchOnline = false }: LyricsRequest): Promise<LyricsDocument> {
   checkLyricsCancelled(signal);
-  if (song.source === 'local') {
-    if (source === 'nas') throw new Error('이 기기 음악은 NAS 가사를 사용할 수 없습니다. 자동 또는 온라인을 선택해 주세요.');
+  if (song.source === 'local' || song.source === 'drive') {
+    if (source === 'nas') throw new Error('이 기기 및 Google Drive 음악은 NAS 가사를 사용할 수 없습니다. 자동 또는 온라인을 선택해 주세요.');
     return onlineLyrics(song, duration, signal, searchOnline);
   }
   if (mode === 'mock') return demoLyrics();

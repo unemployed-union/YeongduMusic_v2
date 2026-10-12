@@ -1,6 +1,7 @@
 import { ScrollEdgeFade } from '@/components/scroll-edge-fade';
 import { useMemo, useState } from 'react';
-import { Alert, FlatList, Pressable, RefreshControl, StyleSheet, Switch, Text, View } from 'react-native';
+import { Alert, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
+import { AnimatedSwitch as Switch } from '@/components/animated-switch';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { AsyncState } from '@/components/async-state';
 import { useRawSongLibrary } from '@/features/library/queries';
@@ -35,7 +36,7 @@ export function PresetManager() {
       ListHeaderComponent={<View>
         <Text style={[styles.heading, { color: colors.text }]}>숨김 프리셋</Text>
         <Text style={[styles.note, { color: colors.muted }]}>여러 프리셋을 함께 켤 수 있습니다. 보관함·검색·앨범·아티스트에서 총 {hiddenCount}곡을 숨기고 있습니다.</Text>
-        <View style={[styles.lockRow, { backgroundColor: colors.surface, borderColor: colors.separator }]}><Ionicons name="finger-print" size={29} color={colors.tint} /><View style={styles.identity}><Text style={[styles.title, { color: colors.text }]}>지문 · 기기 암호로 설정 잠금</Text><Text style={[styles.detail, { color: colors.muted }]}>휴대전화의 PIN·암호·패턴도 사용할 수 있습니다. 화면을 나가면 다시 잠급니다.</Text></View><Switch accessibilityLabel="숨김 설정 지문 또는 기기 암호 잠금" value={profile.biometricLock} disabled={busy} onValueChange={(enabled) => void run(() => setBiometricLock(enabled))} trackColor={{ false: colors.separator, true: colors.tint }} thumbColor="#FFFFFF" ios_backgroundColor={colors.separator} /></View>
+        <View style={[styles.lockRow, { backgroundColor: colors.surface, borderColor: colors.separator }]}><Ionicons name="finger-print" size={29} color={colors.tint} /><View style={styles.identity}><Text style={[styles.title, { color: colors.text }]}>지문 · 기기 암호로 설정 잠금</Text><Text style={[styles.detail, { color: colors.muted }]}>휴대전화의 PIN·암호·패턴도 사용할 수 있습니다. 플레이리스트 숨김과 잠금을 공유하며 화면을 나가면 다시 잠급니다.</Text></View><Switch accessibilityLabel="숨김 설정 지문 또는 기기 암호 잠금" value={profile.biometricLock} disabled={busy} onValueChange={(enabled) => void run(() => setBiometricLock(enabled))} trackColor={{ false: colors.separator, true: colors.tint }} thumbColor="#FFFFFF" ios_backgroundColor={colors.separator} /></View>
         {(message || error) && <Text style={[styles.note, { color: colors.tint }]}>{message ?? error}</Text>}
         {query.data?.stale && <Text style={[styles.note, { color: colors.muted }]}>오프라인 목록입니다. 폴더와 곡 선택이 최신 상태가 아닐 수 있습니다.</Text>}
         {query.isRefetchError && <Pressable onPress={() => void query.refetch()}><Text style={[styles.note, { color: colors.tint }]}>{query.error.message} · 다시 시도</Text></Pressable>}

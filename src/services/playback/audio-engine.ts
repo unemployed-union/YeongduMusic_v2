@@ -6,10 +6,11 @@ import type { Song } from '@/types/music';
 export type EngineStatus = { playing: boolean; buffering: boolean; position: number; duration: number; ended: boolean; error: string | null };
 export type RemoteTrackCommand = 'next' | 'previous';
 export interface AudioEngine {
-  load(source: AudioSource, song: Song): Promise<void>;
+  load(source: AudioSource, song: Song, initialPosition?: number): Promise<void>;
   play(): void;
   pause(): void;
   seek(seconds: number): Promise<void>;
+  getPosition(): number;
   subscribe(listener: (status: EngineStatus) => void): () => void;
   subscribeRemoteNavigation(listener: (command: RemoteTrackCommand) => void): () => void;
   release(): void;
@@ -75,6 +76,13 @@ export class ExpoAudioEngine implements AudioEngine {
       }
     }
     return this.player;
+  }
+
+  getPosition(): number {
+    // Read the native clock without increasing status updates across the app.
+    if (this.resume || this.starting || this.retryTimer !== null) return this.position;
+    const position = this.player?.currentTime;
+    return typeof position === 'number' && Number.isFinite(position) && position >= 0 ? position : this.position;
   }
 
   private publish(playing: boolean, buffering: boolean, ended = false): void {
@@ -224,7 +232,7 @@ export class ExpoAudioEngine implements AudioEngine {
     }
   }
 
-  async load(source: AudioSource, song: Song): Promise<void> {
+  async load(source: AudioSource, song: Song, initialPosition = 0): Promise<void> {
     const lifecycle = this.lifecycle;
     const operation = ++this.operation;
     this.clearRecoveryTimers();
@@ -233,7 +241,7 @@ export class ExpoAudioEngine implements AudioEngine {
     this.failure = null;
     this.retries = 0;
     this.stableFrom = null;
-    this.position = 0;
+    this.position = Number.isFinite(initialPosition) ? Math.max(0, initialPosition) : 0;
     this.duration = song.duration;
     const player = await this.setup();
     if (lifecycle !== this.lifecycle || operation !== this.operation) return;
@@ -241,6 +249,7 @@ export class ExpoAudioEngine implements AudioEngine {
     this.localSource = song.source === 'local';
     this.resetBufferingObservation();
     this.watchStall();
+    if (this.position > 0) this.resume = { operation, position: this.position, seeking: false };
     player.replace(source);
     if (this.backgroundPlaybackAvailable) {
       // showSkip* and remoteTrackChange are provided by our pinned expo-audio pnpm patch.
@@ -252,7 +261,13 @@ export class ExpoAudioEngine implements AudioEngine {
           : undefined
       );
     }
-    player.play();
+    if (this.resume) void this.resumePlayback();
+    else player.play();
+  }
+  updateMetadata(song: Song): void {
+    if (this.backgroundPlaybackAvailable) this.player?.updateLockScreenMetadata({
+      title: song.title, artist: song.artist, albumTitle: song.album, artworkUrl: song.artworkUrl,
+    });
   }
   getAudioSessionId(): number | null {
     // Android-only property supplied by our pinned expo-audio patch; absent in older binaries.

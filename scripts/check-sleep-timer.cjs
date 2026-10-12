@@ -15,7 +15,7 @@ function harness() {
   const timers = new Map(), events = [];
   class Clock extends Date { static now() { return now; } }
   function load(file, overrides = {}) {
-    const code = ts.transpileModule(fs.readFileSync(path.join(sourceRoot, file), 'utf8'), { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS } }).outputText;
+    const code = ts.transpileModule(fs.readFileSync(path.join(sourceRoot, file), 'utf8'), { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText;
     const mod = { exports: {} };
     new Function('require', 'module', 'exports', 'Date', 'setTimeout', 'clearTimeout', code)(name => name in overrides ? overrides[name] : projectRequire(name), mod, mod.exports, Clock,
       (callback, delay) => { timers.set(++timerId, { callback, at: now + delay }); return timerId; }, id => timers.delete(id));
@@ -43,7 +43,7 @@ function harness() {
     '@/features/hidden-music/rules': { hiddenMatcher: () => () => false, privacyScope: () => 'demo' },
     '@/stores/player-background': { usePlayerBackgroundStore: { getState: () => ({ selectArtwork() {}, reset() {} }) } },
   });
-  return { controller, playback, timers, events, get engine() { return engine; },
+  return { controller, playback, timers, events, load, get engine() { return engine; },
     suspend: ms => { now += ms; },
     pending: value => { pendingSource = value; },
     advance(ms) {
@@ -134,6 +134,119 @@ async function main() {
     h.controller.startSleepTimer(5); h.controller.stopPlayback();
     assert.equal(h.timers.size, 0); assert.equal(h.playback.getState().sleepTimer, null, 'Logout/clear cancels timers');
   }
+  for (const repeat of ['off', 'one', 'all']) {
+    const h = harness(); await h.controller.playQueue(songs);
+    h.playback.setState({ repeat, shuffle: true });
+    h.controller.startSleepTimer(1, 'track-end');
+    h.engine.emit({ position: 42 });
+    const oldCallback = [...h.timers.values()][0].callback;
+    h.advance(60000);
+    assert.equal(h.playback.getState().playing, true, 'Finish-track timer cannot pause at the deadline');
+    assert.deepEqual(h.playback.getState().sleepTimer, { mode: 'track', songId: songs[0].id, afterDeadline: true });
+    assert.equal(h.timers.size, 0, 'Expired countdown is removed, not rescheduled in a zero-delay loop');
+    h.controller.togglePlayback(); assert.equal(h.playback.getState().playing, false);
+    h.controller.togglePlayback(); assert.equal(h.playback.getState().playing, true);
+    await h.controller.seek(150);
+    h.engine.emit({ playing: false, ended: true, position: 180 }); await tick();
+    assert.equal(h.playback.getState().sleepTimer, null); assert.equal(h.playback.getState().playing, false);
+    assert.equal(h.playback.getState().index, 0);
+    assert.equal(h.events.filter(event => event[0] === 'load').length, 1, 'End wins over shuffle/repeat: ' + repeat);
+    assert.equal(h.events.filter(event => event[0] === 'seek').length, 1, 'Only user seek is allowed; repeat does not restart');
+    oldCallback(); assert.equal(h.playback.getState().sleepTimer, null); assert.equal(h.timers.size, 0);
+    h.controller.stopPlayback();
+  }
+  {
+    const h = harness(); await h.controller.playQueue(songs);
+    h.controller.startSleepTimer(1, 'track-end');
+    await h.controller.next(); // A different track plays when the countdown expires.
+    h.advance(60000);
+    assert.equal(h.playback.getState().sleepTimer.songId, songs[1].id, 'Capture the track at expiry, not at timer setup');
+    h.engine.emit({ ended: true, playing: false, position: 180 }); await tick();
+    assert.equal(h.playback.getState().index, 1); assert.equal(h.playback.getState().playing, false);
+    h.controller.stopPlayback();
+  }
+  for (const command of ['next', 'previous', 'select', 'remote-next']) {
+    const h = harness(); await h.controller.playQueue(songs);
+    h.controller.startSleepTimer(1, 'track-end'); h.advance(60000);
+    if (command === 'next') await h.controller.next();
+    if (command === 'previous') await h.controller.previous(false);
+    if (command === 'select') await h.controller.playQueue(songs, 1);
+    if (command === 'remote-next') { h.engine.remote('next'); await tick(); }
+    assert.equal(h.playback.getState().playing, false, 'No manual/remote command starts another track after expiry: ' + command);
+    assert.equal(h.playback.getState().sleepTimer, null);
+    assert.equal(h.events.filter(event => event[0] === 'load').length, 1);
+    h.controller.stopPlayback();
+  }
+  {
+    const h = harness(); await h.controller.playQueue(songs);
+    h.controller.startSleepTimer(1, 'track-end'); h.suspend(70000);
+    assert.equal(h.controller.checkSleepTimer(), false, 'Delayed foreground check arms end-of-track instead of stopping');
+    assert.equal(h.playback.getState().playing, true); assert.equal(h.timers.size, 0);
+    h.controller.cancelSleepTimer(); h.engine.emit({ ended: true }); await tick();
+    assert.equal(h.playback.getState().index, 1, 'Cancellation restores normal automatic next');
+    h.controller.stopPlayback();
+  }
+  {
+    const h = harness(); await h.controller.playQueue(songs);
+    h.controller.startSleepTimer(1, 'track-end'); h.suspend(70000);
+    h.engine.emit({ ended: true, playing: false, position: 180 }); await tick();
+    assert.equal(h.playback.getState().playing, false); assert.equal(h.playback.getState().index, 0);
+    assert.equal(h.timers.size, 0, 'Simultaneous/delayed deadline and track end must not advance');
+    h.controller.stopPlayback();
+  }
+  {
+    const h = harness(); await h.controller.playQueue(songs);
+    const gate = deferred(); h.pending(gate); h.controller.startSleepTimer(1, 'track-end');
+    const loading = h.controller.next(); h.advance(60000); gate.resolve({ uri: 'https://example.invalid/late' }); await loading;
+    assert.equal(h.playback.getState().playing, false); assert.equal(h.playback.getState().sleepTimer, null);
+    assert.equal(h.events.filter(event => event[0] === 'load').length, 1, 'An unstarted track cannot begin after expiry');
+    h.controller.stopPlayback();
+  }
+  {
+    const h = harness(); await h.controller.playQueue(songs);
+    h.controller.startSleepTimer(1, 'track-end'); h.controller.togglePlayback(); h.advance(60000);
+    assert.equal(h.playback.getState().playing, false); assert.equal(h.playback.getState().sleepTimer.afterDeadline, true);
+    h.controller.togglePlayback(); h.engine.emit({ ended: true, playing: false }); await tick();
+    assert.equal(h.playback.getState().playing, false); assert.equal(h.playback.getState().index, 0);
+    h.controller.startSleepTimer(2, 'track-end'); h.advance(120000);
+    h.controller.startSleepTimer(5); assert.equal(h.playback.getState().sleepTimer.stopMode, 'immediate', 'Replacement restores selected behavior');
+    assert.throws(() => h.controller.startSleepTimer(5, 'unknown'), /종료 방식/);
+    h.controller.stopPlayback();
+  }
+  {
+    const h = harness(); await h.controller.playQueue(songs);
+    let slot = 0, closes = 0;
+    const values = [], jsx = (type, props) => ({ type, props });
+    const { SleepTimerOptions } = h.load('src/features/playback/sleep-timer-options.tsx', {
+      react: { useState: initial => { const index = slot++; if (index >= values.length) values.push(initial); return [values[index], value => { values[index] = value; }]; } },
+      'react/jsx-runtime': { jsx, jsxs: jsx },
+      'react-native': { Pressable: 'Button', View: 'View', Text: 'Text', TextInput: 'Input', StyleSheet: { create: value => value, hairlineWidth: 1 } },
+      '@expo/vector-icons/Ionicons': 'Icon',
+      '@/services/playback/controller': h.controller,
+      '@/stores/playback': { usePlaybackStore: select => select(h.playback.getState()) },
+    });
+    function all(node, type) {
+      if (!node || typeof node !== 'object') return [];
+      const children = node.props?.children;
+      return [...(node.type === type ? [node] : []), ...(Array.isArray(children) ? children.flat(Infinity) : [children]).flatMap(child => all(child, type))];
+    }
+    const render = () => { slot = 0; return SleepTimerOptions({ onBack() {}, onClose: () => { closes++; } }); };
+    const label = (node, text) => all(node, 'Text').some(child => (Array.isArray(child.props.children) ? child.props.children.join('') : child.props.children) === text);
+    let tree = render();
+    const radios = all(tree, 'Button').filter(node => node.props.accessibilityRole === 'radio');
+    assert.equal(radios.length, 2); assert.equal(radios[0].props.accessibilityState.checked, true);
+    radios[1].props.onPress(); tree = render();
+    all(tree, 'Button').find(node => label(node, '5분 뒤 종료')).props.onPress();
+    assert.equal(h.playback.getState().sleepTimer.minutes, 5); assert.equal(h.playback.getState().sleepTimer.stopMode, 'track-end');
+    tree = render(); all(tree, 'Input')[0].props.onChangeText('7'); tree = render();
+    all(tree, 'Button').find(node => node.props.accessibilityLabel === '입력한 시간으로 타이머 설정').props.onPress();
+    assert.equal(h.playback.getState().sleepTimer.minutes, 7); assert.equal(h.playback.getState().sleepTimer.stopMode, 'track-end');
+    tree = render(); all(tree, 'Button').find(node => node.props.accessibilityRole === 'radio' && label(node, '시간이 되면 즉시 정지')).props.onPress();
+    tree = render(); all(tree, 'Button').find(node => label(node, '15분 뒤 종료')).props.onPress();
+    assert.equal(h.playback.getState().sleepTimer.stopMode, 'immediate'); assert.equal(closes, 3);
+    h.controller.stopPlayback();
+  }
+  console.log('PASS: timed immediate/finish-current modes, expiry track capture, no repeated timer, delayed foreground/end events, pause/resume/seek, repeat/shuffle priority, manual/remote skip guards, cancellation/replacement and pending-source cancellation. Mock clock/audio; native background timing remains unverified.');
   console.log('PASS: time expiry, validation, pause/queue retention, cancel/replacement races, delayed status/foreground checks, end-of-track precedence over repeat/shuffle, manual skip semantics, normal next, pending source cancellation and logout cleanup. Clock, NAS source and audio engine are mocked; device/background timing is not verified.');
 }
 main().catch(error => { console.error(error); process.exitCode = 1; });

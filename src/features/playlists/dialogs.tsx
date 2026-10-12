@@ -4,6 +4,7 @@ import { ActivityIndicator, KeyboardAvoidingView, Modal, Platform, Pressable, Sc
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { enqueue } from '@/services/playback/controller';
+import { visiblePlaylists } from './rules';
 import { usePlaylistStore } from '@/stores/playlists';
 import { useHiddenMusicStore } from '@/stores/hidden-music';
 import { hiddenMatcher } from '@/features/hidden-music/rules';
@@ -47,6 +48,7 @@ export function AddToPlaylistDialog({ songs, onClose, allowEnqueue = false }: { 
   const ids = [...new Set(eligible.map((song) => song.id))];
   async function save(id?: string) {
     if (!available || store.busy || !ids.length) return;
+    if (id && privacy.profile.hiddenPlaylistIds?.includes(id)) return;
     setError(null); setMessage(null);
     try {
       if (id) {
@@ -67,10 +69,10 @@ export function AddToPlaylistDialog({ songs, onClose, allowEnqueue = false }: { 
     {!available ? <View><Text style={{ color: colors.muted }}>{store.error ?? '플레이리스트를 불러오는 중입니다.'}</Text>{store.error && <Pressable onPress={() => void store.load(privacy.scope)} style={styles.option}><Text style={{ color: colors.tint }}>다시 불러오기</Text></Pressable>}</View> : <>
       <TextInput accessibilityLabel="새 플레이리스트 이름" placeholder="새 플레이리스트 이름" placeholderTextColor={colors.muted} value={name} onChangeText={setName} maxLength={60} editable={!store.busy} style={[styles.input, { color: colors.text, borderColor: colors.separator }]} />
       <Pressable accessibilityRole="button" disabled={store.busy || !name.trim() || !ids.length} onPress={() => void save()} style={[styles.primary, { backgroundColor: colors.tint, opacity: store.busy || !name.trim() || !ids.length ? 0.5 : 1 }]}><Text style={styles.primaryText}>새 목록으로 저장</Text></Pressable>
-      {store.profile.presets.map((preset) => <Pressable key={preset.id} disabled={store.busy || !ids.length} accessibilityRole="button" accessibilityLabel={preset.name + '에 추가'} onPress={() => void save(preset.id)} style={[styles.option, { borderBottomColor: colors.separator, borderBottomWidth: StyleSheet.hairlineWidth }]}><Ionicons name="musical-notes-outline" size={24} color={colors.tint} /><Text numberOfLines={1} style={{ flex: 1, color: colors.text, fontWeight: '600' }}>{preset.name}</Text><Ionicons name="add-circle-outline" size={24} color={colors.tint} /></Pressable>)}
+      {visiblePlaylists(store.profile.presets, privacy.profile.hiddenPlaylistIds).map((preset) => <Pressable key={preset.id} disabled={store.busy || !ids.length} accessibilityRole="button" accessibilityLabel={preset.name + '에 추가'} onPress={() => void save(preset.id)} style={[styles.option, { borderBottomColor: colors.separator, borderBottomWidth: StyleSheet.hairlineWidth }]}><Ionicons name="musical-notes-outline" size={24} color={colors.tint} /><Text numberOfLines={1} style={{ flex: 1, color: colors.text, fontWeight: '600' }}>{preset.name}</Text><Ionicons name="add-circle-outline" size={24} color={colors.tint} /></Pressable>)}
     </>}
     {store.busy && <ActivityIndicator color={colors.tint} />}
     {(error || message) && <Text accessibilityRole={error ? 'alert' : undefined} accessibilityLiveRegion="polite" style={{ color: colors.tint }}>{error ?? message}</Text>}
   </ScrollView></ScrollEdgeFade></PlaylistSheet>;
 }
-const styles = StyleSheet.create({ overlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: '#00000066' }, sheet: { borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingTop: 12 }, header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 22 }, heading: { flex: 1, fontSize: 20, fontWeight: '800' }, icon: { padding: 10 }, body: { padding: 22, gap: 16 }, scrollBody: { paddingVertical: 28 }, input: { minHeight: 48, borderWidth: 1, borderRadius: 12, paddingHorizontal: 14, fontSize: 16 }, primary: { minHeight: 48, alignItems: 'center', justifyContent: 'center', borderRadius: 12 }, primaryText: { color: 'white', fontWeight: '700', fontSize: 15 }, option: { minHeight: 52, flexDirection: 'row', alignItems: 'center', gap: 12 } });
+const styles = StyleSheet.create({ overlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: '#00000066' }, sheet: { borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingTop: 12 }, header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 22 }, heading: { flex: 1, fontSize: 20, fontWeight: '800' }, icon: { padding: 10, marginRight: -10 }, body: { padding: 22, gap: 16 }, scrollBody: { paddingVertical: 28 }, input: { minHeight: 48, borderWidth: 1, borderRadius: 12, paddingHorizontal: 14, fontSize: 16 }, primary: { minHeight: 48, alignItems: 'center', justifyContent: 'center', borderRadius: 12 }, primaryText: { color: 'white', fontWeight: '700', fontSize: 15 }, option: { minHeight: 52, flexDirection: 'row', alignItems: 'center', gap: 12 } });

@@ -2,7 +2,7 @@ import { ExpoAudioEngine } from './audio-engine';
 import { SessionExpiredError, SynologyClient, SynologyError } from '@/services/synology/api';
 import { musicRepository } from '@/features/library/repository';
 import { useAuthStore } from '@/stores/auth';
-import { usePlaybackStore, type SleepTimer } from '@/stores/playback';
+import { usePlaybackStore, type RepeatMode, type SleepTimer, type SleepTimerStopMode } from '@/stores/playback';
 import { usePlayerBackgroundStore } from '@/stores/player-background';
 import { useHiddenMusicStore } from '@/stores/hidden-music';
 import { hiddenMatcher, privacyScope } from '@/features/hidden-music/rules';
@@ -14,19 +14,22 @@ export function getPlaybackAudioSessionId(): number | null {
 }
 let generation = 0;
 let loadedSongId: string | null = null;
+let pendingSavedPosition = 0;
 let finishing = false;
 let checkingSession = false;
 let checkedGeneration = -1;
+let recoveredDriveGeneration = -1;
 let sleepTimeout: ReturnType<typeof setTimeout> | null = null;
 
 export function cancelSleepTimer(): void {
   usePlaybackStore.getState().setSleepTimer(null);
 }
-export function startSleepTimer(minutes: number): void {
+export function startSleepTimer(minutes: number, stopMode: SleepTimerStopMode = 'immediate'): void {
   if (!Number.isInteger(minutes) || minutes < 1 || minutes > 1440) throw new Error('1~1440분 사이의 시간을 입력해 주세요.');
+  if (stopMode !== 'immediate' && stopMode !== 'track-end') throw new Error('타이머 종료 방식을 확인해 주세요.');
   const state = usePlaybackStore.getState();
   if (!state.queue[state.index]) throw new Error('먼저 재생할 곡을 선택해 주세요.');
-  state.setSleepTimer({ mode: 'time', minutes, endsAt: Date.now() + minutes * 60_000 });
+  state.setSleepTimer({ mode: 'time', minutes, stopMode, endsAt: Date.now() + minutes * 60_000 });
 }
 export function stopAfterCurrentTrack(): void {
   const state = usePlaybackStore.getState();
@@ -35,10 +38,20 @@ export function stopAfterCurrentTrack(): void {
   state.setSleepTimer({ mode: 'track', songId: song.id });
 }
 /** Check the deadline after delayed JS timers, native status events and foreground return. */
-export function checkSleepTimer(fromEnd = false): boolean {
+export function checkSleepTimer(fromEnd = false, changingTrack = false): boolean {
   const state = usePlaybackStore.getState();
   const timer = state.sleepTimer;
-  if (!timer || !(timer.mode === 'time' ? Date.now() >= timer.endsAt : fromEnd && state.queue[state.index]?.id === timer.songId)) return false;
+  if (!timer) return false;
+  const song = state.queue[state.index];
+  if (timer.mode === 'time') {
+    if (Date.now() < timer.endsAt) return false;
+    // Capture the track playing at the deadline, not the one selected when setting the timer.
+    // A failed or pending source must not start a new track after expiry.
+    if (timer.stopMode === 'track-end' && !fromEnd && !changingTrack && song && loadedSongId === song.id && !state.error && (state.playing || state.position > 0 || state.duration > 0)) {
+      state.setSleepTimer({ mode: 'track', songId: song.id, afterDeadline: true });
+      return false;
+    }
+  } else if (!(fromEnd && song?.id === timer.songId) && !(timer.afterDeadline && (changingTrack || song?.id !== timer.songId))) return false;
   // Invalidate pending source loads and engine setup/recovery; retain queue and position.
   generation++;
   state.setSleepTimer(null);
@@ -50,10 +63,15 @@ function scheduleSleepTimer(timer: Extract<SleepTimer, { mode: 'time' }>): void 
   sleepTimeout = setTimeout(() => {
     if (usePlaybackStore.getState().sleepTimer !== timer) return;
     sleepTimeout = null;
-    if (!checkSleepTimer()) scheduleSleepTimer(timer);
+    if (!checkSleepTimer() && usePlaybackStore.getState().sleepTimer === timer) scheduleSleepTimer(timer);
   }, Math.max(0, timer.endsAt - Date.now()));
 }
 usePlaybackStore.subscribe((state, previousState) => {
+  const song = state.queue[state.index], previous = previousState.queue[previousState.index];
+  if (song?.source === 'drive' && song.id === loadedSongId && previous?.id === song.id
+    && (song.title !== previous.title || song.artist !== previous.artist || song.album !== previous.album || song.artworkUrl !== previous.artworkUrl)) {
+    engine?.updateMetadata?.(song);
+  }
   if (state.sleepTimer === previousState.sleepTimer) return;
   if (sleepTimeout !== null) clearTimeout(sleepTimeout);
   sleepTimeout = null;
@@ -62,7 +80,24 @@ usePlaybackStore.subscribe((state, previousState) => {
 
 async function checkPlaybackSession(): Promise<void> {
   const { mode, session, generation: authGeneration, expire } = useAuthStore.getState();
-  if (usePlaybackStore.getState().queue[usePlaybackStore.getState().index]?.source === 'local') return;
+  const playback = usePlaybackStore.getState();
+  const song = playback.queue[playback.index];
+  if (song?.source === 'local') return;
+  if (song?.source === 'drive') {
+    if (recoveredDriveGeneration === generation || loadedSongId !== song.id) return;
+    const requestGeneration = generation;
+    recoveredDriveGeneration = requestGeneration;
+    try {
+      const source = await (await import('@/stores/google-drive')).driveSource(song, true);
+      if (requestGeneration !== generation) return;
+      await activeEngine().load(source, song);
+      if (requestGeneration !== generation) return;
+      await activeEngine().seek(playback.position);
+    } catch (error) {
+      if (requestGeneration === generation) usePlaybackStore.getState().setStatus({ playing: false, buffering: false, error: error instanceof Error ? error.message : 'Google Drive 재생 연결을 확인해 주세요.' });
+    }
+    return;
+  }
   if (checkingSession || checkedGeneration === generation || mode !== 'nas' || !session) return;
   checkingSession = true;
   checkedGeneration = generation;
@@ -98,13 +133,15 @@ function activeEngine(): ExpoAudioEngine {
   return engine;
 }
 
-async function loadIndex(index: number): Promise<void> {
+async function loadIndex(index: number, initialPosition = 0): Promise<void> {
   const state = usePlaybackStore.getState();
   const song = state.queue[index];
   if (!song || hiddenMatcher(useHiddenMusicStore.getState().profile.presets)(song)) { reconcilePlaybackVisibility(); return; }
-  if (state.sleepTimer?.mode === 'track') cancelSleepTimer();
+  if (state.sleepTimer?.mode === 'track' && !state.sleepTimer.afterDeadline) cancelSleepTimer();
   const currentGeneration = ++generation;
+  pendingSavedPosition = 0;
   state.setQueue(state.queue, index);
+  if (initialPosition > 0) state.setStatus({ position: initialPosition });
   usePlayerBackgroundStore.getState().selectArtwork(song);
   try {
     loadedSongId = null;
@@ -112,22 +149,38 @@ async function loadIndex(index: number): Promise<void> {
     state.setStatus({ buffering: true, playing: false });
     const source = song.source === 'local'
       ? await (await import('@/services/local-music/storage')).localSource(song)
+      : song.source === 'drive' ? await (await import('@/stores/google-drive')).driveSource(song)
       : await musicRepository().streamSource(song);
     if (currentGeneration !== generation) return;
     loadedSongId = song.id;
-    await activeEngine().load(source, song);
+    await activeEngine().load(source, song, initialPosition);
   } catch (error) {
     if (currentGeneration === generation) state.setStatus({ buffering: false, playing: false, error: error instanceof Error ? error.message : '재생을 시작할 수 없습니다.' });
   }
 }
 
+/** Restore only when there is no newer user-selected queue. The native source is rebuilt with current credentials. */
+export async function restorePlayback(queue: Song[], index: number, position: number, wasPlaying: boolean, shuffle: boolean, repeat: RepeatMode): Promise<boolean> {
+  if (usePlaybackStore.getState().queue.length || !queue[index]) return false;
+  const state = usePlaybackStore.getState();
+  state.setQueue(queue, index);
+  usePlaybackStore.setState({ shuffle, repeat });
+  usePlayerBackgroundStore.getState().selectArtwork(queue[index]);
+  if (wasPlaying) await loadIndex(index, position);
+  else {
+    pendingSavedPosition = position;
+    state.setStatus({ position, playing: false, buffering: false });
+  }
+  return usePlaybackStore.getState().queue[usePlaybackStore.getState().index]?.id === queue[index].id;
+}
+
 export async function playQueue(queue: Song[], index = 0): Promise<void> {
-  if (!queue.length || !queue[index]) return;
+  if (!queue.length || !queue[index] || checkSleepTimer(false, true)) return;
   const privacy = useHiddenMusicStore.getState();
   const auth = useAuthStore.getState();
   const nasReady = privacy.ready && privacy.scope === privacyScope(auth.mode, auth.session);
   const match = hiddenMatcher(privacy.profile.presets);
-  const hidden = (song: Song) => song.source !== 'local' && (!nasReady || match(song));
+  const hidden = (song: Song) => song.source !== 'local' && song.source !== 'drive' && (!nasReady || match(song));
   if (hidden(queue[index])) return;
   const visible = queue.filter((song) => !hidden(song));
   const selected = queue.slice(0, index).filter((song) => !hidden(song)).length;
@@ -137,7 +190,7 @@ export async function playQueue(queue: Song[], index = 0): Promise<void> {
 export async function enqueue(song: Song): Promise<void> {
   const privacy = useHiddenMusicStore.getState();
   const auth = useAuthStore.getState();
-  if (song.source !== 'local' && (privacy.scope !== privacyScope(auth.mode, auth.session) || !privacy.ready || hiddenMatcher(privacy.profile.presets)(song))) return;
+  if (song.source !== 'local' && song.source !== 'drive' && (privacy.scope !== privacyScope(auth.mode, auth.session) || !privacy.ready || hiddenMatcher(privacy.profile.presets)(song))) return;
   const state = usePlaybackStore.getState();
   if (state.index < 0) { await playQueue([song]); return; }
   state.enqueue(song);
@@ -146,15 +199,19 @@ export function togglePlayback(): void {
   reconcilePlaybackVisibility();
   const state = usePlaybackStore.getState();
   if (state.index < 0) return;
-  if (state.queue[state.index]?.id !== loadedSongId || (state.queue[state.index]?.source === 'local' && state.error)) { void loadIndex(state.index); return; }
+  if (state.queue[state.index]?.id !== loadedSongId || ((state.queue[state.index]?.source === 'local' || state.queue[state.index]?.source === 'drive') && state.error)) { void loadIndex(state.index, pendingSavedPosition); return; }
   if (state.playing) activeEngine().pause(); else activeEngine().play();
 }
+export function getPlaybackPosition(): number {
+  return engine?.getPosition() ?? usePlaybackStore.getState().position;
+}
+
 export async function seek(seconds: number): Promise<void> {
   await activeEngine().seek(seconds);
   usePlaybackStore.getState().setStatus({ position: seconds });
 }
 export async function next(fromEnd = false): Promise<void> {
-  if (checkSleepTimer(fromEnd)) return;
+  if (checkSleepTimer(fromEnd, !fromEnd)) return;
   reconcilePlaybackVisibility();
   const state = usePlaybackStore.getState();
   if (state.index < 0) return;
@@ -173,13 +230,19 @@ export async function next(fromEnd = false): Promise<void> {
 export async function previous(restartCurrent = true): Promise<void> {
   reconcilePlaybackVisibility();
   const state = usePlaybackStore.getState();
-  if (state.index < 0) return;
+  if (state.index < 0 || checkSleepTimer(false, !(restartCurrent && state.position > 3))) return;
   if (restartCurrent && state.position > 3) { await seek(0); return; }
   await loadIndex(state.index > 0 ? state.index - 1 : state.repeat === 'all' ? state.queue.length - 1 : 0);
+}
+export function stopNasPlayback(): void {
+  const state = usePlaybackStore.getState();
+  const song = state.queue[state.index];
+  if (song && song.source !== 'local' && song.source !== 'drive') stopPlayback();
 }
 export function stopPlayback(): void {
   generation++;
   loadedSongId = null;
+  pendingSavedPosition = 0;
   engine?.pause();
   engine?.release();
   engine = null;
@@ -204,9 +267,9 @@ export function reconcilePlaybackVisibility(excludedLocal?: (song: Song) => bool
   }
   const current = state.queue[state.index];
   if (!privacy.ready || privacy.scope !== privacyScope(auth.mode, auth.session)) {
-    if (current?.source !== 'local') { stopPlayback(); return; }
-    const queue = state.queue.filter((song) => song.source === 'local');
-    usePlaybackStore.setState({ queue, index: state.queue.slice(0, state.index).filter((song) => song.source === 'local').length });
+    if (current?.source !== 'local' && current?.source !== 'drive') { stopPlayback(); return; }
+    const queue = state.queue.filter((song) => song.source === 'local' || song.source === 'drive');
+    usePlaybackStore.setState({ queue, index: state.queue.slice(0, state.index).filter((song) => song.source === 'local' || song.source === 'drive').length });
     return;
   }
   const hidden = hiddenMatcher(privacy.profile.presets);

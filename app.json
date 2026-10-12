@@ -29,8 +29,7 @@
       "package": "xyz.yeongdu.yeongdumusic",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/app-icon-foreground.png",
-        "backgroundImage": "./assets/images/app-icon-background.png",
-        "monochromeImage": "./assets/images/app-icon-foreground.png"
+        "backgroundImage": "./assets/images/app-icon-background.png"
       },
       "blockedPermissions": [
         "android.permission.READ_MEDIA_IMAGES",

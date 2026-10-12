@@ -5,6 +5,7 @@ import { useKeyboardState } from 'react-native-keyboard-controller';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { AsyncState } from '@/components/async-state';
 import { ScreenHeader } from '@/components/screen-header';
+import { SettingsButton } from '@/components/settings-button';
 import { SongRow } from '@/components/song-row';
 import { useSearch } from '@/features/library/queries';
 import { playAndOpenPlayer } from '@/features/playback/play-and-open-player';
@@ -21,7 +22,7 @@ export default function SearchScreen() {
   const debouncing = input.trim() !== term.trim();
   const refresh = () => { void query.refetch(); };
   return <View style={[styles.screen, { backgroundColor: colors.background }]}>
-    <ScreenHeader title="검색" />
+    <ScreenHeader title="검색" action={<SettingsButton />} />
     <View style={[styles.search, { backgroundColor: colors.surface, borderColor: colors.separator }]}>
       <Ionicons name="search" color={colors.muted} size={20} />
       <TextInput style={[styles.input, { color: colors.text }]} value={input} onChangeText={(text) => { setInput(text); if (!text.trim()) setTerm(''); }} placeholder="노래, 아티스트, 앨범" placeholderTextColor={colors.muted} returnKeyType="search" onSubmitEditing={({ nativeEvent }) => { setTerm(nativeEvent.text); Keyboard.dismiss(); }} autoCorrect={false} autoCapitalize="none" />

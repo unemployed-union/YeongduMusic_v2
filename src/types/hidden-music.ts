@@ -10,4 +10,5 @@ export type HiddenMusicProfile = {
   version: 1;
   biometricLock: boolean;
   presets: HiddenPreset[];
+  hiddenPlaylistIds?: string[];
 };

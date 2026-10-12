@@ -17,8 +17,8 @@ export default function TabsLayout() {
   const keyboardVisible = useKeyboardState((state) => state.isVisible);
   const libraryTarget = useRef<View | null>(null);
   const searchTarget = useRef<View | null>(null);
-  const settingsTarget = useRef<View | null>(null);
-  const targetFor = (name: string) => name === 'search' ? searchTarget : name === 'settings' ? settingsTarget : libraryTarget;
+  const playlistsTarget = useRef<View | null>(null);
+  const targetFor = (name: string) => name === 'search' ? searchTarget : name === '(playlists)' ? playlistsTarget : libraryTarget;
 
   return <Tabs
     // Capture screen content only; both chrome surfaces share the active target.
@@ -40,8 +40,8 @@ export default function TabsLayout() {
       </View>,
     })}>
     <Tabs.Screen name="(library)" options={{ title: '보관함', tabBarIcon: ({ color, size, focused }) => <Ionicons name={focused ? 'albums' : 'albums-outline'} color={color} size={size} /> }} />
+    <Tabs.Screen name="(playlists)" options={{ title: '플레이리스트', tabBarIcon: ({ color, size, focused }) => <Ionicons name={focused ? 'musical-notes' : 'musical-notes-outline'} color={color} size={size} /> }} />
     <Tabs.Screen name="search" options={{ title: '검색', tabBarIcon: ({ color, size, focused }) => <Ionicons name={focused ? 'search' : 'search-outline'} color={color} size={size} /> }} />
-    <Tabs.Screen name="settings" options={{ title: '설정', tabBarIcon: ({ color, size, focused }) => <Ionicons name={focused ? 'settings' : 'settings-outline'} color={color} size={size} /> }} />
   </Tabs>;
 }
 const styles = StyleSheet.create({ content: { flex: 1 }, mini: { position: 'absolute', left: 0, right: 0, height: 64 } });

@@ -5,6 +5,7 @@
   "dependencies": {
     "@expo/vector-icons": "^15.1.1",
     "@react-native-community/slider": "5.2.0",
+    "@react-native-google-signin/google-signin": "^16.1.5",
     "@react-native-masked-view/masked-view": "0.3.2",
     "@tanstack/react-query": "^5.104.1",
     "expo": "~57.0.27",
@@ -26,6 +27,7 @@
     "expo-sqlite": "~57.0.4",
     "expo-status-bar": "~57.0.1",
     "expo-system-ui": "~57.0.4",
+    "jsmediatags": "^3.9.7",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-native": "0.86.3",
@@ -50,6 +52,10 @@
     "android": "expo run:android",
     "ios": "expo run:ios",
     "web": "expo start --web",
+    "version:build": "node scripts/bump-build-version.cjs",
+    "build:android": "node scripts/bump-build-version.cjs && expo run:android --variant release",
+    "build:ios": "node scripts/bump-build-version.cjs && expo run:ios --configuration Release",
+    "build:eas": "node scripts/bump-build-version.cjs && pnpm dlx eas-cli@latest build",
     "lint": "expo lint",
     "check-types": "tsc --noEmit"
   },

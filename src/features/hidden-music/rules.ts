@@ -16,7 +16,7 @@ export function hiddenMatcher(presets: readonly HiddenPreset[]): (song: Song) =>
   const active = presets.filter((preset) => preset.enabled);
   const ids = new Set(active.flatMap((preset) => preset.songIds));
   const folders = [...new Set(active.flatMap((preset) => preset.folders).map(normalizeFolder))];
-  return (song) => song.source !== 'local' && (ids.has(song.id) || !!song.path && folders.some((folder) => normalizeFolder(song.path!).startsWith(folder + '/')));
+  return (song) => song.source !== 'local' && song.source !== 'drive' && (ids.has(song.id) || !!song.path && folders.some((folder) => normalizeFolder(song.path!).startsWith(folder + '/')));
 }
 
 export function visibleSongs(library: Page<Song>, presets: readonly HiddenPreset[]): Page<Song> {
@@ -39,7 +39,7 @@ export function foldersForSongs(songs: readonly Song[]): { path: string; count: 
 }
 
 export function emptyProfile(): HiddenMusicProfile {
-  return { version: 1, biometricLock: false, presets: [] };
+  return { version: 1, biometricLock: false, presets: [], hiddenPlaylistIds: [] };
 }
 
 // A damaged or incompatible profile must not silently reveal previously hidden songs.
@@ -59,5 +59,7 @@ export function parseProfile(json: string): HiddenMusicProfile {
     ids.add(item.id);
     return { id: item.id, name: item.name, enabled: item.enabled, songIds: [...new Set(item.songIds)], folders: [...new Set(item.folders)] };
   });
-  return { version: 1, biometricLock: profile.biometricLock, presets };
+  const hiddenPlaylistIds = profile.hiddenPlaylistIds === undefined ? [] : profile.hiddenPlaylistIds;
+  if (!Array.isArray(hiddenPlaylistIds) || !hiddenPlaylistIds.every((id) => typeof id === 'string' && !!id)) throw new Error('숨긴 플레이리스트 설정을 읽을 수 없습니다.');
+  return { version: 1, biometricLock: profile.biometricLock, presets, hiddenPlaylistIds: [...new Set(hiddenPlaylistIds)] };
 }

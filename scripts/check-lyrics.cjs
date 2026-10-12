@@ -46,6 +46,34 @@ function runtime(file = 'src/services/lyrics/lrclib.ts', modules = { './parse-ly
 }
 
 async function main() {
+  let playback = { position: 0, playing: true, buffering: false };
+  let nativePosition = 0, highlighted = -1, poll = null, cleanup;
+  const clockHook = load('src/features/lyrics/use-active-lyric-index.ts', {
+    react: {
+      useState: (initial) => [initial(), (value) => { highlighted = value; }],
+      useEffect: (effect) => { cleanup = effect(); },
+    },
+    '@/services/lyrics/parse-lyrics': parser,
+    '@/services/playback/controller': { getPlaybackPosition: () => nativePosition },
+    '@/stores/playback': { usePlaybackStore: (select) => select(playback) },
+  }, {
+    setInterval: (callback, delay) => { assert.equal(delay, 100); poll = callback; return 1; },
+    clearInterval: () => { poll = null; },
+  });
+  const timedLines = parser.parseLyrics('[00:01]First\n[00:02]Second', 'nas').lines;
+  const renderClock = (synced = true) => { cleanup?.(); clockHook.useActiveLyricIndex(timedLines, synced); };
+  renderClock();
+  nativePosition = 0.99; poll(); assert.equal(highlighted, -1, 'Never anticipate lyric timestamps');
+  nativePosition = 1.05; poll(); assert.equal(highlighted, 0, 'Highlight advances before the next store status event');
+  nativePosition = 2.05; poll(); assert.equal(highlighted, 1);
+  nativePosition = 0.5; poll(); assert.equal(highlighted, -1, 'Native backward seek rewinds highlighting');
+  playback = { position: 1.5, playing: true, buffering: true };
+  renderClock(); assert.equal(poll, null); assert.equal(highlighted, 0, 'Buffering holds the confirmed store position');
+  playback = { position: 1.5, playing: false, buffering: false }; nativePosition = 1.6;
+  renderClock(); assert.equal(poll, null); assert.equal(highlighted, 0, 'Pause samples once without polling');
+  playback.playing = true; renderClock(); assert.ok(poll); cleanup(); assert.equal(poll, null, 'Unmount stops polling');
+  renderClock(false); assert.equal(poll, null); assert.equal(highlighted, -1, 'Plain lyrics never poll');
+  console.log('PASS: live lyric clock, timestamp boundaries, backward seek, pause/buffering, plain lyrics and cleanup.');
   const lrc = parser.parseLyrics('\uFEFF[ar:Example]\r\n[offset:500]\r\n[00:04.00]Later\r\n[00:01.2][00:02.300]Repeated\r\n[00:01.20]Translation\r\n[00:03.000]\r\n', 'nas');
   assert.equal(lrc.kind, 'synced');
   assert.deepEqual(lrc.lines.map((line) => line.time), [0.7, 1.8, 2.5, 3.5]);

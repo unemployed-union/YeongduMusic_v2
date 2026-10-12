@@ -1,7 +1,7 @@
 export type StreamingQuality = 'original' | 'mp3';
 
-export type MusicSourceFilter = 'all' | 'nas' | 'local';
-export type LocalFile = { fileName: string; originalName: string; size: number; mimeType?: string; originalFolders?: string[] };
+export type MusicSourceFilter = 'all' | 'nas' | 'local' | 'drive';
+export type LocalFile = { fileName: string; originalName: string; size: number; mimeType?: string; originalFolders?: string[]; downloadedFrom?: 'nas' | 'drive' };
 
 export type Song = {
   id: string;
@@ -17,7 +17,7 @@ export type Song = {
   trackNumber?: number;
   artworkUrl?: string;
   palette?: readonly [string, string];
-} & ({ source?: 'nas'; nasId?: string; local?: never } | { source: 'local'; local: LocalFile });
+} & ({ source?: 'nas'; nasId?: string; local?: never; drive?: never } | { source: 'local'; local: LocalFile; drive?: never } | { source: 'drive'; drive: { fileId: string; accountId: string; mimeType: string; size?: number; modifiedTime?: string }; local?: never; nasId?: never });
 
 export type Album = {
   id: string;

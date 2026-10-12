@@ -48,6 +48,7 @@ const auth = { mode: 'mock', session: null };
 const localFixture = { songs: [], ready: true, source: 'nas' };
 const queries = load('src/features/library/queries.ts', {
   react: { useMemo: factory => factory(), useCallback: callback => callback },
+  '@/stores/google-drive': { useGoogleDriveStore: selector => selector({ songs: [], loading: false, error: null }) },
   '@/stores/local-music': { useLocalMusicStore: selector => selector(localFixture) },
   '@tanstack/react-query': { useQuery: options => options },
   './album-library': albumHelpers, './load-song-library': metadata, './search-songs': searchHelpers,

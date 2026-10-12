@@ -3,7 +3,7 @@ import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { activeLyricIndex } from '@/services/lyrics/parse-lyrics';
+import { useActiveLyricIndex } from './use-active-lyric-index';
 import { useLyrics } from './use-lyrics';
 import { usePlaybackStore } from '@/stores/playback';
 import { seek } from '@/services/playback/controller';
@@ -18,7 +18,7 @@ const LyricRow = memo(function LyricRow({ line, active, past, synced, seekable, 
   line: LyricLine; active: boolean; past: boolean; synced: boolean; seekable: boolean; onSeek: (time: number) => void;
 }) {
   const opacity = useSharedValue(synced ? active ? 1 : past ? 0.5 : 0.3 : 0.9);
-  useEffect(() => { opacity.set(withTiming(synced ? active ? 1 : past ? 0.5 : 0.3 : 0.9, { duration: 220 })); }, [active, opacity, past, synced]);
+  useEffect(() => { opacity.set(withTiming(synced ? active ? 1 : past ? 0.5 : 0.3 : 0.9, { duration: active ? 80 : 180 })); }, [active, opacity, past, synced]);
   const animatedStyle = useAnimatedStyle(() => ({ opacity: opacity.get() }));
   return <Pressable disabled={!seekable} accessibilityRole={seekable ? 'button' : 'text'} accessibilityLabel={line.text || '간주'} accessibilityHint={seekable ? '이 가사가 시작되는 위치로 이동' : undefined} accessibilityState={synced ? { selected: active } : undefined} onPress={() => { if (line.time !== null) onSeek(line.time); }} style={styles.row}>
     <Animated.Text style={[styles.lyric, animatedStyle]}>{line.text || '···'}</Animated.Text>
@@ -28,10 +28,9 @@ const LyricRow = memo(function LyricRow({ line, active, past, synced, seekable, 
 // Own the scrolling state per track/source so returning to the player starts
 // at the current engine position, without briefly rendering another track.
 function LyricLines({ lines, synced }: { lines: LyricLine[]; synced: boolean }) {
-  const position = usePlaybackStore((state) => state.position);
   const duration = usePlaybackStore((state) => state.duration);
   const buffering = usePlaybackStore((state) => state.buffering);
-  const active = synced ? activeLyricIndex(lines, position) : -1;
+  const active = useActiveLyricIndex(lines, synced);
   const list = useRef<FlatList<LyricLine>>(null);
   const retryTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const retries = useRef(0);

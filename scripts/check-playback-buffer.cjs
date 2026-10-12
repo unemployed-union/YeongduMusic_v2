@@ -46,6 +46,7 @@ function harness({ os = 'android', dev = true, ownership = 'standalone', mode = 
   engine.subscribe(status => states.push(status));
   return {
     engine, events, logs, states, subscriptions, timers,
+    nativePosition: value => { player.currentTime = value; },
     time: value => { now = value; },
     advance: ms => {
       const target = now + ms;
@@ -68,6 +69,24 @@ function harness({ os = 'android', dev = true, ownership = 'standalone', mode = 
 const song = { id: 'mock-id', title: 'Private title', artist: 'Private artist', album: 'Private album', duration: 180 };
 const source = { uri: 'https://example.invalid/webapi/stream.cgi?_sid=secret', headers: { Authorization: 'secret-header' } };
 async function main() {
+  const restored = harness();
+  await restored.engine.load(source, song, 42);
+  assert.equal(restored.events.some(event => event[0] === 'play'), false, 'Recovery must seek before playback');
+  restored.emit({ playing: false, currentTime: 0 });
+  for (let i = 0; i < 5; i++) await Promise.resolve();
+  assert.ok(restored.events.findIndex(event => event[0] === 'seek' && event[1] === 42) < restored.events.findIndex(event => event[0] === 'play'), 'Recovered playback starts at the saved position');
+  restored.engine.release();
+
+  const clock = harness();
+  await clock.engine.load(source, song);
+  clock.emit({ currentTime: 1 });
+  clock.nativePosition(1.3);
+  assert.equal(clock.engine.getPosition(), 1.3, 'Live clock advances between status events');
+  clock.nativePosition(NaN);
+  assert.equal(clock.engine.getPosition(), 1, 'Invalid native position falls back to confirmed status');
+  clock.engine.release();
+  assert.ok(Number.isFinite(clock.engine.getPosition()), 'Released player has a safe fallback');
+
   const h = harness();
   await h.engine.load(source, song);
   const options = h.events.find(event => event[0] === 'create')[2];

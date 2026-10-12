@@ -25,6 +25,7 @@ let hookSlot = 0;
 let selections = 0;
 // Model React's dependency comparison; QueryObserver itself is the installed implementation.
 const callbacks = new Map();
+const EMPTY_DRIVE_SONGS = [];
 const localFixture = { songs: [], ready: true, source: 'nas' };
 const queries = load(process.argv[2] || path.join(root, 'src/features/library/queries.ts'), {
   react: { useMemo: factory => factory(), useCallback: (callback, dependencies) => {
@@ -33,6 +34,7 @@ const queries = load(process.argv[2] || path.join(root, 'src/features/library/qu
     callbacks.set(activeHook + ':' + (hookSlot - 1), { callback, dependencies });
     return callback;
   } },
+  '@/stores/google-drive': { useGoogleDriveStore: selector => selector({ songs: EMPTY_DRIVE_SONGS, loading: false, error: null }) },
   '@/stores/local-music': { useLocalMusicStore: selector => selector(localFixture) },
   '@tanstack/react-query': { useQuery: options => options },
   './album-library': helpers,

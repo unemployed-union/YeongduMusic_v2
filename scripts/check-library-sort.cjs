@@ -70,6 +70,7 @@ modules.react.useRef = initial => { const index = refSlot++; return refs[index] 
 modules.react.useEffect = () => {};
 modules['react-native'].ScrollView = 'ScrollView'; modules['react-native'].useWindowDimensions = () => ({ width: 400 });
 modules['@/components/screen-header'] = { ScreenHeader: 'ScreenHeader' };
+modules['@/components/settings-button'] = { SettingsButton: 'SettingsButton' };
 modules['@/features/library/library-page'] = { LIBRARY_TABS: ['albums', 'songs', 'artists'], LibraryPage: 'LibraryPage' };
 modules['@/features/library/local-music-controls'] = { LocalMusicControls: 'LocalMusicControls' };
 modules['@/features/library/library-sort-control'] = { LibrarySortControl: 'LibrarySortControl' };

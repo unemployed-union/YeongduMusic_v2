@@ -1,3 +1,4 @@
+/* global __dirname */
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
@@ -23,16 +24,74 @@ const tree = getRoutes(context, { platform: 'android', importMode: 'lazy', ignor
 const config = getReactNavigationConfig(tree, false);
 const library = config.screens['(tabs)'].screens['(library)'];
 assert.equal(library.initialRouteName, 'index');
-assert.deepEqual(Object.keys(config.screens['(tabs)'].screens).sort(), ['(library)', 'search', 'settings']);
+assert.deepEqual(Object.keys(config.screens['(tabs)'].screens).sort(), ['(library)', '(playlists)', 'search']);
+assert.ok(config.screens.settings, 'Settings opens outside the tabs');
 assert.ok(library.screens['album/[id]']);
 assert.ok(library.screens['artist/[id]']);
-assert.ok(library.screens['playlists/index']);
-assert.equal(library.screens['playlists/[id]'].path, 'playlists/:id');
+const playlists = config.screens['(tabs)'].screens['(playlists)'];
+assert.equal(playlists.initialRouteName, 'playlists/index');
+assert.ok(playlists.screens['playlists/index']);
+assert.equal(playlists.screens['playlists/[id]'].path, 'playlists/:id');
+assert.equal(library.screens['playlists/index'], undefined);
+assert.equal(library.screens['playlists/[id]'], undefined);
 assert.equal(library.screens['album/[id]'].path, 'album/:id');
 assert.equal(library.screens['artist/[id]'].path, 'artist/:id');
 assert.equal(config.screens['album/[id]'], undefined);
 assert.equal(config.screens['artist/[id]'], undefined);
 assert.ok(config.screens.player, 'Player remains outside tabs as a full-screen modal');
+
+// Render actual tab layout and settings button against native view stubs.
+const jsx = (type, props) => ({ type, props });
+function renderModule(file, mocks) {
+  const code = ts.transpileModule(fs.readFileSync(path.join(root, file), 'utf8'), { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText;
+  const exports = {};
+  new Function('require', 'exports', code)(name => { if (name in mocks) return mocks[name]; throw new Error('Unexpected module: ' + name); }, exports);
+  return exports;
+}
+function nodes(node) {
+  if (Array.isArray(node)) return node.flatMap(nodes);
+  if (!node || typeof node !== 'object') return [];
+  return [node, ...nodes(node.props?.children)];
+}
+const ui = {
+  react: { useRef: initial => ({ current: initial }) },
+  'react/jsx-runtime': { jsx, jsxs: jsx },
+  'react-native': { View: 'View', Text: 'Text', Pressable: 'Pressable', StyleSheet: { create: value => value, absoluteFill: {} }, useColorScheme: () => 'dark' },
+  'expo-router': { Tabs: { Screen: 'TabScreen' } },
+  'expo-blur': { BlurView: 'BlurView', BlurTargetView: 'BlurTargetView' },
+  '@expo/vector-icons/Ionicons': { default: 'Icon', __esModule: true },
+  'react-native-safe-area-context': { useSafeAreaInsets: () => ({ top: 24, bottom: 16 }) },
+  'react-native-keyboard-controller': { useKeyboardState: selector => selector({ isVisible: false }) },
+  '@/components/mini-player': { MINI_PLAYER_INSET: 12, MiniPlayer: 'MiniPlayer' },
+  '@/theme/tokens': { useColors: () => ({ tint: '#f48' }) },
+};
+const TabsLayout = renderModule('src/app/(tabs)/_layout.tsx', ui).default;
+const tabs = TabsLayout();
+assert.deepEqual(nodes(tabs).filter(node => node.type === 'TabScreen').map(node => [node.props.name, node.props.options.title]), [['(library)', '보관함'], ['(playlists)', '플레이리스트'], ['search', '검색']]);
+const refs = new Set();
+for (const name of ['(library)', '(playlists)', 'search']) {
+  const content = tabs.props.screenLayout({ children: jsx('Screen', {}), route: { name } });
+  refs.add(content.props.ref);
+  const layout = tabs.props.layout({ children: content, state: { routes: [{ name }], index: 0 } });
+  assert.equal(nodes(layout).find(node => node.type === 'MiniPlayer').props.blurTarget, content.props.ref, 'Mini player captures the selected tab');
+  const background = tabs.props.screenOptions({ route: { name } }).tabBarBackground();
+  assert.equal(nodes(background).find(node => node.type === 'BlurView').props.blurTarget, content.props.ref, 'Tab blur captures the selected tab');
+}
+assert.equal(refs.size, 3);
+const settingsActions = [];
+const SettingsButton = renderModule('src/components/settings-button.tsx', { ...ui,
+  'react-native': { ...ui['react-native'], Keyboard: { dismiss: () => settingsActions.push('dismiss') } },
+  'expo-router': { router: { push: route => settingsActions.push(route) } },
+}).SettingsButton;
+const button = SettingsButton();
+assert.equal(button.props.accessibilityLabel, '설정 열기');
+button.props.onPress();
+assert.deepEqual(settingsActions, ['dismiss', '/settings'], 'Settings dismisses the keyboard and opens its root stack screen');
+const ScreenHeader = renderModule('src/components/screen-header.tsx', ui).ScreenHeader;
+const header = ScreenHeader({ title: '보관함', action: button });
+const titleRow = nodes(header).find(node => node.props?.children?.includes?.(button));
+assert.ok(titleRow && titleRow.props.children[1] === button, 'Settings sits to the right of the heading');
+assert.ok(!fs.readFileSync(path.join(root, 'src/app/(tabs)/(library)/index.tsx'), 'utf8').includes('내 플레이리스트'), 'Library no longer duplicates the playlist tab');
 
 let state = { queue: [], index: -1 }, calls = [], navigation = [], finish;
 let action = async (songs, index) => { state = { queue: songs, index }; };
@@ -65,6 +124,6 @@ async function main() {
   action = async () => { throw new Error('mock failure'); };
   await assert.rejects(actions.playAndOpenPlayer(songs, 0), /mock failure/);
   assert.deepEqual(navigation, []);
-  console.log('PASS: Expo Router discovery of nested library details and initial route, preserved detail paths, root player route, song/queue selection, cancelled/stale playback, and error propagation. Native UI and playback are not exercised.');
+  console.log('PASS: actual Expo Router library/playlist stacks, retained detail links and initial routes; library/playlist/search tab order, selected-tab mini player and blur targets; top-right settings action/keyboard dismissal and root settings route; song/queue selection and stale playback guards. Native rendering and playback are not exercised.');
 }
 main().catch(error => { console.error(error); process.exitCode = 1; });
