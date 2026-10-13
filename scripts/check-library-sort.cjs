@@ -2,6 +2,7 @@
 const assert = require('node:assert/strict'), fs = require('node:fs'), path = require('node:path');
 const root = path.resolve(__dirname, '..'), ts = require(path.join(root, 'node_modules/typescript'));
 function load(file, modules = {}) {
+  modules = { ...require('./test-cloud-fixtures.cjs').cloudFixtures({}, modules), ...modules };
   const mod = { exports: {} }, code = ts.transpileModule(fs.readFileSync(path.join(root, file), 'utf8'), { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText;
   new Function('require', 'module', 'exports', code)(name => { if (!(name in modules)) throw Error('Unexpected import ' + name); return modules[name]; }, mod, mod.exports);
   return mod.exports;

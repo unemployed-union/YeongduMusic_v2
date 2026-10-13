@@ -3,8 +3,9 @@ const assert = require('node:assert/strict'), fs = require('node:fs'), path = re
 const { Buffer } = require('node:buffer');
 const root = path.resolve(__dirname, '..'), ts = require(path.join(root, 'node_modules/typescript')), zustand = require(path.join(root, 'node_modules/zustand'));
 function load(file, modules) {
+  const shared = require('./test-cloud-fixtures.cjs').cloudFixtures({}, modules);
   const mod = { exports: {} }, code = ts.transpileModule(fs.readFileSync(path.join(root, file), 'utf8'), { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS } }).outputText;
-  new Function('require', 'module', 'exports', code)(name => { if (!(name in modules)) throw Error('Unexpected module ' + name); return modules[name]; }, mod, mod.exports); return mod.exports;
+  new Function('require', 'module', 'exports', code)(name => { if (name in modules) return modules[name]; if (name in shared) return shared[name]; throw Error('Unexpected module ' + name); }, mod, mod.exports); return mod.exports;
 }
 const rules = load('src/services/local-music/folders.ts', {});
 const call = '/storage/primary/Recordings/Call', music = '/storage/primary/Music';

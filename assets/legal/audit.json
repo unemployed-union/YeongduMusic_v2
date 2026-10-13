@@ -1,6 +1,6 @@
 {
-  "packageLockSha256": "23a38fa3aa23a351e4c90f8f1335cbc6a506b6683f69220f10138e1709ee5d51",
-  "packageJsonSha256": "aac5213bb23f8810a1aa808044ce96bb5c7b111c3b4f3177e80fab4f9a8c9c38",
+  "packageLockSha256": "0d0498625cfdfec214893384ca48b974305d7a6fcb4e1e372bb80ebbc0286e6f",
+  "packageJsonSha256": "d7fd123e5b4614b759301a0e5e418fe17c8c8e530a1274a101f1e506fce357d6",
   "nativeCoordinates": [
     "androidx.activity:activity-compose:1.11.0",
     "androidx.activity:activity-ktx:1.11.0",
@@ -177,6 +177,48 @@
   ],
   "included": [
     {
+      "id": "npm:@aws-crypto/sha256-js@5.2.0",
+      "name": "@aws-crypto/sha256-js",
+      "version": "5.2.0",
+      "license": "Apache-2.0",
+      "platform": "all"
+    },
+    {
+      "id": "npm:@aws-crypto/util@5.2.0",
+      "name": "@aws-crypto/util",
+      "version": "5.2.0",
+      "license": "Apache-2.0",
+      "platform": "all"
+    },
+    {
+      "id": "npm:@aws-sdk/core@3.978.2",
+      "name": "@aws-sdk/core",
+      "version": "3.978.2",
+      "license": "Apache-2.0",
+      "platform": "all"
+    },
+    {
+      "id": "npm:@aws-sdk/s3-request-presigner@3.1149.0",
+      "name": "@aws-sdk/s3-request-presigner",
+      "version": "3.1149.0",
+      "license": "Apache-2.0",
+      "platform": "all"
+    },
+    {
+      "id": "npm:@aws-sdk/signature-v4-multi-region@3.996.48",
+      "name": "@aws-sdk/signature-v4-multi-region",
+      "version": "3.996.48",
+      "license": "Apache-2.0",
+      "platform": "all"
+    },
+    {
+      "id": "npm:@aws-sdk/util-format-url@3.972.49",
+      "name": "@aws-sdk/util-format-url",
+      "version": "3.972.49",
+      "license": "Apache-2.0",
+      "platform": "all"
+    },
+    {
       "id": "npm:@babel/runtime@7.29.10",
       "name": "@babel/runtime",
       "version": "7.29.10",
@@ -222,6 +264,13 @@
       "id": "npm:@expo/vector-icons@15.1.1",
       "name": "@expo/vector-icons",
       "version": "15.1.1",
+      "license": "MIT",
+      "platform": "all"
+    },
+    {
+      "id": "npm:@nodable/entities@3.1.0",
+      "name": "@nodable/entities",
+      "version": "3.1.0",
       "license": "MIT",
       "platform": "all"
     },
@@ -286,6 +335,55 @@
       "name": "@react-native/virtualized-lists",
       "version": "0.86.3",
       "license": "MIT",
+      "platform": "all"
+    },
+    {
+      "id": "npm:@smithy/core@3.35.2",
+      "name": "@smithy/core",
+      "version": "3.35.2",
+      "license": "Apache-2.0",
+      "platform": "all"
+    },
+    {
+      "id": "npm:@smithy/is-array-buffer@2.2.0",
+      "name": "@smithy/is-array-buffer",
+      "version": "2.2.0",
+      "license": "Apache-2.0",
+      "platform": "all"
+    },
+    {
+      "id": "npm:@smithy/protocol-http@5.6.2",
+      "name": "@smithy/protocol-http",
+      "version": "5.6.2",
+      "license": "Apache-2.0",
+      "platform": "all"
+    },
+    {
+      "id": "npm:@smithy/signature-v4@5.7.4",
+      "name": "@smithy/signature-v4",
+      "version": "5.7.4",
+      "license": "Apache-2.0",
+      "platform": "all"
+    },
+    {
+      "id": "npm:@smithy/types@4.19.0",
+      "name": "@smithy/types",
+      "version": "4.19.0",
+      "license": "Apache-2.0",
+      "platform": "all"
+    },
+    {
+      "id": "npm:@smithy/util-buffer-from@2.2.0",
+      "name": "@smithy/util-buffer-from",
+      "version": "2.2.0",
+      "license": "Apache-2.0",
+      "platform": "all"
+    },
+    {
+      "id": "npm:@smithy/util-utf8@2.3.0",
+      "name": "@smithy/util-utf8",
+      "version": "2.3.0",
+      "license": "Apache-2.0",
       "platform": "all"
     },
     {
@@ -1038,6 +1136,13 @@
       "platform": "android"
     },
     {
+      "id": "npm:anynum@1.0.1",
+      "name": "anynum",
+      "version": "1.0.1",
+      "license": "MIT",
+      "platform": "all"
+    },
+    {
       "id": "native-source:appauth",
       "name": "AppAuth",
       "version": "~> 2.0 (iOS)",
@@ -1062,6 +1167,13 @@
       "id": "npm:base64-js@1.5.1",
       "name": "base64-js",
       "version": "1.5.1",
+      "license": "MIT",
+      "platform": "all"
+    },
+    {
+      "id": "npm:buffer@5.7.1",
+      "name": "buffer",
+      "version": "5.7.1",
       "license": "MIT",
       "platform": "all"
     },
@@ -1633,6 +1745,20 @@
       "platform": "all"
     },
     {
+      "id": "npm:fast-xml-builder@1.3.1",
+      "name": "fast-xml-builder",
+      "version": "1.3.1",
+      "license": "MIT",
+      "platform": "all"
+    },
+    {
+      "id": "npm:fast-xml-parser@5.11.2",
+      "name": "fast-xml-parser",
+      "version": "5.11.2",
+      "license": "MIT",
+      "platform": "all"
+    },
+    {
       "id": "npm:filter-obj@1.1.0",
       "name": "filter-obj",
       "version": "1.1.0",
@@ -1948,6 +2074,13 @@
       "platform": "all"
     },
     {
+      "id": "npm:ieee754@1.2.1",
+      "name": "ieee754",
+      "version": "1.2.1",
+      "license": "BSD-3-Clause",
+      "platform": "all"
+    },
+    {
       "id": "npm:invariant@2.2.4",
       "name": "invariant",
       "version": "2.2.4",
@@ -1972,6 +2105,13 @@
       "id": "npm:is-arrayish@0.3.4",
       "name": "is-arrayish",
       "version": "0.3.4",
+      "license": "MIT",
+      "platform": "all"
+    },
+    {
+      "id": "npm:is-unsafe@2.0.2",
+      "name": "is-unsafe",
+      "version": "2.0.2",
       "license": "MIT",
       "platform": "all"
     },
@@ -2100,6 +2240,13 @@
       "version": "1.0.0",
       "license": "Apache-2.0",
       "platform": "android"
+    },
+    {
+      "id": "npm:path-expression-matcher@1.6.2",
+      "name": "path-expression-matcher",
+      "version": "1.6.2",
+      "license": "MIT",
+      "platform": "all"
     },
     {
       "id": "npm:promise@8.3.0",
@@ -2291,6 +2438,13 @@
       "platform": "all"
     },
     {
+      "id": "npm:strnum@2.5.1",
+      "name": "strnum",
+      "version": "2.5.1",
+      "license": "MIT",
+      "platform": "all"
+    },
+    {
       "id": "npm:warn-once@0.1.1",
       "name": "warn-once",
       "version": "0.1.1",
@@ -2312,6 +2466,13 @@
       "platform": "all"
     },
     {
+      "id": "npm:xml-naming@0.3.0",
+      "name": "xml-naming",
+      "version": "0.3.0",
+      "license": "MIT",
+      "platform": "all"
+    },
+    {
       "id": "npm:zustand@5.0.15",
       "name": "zustand",
       "version": "5.0.15",
@@ -2320,6 +2481,11 @@
     }
   ],
   "excluded": [
+    {
+      "name": "tslib",
+      "license": "0BSD",
+      "reason": "No binary attribution obligation"
+    },
     {
       "name": "com.google.guava:listenablefuture",
       "reason": "Empty conflict-avoidance artifact"

@@ -15,6 +15,8 @@ function harness() {
   const timers = new Map(), events = [];
   class Clock extends Date { static now() { return now; } }
   function load(file, overrides = {}) {
+    const clockGlobals = { Date: Clock, setTimeout: (callback, delay) => { timers.set(++timerId, { callback, at: now + delay }); return timerId; }, clearTimeout: id => timers.delete(id) };
+    overrides = { ...require('./test-cloud-fixtures.cjs').cloudFixtures(clockGlobals, overrides), ...overrides };
     const code = ts.transpileModule(fs.readFileSync(path.join(sourceRoot, file), 'utf8'), { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText;
     const mod = { exports: {} };
     new Function('require', 'module', 'exports', 'Date', 'setTimeout', 'clearTimeout', code)(name => name in overrides ? overrides[name] : projectRequire(name), mod, mod.exports, Clock,

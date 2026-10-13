@@ -8,9 +8,10 @@ const { create } = require(path.join(root, 'node_modules/zustand'));
 const folderRules = load('src/services/local-music/folders.ts', {});
 const exclusions = create(() => ({ folders: [], ready: true, load: async () => {} }));
 function load(file, modules) {
+  const shared = require('./test-cloud-fixtures.cjs').cloudFixtures({}, modules);
   const mod = { exports: {} };
   const code = ts.transpileModule(fs.readFileSync(path.join(root, file), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
-  new Function('require', 'module', 'exports', code)(name => { if (name in modules) return modules[name]; throw Error('Unmocked ' + name); }, mod, mod.exports);
+  new Function('require', 'module', 'exports', code)(name => { if (name in modules) return modules[name]; if (name in shared) return shared[name]; throw Error('Unmocked ' + name); }, mod, mod.exports);
   return mod.exports;
 }
 let os = 'android', granted = true, picks = 0, pickerError = null, pageFail = false, repeating = false, copyFailure = null;

@@ -5,6 +5,7 @@ import * as DocumentPicker from 'expo-document-picker';
 import type { Song } from '@/types/music';
 import { useFolderExclusionStore } from '@/stores/folder-exclusions';
 import { folderExcluded, localFolderKey, localSongExcluded } from './folders';
+import { fingerprintFile, withVerifiedCopy } from './file-copy';
 
 export type ImportKind = 'files' | 'device' | 'folder';
 export type ImportAsset = { uri: string; name: string; mimeType?: string; duration?: number; stage?: boolean; temporary?: boolean; originFolder?: string };
@@ -66,9 +67,8 @@ export function storeDownloadedSong(original: Song, uri: string, extension: stri
     const check = () => { if (signal?.aborted) throw new Error('음악 보관을 취소했습니다.'); };
     check();
     if (original.source === 'local' || !isAudioFile('file.' + extension)) throw new Error('보관할 음악 정보가 올바르지 않습니다.');
-    const info = await FileSystem.getInfoAsync(uri, { md5: true });
-    if (!info.exists || info.isDirectory || !info.size || !info.md5 || !/^[a-f0-9]{32}$/i.test(info.md5)) throw new Error('내려받은 음악 파일을 확인할 수 없습니다.');
-    const digest = info.md5.toLowerCase(), id = 'local:' + digest + ':' + info.size;
+    const info = await fingerprintFile(uri, '내려받은 음악 파일을 확인할 수 없습니다.');
+    const { digest, id } = info;
     const previous = (await readLocalSongs()).find(song => song.id === id);
     check();
     if (previous) {
@@ -78,28 +78,18 @@ export function storeDownloadedSong(original: Song, uri: string, extension: stri
     const fileName = previous?.source === 'local' ? previous.local.fileName : digest + '-' + info.size + '.' + extension;
     const folder = directory(), destination = folder + fileName;
     await FileSystem.makeDirectoryAsync(folder, { intermediates: true });
-    let created = false;
-    try {
-      check();
-      created = !(await FileSystem.getInfoAsync(destination)).exists;
-      await FileSystem.copyAsync({ from: uri, to: destination });
-      const copied = await FileSystem.getInfoAsync(destination, { md5: true });
-      if (!copied.exists || copied.isDirectory || copied.size !== info.size || copied.md5?.toLowerCase() !== digest) throw new Error('음악 저장을 완료하지 못했습니다. 저장 공간을 확인해 주세요.');
-      check();
+    return withVerifiedCopy({ from: uri, to: destination, fingerprint: info, overwrite: true, check, message: '음악 저장을 완료하지 못했습니다. 저장 공간을 확인해 주세요.' }, async () => {
       // Explicit fields only: never persist source URLs, tokens, account IDs or NAS paths.
       const song: Song = previous ?? {
         id, source: 'local',
         title: original.title, artist: original.artist, album: original.album, albumSource: original.albumSource ?? 'fallback',
         albumArtist: original.albumArtist, discNumber: original.discNumber, year: original.year,
         duration: original.duration, trackNumber: original.trackNumber, palette: original.palette,
-        local: { fileName, originalName: original.title + '.' + extension, size: info.size, mimeType, downloadedFrom: original.source === 'drive' ? 'drive' : 'nas' },
+        local: { fileName, originalName: original.title + '.' + extension, size: info.size, mimeType, downloadedFrom: original.source === 's3' ? 's3' : original.source === 'drive' ? 'drive' : 'nas' },
       };
       await save(song);
       return { song, duplicate: false };
-    } catch (error) {
-      if (created) await FileSystem.deleteAsync(destination, { idempotent: true }).catch(() => {});
-      throw error;
-    }
+    });
   });
   importTail = result.catch(() => {});
   return result;
@@ -140,8 +130,6 @@ export function importLocalSongs(kind: ImportKind = 'files', onProgress?: (proce
     let processed = 0;
     try {
       for await (const asset of assets) {
-        let destination: string | null = null;
-        let created = false;
         let temporaryUri: string | null = asset.temporary ? asset.uri : null;
         let inputUri = asset.uri;
         try {
@@ -159,10 +147,8 @@ export function importLocalSongs(kind: ImportKind = 'files', onProgress?: (proce
             await new File(asset.uri).copy(new File(temporaryUri));
             inputUri = temporaryUri;
           }
-          const info = await FileSystem.getInfoAsync(inputUri, { md5: true });
-          if (!info.exists || info.isDirectory || !info.size || !info.md5 || !/^[a-f0-9]{32}$/i.test(info.md5)) throw new Error('파일을 읽을 수 없거나 비어 있습니다.');
-          const digest = info.md5.toLowerCase();
-          const id = 'local:' + digest + ':' + info.size;
+          const info = await fingerprintFile(inputUri, '파일을 읽을 수 없거나 비어 있습니다.');
+          const { digest, id } = info;
           let previous = known.get(id);
           if (previous?.source === 'local' && originFolder && !previous.local.originalFolders?.includes(originFolder)) {
             previous = { ...previous, local: { ...previous.local, originalFolders: [...(previous.local.originalFolders ?? []), originFolder] } };
@@ -173,23 +159,16 @@ export function importLocalSongs(kind: ImportKind = 'files', onProgress?: (proce
             try { await localSource(previous); result.duplicates++; continue; } catch { /* Restore the missing app copy below. */ }
           }
           const fileName = previous?.source === 'local' ? previous.local.fileName : digest + '-' + info.size + '.' + extension;
-          destination = folder + fileName;
-          const existing = await FileSystem.getInfoAsync(destination);
-          if (!existing.exists || existing.isDirectory || existing.size !== info.size) {
-            created = !existing.exists;
-            await FileSystem.copyAsync({ from: inputUri, to: destination });
-          }
-          const copied = await FileSystem.getInfoAsync(destination, { md5: true });
-          if (!copied.exists || copied.isDirectory || copied.size !== info.size || copied.md5?.toLowerCase() !== digest) throw new Error('파일 복사를 완료하지 못했습니다. 저장 공간을 확인해 주세요.');
-          const song: Song = previous ?? {
-            id, source: 'local', local: { fileName, originalName: asset.name, size: info.size, mimeType: asset.mimeType, originalFolders: originFolder ? [originFolder] : undefined },
-            title: asset.name.replace(/\.[^.]+$/, ''), artist: '알 수 없는 아티스트', album: '이 기기 음악', albumSource: 'fallback',
-            albumId: 'local:device', duration: Number.isFinite(asset.duration) && (asset.duration ?? 0) > 0 ? asset.duration! : 0,
-          };
-          await save(song);
-          known.set(id, song); result.added++;
+          await withVerifiedCopy({ from: inputUri, to: folder + fileName, fingerprint: info, message: '파일 복사를 완료하지 못했습니다. 저장 공간을 확인해 주세요.' }, async () => {
+            const song: Song = previous ?? {
+              id, source: 'local', local: { fileName, originalName: asset.name, size: info.size, mimeType: asset.mimeType, originalFolders: originFolder ? [originFolder] : undefined },
+              title: asset.name.replace(/\.[^.]+$/, ''), artist: '알 수 없는 아티스트', album: '이 기기 음악', albumSource: 'fallback',
+              albumId: 'local:device', duration: Number.isFinite(asset.duration) && (asset.duration ?? 0) > 0 ? asset.duration! : 0,
+            };
+            await save(song);
+            known.set(id, song); result.added++;
+          });
         } catch (error) {
-          if (created && destination) await FileSystem.deleteAsync(destination, { idempotent: true }).catch(() => {});
           result.failures.push(asset.name + ' · ' + (error instanceof Error ? error.message : '가져오지 못했습니다.'));
         } finally {
           // Delete only the temporary picker copy; never touch the selected original.

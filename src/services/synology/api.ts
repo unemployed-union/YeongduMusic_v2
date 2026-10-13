@@ -1,3 +1,4 @@
+import { isNasSong } from '@/services/music-source';
 import type { Album, Artist, Page, PageRequest, Song, StreamingQuality } from '@/types/music';
 
 // Explicit combined library scope; the NAS applies signed-in account access.
@@ -213,7 +214,7 @@ export class SynologyClient {
     const artist = [string(item.artist), string(tags.artist)].find(value => value.trim()) ?? '알 수 없는 아티스트';
     const taggedAlbum = string(tags.album).trim();
     const album = taggedAlbum || string(item.album).trim() || '알 수 없는 앨범';
-    return { id: (id.startsWith('local:') || id.startsWith('drive:')) ? 'nas:' + id : id, nasId: (id.startsWith('local:') || id.startsWith('drive:')) ? id : undefined, source: 'nas', path: string(item.path) || undefined, title: string(item.title, '제목 없음'), artist, album, albumSource: taggedAlbum ? 'tag' : 'fallback', albumArtist: string(tags.album_artist) || undefined, discNumber: number(tags.disc) || undefined, year: number(tags.year) || undefined, duration: number(item.duration), trackNumber: number(item.track, number(tags.track)) || undefined, artworkUrl: this.coverUrl(id) };
+    return { id: (id.startsWith('local:') || id.startsWith('drive:') || id.startsWith('s3:')) ? 'nas:' + id : id, nasId: (id.startsWith('local:') || id.startsWith('drive:') || id.startsWith('s3:')) ? id : undefined, source: 'nas', path: string(item.path) || undefined, title: string(item.title, '제목 없음'), artist, album, albumSource: taggedAlbum ? 'tag' : 'fallback', albumArtist: string(tags.album_artist) || undefined, discNumber: number(tags.disc) || undefined, year: number(tags.year) || undefined, duration: number(item.duration), trackNumber: number(item.track, number(tags.track)) || undefined, artworkUrl: this.coverUrl(id) };
   }
   async albums({ offset, limit, signal }: PageRequest): Promise<Page<Album>> {
     const result = this.collection(await this.call('SYNO.AudioStation.Album', 'list', { offset, limit, library: AUDIO_STATION_LIBRARY }, signal), 'albums');
@@ -224,7 +225,7 @@ export class SynologyClient {
     return { total: result.total, items: result.records.map((item) => ({ id: string(item.id, string(item.name)), name: string(item.name, '이름 없음'), albumCount: number(item.album_count) || undefined })) };
   }
   streamSource(song: Song, quality: StreamingQuality = 'original'): { uri: string } {
-    if (song.source === 'local' || song.source === 'drive') throw new Error('로컬 음악과 Google Drive 음악은 NAS 스트리밍 API를 사용하지 않습니다.');
+    if (!isNasSong(song)) throw new Error('로컬 음악과 클라우드 음악은 NAS 스트리밍 API를 사용하지 않습니다.');
     if (quality === 'mp3') {
       if ((this.session.apis['SYNO.AudioStation.Stream']?.maxVersion ?? 0) < 2) throw new SynologyError('MP3 변환에는 Stream API v2가 필요합니다. 원본 음질을 선택해 주세요.');
       // Official Audio Station 6.5.7 app/audio-core.js uses transcode,

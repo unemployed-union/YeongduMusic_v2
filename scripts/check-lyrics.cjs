@@ -6,6 +6,7 @@ const root = path.resolve(process.argv[2] ?? path.join(__dirname, '..'));
 const staged = process.argv[3] && path.resolve(process.argv[3]);
 const ts = require(path.join(root, 'node_modules/typescript'));
 function load(file, modules = {}, globals = {}) {
+  modules = { ...require('./test-cloud-fixtures.cjs').cloudFixtures(globals, modules), ...modules };
   const source = staged && fs.existsSync(path.join(staged, file)) ? path.join(staged, file) : path.join(root, file);
   const code = ts.transpileModule(fs.readFileSync(source, 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
   const exports = {};

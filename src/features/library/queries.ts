@@ -1,4 +1,5 @@
 import { useCallback, useMemo } from 'react';
+import { useS3Store } from '@/stores/s3';
 import { useGoogleDriveStore } from '@/stores/google-drive';
 import { useLocalMusicStore } from '@/stores/local-music';
 import { useQuery } from '@tanstack/react-query';
@@ -6,6 +7,7 @@ import { albumId, albumsFromSongs, songsForAlbum } from './album-library';
 import { artistName, loadSongLibrary, songsForArtist } from './load-song-library';
 import { searchSongs } from './search-songs';
 import { libraryIdentity, musicRepository } from './repository';
+import { libraryResult } from './library-result';
 import { visibleSongs } from '../hidden-music/rules';
 import { useAuthStore } from '@/stores/auth';
 import { useHiddenMusicStore } from '@/stores/hidden-music';
@@ -22,14 +24,18 @@ function useSongLibrary<T>(select: (library: Page<Song>) => T, enabled = true, n
   const driveSongs = useGoogleDriveStore((state) => state.songs);
   const driveLoading = useGoogleDriveStore((state) => state.loading);
   const driveError = useGoogleDriveStore((state) => state.error);
+  const s3Songs = useS3Store(state => state.songs);
+  const s3Loading = useS3Store(state => state.loading);
+  const s3Error = useS3Store(state => state.error);
+  const includeS3 = !nasOnly && (source === 'all' || source === 's3');
   const includeDrive = !nasOnly && (source === 'all' || source === 'drive');
   const identity = libraryIdentity(mode, session);
   const includeNas = nasOnly || ((source === 'nas' || source === 'all') && mode !== 'setup');
   const combined = useCallback((library: Page<Song>) => {
     if (nasOnly || source === 'nas') return select(library);
-    const items = [...(includeNas ? library.items : []), ...(source === 'all' || source === 'local' ? localSongs : []), ...(includeDrive ? driveSongs : [])];
+    const items = [...(includeNas ? library.items : []), ...(source === 'all' || source === 'local' ? localSongs : []), ...(includeDrive ? driveSongs : []), ...(includeS3 ? s3Songs : [])];
     return select({ ...library, items, total: items.length });
-  }, [select, nasOnly, source, includeNas, localSongs, includeDrive, driveSongs]);
+  }, [select, nasOnly, source, includeNas, localSongs, includeDrive, driveSongs, includeS3, s3Songs]);
   const query = useQuery({
     queryKey: includeNas ? ['song-library', identity] : ['local-library'], enabled: ready && (nasOnly || localReady) && enabled,
     queryFn: ({ signal }) => includeNas && mode !== 'setup' ? loadSongLibrary(musicRepository(), signal) : Promise.resolve({ items: [] as Song[], total: 0 }),
@@ -37,13 +43,15 @@ function useSongLibrary<T>(select: (library: Page<Song>) => T, enabled = true, n
   });
   // Keep local files usable when NAS is unreachable, without publishing a
   // partial library as a successful NAS query or suppressing its retry notice.
-  const fallback = useMemo(() => !nasOnly && source === 'all' && query.isError && !query.data && (localSongs.length || driveSongs.length)
-    ? select({ items: [...localSongs, ...driveSongs], total: localSongs.length + driveSongs.length }) : undefined,
-  [nasOnly, source, query.isError, query.data, localSongs, driveSongs, select]);
-  if (includeDrive && driveError && !query.isError) return { ...query, isError: true, isPending: false, isRefetchError: !!query.data, error: new Error(driveError) };
-  if (source === 'drive' && !nasOnly && driveLoading && !driveSongs.length) return { ...query, isPending: true };
-  if (fallback === undefined || !query.isError) return query;
-  return { ...query, data: fallback, isLoadingError: false, isRefetchError: true };
+  const fallback = useMemo(() => !nasOnly && source === 'all' && query.isError && !query.data && (localSongs.length || driveSongs.length || s3Songs.length)
+    ? select({ items: [...localSongs, ...driveSongs, ...s3Songs], total: localSongs.length + driveSongs.length + s3Songs.length }) : undefined,
+  [nasOnly, source, query.isError, query.data, localSongs, driveSongs, s3Songs, select]);
+  const cloudError = [includeDrive && driveError, includeS3 && s3Error].filter(Boolean).join('\n');
+  return libraryResult(query, {
+    fallback, cloudError,
+    cloudLoading: (includeDrive && driveLoading) || (includeS3 && s3Loading),
+    cloudPending: !nasOnly && ((source === 's3' && s3Loading && !s3Songs.length) || (source === 'drive' && driveLoading && !driveSongs.length)),
+  });
 }
 
 // Only the protected settings screen uses the unfiltered metadata selection.

@@ -2,6 +2,7 @@
 const assert = require('node:assert/strict'), fs = require('node:fs'), path = require('node:path');
 const root = path.resolve(__dirname, '..'), ts = require(path.join(root, 'node_modules/typescript'));
 function load(file, modules) {
+  modules = { ...require('./test-cloud-fixtures.cjs').cloudFixtures({}, modules), ...modules };
   const mod = { exports: {} }, code = ts.transpileModule(fs.readFileSync(path.join(root, file), 'utf8'), { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText;
   new Function('require', 'module', 'exports', code)(name => { if (!(name in modules)) throw Error('Unexpected dependency ' + name); return modules[name]; }, mod, mod.exports);
   return mod.exports;
@@ -13,8 +14,6 @@ function findAll(node, type) { if (!node || typeof node !== 'object') return [];
 async function main() {
   let stored = null, failRead = false, failWrite = false, readCount = 0, writeGate;
   const modules = { zustand: require(path.join(root, 'node_modules/zustand')), '@/components/text': { Text: 'Text' },
-  '@/components/text': { Text: 'Text' },
-  '@/components/text': { Text: 'Text' },
   'react-native': { Platform: { OS: 'android' } }, 'expo-secure-store': {
     getItemAsync: async () => { readCount++; if (failRead) throw Error('read'); return stored; },
     setItemAsync: async (_, value) => { if (writeGate) await writeGate.promise; if (failWrite) throw Error('write'); stored = value; },
@@ -45,8 +44,6 @@ async function main() {
   const calls = [], alerts = [], platform = { OS: 'android' };
   const equalizer = load('src/services/playback/equalizer.ts', {
     '@/components/text': { Text: 'Text' },
-  '@/components/text': { Text: 'Text' },
-  '@/components/text': { Text: 'Text' },
   'react-native': { Platform: platform, Alert: { alert: (...args) => alerts.push(args) } },
     'expo-constants': { default: { expoConfig: { android: { package: 'xyz.yeongdu.yeongdumusic' } } }, __esModule: true },
     'expo-intent-launcher': { ActivityAction: { SOUND_SETTINGS: 'android.settings.SOUND_SETTINGS' }, startActivityAsync: async (action, params) => { calls.push({ action, params }); if (panelGate) await panelGate.promise; if (panelError) throw Error('no activity'); } },
@@ -62,8 +59,6 @@ async function main() {
   panelError = false; alerts.at(-1)[2][1].onPress(); await flush(); assert.equal(calls.at(-1).action, 'android.settings.SOUND_SETTINGS');
   for (const os of ['ios', 'web']) { platform.OS = os; const count = calls.length; await equalizer.openSystemEqualizer(); assert.equal(calls.length, count); assert.match(alerts.at(-1)[1], /지원하지 않습니다/); }
   const { ExpoAudioEngine } = load('src/services/playback/audio-engine.ts', { 'expo-audio': {}, 'expo-constants': { default: {}, AppOwnership: { Expo: 'expo' }, __esModule: true }, '@/components/text': { Text: 'Text' },
-  '@/components/text': { Text: 'Text' },
-  '@/components/text': { Text: 'Text' },
   'react-native': { Platform: platform } });
   const engine = new ExpoAudioEngine(); platform.OS = 'android'; assert.equal(engine.getAudioSessionId(), null);
   for (const value of [0, -1, undefined, NaN, Infinity, 1.5]) { engine.player = { audioSessionId: value }; assert.equal(engine.getAudioSessionId(), null); }
@@ -74,8 +69,6 @@ async function main() {
   const panelModules = {
     react: { memo: fn => fn, useState: () => [search, value => { search = value; }] }, 'react/jsx-runtime': { jsx, jsxs: jsx },
     '@/components/text': { Text: 'Text' },
-  '@/components/text': { Text: 'Text' },
-  '@/components/text': { Text: 'Text' },
   'react-native': { ...native, Pressable: 'Pressable', ActivityIndicator: 'Spinner' },
     'react-native-reanimated': { createAnimatedComponent: () => 'AnimatedText' }, '@expo/vector-icons/Ionicons': 'Icon',
     './lyrics-edge-fade': { LyricsEdgeFade: 'Fade' }, '@/services/lyrics/parse-lyrics': {},

@@ -5,6 +5,7 @@ const path = require('node:path');
 const ts = require('typescript');
 const { create } = require('zustand');
 function load(file, mocks = {}, globals = {}) {
+  mocks = { ...require('./test-cloud-fixtures.cjs').cloudFixtures(globals, mocks), ...mocks };
   const code = ts.transpileModule(fs.readFileSync(path.join(__dirname, '..', file), 'utf8'), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX },
   }).outputText;
@@ -21,8 +22,6 @@ const playlists = load('src/features/playlists/rules.ts');
 const values = new Map(), profiles = new Map();
 let failAccess = false, failProfile = false, holdProfile = false, releaseProfile, profileWrites = 0, authCalls = 0;
 const accessModules = {
-  '@/components/text': { Text: 'Text' },
-  '@/components/text': { Text: 'Text' },
   '@/components/text': { Text: 'Text' },
   'react-native': { Platform: { OS: 'android' } },
   'expo-secure-store': {
@@ -60,8 +59,6 @@ const flush = async () => { for (let i = 0; i < 40; i++) await Promise.resolve()
 const ui = {
   react: { useRef: initial => refs[refIndex++] ??= { current: initial }, useCallback: fn => fn, useEffect: () => {} },
   'react/jsx-runtime': { jsx, jsxs: jsx },
-  '@/components/text': { Text: 'Text' },
-  '@/components/text': { Text: 'Text' },
   '@/components/text': { Text: 'Text' },
   'react-native': { View: 'View', Text: 'Text', Pressable: 'Pressable', Keyboard: { dismiss: () => {} }, Alert: { alert: (...args) => alerts.push(args) }, StyleSheet: { create: styles => styles } },
   'expo-router': { router: { push: route => navigation.push(route) }, useFocusEffect: fn => { focusCleanup = fn(); } },
@@ -232,8 +229,6 @@ async function main() {
   await privacy.getState().unlock();
   const QuickHidePresetSettings = load('src/features/settings/quick-hide-preset-settings.tsx', {
     ...ui, '@/components/text': { Text: 'Text' },
-  '@/components/text': { Text: 'Text' },
-  '@/components/text': { Text: 'Text' },
   'react-native': { ...ui['react-native'], FlatList: 'FlatList' },
     '@/stores/hidden-music': { useHiddenMusicStore: () => privacy.getState() },
     '@/components/scroll-edge-fade': { ScrollEdgeFade: 'ScrollEdgeFade' },

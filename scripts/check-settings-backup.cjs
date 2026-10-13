@@ -5,6 +5,7 @@ const path = require('node:path');
 const ts = require('typescript');
 const { create } = require('zustand');
 function load(file, mocks = {}, globals = {}) {
+  mocks = { ...require('./test-cloud-fixtures.cjs').cloudFixtures(globals, mocks), ...mocks };
   const exports = {};
   const code = ts.transpileModule(fs.readFileSync(path.join(__dirname, '..', file), 'utf8'), {
     compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX },

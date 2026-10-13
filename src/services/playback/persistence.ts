@@ -1,3 +1,4 @@
+import { useS3Store } from '@/stores/s3';
 import { AppState, Platform } from 'react-native';
 import { privacyScope, hiddenMatcher } from '@/features/hidden-music/rules';
 import { useAuthStore } from '@/stores/auth';
@@ -22,6 +23,7 @@ type Snapshot = {
   repeat: RepeatMode;
   nasScope: string | null;
   driveAccountId: string | null;
+  s3ConnectionId?: string | null;
   savedAt: number;
 };
 
@@ -53,7 +55,8 @@ function validSong(value: unknown): value is Song {
     typeof song.duration === 'number' && Number.isFinite(song.duration) && song.duration >= 0 &&
     (song.source === 'nas' || song.source === undefined ||
       (song.source === 'local' && !!song.local && typeof song.local.fileName === 'string') ||
-      (song.source === 'drive' && !!song.drive && typeof song.drive.fileId === 'string' && typeof song.drive.accountId === 'string'));
+      (song.source === 'drive' && !!song.drive && typeof song.drive.fileId === 'string' && typeof song.drive.accountId === 'string') ||
+      (song.source === 's3' && !!song.s3 && typeof song.s3.key === 'string' && typeof song.s3.connectionId === 'string' && Number.isSafeInteger(song.s3.size) && song.s3.size > 0));
 }
 
 function parse(raw: string | null): Snapshot | null {
@@ -67,6 +70,7 @@ function parse(raw: string | null): Snapshot | null {
       !['off', 'all', 'one'].includes(value.repeat ?? '') ||
       !(value.nasScope === null || typeof value.nasScope === 'string') ||
       !(value.driveAccountId === null || typeof value.driveAccountId === 'string') ||
+      !(value.s3ConnectionId === undefined || value.s3ConnectionId === null || typeof value.s3ConnectionId === 'string') ||
       typeof value.savedAt !== 'number' || Date.now() - value.savedAt > MAX_AGE_MS || value.savedAt > Date.now() + 60_000) return null;
     return value as Snapshot;
   } catch { return null; }
@@ -91,6 +95,10 @@ export async function readRestoredPlayback(): Promise<RestoredPlayback | null> {
     let restored: Song | null = null;
     if (song.source === 'local') restored = currentLocal.get(song.id) ?? null;
     else if (song.source === 'drive') restored = song.drive.accountId === driveAccountId && saved.driveAccountId === driveAccountId ? song : null;
+    else if (song.source === 's3') {
+      const connection = useS3Store.getState().connection;
+      restored = connection && saved.s3ConnectionId === connection.id && song.s3.connectionId === connection.id && song.s3.key.startsWith(connection.prefix) ? song : null;
+    }
     else if (saved.nasScope === scope && privacy.ready && privacy.scope === scope && !hidden(song)) {
       restored = nasClient ? { ...song, artworkUrl: nasClient.coverUrl(song.nasId ?? song.id) } : auth.mode === 'mock' ? song : null;
     }
@@ -117,6 +125,7 @@ function snapshot(): string | null {
     repeat: state.repeat,
     nasScope: privacyScope(auth.mode, auth.session),
     driveAccountId: useGoogleDriveStore.getState().account?.id ?? null,
+    s3ConnectionId: useS3Store.getState().connection?.id ?? null,
     savedAt: Date.now(),
   };
   return JSON.stringify(current);

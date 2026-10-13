@@ -1,5 +1,13 @@
 [
   {
+    "id": "nodable-entities",
+    "name": "@nodable/entities",
+    "version": "3.1.0",
+    "license": "MIT",
+    "file": "assets/legal/upstream/nodable-entities.txt",
+    "url": "https://raw.githubusercontent.com/nodable/val-parsers/main/LICENSE"
+  },
+  {
     "id": "apache-2",
     "name": "Apache License 2.0",
     "version": "",

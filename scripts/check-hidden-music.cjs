@@ -10,6 +10,7 @@ const { create } = projectRequire('zustand');
 const clients = [];
 const observers = [];
 function load(file, overrides = {}) {
+  overrides = { ...require('./test-cloud-fixtures.cjs').cloudFixtures({}, overrides), ...overrides };
   const source = fs.readFileSync(path.join(root, file), 'utf8');
   const code = ts.transpileModule(source, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS } }).outputText;
   const mod = { exports: {} };

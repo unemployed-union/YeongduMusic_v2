@@ -10,6 +10,7 @@ const { create } = require(path.join(root, 'node_modules/zustand'));
 const folderRules = load('src/services/local-music/folders.ts', {});
 const exclusions = create(() => ({ folders: [], ready: true, load: async () => {} }));
 function load(file, modules = {}, globals = {}) {
+  modules = { ...require('./test-cloud-fixtures.cjs').cloudFixtures(globals, modules), ...modules };
   const code = ts.transpileModule(fs.readFileSync(path.join(root, file), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX } }).outputText;
   const mod = { exports: {} };
   new Function('require', 'module', 'exports', ...Object.keys(globals), code)(name => {

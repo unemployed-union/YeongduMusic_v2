@@ -1,3 +1,4 @@
+import { isNasSong } from '@/services/music-source';
 import { useQuery } from '@tanstack/react-query';
 import { loadLyrics } from './load-lyrics';
 import { libraryIdentity } from '@/features/library/repository';
@@ -15,7 +16,7 @@ export function useLyrics(song: Song, source: LyricsSource, duration: number, se
   return useQuery({
     queryKey: ['lyrics', libraryIdentity(mode, session), generation, source, song.id, song.title, song.artist, song.album, trackDuration, searchOnline],
     queryFn: ({ signal }) => loadLyrics({ song, source, mode, session, generation, signal, duration: trackDuration, searchOnline }),
-    enabled: song.source === 'local' || song.source === 'drive' || mode === 'mock' || (mode === 'nas' && !!session),
+    enabled: !isNasSong(song) || mode === 'mock' || (mode === 'nas' && !!session),
     // A manual search must issue a fresh request even if a prior search was cached.
     staleTime: searchOnline ? 0 : 60 * 60 * 1000,
     refetchOnWindowFocus: !searchOnline,

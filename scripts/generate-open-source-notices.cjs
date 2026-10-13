@@ -39,7 +39,7 @@ for (const name of [...Object.keys(project.dependencies), 'expo-keep-awake']) {
   const pkg = json(path.join(dir, 'package.json'));
   packages.set(pkg.name + '@' + pkg.version, { ...pkg, dir, files: fs.readdirSync(dir).filter(file => /^(license|licence|notice|copying)([.-]|$)/i.test(file)) });
 }
-const npmFallback = { 'expo-router': 'expo', '@expo/ui': 'expo', 'standard-navigation': 'standard-navigation', '@react-native-community/slider': 'slider' };
+const npmFallback = { '@nodable/entities': 'nodable-entities', 'expo-router': 'expo', '@expo/ui': 'expo', 'standard-navigation': 'standard-navigation', '@react-native-community/slider': 'slider' };
 for (const pkg of packages.values()) {
   const license = typeof pkg.license === 'object' ? pkg.license.type : pkg.license;
   if (/^(Unlicense|CC0-1.0|0BSD|Zlib|BSL-1.0)$/i.test(license)) { excluded.push({ name: pkg.name, license, reason: 'No binary attribution obligation' }); continue; }

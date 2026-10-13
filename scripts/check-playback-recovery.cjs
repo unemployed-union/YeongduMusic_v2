@@ -34,6 +34,7 @@ const modules = {
 };
 const moduleExports = {};
 new Function('require', 'exports', 'setTimeout', 'clearTimeout', code)(name => {
+  Object.assign(modules, { ...require('./test-cloud-fixtures.cjs').cloudFixtures(), ...modules });
   if (!(name in modules)) throw new Error(`Unexpected dependency: ${name}`);
   return modules[name];
 }, moduleExports, setTimeout, clearTimeout);
@@ -100,6 +101,7 @@ async function checkRootRemount({ playing = true, cold = false } = {}) {
   }).outputText;
   const rootModule = {};
   new Function('require', 'exports', rootCode)(name => {
+    Object.assign(rootMocks, { ...require('./test-cloud-fixtures.cjs').cloudFixtures({}, rootMocks), ...rootMocks });
     if (!(name in rootMocks)) throw new Error(`Unexpected root dependency: ${name}`);
     return rootMocks[name];
   }, rootModule);

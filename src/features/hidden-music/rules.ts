@@ -1,3 +1,4 @@
+import { isNasSong } from '@/services/music-source';
 import type { Session } from '@/services/synology/api';
 import type { HiddenMusicProfile, HiddenPreset } from '@/types/hidden-music';
 import type { Page, Song } from '@/types/music';
@@ -16,7 +17,7 @@ export function hiddenMatcher(presets: readonly HiddenPreset[]): (song: Song) =>
   const active = presets.filter((preset) => preset.enabled);
   const ids = new Set(active.flatMap((preset) => preset.songIds));
   const folders = [...new Set(active.flatMap((preset) => preset.folders).map(normalizeFolder))];
-  return (song) => song.source !== 'local' && song.source !== 'drive' && (ids.has(song.id) || !!song.path && folders.some((folder) => normalizeFolder(song.path!).startsWith(folder + '/')));
+  return (song) => isNasSong(song) && (ids.has(song.id) || !!song.path && folders.some((folder) => normalizeFolder(song.path!).startsWith(folder + '/')));
 }
 
 export function visibleSongs(library: Page<Song>, presets: readonly HiddenPreset[]): Page<Song> {

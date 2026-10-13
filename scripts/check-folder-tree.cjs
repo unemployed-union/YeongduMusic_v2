@@ -4,6 +4,7 @@ const path = require('node:path');
 const root = process.argv[2] ? path.resolve(process.argv[2]) : path.resolve(__dirname, '..');
 const ts = require(path.join(root, 'node_modules/typescript'));
 function load(file, modules = {}) {
+  modules = { ...require('./test-cloud-fixtures.cjs').cloudFixtures({}, modules), ...modules };
   const code = ts.transpileModule(fs.readFileSync(path.join(root, file), 'utf8'), { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS } }).outputText;
   const result = {};
   new Function('require', 'exports', code)(name => { if (!(name in modules)) throw new Error('Unexpected dependency: ' + name); return modules[name]; }, result);

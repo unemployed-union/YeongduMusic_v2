@@ -7,6 +7,7 @@ const staged = process.argv[3];
 const projectRequire = createRequire(path.join(root, 'package.json'));
 const ts = projectRequire('typescript');
 function load(file, overrides) {
+  overrides = { ...require('./test-cloud-fixtures.cjs').cloudFixtures({}, overrides), ...overrides };
   const stagedFile = staged && path.join(staged, path.basename(file));
   const source = fs.readFileSync(stagedFile && fs.existsSync(stagedFile) ? stagedFile : path.join(root, file), 'utf8');
   const code = ts.transpileModule(source, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS } }).outputText;

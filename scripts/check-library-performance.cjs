@@ -8,6 +8,7 @@ const projectRequire = createRequire(path.join(root, 'package.json'));
 const ts = projectRequire('typescript');
 const { QueryClient, QueryObserver } = projectRequire('@tanstack/react-query');
 function load(file, overrides = {}) {
+  overrides = { ...require('./test-cloud-fixtures.cjs').cloudFixtures({}, overrides), ...overrides };
   const source = fs.readFileSync(file, 'utf8');
   const code = ts.transpileModule(source, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS } }).outputText;
   const mod = { exports: {} };

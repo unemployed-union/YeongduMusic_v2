@@ -1,7 +1,7 @@
 export type StreamingQuality = 'original' | 'mp3';
 
-export type MusicSourceFilter = 'all' | 'nas' | 'local' | 'drive';
-export type LocalFile = { fileName: string; originalName: string; size: number; mimeType?: string; originalFolders?: string[]; downloadedFrom?: 'nas' | 'drive' };
+export type MusicSourceFilter = 'all' | 'nas' | 'local' | 'drive' | 's3';
+export type LocalFile = { fileName: string; originalName: string; size: number; mimeType?: string; originalFolders?: string[]; downloadedFrom?: 'nas' | 'drive' | 's3' };
 
 export type Song = {
   id: string;
@@ -19,7 +19,10 @@ export type Song = {
   trackNumber?: number;
   artworkUrl?: string;
   palette?: readonly [string, string];
-} & ({ source?: 'nas'; nasId?: string; local?: never; drive?: never } | { source: 'local'; local: LocalFile; drive?: never } | { source: 'drive'; drive: { fileId: string; accountId: string; mimeType: string; size?: number; modifiedTime?: string }; local?: never; nasId?: never });
+} & ({ source?: 'nas'; nasId?: string; local?: never; drive?: never; s3?: never }
+  | { source: 'local'; local: LocalFile; drive?: never; s3?: never }
+  | { source: 'drive'; drive: { fileId: string; accountId: string; mimeType: string; size?: number; modifiedTime?: string }; local?: never; nasId?: never; s3?: never }
+  | { source: 's3'; s3: { connectionId: string; key: string; size: number; modifiedTime?: string }; local?: never; drive?: never; nasId?: never });
 
 export type Album = {
   id: string;

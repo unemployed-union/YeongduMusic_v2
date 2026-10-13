@@ -11,6 +11,7 @@ const tanstack = projectRequire('@tanstack/react-query');
 // extra AbortSignal.any/timeout/reason APIs.
 const { AbortController } = projectRequire('abort-controller');
 function load(file, overrides = {}, globals = {}) {
+  overrides = { ...require('./test-cloud-fixtures.cjs').cloudFixtures(globals, overrides), ...overrides };
   const stagedFile = staged && path.join(staged, path.basename(file));
   const source = fs.readFileSync(stagedFile && fs.existsSync(stagedFile) ? stagedFile : path.join(root, file), 'utf8');
   const code = ts.transpileModule(source, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS } }).outputText;

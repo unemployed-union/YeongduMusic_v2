@@ -583,3 +583,69 @@ Android의 강제 중지·재부팅·배터리 관리에 의한 프로세스 종
 Mock 검사: `node scripts/check-hidden-feature-access.cjs`(15/5회 입력, 시간·화면 이동 초기화, 재시작·저장 실패·중복 입력, 버전 표기·일별 빌드 증가), `node scripts/check-hidden-playlists.cjs`(설정·플레이리스트 메뉴 표시와 직접 접근 차단, 기존 목록 필터·잠금 유지). 실제 기기에서는 버전 연속 터치와 저장 후 재시작, 지문·기기 암호 인증을 확인해야 합니다.
 
 2026-10-12 검증: TypeScript·ESLint(경고 없음), 위 검사 및 기존 숨김 음악·내비게이션 검사가 통과했습니다. Android Release 빌드에 `20261012A`가 실제 포함된 것을 APK에서 확인하고 연결된 삼성 휴대전화에 업데이트 설치했습니다. 15/5회 실제 터치와 iOS 기기 동작은 아직 확인하지 않았습니다.
+
+## AWS S3 및 S3 호환 저장소
+
+**설정 → 클라우드 연결 → S3 호환 저장소**에서 버킷과 읽기 자격 증명을 등록합니다.
+보관함의 음악 소스 메뉴에서 **S3** 또는 **전체 음악**을 선택하고, 아래로 당겨 목록을 갱신합니다.
+NAS 로그인 없이 기존 검색·앨범/아티스트·플레이리스트·대기열·미니/전체 플레이어·탐색·셔플/반복·백그라운드 재생을 사용합니다.
+재생 메뉴의 **이 기기에 보관**으로 내려받은 음악은 기존 로컬 파일 저장·중복 확인·삭제 기능을 사용합니다.
+
+### 연결 설정
+
+- **AWS S3:** 엔드포인트를 비우면 리전의 일반 S3 엔드포인트를 사용합니다. 버킷의 실제 리전과 버킷 이름을 입력합니다.
+- **S3 호환 서비스:** 서비스에서 안내하는 엔드포인트와 서명 리전을 입력합니다. MinIO, R2 등 특정 제품에서의 실제 동작은 아직 검증하지 않았습니다.
+- **Path-style:** `https://endpoint/bucket/key` 형태입니다. 해제하면 `https://bucket.endpoint/key`를 사용하므로 DNS·TLS가 이를 지원해야 합니다. IP 엔드포인트에는 Path-style을 사용하세요.
+- **접두사:** `music/`처럼 입력하면 해당 문자열로 시작하는 객체와 하위 경로를 조회합니다. 비우면 버킷 전체를 조회합니다. 폴더 자동 선택이나 버킷 전체 열거 권한은 요청하지 않습니다.
+- **자격 증명:** Access Key ID, Secret Access Key, 필요한 경우 Session Token을 입력합니다. 임시 토큰은 자동 갱신하지 않으며 만료 시 다시 연결합니다.
+- **권한:** [ListObjectsV2](https://docs.aws.amazon.com/AmazonS3/latest/API/API_ListObjectsV2.html)의 `s3:ListBucket`과 [GetObject](https://docs.aws.amazon.com/AmazonS3/latest/API/API_GetObject.html)의 `s3:GetObject`가 필요합니다. 쓰기·업로드·원본 삭제 API를 호출하지 않습니다.
+
+일반 버킷의 ListObjectsV2와 Signature V4 서명 GET URL을 사용하는 서비스가 대상입니다.
+S3 Express/Directory Bucket, Access Point ARN, Requester Pays, Glacier 복원, SSE-C 키 입력은 이번 구현에 포함하지 않습니다.
+엔드포인트의 사용자 정보·쿼리·추가 경로는 허용하지 않으며 HTTPS를 기본으로 사용합니다.
+HTTP는 사용자가 별도로 허용해야 하고 운영체제의 전송 보안 설정도 따라야 합니다.
+기본 음악 정보는 파일명과 상위 경로에서 만들며 S3의 내장 태그·앨범아트 추출은 구현하지 않았습니다.
+실제 재생 포맷과 Range 탐색 지원은 기기 디코더 및 저장소의 GetObject 응답에 따라 검증해야 합니다.
+경로 정규화로 다른 객체를 요청하지 않도록 `.` 또는 `..`만으로 된 경로 구간은 재생하지 않습니다.
+
+### 저장 및 공통 코드
+
+- S3 자격 증명은 `yeongdu-s3-connection-v1` SecureStore 항목에 저장합니다. 일반 Zustand 상태에는 자격 증명을 제외한 연결 정보만 노출합니다.
+- 서명에는 [AWS 공식 S3RequestPresigner](https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/javascript_s3_code_examples.html)와 JavaScript SHA-256을 사용합니다. 새 네이티브 모듈이나 서버를 추가하지 않았습니다.
+- 목록은 1,000개 객체 단위 페이지네이션으로 조회하고 화면 목록은 기존 가상화를 사용합니다. 전체 음악 목록은 실행 중 메모리에 보관합니다.
+- 곡 ID는 연결 지문과 객체 키로 구분하여 NAS·Drive·로컬 음악과 충돌하지 않습니다. 연결 지문은 Secret Key를 포함하지 않으며 접두사를 바꾸어도 같은 객체의 ID를 유지합니다.
+- 서명 URL은 재생·다운로드 직전에 생성하고 목록·플레이리스트·재생 복원 기록에 저장하지 않습니다. 재생 URL은 최대 24시간 유효하며 임시 자격 증명의 실제 만료가 더 빠를 수 있습니다. 오류 발생 시 새 서명 URL로 한 번 복구하고, 수동 재생 시 다시 발급합니다.
+- 연결 변경·해제 시 해당 S3 스트리밍 곡과 진행 중인 다운로드를 정리합니다. 완료된 로컬 복사본과 원본은 유지합니다. 연결 해제는 서버의 Access Key를 폐기하는 기능이 아닙니다.
+- `src/services/cloud-music/request.ts`: Google Drive와 S3가 요청 시작부터 인증 정보 취득·헤더·본문·파싱까지 동일한 타임아웃·취소 처리를 재사용합니다. 오디오 스트림 자체에는 이 15초 제한을 적용하지 않습니다.
+- `src/services/cloud-music/source.ts`: 재생 시작·재생 연결 복구·기기 다운로드가 `cloudStreamSource`로 현재 Drive/S3 스트림 소스를 얻습니다. 이 함수는 소스 선택만 담당하며 재생 대기열과 인증 상태를 변경하지 않습니다.
+- S3는 `connection.ts`(연결 정보 검증·연결 지문·서명 URL), `response.ts`(XML 검증·오류 해석·곡 모델 변환), `api.ts`(HTTP 요청·페이지네이션)로 책임을 나눕니다. 기존 `api.ts`의 공개 함수와 타입은 유지합니다.
+- `src/services/music-source.ts`: NAS/클라우드 음악 구분, 지원 오디오 확장자, 음악 소스 이름을 재사용합니다. NAS 숨김·인증 만료는 S3/Drive/로컬 재생에 적용하지 않습니다.
+- 연결 정보 교체·삭제는 직렬화하고 generation을 확인하여 오래된 로그인·복원·목록 결과가 새 연결을 덮어쓰거나 새 인증 정보를 삭제하지 않도록 합니다.
+
+### 검증
+
+`node scripts/check-s3.cjs`는 독립적인 Node crypto 계산으로 실제 SDK의 SigV4 서명을 비교하고 AWS/사용자 엔드포인트,
+Path/Virtual-host 주소·한글/특수문자 키·XML 검증·페이지네이션·오류·취소·본문 타임아웃·SecureStore 재시작/경쟁 상태,
+NAS 만료 중 S3 유지·혼합 대기열·탐색·공유 엔진·S3 다운로드를 Mock으로 확인합니다.
+`check-offline-music.cjs`는 기존 파일/SQLite 저장 코드로 S3 로컬 복사본의 출처 및 서명 URL 제외를 확인합니다.
+기존 검사는 `scripts/test-cloud-fixtures.cjs`의 S3 미연결 상태를 기본으로 사용하며 새 S3 검사는 실제 Store/API 코드를 별도로 실행합니다.
+
+실제 AWS 또는 S3 호환 서비스의 계정으로 연결·전체 목록·재생/탐색·긴 재생의 서명 만료·기기 다운로드·비행기 모드 재생·잠금화면/백그라운드를 확인해야 합니다.
+임시 토큰 만료·권한 거부·오프라인 새로고침·연결 해제와 재시작도 기기에서 확인하세요.
+별도 웹사이트의 개인정보처리방침에는 S3 자격 증명 보관, 선택한 저장소로의 직접 통신과 다운로드·삭제 동작을 반영해야 합니다.
+
+## 코드 책임 분리 및 회귀 검사
+
+- `features/library/refresh-music-library.ts`는 소스별 목록 갱신을 담당하고, `use-refresh-library.ts`는 화면 상태와 구독 수명을 관리합니다. 소스·계정·폴더·연결 generation이 바뀐 작업은 완료 안내나 NAS Query 캐시를 반영하지 않습니다.
+- `features/library/library-result.ts`는 NAS Query와 클라우드 저장소의 로딩·오류·오프라인 대체 결과를 화면용 상태로 변환합니다. `status`, `isPending`, `isError`, `isSuccess`를 함께 계산합니다.
+- `services/local-music/file-copy.ts`는 가져오기와 다운로드의 콘텐츠 지문·복사 검증·실패 정리를 공유합니다. 폴더 제외, 중복 처리, SQLite 등록은 기존 저장 모듈에서 유지합니다.
+- `features/startup/use-app-bootstrap.ts`는 초기화와 계정별 대기열 정리를, `use-playback-recovery.ts`는 재생 복구와 저장 구독을 담당합니다. Router 레이아웃에는 화면 구성과 준비 상태 표시를 둡니다.
+- `services/playback/sleep-timer.ts`는 타이머 종료 정책과 예약을 담당합니다. 컨트롤러가 엔진 정지 및 재생 요청 generation 변경을 적용하므로 대기 중인 곡이 타이머 종료 뒤 재생되지 않습니다.
+
+추가 검사:
+
+- `node scripts/check-library-state.cjs`: 새로고침 중 소스·계정·폴더 전환, 오래된 NAS 캐시 등록 차단, 언마운트, 실제 QueryObserver를 이용한 통합 상태 검사.
+- `node scripts/check-file-copy.cjs`: 파일 지문·복사 정책·해시 검증, SQLite 등록 실패·취소 시 정리, 원본 및 기존 복사본 보호.
+- `node scripts/check-startup-recovery.cjs`: 초기화 대기, 계정 범위, 복구 취소, 최신 사용자 대기열 우선, 재생 저장 구독 정리.
+
+모의 검사에는 실제 NAS·Drive·S3 계정이나 기기의 음악 파일을 사용하지 않습니다. 실기기의 파일 가져오기·다운로드, 앱 재시작·화면 재생성, 백그라운드 타이머는 별도로 확인해야 합니다.

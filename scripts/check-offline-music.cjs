@@ -6,6 +6,7 @@ const root = path.resolve(__dirname, '..');
 const ts = require(path.join(root, 'node_modules/typescript'));
 const { create } = require(path.join(root, 'node_modules/zustand'));
 function load(file, modules = {}) {
+  modules = { ...require('./test-cloud-fixtures.cjs').cloudFixtures({}, modules), ...modules };
   const code = ts.transpileModule(fs.readFileSync(path.join(root, file), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
   const mod = { exports: {} };
   new Function('require', 'module', 'exports', code)(name => {
@@ -73,11 +74,13 @@ const driveModule = {
     return { uri: 'https://www.googleapis.com/drive/v3/files/file?alt=media', headers: { Authorization: 'Bearer private-fixture-drive-token' } };
   },
 };
+const s3 = create(() => ({ generation: 1, connection: { id: 's3-fixture' } }));
+const s3Module = { useS3Store: s3, s3Source: async () => ({ uri: 'https://s3.example.invalid/music/song.mp3?X-Amz-Signature=fixture' }) };
 const formats = load('src/services/offline-music/formats.ts');
 const downloader = load('src/services/offline-music/download.ts', {
   'react-native': { Platform: platform }, 'expo-file-system/legacy': fileSystem,
   './formats': formats, '@/services/local-music/storage': storage,
-  '@/services/synology/api': realApi, '@/stores/auth': { useAuthStore: auth }, '@/stores/google-drive': driveModule,
+  '@/services/synology/api': realApi, '@/stores/auth': { useAuthStore: auth }, '@/stores/google-drive': driveModule, '@/stores/s3': s3Module,
 });
 const nas = { id: 'nas-song', source: 'nas', title: 'Offline song', artist: 'Artist', album: 'Album', albumSource: 'tag', albumArtist: 'Album Artist', duration: 180, trackNumber: 2, path: '/private/music/song.flac', artworkUrl: 'https://nas.example.invalid/cover?_sid=private-fixture-sid' };
 const cloud = { id: 'drive:fixture:file', source: 'drive', title: 'Cloud song', artist: 'Cloud artist', album: 'Google Drive', duration: 0, drive: { accountId: 'drive-account', fileId: 'file', mimeType: 'audio/mpeg' } };
@@ -115,6 +118,12 @@ async function main() {
   assert.equal(downloadedDrive.song.albumSource, 'fallback', 'Downloads without album provenance obey the folder-album setting');
   assert.equal(requests.at(-1).options.headers.Authorization, 'Bearer private-fixture-drive-token');
   assert.ok(!rows.get(downloadedDrive.song.id).includes('drive-account')); assert.ok(!rows.get(downloadedDrive.song.id).includes('Bearer'));
+  plan = { bytes: 'ID3s3 unique fixture' };
+  const s3Track = { ...cloud, id: 's3:s3-fixture:music%2Fsong.mp3', source: 's3', drive: undefined, s3: { connectionId: 's3-fixture', key: 'music/song.mp3', size: Buffer.byteLength(plan.bytes) } };
+  const s3Copy = await run(s3Track);
+  assert.equal(s3Copy.song.local.downloadedFrom, 's3');
+  assert.ok(!rows.get(s3Copy.song.id).includes('X-Amz')); assert.ok(!rows.get(s3Copy.song.id).includes('s3-fixture'));
+  assertNoParts();
   plan = [{ status: 401 }, { bytes: 'ID3new-token retry' }];
   await run(cloud); assert.deepEqual(refreshes.slice(-2), [false, true]);
   const count = rows.size;

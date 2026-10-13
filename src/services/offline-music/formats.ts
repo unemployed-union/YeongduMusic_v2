@@ -9,7 +9,7 @@ const extensions: Record<string, string> = {
 };
 export function audioExtension(song: Song, contentType: string): string {
   const mime = contentType.split(';')[0].trim().toLowerCase();
-  const name = song.source === 'drive' ? song.title : song.path ?? song.title;
+  const name = song.source === 's3' ? song.s3.key : song.source === 'drive' ? song.title : song.path ?? song.title;
   const suffix = name.match(/\.(mp3|m4a|flac|wav|aac|aiff|aif|ogg|opus|alac)$/i)?.[1].toLowerCase();
   // A 200 login/error page must never become an offline track.
   if (!mime.startsWith('audio/') && mime !== 'application/ogg' && mime !== 'application/octet-stream') {

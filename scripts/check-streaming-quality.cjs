@@ -7,6 +7,7 @@ const root = process.argv[2] ? path.resolve(process.argv[2]) : path.resolve(__di
 const projectRequire = createRequire(path.join(root, 'package.json'));
 const ts = projectRequire('typescript');
 function load(file, overrides = {}, globals = {}) {
+  overrides = { ...require('./test-cloud-fixtures.cjs').cloudFixtures(globals, overrides), ...overrides };
   const code = ts.transpileModule(fs.readFileSync(path.join(root, file), 'utf8'), { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS } }).outputText;
   const mod = { exports: {} };
   new Function('require', 'module', 'exports', ...Object.keys(globals), code)(name => name in overrides ? overrides[name] : projectRequire(name), mod, mod.exports, ...Object.values(globals));
