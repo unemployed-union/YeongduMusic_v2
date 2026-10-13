@@ -11,6 +11,8 @@ export default function SettingsScreen() {
     <SettingsSection title="앱 설정">
       <SettingsLink title="재생 및 화면" description="스트리밍 음질 · 앨범아트 · 이퀄라이저" icon="musical-notes-outline" href="/settings/playback" />
       <SettingsLink title="보관함" description="폴더 앨범 표시 · 기기 음악 제외 폴더" icon="library-outline" href="/settings/library" />
+      <SettingsLink title="설정 백업 및 복구" description="파일로 저장 · 백업 파일 가져오기" icon="save-outline" href="/settings/backup" />
+      <SettingsLink title="플레이리스트 백업 및 복구" description="목록과 곡 순서 저장 · 백업 파일 가져오기" icon="list-outline" href="/settings/playlist-backup" />
       {showOther && <SettingsLink title="기타" icon="ellipsis-horizontal-circle-outline" href="/settings/other" />}
     </SettingsSection>
     <SettingsSection title="정보">

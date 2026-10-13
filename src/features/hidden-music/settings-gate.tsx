@@ -1,5 +1,6 @@
 import { useCallback, useEffect, type ReactNode } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
+import { Text } from '@/components/text';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Redirect, useFocusEffect } from 'expo-router';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';

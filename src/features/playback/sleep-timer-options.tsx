@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { Text } from '@/components/text';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { cancelSleepTimer, startSleepTimer, stopAfterCurrentTrack } from '@/services/playback/controller';
 import { usePlaybackStore, type SleepTimerStopMode } from '@/stores/playback';

@@ -1,11 +1,13 @@
 import { useCallback, useEffect } from 'react';
-import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, StyleSheet, View } from 'react-native';
+import { Text } from '@/components/text';
 import { useFocusEffect } from 'expo-router';
 import Constants from 'expo-constants';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useHiddenFeatureAccess } from '@/stores/hidden-feature-access';
 import { useHiddenMusicStore } from '@/stores/hidden-music';
 import { useColors } from '@/theme/tokens';
+import { SETTINGS_MENU_ICON_INSET, settingsMenuStyles } from './settings-menu-layout';
 
 export function VersionSettings() {
   const colors = useColors();
@@ -22,8 +24,8 @@ export function VersionSettings() {
   }
   return <View>
     <Pressable accessibilityRole="button" accessibilityLabel={`버전 ${version}`} disabled={!ready || busy} onPress={() => void onPress()} style={styles.row}>
-      <View style={styles.icon}><Ionicons name="information-circle-outline" size={23} color={colors.tint} /></View>
-      <Text style={[styles.label, { color: colors.text }]}>버전</Text>
+      <View style={styles.icon}><Ionicons name="information-circle-outline" size={23} color={!ready || busy ? colors.muted : colors.tint} /></View>
+      <Text style={[styles.label, { color: !ready || busy ? colors.muted : colors.text }]}>버전</Text>
       <Text style={[styles.version, { color: colors.muted }]}>{version}</Text>
     </Pressable>
     {error && <Text accessibilityRole="alert" style={[styles.error, { color: colors.tint }]}>{error}</Text>}
@@ -31,7 +33,7 @@ export function VersionSettings() {
 }
 const styles = StyleSheet.create({
   // Match the visible icon's inset (a 23px glyph centered in a 28px slot).
-  row: { minHeight: 68, flexDirection: 'row', alignItems: 'center', gap: 18, padding: 15, paddingRight: 15 + (28 - 23) / 2 },
-  icon: { width: 28, height: 28, alignItems: 'center', justifyContent: 'center' },
+  row: { ...settingsMenuStyles.row, paddingRight: SETTINGS_MENU_ICON_INSET },
+  icon: settingsMenuStyles.icon,
   label: { flex: 1, fontSize: 16, fontWeight: '600' }, version: { fontSize: 14, flexShrink: 1 }, error: { fontSize: 12, lineHeight: 18, paddingHorizontal: 15, paddingBottom: 15 },
 });

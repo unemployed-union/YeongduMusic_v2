@@ -1,5 +1,6 @@
 import type { RefObject } from 'react';
-import { Pressable, StyleSheet, Text, View, useColorScheme } from 'react-native';
+import { Pressable, StyleSheet, View, useColorScheme } from 'react-native';
+import { Text } from '@/components/text';
 import { BlurView } from 'expo-blur';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';

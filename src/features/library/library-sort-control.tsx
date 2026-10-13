@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
+import { Text } from '@/components/text';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { PlaylistSheet } from '@/features/playlists/dialogs';
 import { useColors } from '@/theme/tokens';

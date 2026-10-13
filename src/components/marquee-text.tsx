@@ -1,5 +1,6 @@
 import { memo, useEffect, useState } from 'react';
-import { AppState, StyleSheet, Text, View, useWindowDimensions, type StyleProp, type TextStyle } from 'react-native';
+import { AppState, StyleSheet, View, useWindowDimensions, type StyleProp, type TextStyle } from 'react-native';
+import { Text } from '@/components/text';
 import Animated, { cancelAnimation, Easing, useAnimatedStyle, useReducedMotion, useSharedValue, withDelay, withRepeat, withTiming } from 'react-native-reanimated';
 
 /** Loop overflowing titles to the left using two identical, evenly spaced copies. */

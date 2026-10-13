@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { ActivityIndicator, Alert, Keyboard, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, Keyboard, Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { Text } from '@/components/text';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { router } from 'expo-router';
 import { discover, normalizeAddress } from '@/services/synology/api';
@@ -62,11 +63,11 @@ export function SynologySettings() {
     {isHttp && <Pressable onPress={() => setAllowHttp(!allowHttp)} style={styles.httpRow}><Ionicons name={allowHttp ? 'checkbox' : 'square-outline'} size={22} color={colors.tint} /><Text style={[styles.httpText, { color: colors.muted }]}>HTTP 연결 허용 · 비밀번호와 음악 데이터가 암호화되지 않습니다.</Text></Pressable>}
     {error && <Text style={styles.error}>{error}</Text>}
     {testResult && <Text style={[styles.feedback, { color: colors.tint }]}>{testResult}</Text>}
-    <Pressable disabled={busy || !validInput} onPress={() => void testAddress()} style={[styles.testButton, { borderColor: colors.separator, opacity: busy || !validInput ? 0.5 : 1 }]}><Text style={[styles.testText, { color: colors.tint }]}>연결 테스트</Text></Pressable>
-    <Pressable disabled={busy || !validInput} onPress={() => void changeAddress()} style={[styles.changeButton, { backgroundColor: colors.tint, opacity: busy || !validInput ? 0.5 : 1 }]}>{busy ? <ActivityIndicator color="white" /> : <Text style={styles.changeText}>주소 변경 후 다시 로그인</Text>}</Pressable>
+    <Pressable disabled={busy || !validInput} onPress={() => void testAddress()} style={[styles.testButton, { borderColor: colors.separator, opacity: busy || !validInput ? 0.5 : 1 }]}><Text style={[styles.testText, { color: busy || !validInput ? colors.muted : colors.tint }]}>연결 테스트</Text></Pressable>
+    <Pressable disabled={busy || !validInput} onPress={() => void changeAddress()} style={[styles.changeButton, { backgroundColor: busy || !validInput ? colors.separator : colors.tint }]}>{busy ? <ActivityIndicator color={colors.muted} /> : <Text style={[styles.changeText, !validInput && { color: colors.muted }]}>주소 변경 후 다시 로그인</Text>}</Pressable>
     <Text style={[styles.helper, { color: colors.muted }]}>주소를 바꾸면 현재 세션을 종료하고 새 주소에서 Synology 계정으로 다시 로그인합니다.</Text>
 
-    <Pressable disabled={busy} style={[styles.action, { borderBottomColor: colors.separator }]} onPress={leave}><Text style={[styles.actionText, { color: colors.tint }]}>{mode === 'mock' ? '데모 종료' : 'NAS 연결 해제'}</Text><Ionicons name="chevron-forward" size={19} color={colors.muted} /></Pressable>
+    <Pressable disabled={busy} style={[styles.action, { borderBottomColor: colors.separator }]} onPress={leave}><Text style={[styles.actionText, { color: busy ? colors.muted : colors.tint }]}>{mode === 'mock' ? '데모 종료' : 'NAS 연결 해제'}</Text><Ionicons name="chevron-forward" size={19} color={colors.muted} /></Pressable>
     <Text style={[styles.note, { color: colors.muted, marginTop: 24 }]}>보관함은 공용 music과 로그인한 계정의 개인 home/music을 함께 조회합니다. 음악은 선택한 NAS 주소에서 직접 스트리밍됩니다. 메타데이터는 최근 조회 목록을 기기에 저장합니다. HTTPS 인증서가 유효해야 연결할 수 있습니다.</Text>
   </>;
 }

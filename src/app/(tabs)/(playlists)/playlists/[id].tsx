@@ -1,6 +1,7 @@
 import { TabScrollEdgeFade } from '@/components/tab-scroll-edge-fade';
 import { useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, FlatList, Pressable, StyleSheet, View } from 'react-native';
+import { Text } from '@/components/text';
 import { router, useLocalSearchParams } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Artwork } from '@/components/artwork';

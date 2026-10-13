@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
+import { Text } from '@/components/text';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useStreamingPreferences } from '@/stores/streaming-preferences';
 import { useAuthStore } from '@/stores/auth';
@@ -21,12 +22,12 @@ export function StreamingQualitySettings() {
     <Text style={[styles.section, { color: colors.muted }]}>스트리밍 음질</Text>
     <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.separator }]} accessibilityRole="radiogroup">
       {options.map((option, index) => <Pressable key={option.value} accessibilityRole="radio" accessibilityState={{ checked: preferences.quality === option.value, disabled }} disabled={disabled} onPress={() => { if (preferences.quality !== option.value) void preferences.setQuality(option.value).catch(() => {}); }} style={[styles.option, index > 0 && { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.separator }, { opacity: !preferences.ready || preferences.loading ? 0.6 : 1 }]}>
-        <View style={styles.copy}><Text style={[styles.title, { color: colors.text }]}>{option.title}</Text><Text style={[styles.description, { color: colors.muted }]}>{option.description}</Text></View>
-        <Ionicons name={preferences.quality === option.value ? 'radio-button-on' : 'radio-button-off'} size={24} color={preferences.quality === option.value ? colors.tint : colors.muted} />
+        <View style={styles.copy}><Text style={[styles.title, { color: disabled ? colors.muted : colors.text }]}>{option.title}</Text><Text style={[styles.description, { color: colors.muted }]}>{option.description}</Text></View>
+        <Ionicons name={preferences.quality === option.value ? 'radio-button-on' : 'radio-button-off'} size={24} color={!disabled && preferences.quality === option.value ? colors.tint : colors.muted} />
       </Pressable>)}
     </View>
     {preferences.loading && !preferences.ready && <ActivityIndicator style={styles.progress} color={colors.tint} accessibilityLabel="음질 설정 불러오는 중" />}
-    {preferences.error && <View style={styles.feedback}><Text style={{ color: colors.tint }}>{preferences.error}</Text><Pressable accessibilityRole="button" disabled={disabled} onPress={() => void load()}><Text style={[styles.retry, { color: colors.tint }]}>다시 불러오기</Text></Pressable></View>}
+    {preferences.error && <View style={styles.feedback}><Text style={{ color: colors.tint }}>{preferences.error}</Text><Pressable accessibilityRole="button" disabled={disabled} onPress={() => void load()}><Text style={[styles.retry, { color: disabled ? colors.muted : colors.tint }]}>다시 불러오기</Text></Pressable></View>}
     <Text style={[styles.helper, { color: colors.muted }]}>변경한 음질은 다음 곡을 불러올 때 적용됩니다. MP3 변환에는 NAS의 변환 지원이 필요하며, 원본보다 음질이 높아지지는 않습니다. 변환 재생이 안 되면 원본으로 바꿔 주세요.</Text>
     {mode === 'mock' && <Text style={[styles.helper, { color: colors.muted }]}>데모 음원에는 음질 변환이 적용되지 않습니다.</Text>}
   </View>;

@@ -1,6 +1,7 @@
 import { ScrollEdgeFade } from '@/components/scroll-edge-fade';
 import { useRef, useState } from 'react';
-import { ActivityIndicator, Keyboard, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Keyboard, Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { Text } from '@/components/text';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';

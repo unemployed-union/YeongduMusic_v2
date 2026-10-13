@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { Pressable, StyleSheet, type SwitchProps } from 'react-native';
 import Animated, { interpolateColor, ReduceMotion, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
+import { useColors } from '@/theme/tokens';
 
 type Props = Pick<SwitchProps, 'value' | 'disabled' | 'onValueChange' | 'accessibilityLabel'> & {
   trackColor?: { false?: string; true?: string };
@@ -9,9 +10,10 @@ type Props = Pick<SwitchProps, 'value' | 'disabled' | 'onValueChange' | 'accessi
 };
 
 export function AnimatedSwitch({ value = false, disabled = false, onValueChange, accessibilityLabel, trackColor, thumbColor = '#FFFFFF', ios_backgroundColor }: Props) {
+  const colors = useColors();
   const progress = useSharedValue(value ? 1 : 0);
-  const off = trackColor?.false ?? ios_backgroundColor ?? '#E1E1E6';
-  const on = trackColor?.true ?? '#FA5376';
+  const off = disabled ? colors.separator : trackColor?.false ?? ios_backgroundColor ?? '#E1E1E6';
+  const on = disabled ? colors.muted : trackColor?.true ?? '#FA5376';
   useEffect(() => {
     progress.value = withTiming(value ? 1 : 0, { duration: 180, reduceMotion: ReduceMotion.System });
   }, [value, progress]);
@@ -19,9 +21,9 @@ export function AnimatedSwitch({ value = false, disabled = false, onValueChange,
   const thumb = useAnimatedStyle(() => ({ transform: [{ translateX: progress.value * 22 }] }));
   return <Pressable accessibilityRole="switch" accessibilityLabel={accessibilityLabel}
     accessibilityState={{ checked: value, disabled }} disabled={disabled}
-    onPress={() => onValueChange?.(!value)} style={styles.touch}>
+    onPress={() => { if (!disabled) onValueChange?.(!value); }} style={styles.touch}>
     <Animated.View style={[styles.track, track]} pointerEvents="none">
-      <Animated.View style={[styles.thumb, { backgroundColor: thumbColor }, thumb]} />
+      <Animated.View style={[styles.thumb, { backgroundColor: disabled ? '#C7C7CC' : thumbColor }, thumb]} />
     </Animated.View>
   </Pressable>;
 }

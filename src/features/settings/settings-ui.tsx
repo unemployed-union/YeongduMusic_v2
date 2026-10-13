@@ -1,11 +1,13 @@
 import { Children, type ComponentProps, type ReactNode } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
+import { Text } from '@/components/text';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { router, type Href } from 'expo-router';
 import { ScrollEdgeFade } from '@/components/scroll-edge-fade';
 import { useColors } from '@/theme/tokens';
+import { settingsMenuStyles } from './settings-menu-layout';
 
 export function SettingsPage({ children }: { children: ReactNode }) {
   const colors = useColors();
@@ -26,13 +28,13 @@ export function SettingsSection({ title, children }: { title: string; children: 
   </View>;
 }
 
-export function SettingsLink({ title, description, icon, href }: {
-  title: string; description?: string; icon: ComponentProps<typeof Ionicons>['name']; href: Href;
+export function SettingsLink({ title, description, icon, href, disabled = false }: {
+  title: string; description?: string; icon: ComponentProps<typeof Ionicons>['name']; href: Href; disabled?: boolean;
 }) {
   const colors = useColors();
-  return <Pressable accessibilityRole="button" onPress={() => router.push(href)} style={({ pressed }) => [styles.row, { opacity: pressed ? 0.55 : 1 }]}>
-    <View style={styles.icon}><Ionicons name={icon} size={23} color={colors.tint} /></View>
-    <View style={styles.copy}><Text style={[styles.title, { color: colors.text }]}>{title}</Text>
+  return <Pressable accessibilityRole="button" accessibilityState={{ disabled }} disabled={disabled} onPress={() => { if (!disabled) router.push(href); }} style={({ pressed }) => [styles.row, { opacity: pressed ? 0.55 : 1 }]}>
+    <View style={styles.icon}><Ionicons name={icon} size={23} color={disabled ? colors.muted : colors.tint} /></View>
+    <View style={styles.copy}><Text style={[styles.title, { color: disabled ? colors.muted : colors.text }]}>{title}</Text>
       {!!description && <Text numberOfLines={2} style={[styles.description, { color: colors.muted }]}>{description}</Text>}
     </View><Ionicons name="chevron-forward" size={19} color={colors.muted} />
   </Pressable>;
@@ -43,8 +45,8 @@ const styles = StyleSheet.create({
   section: { marginBottom: 24 },
   heading: { fontSize: 12, fontWeight: '800', letterSpacing: 1.2, marginBottom: 12, marginTop: 8 },
   group: { borderWidth: 1, borderRadius: 15, overflow: 'hidden' },
-  row: { minHeight: 68, flexDirection: 'row', alignItems: 'center', gap: 18, padding: 15 },
-  icon: { width: 28, height: 28, alignItems: 'center', justifyContent: 'center' },
+  row: settingsMenuStyles.row,
+  icon: settingsMenuStyles.icon,
   copy: { flex: 1 }, title: { fontSize: 16, fontWeight: '600' },
   description: { fontSize: 12, lineHeight: 18, marginTop: 5 },
 });

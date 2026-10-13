@@ -18,6 +18,9 @@ const playlistRules = load('src/features/playlists/rules.ts');
 const db = new DatabaseSync(':memory:');
 let failedWrite = false, authFailure = false, authDelay = null, authCalls = 0;
 const storage = load('src/services/hidden-music/storage.ts', {
+  '@/components/text': { Text: 'Text' },
+  '@/components/text': { Text: 'Text' },
+  '@/components/text': { Text: 'Text' },
   'react-native': { Platform: { OS: 'android' } }, '@/features/hidden-music/rules': rules,
   'expo-sqlite': { openDatabaseAsync: async () => ({
     execAsync: async sql => db.exec(sql),
@@ -41,6 +44,9 @@ const jsx = (type, props) => ({ type, props });
 const uiModules = {
   react: { useState: initial => [initial, () => {}], useMemo: fn => fn(), useCallback: fn => fn, useEffect: () => {} },
   'react/jsx-runtime': { jsx, jsxs: jsx },
+  '@/components/text': { Text: 'Text' },
+  '@/components/text': { Text: 'Text' },
+  '@/components/text': { Text: 'Text' },
   'react-native': { ...Object.fromEntries(nativeNames.map(name => [name, name])), Alert: { alert: () => {} }, Platform: { OS: 'android' }, StyleSheet: { create: x => x, absoluteFill: {}, hairlineWidth: 1 } },
   'expo-router': { Redirect: 'Redirect', router: { push: () => {}, replace: () => {} }, useLocalSearchParams: () => ({ id: 'private' }), useFocusEffect: fn => { cleanup = fn(); } },
   'react-native-safe-area-context': { useSafeAreaInsets: () => ({ bottom: 0 }) },
@@ -51,6 +57,7 @@ const uiModules = {
   '@/components/animated-switch': { AnimatedSwitch: 'Switch' },
   '@/components/screen-header': { ScreenHeader: 'ScreenHeader' }, '@/components/settings-button': { SettingsButton: 'SettingsButton' },
   '@/components/list-loading': { ListLoading: 'ListLoading' },
+  '@/features/settings/quick-hide-settings': { QuickHideSettings: 'QuickHideSettings' },
   '@/components/artwork': { Artwork: 'Artwork' }, '@/components/async-state': { AsyncState: 'AsyncState' },
   '@/theme/tokens': { useColors: () => colors }, '@/stores/hidden-music': { useHiddenMusicStore: selectPrivacy },
   '@/stores/playlists': { usePlaylistStore: () => playlistState },
@@ -117,7 +124,10 @@ async function main() {
   featureAccess.ready = true; featureAccess.enabled = true;
   const Settings = load('src/app/settings.tsx', {
     ...uiModules,
-    'react-native': { ...uiModules['react-native'], Keyboard: { dismiss: () => {} } },
+    '@/components/text': { Text: 'Text' },
+  '@/components/text': { Text: 'Text' },
+  '@/components/text': { Text: 'Text' },
+  'react-native': { ...uiModules['react-native'], Keyboard: { dismiss: () => {} } },
     'react-native-keyboard-controller': { KeyboardAwareScrollView: 'KeyboardAwareScrollView' },
     '@/features/playback/streaming-quality-settings': { StreamingQualitySettings: 'StreamingQualitySettings' },
     '@/features/playback/playback-options-settings': { PlaybackOptionsSettings: 'PlaybackOptionsSettings' },
@@ -173,6 +183,13 @@ async function main() {
   assert.equal(privacy.getState().profile.presets.length, 1);
   privacy.setState({ ready: false }); assert.equal(flatList(List()), undefined); assert.equal(flatList(Detail()), undefined);
   assert.ok(!nodes(Gate({ children: marker })).includes(marker));
+  await privacy.getState().load(null);
+  playlistState = { ...playlistState, scope: null, profile: { version: 1, presets: [{ id: 'device', name: 'Device', songIds: ['song'] }] } };
+  const deviceList = flatList(List());
+  assert.deepEqual(deviceList.props.data.map(preset => preset.id), ['device']);
+  const createButton = nodes(deviceList.props.ListHeaderComponent).find(node => node.type === 'Pressable' && text(node).includes('플레이리스트 만들기'));
+  assert.equal(createButton.props.disabled, false, 'NAS-free playlists can be created from the list screen');
+  assert.ok(text(Dialog({ songs: [{ id: 'song', source: 'local' }], onClose: () => {} })).includes('Device'), 'NAS-free songs can use the existing add dialog');
   assert.ok(authCalls > 0);
   console.log('PASS: playlist hide/unhide, SQLite restart/account persistence, legacy profile migration, corrupt data and disk failures; shared lock/cancel/late authentication, manager relocking, list/add-dialog filtering and hidden direct-route protection. Native biometrics/UI and NAS are mocked.');
 }

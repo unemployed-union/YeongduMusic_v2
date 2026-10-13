@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { emptyPlaylists, playlistName } from '@/features/playlists/rules';
+import { emptyPlaylists, parsePlaylists, playlistName, playlistStorageScope } from '@/features/playlists/rules';
 import { readPlaylists, writePlaylists } from '@/services/playlists/storage';
 import type { PlaylistProfile, PlaylistPreset } from '@/types/playlists';
 
@@ -12,18 +12,19 @@ type State = {
   removeSong: (id: string, songId: string) => Promise<void>;
   moveSong: (id: string, songId: string, direction: -1 | 1, visibleOrder?: string[]) => Promise<void>;
   removePreset: (id: string) => Promise<void>;
+  restoreProfile: (profile: PlaylistProfile, scope: string | null) => Promise<void>;
 };
 let generation = 0;
 let writes: Promise<void> = Promise.resolve();
 export const usePlaylistStore = create<State>((set, get) => {
   async function persist(change: (profile: PlaylistProfile) => PlaylistProfile) {
     const state = get();
-    if (!state.ready || !state.scope) throw new Error('플레이리스트를 먼저 불러와 주세요.');
+    if (!state.ready) throw new Error('플레이리스트를 먼저 불러와 주세요.');
     if (state.busy) throw new Error('저장 중입니다. 잠시 후 다시 시도해 주세요.');
     const profile = change(state.profile);
     const current = generation;
     set({ busy: true, error: null });
-    const operation = writes.catch(() => {}).then(() => writePlaylists(state.scope!, profile));
+    const operation = writes.catch(() => {}).then(() => writePlaylists(playlistStorageScope(state.scope), profile));
     writes = operation;
     try {
       await operation;
@@ -48,7 +49,7 @@ export const usePlaylistStore = create<State>((set, get) => {
       try {
         await writes.catch(() => {});
         if (current !== generation) return;
-        const profile = scope ? await readPlaylists(scope) : emptyPlaylists();
+        const profile = await readPlaylists(playlistStorageScope(scope));
         if (current === generation) set({ profile, ready: true });
       } catch (error) {
         if (current === generation) set({ error: error instanceof Error ? error.message : '플레이리스트를 불러오지 못했습니다.' });
@@ -80,5 +81,10 @@ export const usePlaylistStore = create<State>((set, get) => {
       return { ...item, songIds };
     }),
     removePreset: (id) => persist((profile) => ({ ...profile, presets: profile.presets.filter((item) => item.id !== id) })),
+    restoreProfile: (profile, scope) => {
+      if (get().scope !== scope) return Promise.reject(new Error('계정이 변경되었습니다. 현재 계정의 백업을 선택해 주세요.'));
+      const clean = parsePlaylists(JSON.stringify(profile));
+      return persist(() => clean);
+    },
   };
 });

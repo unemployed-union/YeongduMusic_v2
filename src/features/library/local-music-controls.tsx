@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from 'react';
-import { ActivityIndicator, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Text } from '@/components/text';
 import { router } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { PlaylistSheet } from '@/features/playlists/dialogs';
@@ -34,7 +35,7 @@ export function LocalMusicControls({ sortControl }: { sortControl?: ReactNode })
     </View>
     {local.busy && !storing && <Text accessibilityLiveRegion="polite" style={{ color: colors.muted, fontSize: 12 }}>음악 가져오는 중 · {local.processed}개 확인</Text>}
     {(local.source === 'local' || local.source === 'all') && !local.songs.length && !local.busy && <Pressable onPress={() => setOpen(true)}><Text style={{ color: colors.muted, fontSize: 12 }}>음악 소스 메뉴에서 기기 음악을 가져오세요.</Text></Pressable>}
-    {local.source === 'drive' && <View style={{ gap: 8 }}>{drive.loading && <ActivityIndicator color={colors.tint} />}{(!drive.account || !drive.folder) && <Pressable accessibilityRole="button" onPress={() => router.push('/settings/cloud/google-drive')}><Text style={{ color: colors.tint }}>{drive.account ? 'Google Drive 음악 폴더 선택하기' : 'Google Drive 연결하기'}</Text></Pressable>}{drive.error && <Text style={{ color: colors.tint, fontSize: 12 }}>{drive.error}</Text>}</View>}
+    {local.source === 'drive' && <View style={{ gap: 8 }}>{drive.loading && <ActivityIndicator color={colors.tint} />}{(!drive.account || !drive.folders.length) && <Pressable accessibilityRole="button" onPress={() => router.push('/settings/cloud/google-drive')}><Text style={{ color: colors.tint }}>{drive.account ? 'Google Drive 음악 폴더 선택하기' : 'Google Drive 연결하기'}</Text></Pressable>}{drive.error && <Text style={{ color: colors.tint, fontSize: 12 }}>{drive.error}</Text>}</View>}
     <DownloadStatus />
     {notice && <Text style={{ color: colors.tint, fontSize: 12 }}>{notice}</Text>}
     {local.message && <Text style={{ color: colors.muted, fontSize: 12 }}>{local.message}</Text>}

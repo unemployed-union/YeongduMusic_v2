@@ -37,7 +37,7 @@ export function useRefreshLibrary() {
         await queryClient.invalidateQueries({ queryKey: ['local-library'] });
         if (driveFailed) return; // Drive's own retry notice keeps the previous list visible.
         const drive = useGoogleDriveStore.getState();
-        setMessage(!drive.account ? '설정에서 Google Drive를 연결해 주세요.' : !drive.folder ? '설정에서 Google Drive 음악 폴더를 선택해 주세요.' : 'Google Drive 음악 목록을 불러왔습니다.');
+        setMessage(!drive.account ? '설정에서 Google Drive를 연결해 주세요.' : !drive.folders.length ? '설정에서 Google Drive 음악 폴더를 선택해 주세요.' : 'Google Drive 음악 목록을 불러왔습니다.');
         return;
       }
       await useLocalMusicStore.getState().load();

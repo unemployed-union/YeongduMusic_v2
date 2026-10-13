@@ -7,6 +7,9 @@ const jsx = (type, props) => ({ type, props });
 const modules = {
   react: { memo: fn => fn, useState: initial => { const index = slot++; if (states[index] === undefined) states[index] = initial; return [states[index], value => { states[index] = value; }]; }, useEffect: fn => effects.push(fn) },
   'react/jsx-runtime': { jsx, jsxs: jsx },
+  '@/components/text': { Text: 'Text' },
+  '@/components/text': { Text: 'Text' },
+  '@/components/text': { Text: 'Text' },
   'react-native': { AppState: { currentState: 'active', addEventListener: (_, listener) => { appListener = listener; return { remove() {} }; } }, View: 'View', Text: 'Text', StyleSheet: { create: value => value }, useWindowDimensions: () => ({ fontScale: 1 }) },
   'react-native-reanimated': { default: { View: 'AnimatedView' }, __esModule: true, cancelAnimation: () => {}, Easing: { linear: 'linear' }, useReducedMotion: () => reduced, useSharedValue: () => shared, useAnimatedStyle: fn => fn(), withTiming: (to, options) => ({ to, options }), withRepeat: (animation, count, reverse) => ({ animation, count, reverse }), withDelay: (delay, animation) => ({ delay, animation }) },
 };

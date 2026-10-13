@@ -1,6 +1,7 @@
 import { ScrollEdgeFade } from '@/components/scroll-edge-fade';
 import { useMemo, useState } from 'react';
-import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native';
+import { ActivityIndicator, FlatList, Pressable, StyleSheet, TextInput, View, useWindowDimensions } from 'react-native';
+import { Text } from '@/components/text';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Artwork } from '@/components/artwork';
 import { useSongs } from '@/features/library/queries';

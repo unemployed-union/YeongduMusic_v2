@@ -6,7 +6,7 @@ const root = path.resolve(__dirname, '..');
 const ts = require(path.join(root, 'node_modules/typescript'));
 const { create } = require(path.join(root, 'node_modules/zustand'));
 function load(file, modules = {}, globals = {}) {
-  const code = ts.transpileModule(fs.readFileSync(path.join(root, file), 'utf8'), { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS } }).outputText;
+  const code = ts.transpileModule(fs.readFileSync(path.join(root, file), 'utf8'), { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText;
   const mod = { exports: {} };
   new Function('require', 'module', 'exports', ...Object.keys(globals), code)(name => {
     if (name in modules) return modules[name];
@@ -72,7 +72,7 @@ async function main() {
     return response(calls.length === 1 ? { files: [file('one'), { ...file('no-download'), capabilities: { canDownload: false } }], nextPageToken: 'page2' }
       : { files: [file('one'), { ...file('two', 'Lossless.flac'), mimeType: 'application/octet-stream' }, { ...file('not-audio', 'image.png'), mimeType: 'image/png' }] });
   });
-  const tracks = await client.loadDriveSongs('A', 'music', async () => 'fixture');
+  const tracks = await client.loadDriveSongs('A', ['music'], async () => 'fixture');
   assert.equal(tracks.length, 2); assert.equal(tracks[1].title, 'Lossless'); assert.equal(tracks[0].source, 'drive');
   assert.equal(calls[1].searchParams.get('pageToken'), 'page2'); assert.equal(calls[0].searchParams.get('pageSize'), '200');
   assert.match(calls[0].searchParams.get('q'), /trashed = false/); assert.ok(!calls[0].href.includes('fixture'));
@@ -81,12 +81,12 @@ async function main() {
   assert.ok(client.driveMediaUrl('unsafe/id').endsWith('/unsafe%2Fid?alt=media'));
   let attempts = 0;
   const refreshed = api(async (_, options) => { attempts++; return attempts === 1 ? response({}, 401) : response({ files: [] }); });
-  await refreshed.loadDriveSongs('A', 'music', async old => { if (old) rejected.push(old); return old ? 'new' : 'old'; });
+  await refreshed.loadDriveSongs('A', ['music'], async old => { if (old) rejected.push(old); return old ? 'new' : 'old'; });
   assert.equal(attempts, 2); assert.deepEqual(rejected, ['old']);
-  for (const status of [403, 404, 429, 520]) await assert.rejects(api(async () => response({}, status)).loadDriveSongs('A', 'music', async () => 'fixture'), error => error.status === status);
-  await assert.rejects(api(async () => response({ files: null })).loadDriveSongs('A', 'music', async () => 'fixture'), /예상하지/);
-  await assert.rejects(api(async () => ({ ok: true, status: 200, text: async () => 'not JSON' })).loadDriveSongs('A', 'music', async () => 'fixture'), /응답/);
-  await assert.rejects(api(async () => response({ files: [], nextPageToken: 'repeated' })).loadDriveSongs('A', 'music', async () => 'fixture'), /반복/);
+  for (const status of [403, 404, 429, 520]) await assert.rejects(api(async () => response({}, status)).loadDriveSongs('A', ['music'], async () => 'fixture'), error => error.status === status);
+  await assert.rejects(api(async () => response({ files: null })).loadDriveSongs('A', ['music'], async () => 'fixture'), /예상하지/);
+  await assert.rejects(api(async () => ({ ok: true, status: 200, text: async () => 'not JSON' })).loadDriveSongs('A', ['music'], async () => 'fixture'), /응답/);
+  await assert.rejects(api(async () => response({ files: [], nextPageToken: 'repeated' })).loadDriveSongs('A', ['music'], async () => 'fixture'), /반복/);
   let timer, clears = 0;
   const body = deferred(), header = deferred();
   const slow = api(async () => { header.resolve(); return { ok: true, status: 200, text: () => body.promise }; }, { setTimeout: callback => { timer = callback; return 1; }, clearTimeout: () => { clears++; } });
@@ -111,18 +111,44 @@ async function main() {
     assert.ok(q.startsWith("'child' in parents"), 'Must never list outside the selected subtree');
     return response({ files: [file('nested'), folder('music'), file('top')] }); // Duplicate and cyclic folder metadata.
   }, {}, false);
-  const scopedSongs = await scoped.loadDriveSongs('A', 'music', async () => 'fixture');
+  const scopedSongs = await scoped.loadDriveSongs('A', ['music'], async () => 'fixture');
   assert.deepEqual(scopedSongs.map(song => song.drive.fileId), ['top', 'second', 'nested']);
   assert.equal(scopedCalls.length, 4, 'Folder metadata + two root pages + one child page');
+  const multiLists = [], multiLookups = [];
+  const multi = api(async url => {
+    const request = new URL(url), id = request.pathname.split('/').at(-1);
+    if (!request.searchParams.has('q')) { multiLookups.push(id); return response(folder(id)); }
+    const parent = request.searchParams.get('q').match(/^'([^']+)' in parents/)[1];
+    multiLists.push(parent);
+    const pages = {
+      music: [file('shared'), folder('child')],
+      other: [file('other-song'), file('shared'), folder('grandchild')],
+      child: [file('nested'), folder('grandchild')],
+      grandchild: [file('deep')],
+    };
+    assert.ok(parent in pages, 'Multiple selection must remain scoped to selected trees');
+    return response({ files: pages[parent] });
+  }, {}, false);
+  const multiSongs = await multi.loadDriveSongs('A', ['music', 'other', 'child', 'music'], async () => 'fixture');
+  assert.deepEqual(multiLookups, ['music', 'other', 'child'], 'Duplicate selections need only one validation');
+  assert.deepEqual(multiLists, ['music', 'other', 'child', 'grandchild'], 'Selected descendants and shared subfolders are scanned once');
+  assert.deepEqual(multiSongs.map(song => song.drive.fileId), ['shared', 'other-song', 'nested', 'deep']);
+  let invalidLists = 0;
+  await assert.rejects(api(async url => {
+    const request = new URL(url);
+    if (request.searchParams.has('q')) { invalidLists++; return response({ files: [] }); }
+    return request.pathname.endsWith('/deleted') ? response({}, 404) : response(folder('music'));
+  }, {}, false).loadDriveSongs('A', ['music', 'deleted'], async () => 'fixture'), error => error.status === 404);
+  assert.equal(invalidLists, 0, 'All selected roots must be valid before publishing a combined library');
   let unselectedRequests = 0;
-  await assert.rejects(api(async () => { unselectedRequests++; return response({}); }).loadDriveSongs('A', '', async () => 'fixture'), /폴더를 선택/);
+  await assert.rejects(api(async () => { unselectedRequests++; return response({}); }).loadDriveSongs('A', [], async () => 'fixture'), /폴더를 선택/);
   assert.equal(unselectedRequests, 0);
   for (const data of [{ ...folder(), trashed: true }, { ...folder(), mimeType: 'audio/mpeg' }]) {
     let lookup = 0;
-    await assert.rejects(api(async () => { lookup++; return response(data); }, {}, false).loadDriveSongs('A', 'music', async () => 'fixture'), /폴더/);
+    await assert.rejects(api(async () => { lookup++; return response(data); }, {}, false).loadDriveSongs('A', ['music'], async () => 'fixture'), /폴더/);
     assert.equal(lookup, 1, 'Invalid selection must not fall back to whole Drive');
   }
-  await assert.rejects(api(async () => response({}, 404), {}, false).loadDriveSongs('A', 'music', async () => 'fixture'), error => error.status === 404);
+  await assert.rejects(api(async () => response({}, 404), {}, false).loadDriveSongs('A', ['music'], async () => 'fixture'), error => error.status === 404);
   const browsed = [];
   const browse = api(async url => { browsed.push(new URL(url)); return response({ files: [folder('child'), file('ignored')], nextPageToken: 'folders2' }); });
   const browsePage = await browse.loadDriveFolderPage('root', async () => 'fixture');
@@ -133,15 +159,15 @@ async function main() {
   assert.match(browsed[0].searchParams.get('q'), /mimeType = 'application\/vnd.google-apps.folder'/);
   const traversalAbort = new AbortController(); let traversed = 0;
   const interrupted = api(async () => { traversed++; traversalAbort.abort(); return response({ files: [folder('child')] }); });
-  await assert.rejects(interrupted.loadDriveSongs('A', 'music', async () => 'fixture', traversalAbort.signal), /취소/);
+  await assert.rejects(interrupted.loadDriveSongs('A', ['music'], async () => 'fixture', traversalAbort.signal), /취소/);
   assert.equal(traversed, 1, 'Cancelled traversal must not fetch descendants');
   console.log('PASS: parent-scoped recursive library, folder/page deduplication, no global fallback, deleted/invalid folder, paginated folder browser, query escaping and traversal cancellation.');
 
   const h = harness(); await h.store.getState().bootstrap(); assert.equal(h.store.getState().account, null); assert.equal(h.calls.includes('in'), false);
   await h.store.getState().connect(); assert.equal(h.store.getState().account.id, 'A'); assert.equal(h.store.getState().songs.length, 0);
-  assert.equal(h.store.getState().folder, null, 'Login must not scan the entire Drive');
-  await h.store.getState().selectFolder({ id: 'music', name: 'Music' }); assert.equal(h.store.getState().songs.length, 1);
-  assert.equal(JSON.parse(h.stored).folder.id, 'music');
+  assert.deepEqual(h.store.getState().folders, [], 'Login must not scan the entire Drive');
+  await h.store.getState().selectFolders([{ id: 'music', name: 'Music' }]); assert.equal(h.store.getState().songs.length, 1);
+  assert.equal(JSON.parse(h.stored).folders[0].id, 'music');
   assert.equal(JSON.parse(h.stored).accessToken, 'fixture-token');
   assert.equal('idToken' in JSON.parse(h.stored), false);
   assert.ok(!('webClientId' in h.options), 'Android does not request an unused backend ID token');
@@ -170,7 +196,7 @@ async function main() {
   assert.equal(h.playback.queue[0].title, 'Tagged title'); assert.equal(h.playback.position, 42); assert.equal(h.playback.playing, true);
   h.metadataGate = null; h.metadataSongs = null;
   const staleMetadata = harness(); await staleMetadata.store.getState().connect();
-  await staleMetadata.store.getState().selectFolder({ id: 'music', name: 'Music' });
+  await staleMetadata.store.getState().selectFolders([{ id: 'music', name: 'Music' }]);
   const staleGate = deferred(); staleMetadata.metadataGate = staleGate;
   staleMetadata.metadataSongs = [{ ...staleMetadata.store.getState().songs[0], title: 'Old account metadata' }];
   await staleMetadata.store.getState().refresh();
@@ -181,26 +207,59 @@ async function main() {
   assert.equal(staleMetadata.playback, undefined, 'Old metadata cannot update a queue after disconnect');
   await h.module.driveSource(h.store.getState().songs[0], true); assert.equal(h.calls.some(call => call.startsWith('clear:')), true);
   const restored = harness(h.stored); restored.nativeUser = h.nativeUser; await restored.store.getState().bootstrap(); assert.equal(restored.store.getState().account.id, 'A');
-  assert.equal(restored.store.getState().folder.id, 'music'); assert.equal(restored.store.getState().songs.length, 1);
+  assert.equal(restored.store.getState().folders[0].id, 'music'); assert.equal(restored.store.getState().songs.length, 1);
+  const oldFolder = harness(JSON.stringify({ id: 'A', email: 'fixture@example.invalid', folder: { id: 'music', name: 'Old Music' } })); oldFolder.nativeUser = h.nativeUser;
+  await oldFolder.store.getState().bootstrap();
+  assert.equal(oldFolder.store.getState().folders[0].id, 'music'); assert.equal(oldFolder.store.getState().songs.length, 1);
+  assert.deepEqual(JSON.parse(oldFolder.stored).folders, [{ id: 'music', name: 'Old Music' }]);
+  assert.equal('folder' in JSON.parse(oldFolder.stored), false, 'Legacy selection is rewritten in the new format');
+  const several = harness(); await several.store.getState().connect();
+  await several.store.getState().selectFolders([{ id: 'music', name: 'One' }, { id: 'other', name: 'Two' }, { id: 'music', name: 'Duplicate' }]);
+  assert.deepEqual(several.store.getState().folders.map(item => item.id), ['music', 'other']);
+  assert.equal(several.store.getState().songs.length, 1, 'The same file from multiple folders is deduplicated');
+  const severalRestored = harness(several.stored); severalRestored.nativeUser = several.nativeUser;
+  await severalRestored.store.getState().bootstrap();
+  assert.deepEqual(severalRestored.store.getState().folders.map(item => item.id), ['music', 'other']);
+  await severalRestored.store.getState().accessToken('A', 'fixture-token');
+  assert.deepEqual(JSON.parse(severalRestored.stored).folders.map(item => item.id), ['music', 'other']);
+  await severalRestored.store.getState().selectFolders([{ id: 'other', name: 'Two' }]);
+  assert.deepEqual(JSON.parse(severalRestored.stored).folders.map(item => item.id), ['other']);
+  await severalRestored.store.getState().selectFolders([]);
+  assert.deepEqual(severalRestored.store.getState().folders, []); assert.deepEqual(severalRestored.store.getState().songs, []);
+  assert.deepEqual(JSON.parse(severalRestored.stored).folders, []);
+  const emptyRestored = harness(severalRestored.stored); emptyRestored.nativeUser = severalRestored.nativeUser;
+  await emptyRestored.store.getState().bootstrap(); assert.deepEqual(emptyRestored.store.getState().songs, []);
+  const savedSeveral = several.stored, songsBeforeFailure = several.store.getState().songs;
+  several.writeFails = true;
+  await assert.rejects(several.store.getState().selectFolders([{ id: 'new', name: 'New' }, { id: 'other', name: 'Two' }]));
+  assert.equal(several.stored, savedSeveral); assert.equal(several.store.getState().songs, songsBeforeFailure);
+  assert.deepEqual(several.store.getState().folders.map(item => item.id), ['music', 'other']);
+  several.writeFails = false;
+  await assert.rejects(several.store.getState().selectFolders([{ id: 'root', name: 'All Drive' }]), /폴더 정보/);
+  for (const folders of [null, {}, [null], [{ id: '', name: 'Invalid' }]]) {
+    const malformed = harness(JSON.stringify({ id: 'A', email: 'fixture@example.invalid', folders })); malformed.nativeUser = h.nativeUser;
+    await malformed.store.getState().bootstrap(); assert.equal(malformed.store.getState().account, null); assert.match(malformed.store.getState().error, /폴더 정보/);
+  }
+  console.log('PASS: multiple roots/overlapping descendants, combined file deduplication, deleted root isolation, persisted multi-selection/token refresh, single-folder migration, remove/clear/restart and failed-write preservation.');
   const legacy = harness(JSON.stringify({ id: 'A', email: 'fixture@example.invalid' })); legacy.nativeUser = h.nativeUser;
-  await legacy.store.getState().bootstrap(); assert.equal(legacy.store.getState().folder, null); assert.equal(legacy.store.getState().songs.length, 0);
+  await legacy.store.getState().bootstrap(); assert.deepEqual(legacy.store.getState().folders, []); assert.equal(legacy.store.getState().songs.length, 0);
   const oldPage = deferred(); h.listGate = oldPage; h.listFiles = [file('old-song')];
   const oldRefresh = h.store.getState().refresh(); await until(() => h.store.getState().loading);
   h.listGate = null; h.listFiles = [file('new-song')];
-  await h.store.getState().selectFolder({ id: 'new-folder', name: 'New Music' }); oldPage.resolve(); await oldRefresh;
-  assert.equal(h.store.getState().folder.id, 'new-folder'); assert.equal(JSON.parse(h.stored).folder.id, 'new-folder');
+  await h.store.getState().selectFolders([{ id: 'new-folder', name: 'New Music' }]); oldPage.resolve(); await oldRefresh;
+  assert.equal(h.store.getState().folders[0].id, 'new-folder'); assert.equal(JSON.parse(h.stored).folders[0].id, 'new-folder');
   assert.deepEqual(h.store.getState().songs.map(song => song.drive.fileId), ['new-song']);
-  await h.store.getState().accessToken('A'); assert.equal(JSON.parse(h.stored).folder.id, 'new-folder', 'Token refresh preserves selection');
+  await h.store.getState().accessToken('A'); assert.equal(JSON.parse(h.stored).folders[0].id, 'new-folder', 'Token refresh preserves selection');
   h.writeFails = true;
-  await assert.rejects(h.store.getState().selectFolder({ id: 'failed-folder', name: 'Failed' }));
-  assert.equal(h.store.getState().folder.id, 'new-folder'); assert.equal(JSON.parse(h.stored).folder.id, 'new-folder'); h.writeFails = false;
+  await assert.rejects(h.store.getState().selectFolders([{ id: 'failed-folder', name: 'Failed' }]));
+  assert.equal(h.store.getState().folders[0].id, 'new-folder'); assert.equal(JSON.parse(h.stored).folders[0].id, 'new-folder'); h.writeFails = false;
   const lateBootstrap = harness(h.stored); lateBootstrap.nativeUser = h.nativeUser; lateBootstrap.silentGate = deferred();
   const restoring = lateBootstrap.store.getState().bootstrap(); await until(() => lateBootstrap.calls.includes('silent'));
   const leaving = lateBootstrap.store.getState().disconnect(); lateBootstrap.silentGate.resolve(); await Promise.all([restoring, leaving]);
   assert.equal(lateBootstrap.store.getState().account, null); assert.equal(lateBootstrap.stored, null);
   const mismatch = harness(h.stored); mismatch.nativeUser = { user: { id: 'B', email: 'fixture@example.invalid' } }; await mismatch.store.getState().bootstrap(); assert.equal(mismatch.store.getState().account, null);
   await h.store.getState().disconnect(); assert.equal(h.store.getState().account, null); assert.equal(h.stored, null); assert.equal(h.store.getState().songs.length, 0);
-  assert.equal(h.store.getState().folder, null);
+  assert.deepEqual(h.store.getState().folders, []);
   await assert.rejects(h.module.driveSource(tracks[0]), /변경/);
   const cancelledSignIn = harness(); cancelledSignIn.selection = 'cancel'; await cancelledSignIn.store.getState().connect(); assert.equal(cancelledSignIn.store.getState().account, null); assert.equal(cancelledSignIn.stored, null);
   const old = harness(); old.signInGate = deferred(); const login = old.store.getState().connect(); await until(() => old.calls.includes('in'));
@@ -208,15 +267,15 @@ async function main() {
   const race = harness(); race.writeGate = deferred(); const first = race.store.getState().connect(); await until(() => race.calls.includes('write'));
   race.selection = 'B'; const newer = race.store.getState().connect(); race.writeGate.resolve(); await Promise.all([first, newer]); assert.equal(race.store.getState().account.id, 'B'); assert.equal(JSON.parse(race.stored).id, 'B');
   const folderRace = harness(); await folderRace.store.getState().connect(); const previousWrites = folderRace.calls.filter(call => call === 'write').length;
-  folderRace.writeGate = deferred(); const selectingOldFolder = folderRace.store.getState().selectFolder({ id: 'old-account-folder', name: 'Old Account' });
+  folderRace.writeGate = deferred(); const selectingOldFolder = folderRace.store.getState().selectFolders([{ id: 'old-account-folder', name: 'Old Account' }]);
   await until(() => folderRace.calls.filter(call => call === 'write').length > previousWrites);
   folderRace.selection = 'B'; const changingAccount = folderRace.store.getState().connect(); folderRace.writeGate.resolve();
   await Promise.all([selectingOldFolder, changingAccount]);
-  assert.equal(folderRace.store.getState().account.id, 'B'); assert.equal(folderRace.store.getState().folder, null);
-  assert.equal(JSON.parse(folderRace.stored).id, 'B'); assert.equal(JSON.parse(folderRace.stored).folder ?? null, null);
-  const delayedList = harness(); await delayedList.store.getState().connect(); delayedList.listGate = deferred(); const listing = delayedList.store.getState().selectFolder({ id: 'music', name: 'Music' }); await until(() => delayedList.store.getState().loading);
+  assert.equal(folderRace.store.getState().account.id, 'B'); assert.deepEqual(folderRace.store.getState().folders, []);
+  assert.equal(JSON.parse(folderRace.stored).id, 'B'); assert.deepEqual(JSON.parse(folderRace.stored).folders ?? [], []);
+  const delayedList = harness(); await delayedList.store.getState().connect(); delayedList.listGate = deferred(); const listing = delayedList.store.getState().selectFolders([{ id: 'music', name: 'Music' }]); await until(() => delayedList.store.getState().loading);
   await delayedList.store.getState().disconnect(); delayedList.listGate.resolve(); await listing; assert.equal(delayedList.store.getState().songs.length, 0);
-  assert.equal(delayedList.store.getState().folder, null); assert.equal(delayedList.stored, null);
+  assert.deepEqual(delayedList.store.getState().folders, []); assert.equal(delayedList.stored, null);
   console.log('PASS: no scan before folder selection, persisted selection/restart and token refresh, legacy-account migration, stale-folder results, failed writes, account-change race and disconnect cleanup.');
   const failedRevoke = harness(); await failedRevoke.store.getState().connect(); failedRevoke.revokeFails = true; await failedRevoke.store.getState().disconnect(); assert.equal(failedRevoke.stored, null); assert.match(failedRevoke.store.getState().error, /권한 철회/);
   const failedDelete = harness(); await failedDelete.store.getState().connect(); failedDelete.deleteFails = true; await failedDelete.store.getState().disconnect(); assert.equal(failedDelete.nativeUser, null); assert.match(failedDelete.store.getState().error, /삭제/);
@@ -335,5 +394,101 @@ async function main() {
   assert.equal(hooks.useAlbums().select(page).items[0].songCount, 2); assert.equal(hooks.useRawSongLibrary().select(page).total, 1);
   queryResult = { isError: false, data: { items: tracks, total: 2 } }; driveState.error = 'Google fixture error'; assert.equal(hooks.useSongs().isRefetchError, true);
   console.log('PASS: source filters, shared search/albums, raw NAS isolation and Drive retry errors. Google Cloud OAuth, actual audio decoding/Range/seek/background and native UI require device verification. No real accounts/files were accessed.');
+  await checkFolderPicker();
+}
+
+async function checkFolderPicker() {
+  const jsx = (type, props) => ({ type, props });
+  let slots = [], slot = 0, closed = 0, saveGate = null, saveFails = false, nextPages = 0;
+  const saves = [], music = { id: 'music', name: 'Music' }, other = { id: 'other', name: 'Other' }, child = { id: 'child', name: 'Child' };
+  const state = {
+    account: { id: 'A' }, generation: 1, folders: [], folderSaving: false,
+    selectFolders: async folders => {
+      state.folderSaving = true; saves.push([...folders]);
+      try {
+        if (saveGate) await saveGate.promise;
+        if (saveFails) throw Error('Google 폴더 저장 실패');
+        state.folders = [...folders];
+      } finally { state.folderSaving = false; }
+    },
+  };
+  const useStore = Object.assign(selector => selector ? selector(state) : state, { getState: () => state });
+  const modules = {
+    react: { useState: initial => {
+      const index = slot++;
+      if (!(index in slots)) slots[index] = typeof initial === 'function' ? initial() : initial;
+      return [slots[index], value => { slots[index] = typeof value === 'function' ? value(slots[index]) : value; }];
+    } },
+    'react/jsx-runtime': { jsx, jsxs: jsx },
+    'react-native': { View: 'View', Text: 'Text', Pressable: 'Pressable', FlatList: 'FlatList', ActivityIndicator: 'Spinner', Alert: {} },
+    '@/components/text': { Text: 'Text' },
+    '@expo/vector-icons/Ionicons': { default: 'Icon', __esModule: true },
+    '@/features/playlists/dialogs': { PlaylistSheet: 'Sheet' },
+    '@/services/google-drive/api': {},
+    '@/stores/google-drive': { useGoogleDriveStore: useStore },
+    '@/theme/tokens': { useColors: () => ({ tint: 'tint', muted: 'muted', text: 'text', separator: 'separator' }) },
+    '@tanstack/react-query': { useInfiniteQuery: options => ({
+      data: { pages: options.queryKey[3] === 'root' ? [{ folders: [music, other] }, { folders: [music] }] : [{ folders: [child] }], pageParams: [undefined] },
+      isPending: false, hasNextPage: true, fetchNextPage: async () => { nextPages++; },
+    }) },
+  };
+  const { DriveFolderPicker } = load('src/features/google-drive/folder-picker.tsx', modules);
+  function render() { slot = 0; return DriveFolderPicker({ onClose: () => { closed++; } }); }
+  function nodes(node) {
+    if (Array.isArray(node)) return node.flatMap(nodes);
+    if (!node || typeof node !== 'object') return [];
+    const children = node.type === 'FlatList'
+      ? [node.props.ListHeaderComponent, ...node.props.data.map(item => node.props.renderItem({ item })), node.props.ListFooterComponent]
+      : node.props?.children;
+    return [node, ...nodes(children)];
+  }
+  const textOf = node => nodes(node).filter(item => item.type === 'Text').map(item => [item.props.children].flat().join('')).join(' ');
+  const labelled = (tree, label) => nodes(tree).find(node => node.props?.accessibilityLabel === label);
+  const saveButton = tree => nodes(tree).filter(node => node.type === 'Pressable').at(-1);
+  let tree = render();
+  assert.equal(saveButton(tree).props.disabled, true);
+  assert.equal(nodes(tree).filter(node => node.props?.accessibilityLabel === 'Music 폴더 선택').length, 1, 'Repeated folder pages show one checkbox');
+  labelled(tree, 'Music 폴더 선택').props.onPress(); tree = render();
+  assert.equal(labelled(tree, 'Music 폴더 선택').props.accessibilityState.checked, true);
+  labelled(tree, 'Other 폴더 열기').props.onPress(); tree = render();
+  labelled(tree, 'Child 폴더 선택').props.onPress(); tree = render();
+  assert.ok(textOf(tree).includes('선택한 폴더 2개'));
+  labelled(tree, 'Other 폴더 전체 선택').props.onPress(); tree = render();
+  assert.equal(labelled(tree, 'Other 폴더 전체 선택').props.accessibilityState.checked, true);
+  labelled(tree, 'Other 선택 해제').props.onPress(); tree = render();
+  labelled(tree, '상위 폴더').props.onPress(); tree = render();
+  assert.equal(labelled(tree, 'Music 폴더 선택').props.accessibilityState.checked, true, 'Selection survives folder navigation');
+  const list = nodes(tree).find(node => node.type === 'FlatList' && !node.props.horizontal);
+  assert.deepEqual(list.props.extraData.map(folder => folder.id), ['music', 'child']);
+  list.props.ListFooterComponent.props.onPress(); assert.equal(nextPages, 1);
+  assert.equal(saves.length, 0, 'Checking and browsing do not persist until confirmed');
+  tree.props.onClose(); assert.equal(closed, 1); assert.deepEqual(state.folders, []);
+  slots = []; tree = render(); assert.equal(saveButton(tree).props.disabled, true, 'Closing discards unconfirmed selection');
+  labelled(tree, 'Music 폴더 선택').props.onPress(); tree = render();
+  labelled(tree, 'Other 폴더 선택').props.onPress(); tree = render();
+  saveGate = deferred(); saveButton(tree).props.onPress(); tree = render();
+  assert.equal(saveButton(tree).props.disabled, true);
+  assert.equal(labelled(tree, 'Music 폴더 선택').props.disabled, true);
+  assert.equal(labelled(tree, 'Other 폴더 열기').props.disabled, true);
+  assert.equal(labelled(tree, 'Music 선택 해제').props.disabled, true);
+  assert.equal(closed, 1);
+  saveGate.resolve(); await until(() => closed === 2); saveGate = null;
+  assert.deepEqual(saves[0].map(folder => folder.id), ['music', 'other']);
+  slots = []; tree = render();
+  assert.equal(labelled(tree, 'Music 폴더 선택').props.accessibilityState.checked, true, 'Reopening preselects saved folders');
+  labelled(tree, 'Music 선택 해제').props.onPress(); tree = render();
+  labelled(tree, 'Other 선택 해제').props.onPress(); tree = render();
+  assert.equal(saveButton(tree).props.disabled, false); assert.ok(textOf(saveButton(tree)).includes('폴더 선택 해제'));
+  saveButton(tree).props.onPress(); await until(() => closed === 3); assert.deepEqual(state.folders, []);
+  slots = []; tree = render(); labelled(tree, 'Music 폴더 선택').props.onPress(); tree = render();
+  saveFails = true; saveButton(tree).props.onPress(); await tick(); tree = render();
+  assert.equal(closed, 3); assert.ok(textOf(tree).includes('Google 폴더 저장 실패'));
+  assert.equal(labelled(tree, 'Music 폴더 선택').props.accessibilityState.checked, true, 'Failed save keeps the draft for retry');
+  saveFails = false; saveButton(tree).props.onPress(); await until(() => closed === 4);
+  modules['./folder-picker'] = { DriveFolderPicker: 'Picker' };
+  const { GoogleDriveSettings } = load('src/features/google-drive/settings.tsx', modules);
+  slots = []; slot = 0; state.folders = [music, other];
+  assert.ok(textOf(GoogleDriveSettings()).includes('음악 폴더 2개: Music, Other'));
+  console.log('PASS: real folder-picker handlers: independent check/navigation, pagination deduplication, cross-folder draft, cancel, preselection, apply/clear, busy controls and failed-save retry; multi-folder settings summary. Native views are mocked.');
 }
 main().catch(error => { console.error(error); process.exitCode = 1; });

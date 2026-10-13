@@ -1,4 +1,5 @@
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
+import { Text } from '@/components/text';
 import { useColors } from '@/theme/tokens';
 
 export function AsyncState({ loading, error, retry, empty, children }: { loading?: boolean; error?: string | null; retry?: () => void; empty?: boolean; children: React.ReactNode }) {

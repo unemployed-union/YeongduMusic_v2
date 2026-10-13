@@ -84,11 +84,14 @@ export async function readDriveFolder(id: string, token: TokenProvider, signal?:
   }
   return { id, name: data.name };
 }
-export async function loadDriveSongs(accountId: string, folderId: string, token: TokenProvider, signal?: AbortSignal): Promise<Song[]> {
-  await readDriveFolder(folderId, token, signal);
-  const songs = new Map<string, Song>(), visitedFolders = new Set([folderId]), folders = [folderId];
+export async function loadDriveSongs(accountId: string, folderIds: string[], token: TokenProvider, signal?: AbortSignal): Promise<Song[]> {
+  const folders = [...new Set(folderIds)];
+  if (!folders.length) throw new DriveRequestError('Google Drive 음악 폴더를 선택해 주세요.');
+  for (const id of folders) await readDriveFolder(id, token, signal);
+  const songs = new Map<string, Song>(), visitedFolders = new Set(folders);
   const audioQuery = "mimeType contains 'audio/' or " + ['mp3', 'm4a', 'flac', 'wav', 'aac', 'ogg', 'opus', 'aif', 'aiff', 'alac'].map(ext => "name contains '." + ext + "'").join(' or ');
-  // Only walk the selected subtree. Folder shortcuts are not followed.
+  // Share visited IDs across all selected subtrees, including overlapping roots.
+  // Folder shortcuts are not followed.
   for (let index = 0; index < folders.length; index++) {
     const query = parentQuery(folders[index]) + " and trashed = false and (mimeType = '" + FOLDER_MIME + "' or " + audioQuery + ')';
     const visitedPages = new Set<string>();

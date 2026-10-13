@@ -23,6 +23,9 @@ const jsx = (type, props) => ({ type, props });
 const modules = {
   react: { memo: fn => fn, useCallback: fn => fn, useMemo: (fn, deps) => { if (!memo || deps.some((value, index) => value !== memo.deps[index])) memo = { deps, value: fn() }; return memo.value; } },
   'react/jsx-runtime': { jsx, jsxs: jsx },
+  '@/components/text': { Text: 'Text' },
+  '@/components/text': { Text: 'Text' },
+  '@/components/text': { Text: 'Text' },
   'react-native': { FlatList: 'FlatList', View: 'View', Text: 'Text', Pressable: 'Pressable', RefreshControl: 'RefreshControl', StyleSheet: { create: value => value, hairlineWidth: 1 } },
   'expo-router': { router: { push() {} } }, '@expo/vector-icons/Ionicons': 'Ionicons',
   '@/components/tab-scroll-edge-fade': { TabScrollEdgeFade: 'ScrollEdgeFade' }, '@/components/artwork': { Artwork: 'Artwork' },

@@ -1,8 +1,10 @@
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
+import { Text } from '@/components/text';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { AnimatedSwitch } from '@/components/animated-switch';
 import { useLibraryPreferences } from '@/stores/library-preferences';
 import { useColors } from '@/theme/tokens';
+import { settingsMenuStyles } from '@/features/settings/settings-menu-layout';
 
 export function AlbumDisplaySettings() {
   const colors = useColors();
@@ -10,9 +12,9 @@ export function AlbumDisplaySettings() {
   const busy = !preferences.ready || preferences.loading || preferences.saving;
   return <View>
     <View style={styles.row}>
-      <View style={styles.icon}><Ionicons name="albums-outline" size={23} color={colors.tint} /></View>
+      <View style={styles.icon}><Ionicons name="albums-outline" size={23} color={busy ? colors.muted : colors.tint} /></View>
       <View style={styles.copy}>
-        <Text style={[styles.title, { color: colors.text }]}>폴더를 앨범으로 표시</Text>
+        <Text style={[styles.title, { color: busy ? colors.muted : colors.text }]}>폴더를 앨범으로 표시</Text>
         <Text style={[styles.hint, { color: colors.muted }]}>NAS·Google Drive·로컬 음악의 앨범 태그가 없는 곡도 폴더명이나 기본 이름으로 표시합니다. 끄면 앨범 태그가 확인된 곡만 앨범 목록에 표시하며, 모든 곡은 노래 목록에서 계속 볼 수 있습니다.</Text>
         <Text style={[styles.hint, { color: colors.muted }]}>기존 NAS 목록은 보관함을 새로고침하면 앨범 태그를 정확하게 구분할 수 있습니다.</Text>
       </View>
@@ -23,14 +25,14 @@ export function AlbumDisplaySettings() {
     {preferences.error && <View style={styles.feedback}>
       <Text accessibilityRole="alert" style={{ color: colors.tint }}>{preferences.error}</Text>
       <Pressable accessibilityRole="button" disabled={busy} onPress={() => void preferences.load(true)} style={styles.retry}>
-        <Text style={{ color: colors.tint, fontWeight: '700' }}>다시 불러오기</Text>
+        <Text style={{ color: busy ? colors.muted : colors.tint, fontWeight: '700' }}>다시 불러오기</Text>
       </Pressable>
     </View>}
   </View>;
 }
 const styles = StyleSheet.create({
-  row: { minHeight: 68, flexDirection: 'row', alignItems: 'center', gap: 12, padding: 15 },
-  icon: { width: 28, height: 28, alignItems: 'center', justifyContent: 'center' }, copy: { flex: 1 },
+  row: settingsMenuStyles.row,
+  icon: settingsMenuStyles.icon, copy: { flex: 1 },
   title: { fontSize: 16, fontWeight: '600' }, hint: { fontSize: 12, lineHeight: 18, marginTop: 6 },
   feedback: { paddingHorizontal: 15, paddingBottom: 15 }, retry: { minHeight: 44, justifyContent: 'center' },
 });

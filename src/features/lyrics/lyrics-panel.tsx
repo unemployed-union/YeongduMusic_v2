@@ -1,7 +1,8 @@
 import { LyricsEdgeFade } from './lyrics-edge-fade';
 import { memo, useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
-import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
+import { ActivityIndicator, FlatList, Pressable, StyleSheet, View } from 'react-native';
+import { Text } from '@/components/text';
+import { createAnimatedComponent, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useActiveLyricIndex } from './use-active-lyric-index';
 import { useLyrics } from './use-lyrics';
@@ -13,6 +14,7 @@ import type { Song } from '@/types/music';
 const sources: { value: LyricsSource; label: string }[] = [
   { value: 'auto', label: '자동' }, { value: 'nas', label: 'NAS' }, { value: 'online', label: '온라인' },
 ];
+const AnimatedText = createAnimatedComponent(Text);
 
 const LyricRow = memo(function LyricRow({ line, active, past, synced, seekable, onSeek }: {
   line: LyricLine; active: boolean; past: boolean; synced: boolean; seekable: boolean; onSeek: (time: number) => void;
@@ -21,7 +23,7 @@ const LyricRow = memo(function LyricRow({ line, active, past, synced, seekable, 
   useEffect(() => { opacity.set(withTiming(synced ? active ? 1 : past ? 0.5 : 0.3 : 0.9, { duration: active ? 80 : 180 })); }, [active, opacity, past, synced]);
   const animatedStyle = useAnimatedStyle(() => ({ opacity: opacity.get() }));
   return <Pressable disabled={!seekable} accessibilityRole={seekable ? 'button' : 'text'} accessibilityLabel={line.text || '간주'} accessibilityHint={seekable ? '이 가사가 시작되는 위치로 이동' : undefined} accessibilityState={synced ? { selected: active } : undefined} onPress={() => { if (line.time !== null) onSeek(line.time); }} style={styles.row}>
-    <Animated.Text style={[styles.lyric, animatedStyle]}>{line.text || '···'}</Animated.Text>
+    <AnimatedText style={[styles.lyric, animatedStyle]}>{line.text || '···'}</AnimatedText>
   </Pressable>;
 });
 

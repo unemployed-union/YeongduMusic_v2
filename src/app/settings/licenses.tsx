@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
-import { FlatList, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { FlatList, Platform, Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { Text } from '@/components/text';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { ScrollEdgeFade } from '@/components/scroll-edge-fade';

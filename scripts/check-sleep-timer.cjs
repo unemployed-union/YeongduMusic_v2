@@ -220,7 +220,8 @@ async function main() {
     const { SleepTimerOptions } = h.load('src/features/playback/sleep-timer-options.tsx', {
       react: { useState: initial => { const index = slot++; if (index >= values.length) values.push(initial); return [values[index], value => { values[index] = value; }]; } },
       'react/jsx-runtime': { jsx, jsxs: jsx },
-      'react-native': { Pressable: 'Button', View: 'View', Text: 'Text', TextInput: 'Input', StyleSheet: { create: value => value, hairlineWidth: 1 } },
+      '@/components/text': { Text: 'Text' },
+  'react-native': { Pressable: 'Button', View: 'View', Text: 'Text', TextInput: 'Input', StyleSheet: { create: value => value, hairlineWidth: 1 } },
       '@expo/vector-icons/Ionicons': 'Icon',
       '@/services/playback/controller': h.controller,
       '@/stores/playback': { usePlaybackStore: select => select(h.playback.getState()) },

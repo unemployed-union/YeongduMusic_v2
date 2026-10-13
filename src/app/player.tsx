@@ -3,7 +3,8 @@ import { PlayerMenu, type PlayerMenuAction } from '@/features/playback/player-me
 import { ScrollEdgeFade } from '@/components/scroll-edge-fade';
 import { useCallback, useRef, useState } from 'react';
 import { BlurTargetView } from 'expo-blur';
-import { ActivityIndicator, Alert, BackHandler, FlatList, Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { ActivityIndicator, Alert, BackHandler, FlatList, Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { Text } from '@/components/text';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router, useFocusEffect, type Href } from 'expo-router';
 import { albumId } from '@/features/library/album-library';

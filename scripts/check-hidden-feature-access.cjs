@@ -12,14 +12,15 @@ function load(file, modules) {
   new Function('require', 'exports', code)(name => { if (name in modules) return modules[name]; throw new Error('Unexpected module: ' + name); }, exports);
   return exports;
 }
-let stored = null, failRead = false, failWrite = false, releaseWrite, delayedWrite = false, writes = 0;
+let stored = null, quickHideStored = null, failRead = false, failWrite = false, releaseWrite, delayedWrite = false, writes = 0;
 const storage = {
-  getItemAsync: async () => { if (failRead) throw new Error('locked'); return stored; },
+  getItemAsync: async key => { if (failRead) throw new Error('locked'); return key.includes('quick-hide') ? quickHideStored : stored; },
   setItemAsync: async (_key, value) => {
     writes++;
     if (delayedWrite) await new Promise(resolve => { releaseWrite = resolve; });
     if (failWrite) throw new Error('disk');
-    stored = value;
+    if (_key.includes('quick-hide')) quickHideStored = value;
+    else stored = value;
   },
 };
 function freshStore() {
@@ -77,6 +78,7 @@ async function main() {
       '@/stores/hidden-feature-access': { useHiddenFeatureAccess: hook },
       '@/stores/hidden-music': { useHiddenMusicStore: { getState: () => ({ lock: () => { locked++; } }) } },
       '@/theme/tokens': { useColors: () => ({ text: '#fff', muted: '#aaa', separator: '#333', tint: '#f48' }) },
+      './settings-menu-layout': { settingsMenuStyles: { row: {}, icon: {} }, SETTINGS_MENU_ICON_INSET: 17.5 },
     }).VersionSettings;
     const tree = Component();
     assert.ok(nodes(tree).some(node => node.type === 'Text' && node.props.children === '20261012C'));

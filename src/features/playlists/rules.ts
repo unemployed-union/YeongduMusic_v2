@@ -1,6 +1,9 @@
 import type { PlaylistProfile, PlaylistPreset } from '@/types/playlists';
 import type { Song } from '@/types/music';
 
+// Preserve NAS/demo scopes; playlists without a NAS account belong to this device.
+export const playlistStorageScope = (scope: string | null): string => scope ?? 'device';
+
 export const emptyPlaylists = (): PlaylistProfile => ({ version: 1, presets: [] });
 export function visiblePlaylists(presets: readonly PlaylistPreset[], hiddenIds: readonly string[] = []): PlaylistPreset[] {
   const hidden = new Set(hiddenIds);

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { Text } from '@/components/text';
 import { ScreenHeader } from '@/components/screen-header';
 import { SettingsButton } from '@/components/settings-button';
 import { LIBRARY_TABS, LibraryPage, type LibraryTab } from '@/features/library/library-page';
@@ -37,7 +38,7 @@ export default function LibraryScreen() {
   }
 
   return <View style={[styles.screen, { backgroundColor: colors.background }]}>
-    <ScreenHeader title="보관함" action={<SettingsButton />} />
+    <ScreenHeader title="보관함" action={<SettingsButton />} bottomSpacing={8} />
     <LocalMusicControls sortControl={<LibrarySortControl tab={tab} order={sortOrders[tab]} onChange={(order) => setSortOrders((current) => ({ ...current, [tab]: order }))} />} />
     <View style={styles.segments}>{LIBRARY_TABS.map((option) => <Pressable key={option} accessibilityRole="tab" accessibilityState={{ selected: tab === option }} onPress={() => selectTab(option)} style={[styles.segment, { backgroundColor: tab === option ? colors.tint : colors.surface, borderColor: tab === option ? colors.tint : colors.separator }]}><Text style={{ color: tab === option ? 'white' : colors.text, fontWeight: '700' }}>{option === 'albums' ? '앨범' : option === 'songs' ? '노래' : '아티스트'}</Text></Pressable>)}</View>
     {(refreshState.refreshing || refreshState.error || refreshState.message) && <Pressable accessibilityRole="button" disabled={!refreshState.error || refreshState.refreshing} onPress={() => void refreshState.refresh()} style={styles.refreshNotice}><Text style={{ color: refreshState.error ? colors.tint : colors.muted }}>{refreshState.refreshing ? (mode === 'mock' ? '데모 목록 확인 중…' : 'Audio Station 목록을 가져오는 중…') : refreshState.error ? refreshState.error + ' · 다시 시도' : refreshState.message}</Text></Pressable>}
@@ -68,4 +69,4 @@ export default function LibraryScreen() {
   </View>;
 }
 
-const styles = StyleSheet.create({ screen: { flex: 1 }, segments: { flexDirection: 'row', gap: 8, paddingHorizontal: 22, marginTop: 5, marginBottom: 16 }, segment: { borderWidth: 1, borderRadius: 18, paddingHorizontal: 18, paddingVertical: 8 }, refreshNotice: { paddingHorizontal: 22, paddingBottom: 12 }, pager: { flex: 1 }, pages: { alignItems: 'stretch' } });
+const styles = StyleSheet.create({ screen: { flex: 1 }, segments: { flexDirection: 'row', gap: 8, paddingHorizontal: 22, marginTop: 5, marginBottom: 16 }, segment: { borderWidth: 1, borderRadius: 18, paddingHorizontal: 18, paddingVertical: 8 }, refreshNotice: { paddingHorizontal: 22, paddingBottom: 4 }, pager: { flex: 1 }, pages: { alignItems: 'stretch' } });

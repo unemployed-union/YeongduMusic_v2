@@ -10,9 +10,9 @@ const KEY = 'yeongdu-google-drive-v1';
 type Account = { id: string; email: string };
 type State = {
   ready: boolean; busy: boolean; loading: boolean; progress: string | null; account: Account | null; songs: Song[]; error: string | null; generation: number;
-  folder: DriveFolder | null; folderSaving: boolean;
+  folders: DriveFolder[]; folderSaving: boolean;
   metadataLoading: boolean; metadataWarning: string | null;
-  selectFolder: (folder: DriveFolder) => Promise<void>;
+  selectFolders: (folders: DriveFolder[]) => Promise<void>;
   bootstrap: () => Promise<void>; connect: () => Promise<void>; disconnect: () => Promise<void>; refresh: () => Promise<void>;
   cancelConnection: () => void;
   accessToken: (accountId: string, rejectedToken?: string) => Promise<string>;
@@ -40,6 +40,14 @@ function message(error: unknown): string {
   if (error && typeof error === 'object' && 'code' in error && error.code === 'ASYNC_OP_IN_PROGRESS') return 'Google 인증 요청이 아직 진행 중입니다. Google 인증 창을 닫은 뒤 다시 시도해 주세요. 계속되면 앱을 완전히 종료하고 다시 열어 주세요.';
   return error instanceof Error && (error.message.startsWith('Google') || error.message.startsWith('예상하지')) ? error.message : 'Google 연결을 확인할 수 없습니다. 로그인 설정과 네트워크를 확인한 뒤 다시 시도해 주세요.';
 }
+function storedFolders(account: { folders?: unknown; folder?: unknown }): DriveFolder[] {
+  // Existing installations saved one folder under `folder`.
+  const folders = account.folders !== undefined ? account.folders : account.folder == null ? [] : [account.folder];
+  if (!Array.isArray(folders) || folders.some(folder => !folder || typeof folder.id !== 'string' || !folder.id.trim() || folder.id === 'root' || typeof folder.name !== 'string')) {
+    throw new Error('Google 음악 폴더 정보를 확인할 수 없습니다. 다시 연결해 주세요.');
+  }
+  return [...new Map(folders.map(folder => [folder.id, { id: folder.id, name: folder.name }])).values()];
+}
 export const useGoogleDriveStore = create<State>((set, get) => {
   let tail: Promise<unknown> = Promise.resolve();
   let libraryRequest: AbortController | null = null;
@@ -51,7 +59,7 @@ export const useGoogleDriveStore = create<State>((set, get) => {
   function exclusive<T>(job: () => Promise<T>): Promise<T> { const next = tail.then(job); tail = next.catch(() => {}); return next; }
   function current(generation: number) { return get().generation === generation; }
   function invalidate() { attempt.abort(); attempt = new AbortController(); }
-  function begin() { invalidate(); libraryRequest?.abort(); folderRequest?.abort(); const generation = get().generation + 1; set({ generation, ready: true, busy: true, loading: false, metadataLoading: false, metadataWarning: null, folder: null, folderSaving: false, progress: '연결 준비', account: null, songs: [], error: null }); return generation; }
+  function begin() { invalidate(); libraryRequest?.abort(); folderRequest?.abort(); const generation = get().generation + 1; set({ generation, ready: true, busy: true, loading: false, metadataLoading: false, metadataWarning: null, folders: [], folderSaving: false, progress: '연결 준비', account: null, songs: [], error: null }); return generation; }
   async function deadline<T>(promise: Promise<T>, label: string, milliseconds: number, signal: AbortSignal): Promise<T> {
     let timer: ReturnType<typeof setTimeout> | undefined;
     let onAbort = () => {};
@@ -97,7 +105,7 @@ export const useGoogleDriveStore = create<State>((set, get) => {
     });
   }
   return {
-    ready: false, busy: false, loading: false, folder: null, folderSaving: false, progress: null, account: null, songs: [], error: null, generation: 0,
+    ready: false, busy: false, loading: false, folders: [], folderSaving: false, progress: null, account: null, songs: [], error: null, generation: 0,
     metadataLoading: false, metadataWarning: null,
     cancelConnection: () => {
       if (!get().busy && !get().loading && !get().folderSaving && !get().metadataLoading) return;
@@ -113,13 +121,13 @@ export const useGoogleDriveStore = create<State>((set, get) => {
         await exclusive(async () => {
           const saved = await step(generation, '저장된 연결 확인', () => SecureStore.getItemAsync(KEY));
           if (!saved || !current(generation)) return;
-          const account = JSON.parse(saved) as Account & { folder?: DriveFolder | null };
+          const account = JSON.parse(saved) as Account & { folders?: unknown; folder?: unknown };
           if (typeof account.id !== 'string' || typeof account.email !== 'string') throw new Error('Google 저장 정보를 확인할 수 없습니다. 다시 로그인해 주세요.');
-          if (account.folder != null && (typeof account.folder.id !== 'string' || !account.folder.id.trim() || typeof account.folder.name !== 'string')) throw new Error('Google 음악 폴더 정보를 확인할 수 없습니다. 다시 연결해 주세요.');
+          const folders = storedFolders(account);
           const google = await step(generation, '로그인 준비', sdk), response = await step(generation, '로그인 복원', () => google.signInSilently());
           if (!current(generation)) return;
           if (response.type !== 'success' || response.data.user.id !== account.id) throw new Error('Google 연결을 다시 로그인해 주세요.');
-          set({ account: { id: account.id, email: account.email }, folder: account.folder ?? null });
+          set({ account: { id: account.id, email: account.email }, folders });
         });
       } catch (error) { if (current(generation)) { invalidate(); set({ generation: generation + 1, ready: true, busy: false, progress: null, error: message(error) }); } }
       finally { if (current(generation)) set({ ready: true, busy: false, progress: null }); }
@@ -173,11 +181,11 @@ export const useGoogleDriveStore = create<State>((set, get) => {
         if (rejectedToken) await step(generation, '만료된 토큰 정리', () => google.clearCachedAccessToken(rejectedToken));
         const { accessToken } = await step(generation, 'Drive 접근 토큰 발급', () => google.getTokens()); check();
         if (!accessToken) throw new Error('Google Drive 접근 토큰을 발급받지 못했습니다. 다시 연결해 주세요.');
-        await saveAuth(generation, JSON.stringify({ ...get().account, folder: get().folder, accessToken }));
+        await saveAuth(generation, JSON.stringify({ ...get().account, folders: get().folders, accessToken }));
         check(); return accessToken;
       });
     },
-    selectFolder: async (folder) => {
+    selectFolders: async (folders) => {
       const account = get().account;
       if (!account) throw new Error('Google Drive를 먼저 연결해 주세요.');
       if (get().busy || get().folderSaving) throw new Error('Google 폴더 변경이 진행 중입니다. 잠시 후 다시 시도해 주세요.');
@@ -186,14 +194,15 @@ export const useGoogleDriveStore = create<State>((set, get) => {
       const isCurrent = () => current(generation) && get().account?.id === account.id && !request.signal.aborted;
       try {
         const token = (rejected?: string) => get().accessToken(account.id, rejected);
-        const selected = await readDriveFolder(folder.id, token, request.signal);
+        const selected: DriveFolder[] = [];
+        for (const folder of storedFolders({ folders })) selected.push(await readDriveFolder(folder.id, token, request.signal));
         const accessToken = await token();
         await exclusive(async () => {
           if (!isCurrent()) return;
-          await saveAuth(generation, JSON.stringify({ ...account, folder: selected, accessToken }));
+          await saveAuth(generation, JSON.stringify({ ...account, folders: selected, accessToken }));
           if (!isCurrent()) return;
           libraryRequest?.abort(); libraryRequest = null;
-          set({ folder: selected, songs: [], loading: false, metadataLoading: false, metadataWarning: null });
+          set({ folders: selected, songs: [], loading: false, metadataLoading: false, metadataWarning: null });
         });
         if (isCurrent()) await get().refresh();
       } catch (error) {
@@ -203,14 +212,14 @@ export const useGoogleDriveStore = create<State>((set, get) => {
       }
     },
     refresh: async () => {
-      const { account, folder } = get(); if (!account) return;
-      if (!folder) { set({ songs: [], loading: false, metadataLoading: false, metadataWarning: null }); return; }
+      const { account, folders } = get(); if (!account) return;
+      if (!folders.length) { set({ songs: [], loading: false, metadataLoading: false, metadataWarning: null }); return; }
       libraryRequest?.abort(); const request = new AbortController(); libraryRequest = request;
       const generation = get().generation; set({ loading: true, error: null, metadataLoading: false, metadataWarning: null });
       let enriching = false;
       const isCurrent = () => current(generation) && libraryRequest === request && !request.signal.aborted;
       try {
-        const songs = await loadDriveSongs(account.id, folder.id, rejected => get().accessToken(account.id, rejected), request.signal);
+        const songs = await loadDriveSongs(account.id, folders.map(folder => folder.id), rejected => get().accessToken(account.id, rejected), request.signal);
         if (isCurrent()) {
           set({ songs, loading: false, metadataLoading: true });
           enriching = true;

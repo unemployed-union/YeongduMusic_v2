@@ -12,7 +12,10 @@ const jsx = (type, props) => ({ type, props });
 function findAll(node, type) { if (!node || typeof node !== 'object') return []; const children = node.props?.children; return [...(node.type === type ? [node] : []), ...(Array.isArray(children) ? children : [children]).flatMap(child => findAll(child, type))]; }
 async function main() {
   let stored = null, failRead = false, failWrite = false, readCount = 0, writeGate;
-  const modules = { zustand: require(path.join(root, 'node_modules/zustand')), 'react-native': { Platform: { OS: 'android' } }, 'expo-secure-store': {
+  const modules = { zustand: require(path.join(root, 'node_modules/zustand')), '@/components/text': { Text: 'Text' },
+  '@/components/text': { Text: 'Text' },
+  '@/components/text': { Text: 'Text' },
+  'react-native': { Platform: { OS: 'android' } }, 'expo-secure-store': {
     getItemAsync: async () => { readCount++; if (failRead) throw Error('read'); return stored; },
     setItemAsync: async (_, value) => { if (writeGate) await writeGate.promise; if (failWrite) throw Error('write'); stored = value; },
   } };
@@ -41,7 +44,10 @@ async function main() {
   let sessionId = 123, panelError = false, panelGate;
   const calls = [], alerts = [], platform = { OS: 'android' };
   const equalizer = load('src/services/playback/equalizer.ts', {
-    'react-native': { Platform: platform, Alert: { alert: (...args) => alerts.push(args) } },
+    '@/components/text': { Text: 'Text' },
+  '@/components/text': { Text: 'Text' },
+  '@/components/text': { Text: 'Text' },
+  'react-native': { Platform: platform, Alert: { alert: (...args) => alerts.push(args) } },
     'expo-constants': { default: { expoConfig: { android: { package: 'xyz.yeongdu.yeongdumusic' } } }, __esModule: true },
     'expo-intent-launcher': { ActivityAction: { SOUND_SETTINGS: 'android.settings.SOUND_SETTINGS' }, startActivityAsync: async (action, params) => { calls.push({ action, params }); if (panelGate) await panelGate.promise; if (panelError) throw Error('no activity'); } },
     './controller': { getPlaybackAudioSessionId: () => sessionId },
@@ -55,7 +61,10 @@ async function main() {
   panelError = true; await equalizer.openSystemEqualizer(); assert.equal(alerts.at(-1)[2][1].text, '소리 설정 열기');
   panelError = false; alerts.at(-1)[2][1].onPress(); await flush(); assert.equal(calls.at(-1).action, 'android.settings.SOUND_SETTINGS');
   for (const os of ['ios', 'web']) { platform.OS = os; const count = calls.length; await equalizer.openSystemEqualizer(); assert.equal(calls.length, count); assert.match(alerts.at(-1)[1], /지원하지 않습니다/); }
-  const { ExpoAudioEngine } = load('src/services/playback/audio-engine.ts', { 'expo-audio': {}, 'expo-constants': { default: {}, AppOwnership: { Expo: 'expo' }, __esModule: true }, 'react-native': { Platform: platform } });
+  const { ExpoAudioEngine } = load('src/services/playback/audio-engine.ts', { 'expo-audio': {}, 'expo-constants': { default: {}, AppOwnership: { Expo: 'expo' }, __esModule: true }, '@/components/text': { Text: 'Text' },
+  '@/components/text': { Text: 'Text' },
+  '@/components/text': { Text: 'Text' },
+  'react-native': { Platform: platform } });
   const engine = new ExpoAudioEngine(); platform.OS = 'android'; assert.equal(engine.getAudioSessionId(), null);
   for (const value of [0, -1, undefined, NaN, Infinity, 1.5]) { engine.player = { audioSessionId: value }; assert.equal(engine.getAudioSessionId(), null); }
   engine.player = { audioSessionId: 123 }; assert.equal(engine.getAudioSessionId(), 123); platform.OS = 'ios'; assert.equal(engine.getAudioSessionId(), null);
@@ -64,8 +73,11 @@ async function main() {
   let search = false, result = { data: { kind: 'missing', lines: [], provider: 'lrclib' }, isFetching: false, refetch: () => { retries++; } }, retries = 0;
   const panelModules = {
     react: { memo: fn => fn, useState: () => [search, value => { search = value; }] }, 'react/jsx-runtime': { jsx, jsxs: jsx },
-    'react-native': { ...native, Pressable: 'Pressable', ActivityIndicator: 'Spinner' },
-    'react-native-reanimated': { default: { Text: 'AnimatedText' }, __esModule: true }, '@expo/vector-icons/Ionicons': 'Icon',
+    '@/components/text': { Text: 'Text' },
+  '@/components/text': { Text: 'Text' },
+  '@/components/text': { Text: 'Text' },
+  'react-native': { ...native, Pressable: 'Pressable', ActivityIndicator: 'Spinner' },
+    'react-native-reanimated': { createAnimatedComponent: () => 'AnimatedText' }, '@expo/vector-icons/Ionicons': 'Icon',
     './lyrics-edge-fade': { LyricsEdgeFade: 'Fade' }, '@/services/lyrics/parse-lyrics': {},
     './use-active-lyric-index': { useActiveLyricIndex: () => -1 },
     './use-lyrics': { useLyrics: () => result }, '@/stores/playback': { usePlaybackStore: selector => selector({ duration: 120 }) }, '@/services/playback/controller': {},

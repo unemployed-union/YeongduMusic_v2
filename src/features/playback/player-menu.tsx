@@ -1,7 +1,8 @@
 import { useEffect, useState, type RefObject } from 'react';
 import { BlurView } from 'expo-blur';
 import Animated, { Easing, FadeIn, FadeInDown, FadeOut, FadeOutDown } from 'react-native-reanimated';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Text } from '@/components/text';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { usePlaybackStore } from '@/stores/playback';
 import { useOfflineMusicStore } from '@/stores/offline-music';

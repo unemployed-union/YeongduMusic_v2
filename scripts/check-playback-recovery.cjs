@@ -18,6 +18,7 @@ const drive = create(() => ({ account: { id: 'drive-account' } }));
 const playback = create(() => ({ queue: [], index: -1, position: 0, playing: false, shuffle: false, repeat: 'off' }));
 let appStateListener;
 const modules = {
+  '@/components/text': { Text: 'Text' },
   'react-native': { Platform: { OS: 'android' }, AppState: { addEventListener: (_, listener) => { appStateListener = listener; return { remove() { appStateListener = undefined; } }; } } },
   '@/features/hidden-music/rules': {
     privacyScope: (mode, session) => mode === 'nas' ? `${session.baseUrl}:${session.account}` : mode === 'mock' ? 'demo' : null,
@@ -69,7 +70,8 @@ async function checkRootRemount({ playing = true, cold = false } = {}) {
   const rootMocks = {
     react: { useEffect: effect => effects.push(effect), useMemo: compute => compute(), useRef: value => ({ current: value }) },
     'react/jsx-runtime': { jsx, jsxs: jsx },
-    'react-native': { View: 'View', ActivityIndicator: 'Spinner', Pressable: 'Button', Text: 'Text', useColorScheme: () => 'dark', AppState: { addEventListener: () => ({ remove() {} }) } },
+    '@/components/text': { Text: 'Text' },
+  'react-native': { View: 'View', ActivityIndicator: 'Spinner', Pressable: 'Button', Text: 'Text', useColorScheme: () => 'dark', AppState: { addEventListener: () => ({ remove() {} }) } },
     'react-native-gesture-handler': { GestureHandlerRootView: 'Root' },
     'expo-router': { router: { navigate: route => navigation.push(route) }, DarkTheme: {}, DefaultTheme: {}, ThemeProvider: 'Theme', Stack: Object.assign('Stack', { Screen: 'Screen' }) },
     '@tanstack/react-query': { QueryClient: class {}, QueryClientProvider: 'QueryProvider' },
@@ -79,6 +81,7 @@ async function checkRootRemount({ playing = true, cold = false } = {}) {
     '@/stores/google-drive': { useGoogleDriveStore: store({ ready: true, account: null, bootstrap: async () => {} }) },
     '@/stores/local-music': { useLocalMusicStore: store(localState) },
     '@/stores/display-preferences': { useDisplayPreferences: store({ ready: true, load: async () => {} }) },
+    '@/stores/library-preferences': { useLibraryPreferences: store({ ready: true, load: async () => {} }) },
     '@/stores/hidden-music': { useHiddenMusicStore: store(hidden) },
     '@/stores/playlists': { usePlaylistStore: store({ load: async () => {} }) },
     '@/stores/playback': { usePlaybackStore: store(live) },

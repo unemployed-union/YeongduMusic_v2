@@ -1,5 +1,6 @@
 import { useContext } from 'react';
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import { Text } from '@/components/text';
 import { useColors } from '@/theme/tokens';
 import { TabBarInsetContext } from './tab-bar-inset';
 
@@ -9,7 +10,7 @@ export function ListLoading() {
   const bottomInset = useContext(TabBarInsetContext);
   return <View pointerEvents="none" accessibilityLiveRegion="polite" style={[styles.center, { marginBottom: bottomInset }]}>
     <ActivityIndicator color={colors.tint} />
-    <Text style={[styles.message, { color: colors.muted }]}>가져오는 중…</Text>
+    <Text style={[styles.message, { color: colors.muted }]}>불러오는 중…</Text>
   </View>;
 }
 const styles = StyleSheet.create({

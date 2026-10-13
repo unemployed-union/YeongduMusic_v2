@@ -39,7 +39,7 @@ assert.equal(library.screens['artist/[id]'].path, 'artist/:id');
 assert.equal(config.screens['album/[id]'], undefined);
 assert.equal(config.screens['artist/[id]'], undefined);
 assert.ok(config.screens.player, 'Player remains outside tabs as a full-screen modal');
-for (const route of ['settings/cloud', 'settings/cloud/synology', 'settings/cloud/google-drive', 'settings/playback', 'settings/library', 'settings/other']) {
+for (const route of ['settings/cloud', 'settings/cloud/synology', 'settings/cloud/google-drive', 'settings/playback', 'settings/library', 'settings/other', 'settings/playlist-backup']) {
   assert.equal(config.screens[route].path, route, 'Settings destinations resolve through the real route tree');
 }
 
@@ -59,6 +59,9 @@ function nodes(node) {
 const ui = {
   react: { useRef: initial => ({ current: initial }) },
   'react/jsx-runtime': { jsx, jsxs: jsx },
+  '@/components/text': { Text: 'Text' },
+  '@/components/text': { Text: 'Text' },
+  '@/components/text': { Text: 'Text' },
   'react-native': { View: 'View', Text: 'Text', Pressable: 'Pressable', StyleSheet: { create: value => value, absoluteFill: {} }, useColorScheme: () => 'dark' },
   'expo-router': { Tabs: { Screen: 'TabScreen' } },
   'expo-blur': { BlurView: 'BlurView', BlurTargetView: 'BlurTargetView' },
@@ -89,8 +92,14 @@ const keyboardTabs = renderModule('src/app/(tabs)/_layout.tsx', { ...ui,
 assert.equal(nodes(keyboardTabs.props.screenLayout({ children: jsx('Screen', {}), route: { name: 'search' } })).find(node => node.type === 'TabBarInsetProvider').props.value, 0, 'Hidden tabs do not shorten the search indicator');
 const settingsActions = [];
 const SettingsButton = renderModule('src/components/settings-button.tsx', { ...ui,
+  react: { ...ui.react, useCallback: fn => fn, useEffect: () => {} },
+  '@/stores/hidden-feature-access': { useHiddenFeatureAccess: () => ({ ready: true, enabled: false, quickHideEnabled: true, load: async () => {} }) },
+  '@/features/hidden-music/quick-hide': { quickHide: async () => {} },
+  '@/components/text': { Text: 'Text' },
+  '@/components/text': { Text: 'Text' },
+  '@/components/text': { Text: 'Text' },
   'react-native': { ...ui['react-native'], Keyboard: { dismiss: () => settingsActions.push('dismiss') } },
-  'expo-router': { router: { push: route => settingsActions.push(route) } },
+  'expo-router': { router: { push: route => settingsActions.push(route) }, useFocusEffect: () => {} },
 }).SettingsButton;
 const button = SettingsButton();
 assert.equal(button.props.accessibilityLabel, '설정 열기');
@@ -112,7 +121,7 @@ const settingsMocks = { ...ui,
 };
 const Settings = renderModule('src/app/settings.tsx', settingsMocks).default;
 const links = tree => nodes(tree).filter(node => node.type === 'SettingsLink').map(node => [node.props.title, node.props.href]);
-assert.deepEqual(links(Settings()), [['클라우드 연결', '/settings/cloud'], ['재생 및 화면', '/settings/playback'], ['보관함', '/settings/library'], ['오픈소스 라이선스', '/settings/licenses']]);
+assert.deepEqual(links(Settings()), [['클라우드 연결', '/settings/cloud'], ['재생 및 화면', '/settings/playback'], ['보관함', '/settings/library'], ['설정 백업 및 복구', '/settings/backup'], ['플레이리스트 백업 및 복구', '/settings/playlist-backup'], ['오픈소스 라이선스', '/settings/licenses']]);
 extrasEnabled = true;
 assert.deepEqual(links(Settings()).find(([title]) => title === '기타'), ['기타', '/settings/other']);
 assert.ok(nodes(Settings()).some(node => node.type === 'VersionSettings'), 'Version activation stays on the main settings page');
@@ -123,6 +132,7 @@ const CloudSettings = renderModule('src/app/settings/cloud.tsx', { ...settingsMo
 assert.deepEqual(links(CloudSettings()), [['Synology', '/settings/cloud/synology'], ['Google Drive', '/settings/cloud/google-drive']]);
 const openedSettings = [];
 const SettingsLink = renderModule('src/features/settings/settings-ui.tsx', { ...ui,
+  './settings-menu-layout': { settingsMenuStyles: { row: {}, icon: {} } },
   'expo-router': { router: { push: href => openedSettings.push(href) } },
   'react-native-keyboard-controller': { KeyboardAwareScrollView: 'Scroll' },
   '@/components/scroll-edge-fade': { ScrollEdgeFade: 'Fade' },

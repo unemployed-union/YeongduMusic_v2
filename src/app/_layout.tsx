@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef } from 'react';
-import { ActivityIndicator, AppState, Pressable, Text, View, useColorScheme } from 'react-native';
+import { ActivityIndicator, AppState, Pressable, View, useColorScheme } from 'react-native';
+import { Text } from '@/components/text';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider, router } from 'expo-router';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -103,8 +104,11 @@ function Navigation() {
       <Stack.Screen name="settings/cloud/google-drive" options={{ headerShown: true, title: 'Google Drive', headerBackTitle: '클라우드 연결', headerTintColor: colors.tint, headerStyle: { backgroundColor: colors.background } }} />
       <Stack.Screen name="settings/playback" options={{ headerShown: true, title: '재생 및 화면', headerBackTitle: '설정', headerTintColor: colors.tint, headerStyle: { backgroundColor: colors.background } }} />
       <Stack.Screen name="settings/library" options={{ headerShown: true, title: '보관함 설정', headerBackTitle: '설정', headerTintColor: colors.tint, headerStyle: { backgroundColor: colors.background } }} />
+      <Stack.Screen name="settings/backup" options={{ headerShown: true, title: '설정 백업 및 복구', headerBackTitle: '설정', headerTintColor: colors.tint, headerStyle: { backgroundColor: colors.background } }} />
+      <Stack.Screen name="settings/playlist-backup" options={{ headerShown: true, title: '플레이리스트 백업 및 복구', headerBackTitle: '뒤로', headerTintColor: colors.tint, headerStyle: { backgroundColor: colors.background } }} />
       <Stack.Screen name="settings/licenses" options={{ headerShown: true, title: '오픈소스 라이선스', headerBackTitle: '설정', headerTintColor: colors.tint, headerStyle: { backgroundColor: colors.background } }} />
       <Stack.Screen name="settings/other" options={{ headerShown: true, title: '기타', headerBackTitle: '설정', headerTintColor: colors.tint, headerStyle: { backgroundColor: colors.background } }} />
+      <Stack.Screen name="settings/quick-hide-preset" options={{ headerShown: true, title: '빠른 숨기기 프리셋', headerBackTitle: '기타', headerTintColor: colors.tint, headerStyle: { backgroundColor: colors.background } }} />
       <Stack.Screen name="hidden-music" options={{ headerShown: true, title: '음악 숨기기', headerBackTitle: '기타', headerTintColor: colors.tint, headerStyle: { backgroundColor: colors.background } }} />
       <Stack.Screen name="hidden-playlists" options={{ headerShown: true, title: '플레이리스트 숨기기', headerBackTitle: '기타', headerTintColor: colors.tint, headerStyle: { backgroundColor: colors.background } }} />
       <Stack.Screen name="player" options={{ presentation: 'transparentModal', animation: 'none', gestureEnabled: false, contentStyle: { backgroundColor: 'transparent' } }} />

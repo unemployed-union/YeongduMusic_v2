@@ -61,5 +61,7 @@ export function parseProfile(json: string): HiddenMusicProfile {
   });
   const hiddenPlaylistIds = profile.hiddenPlaylistIds === undefined ? [] : profile.hiddenPlaylistIds;
   if (!Array.isArray(hiddenPlaylistIds) || !hiddenPlaylistIds.every((id) => typeof id === 'string' && !!id)) throw new Error('숨긴 플레이리스트 설정을 읽을 수 없습니다.');
-  return { version: 1, biometricLock: profile.biometricLock, presets, hiddenPlaylistIds: [...new Set(hiddenPlaylistIds)] };
+  if (profile.quickHidePresetId !== undefined && (typeof profile.quickHidePresetId !== 'string' || !profile.quickHidePresetId)) throw new Error('빠른 숨기기 프리셋 설정을 읽을 수 없습니다.');
+  return { version: 1, biometricLock: profile.biometricLock, presets, hiddenPlaylistIds: [...new Set(hiddenPlaylistIds)],
+    ...(profile.quickHidePresetId && ids.has(profile.quickHidePresetId) ? { quickHidePresetId: profile.quickHidePresetId } : {}) };
 }

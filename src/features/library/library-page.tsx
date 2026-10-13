@@ -1,6 +1,7 @@
 import { TabScrollEdgeFade } from '@/components/tab-scroll-edge-fade';
 import { memo, useCallback, useMemo } from 'react';
-import { FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
+import { FlatList, Pressable, RefreshControl, StyleSheet, View } from 'react-native';
+import { Text } from '@/components/text';
 import { router } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Artwork } from '@/components/artwork';
@@ -47,4 +48,4 @@ export const LibraryPage = memo(function LibraryPage({ tab, sortOrder, data, isP
     </AsyncState>
   </View>;
 });
-const styles = StyleSheet.create({ fill: { flex: 1 }, list: { flexGrow: 1, paddingTop: 28, paddingHorizontal: 22, paddingBottom: 180 }, columns: { justifyContent: 'space-between' }, album: { marginBottom: 24 }, albumTitle: { fontSize: 15, fontWeight: '700', marginTop: 9 }, albumArtist: { fontSize: 13, marginTop: 2 }, artist: { height: 70, flexDirection: 'row', alignItems: 'center', gap: 13, borderBottomWidth: StyleSheet.hairlineWidth }, artistIcon: { width: 45, height: 45, borderRadius: 23, alignItems: 'center', justifyContent: 'center' }, artistName: { flex: 1, fontSize: 16, fontWeight: '700' }, stale: { fontSize: 12, marginBottom: 10 }, empty: { minHeight: 220, alignItems: 'center', justifyContent: 'center' }, refreshError: { marginBottom: 16, gap: 6 }, retry: { fontWeight: '700' } });
+const styles = StyleSheet.create({ fill: { flex: 1 }, list: { flexGrow: 1, paddingTop: 12, paddingHorizontal: 22, paddingBottom: 180 }, columns: { justifyContent: 'space-between' }, album: { marginBottom: 24 }, albumTitle: { fontSize: 15, fontWeight: '700', marginTop: 9 }, albumArtist: { fontSize: 13, marginTop: 2 }, artist: { height: 70, flexDirection: 'row', alignItems: 'center', gap: 13, borderBottomWidth: StyleSheet.hairlineWidth }, artistIcon: { width: 45, height: 45, borderRadius: 23, alignItems: 'center', justifyContent: 'center' }, artistName: { flex: 1, fontSize: 16, fontWeight: '700' }, stale: { fontSize: 12, marginBottom: 10 }, empty: { minHeight: 220, alignItems: 'center', justifyContent: 'center' }, refreshError: { marginBottom: 16, gap: 6 }, retry: { fontWeight: '700' } });
