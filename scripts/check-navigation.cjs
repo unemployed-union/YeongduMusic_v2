@@ -123,6 +123,10 @@ const settingsMocks = { ...ui,
 const Settings = renderModule('src/app/settings.tsx', settingsMocks).default;
 const links = tree => nodes(tree).filter(node => node.type === 'SettingsLink').map(node => [node.props.title, node.props.href]);
 assert.deepEqual(links(Settings()), [['클라우드 연결', '/settings/cloud'], ['재생 및 화면', '/settings/playback'], ['보관함', '/settings/library'], ['설정 백업 및 복구', '/settings/backup'], ['플레이리스트 백업 및 복구', '/settings/playlist-backup'], ['오픈소스 라이선스', '/settings/licenses']]);
+const backupCategory = nodes(Settings()).find(node => node.type === 'SettingsSection' && node.props.title === '백업 및 복구');
+assert.ok(backupCategory, 'Settings exposes a dedicated backup category');
+assert.deepEqual(links(backupCategory), [['설정 백업 및 복구', '/settings/backup'], ['플레이리스트 백업 및 복구', '/settings/playlist-backup']]);
+assert.ok(nodes(Settings()).find(node => node.type === 'SettingsLink' && node.props.href === '/settings/cloud').props.description.includes('S3'));
 extrasEnabled = true;
 assert.deepEqual(links(Settings()).find(([title]) => title === '기타'), ['기타', '/settings/other']);
 assert.ok(nodes(Settings()).some(node => node.type === 'VersionSettings'), 'Version activation stays on the main settings page');
@@ -131,6 +135,8 @@ const CloudSettings = renderModule('src/app/settings/cloud.tsx', { ...settingsMo
   '@/stores/google-drive': { useGoogleDriveStore: select => select({ account: null }) },
 }).default;
 assert.deepEqual(links(CloudSettings()), [['Synology', '/settings/cloud/synology'], ['Google Drive', '/settings/cloud/google-drive'], ['S3 호환 저장소', '/settings/cloud/s3']]);
+const serviceIcons = nodes(CloudSettings()).filter(node => node.type === 'SettingsLink').map(node => node.props.icon);
+assert.equal(new Set(serviceIcons).size, serviceIcons.length, 'Different cloud services have distinguishable icons');
 const openedSettings = [];
 const SettingsLink = renderModule('src/features/settings/settings-ui.tsx', { ...ui,
   './settings-menu-layout': { settingsMenuStyles: { row: {}, icon: {} } },

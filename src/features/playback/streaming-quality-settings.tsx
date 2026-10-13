@@ -33,7 +33,7 @@ export function StreamingQualitySettings() {
   </View>;
 }
 const styles = StyleSheet.create({
-  section: { fontSize: 12, fontWeight: '800', letterSpacing: 1.2, marginTop: 34, marginBottom: 12 },
+  section: { fontSize: 12, fontWeight: '800', letterSpacing: 1.2, marginTop: 0, marginBottom: 12 },
   card: { borderWidth: 1, borderRadius: 15, overflow: 'hidden' },
   option: { flexDirection: 'row', alignItems: 'center', padding: 15, gap: 14, minHeight: 70 },
   copy: { flex: 1 }, title: { fontSize: 16, fontWeight: '600' },

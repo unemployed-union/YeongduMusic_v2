@@ -13,8 +13,8 @@ export function GoogleDriveSettings() {
       { text: '취소', style: 'cancel' }, { text: '연결', onPress: () => { void drive.connect(); } },
     ]);
   }
-  return <View style={{ marginTop: 28, gap: 12 }}>
-    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}><Ionicons name="cloud-outline" size={24} color={colors.tint} /><Text style={{ flex: 1, color: colors.text, fontSize: 17, fontWeight: '700' }}>Google Drive</Text>{busy && <ActivityIndicator color={colors.tint} />}</View>
+  return <View style={{ marginTop: 0, gap: 12 }}>
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}><Ionicons name="logo-google" size={24} color={colors.tint} /><Text style={{ flex: 1, color: colors.text, fontSize: 17, fontWeight: '700' }}>Google Drive</Text>{busy && <ActivityIndicator color={colors.tint} />}</View>
     <Text style={{ color: colors.muted, fontSize: 12, lineHeight: 18 }}>{drive.account ? drive.account.email : 'Google 계정으로 연결하면 Drive의 음악을 직접 스트리밍합니다.'} NAS 로그인과 독립적으로 사용합니다.</Text>
     {busy && <View style={{ gap: 8 }}><Text accessibilityLiveRegion="polite" style={{ color: colors.muted, fontSize: 13 }}>{drive.progress ?? (drive.loading ? '음악 목록 불러오는 중' : drive.folderSaving ? '음악 폴더 저장 중' : 'Google 연결 준비 중')}</Text><Pressable accessibilityRole="button" onPress={drive.cancelConnection} style={{ paddingVertical: 10 }}><Text style={{ color: colors.tint }}>요청 취소</Text></Pressable></View>}
     {drive.error && <Text accessibilityLiveRegion="polite" style={{ color: colors.tint, fontSize: 13 }}>{drive.error}</Text>}

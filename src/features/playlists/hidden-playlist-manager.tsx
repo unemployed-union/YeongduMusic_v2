@@ -30,6 +30,6 @@ export function HiddenPlaylistManager() {
 }
 const styles = StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 22 }, retry: { padding: 16 },
-  list: { flexGrow: 1, padding: 22, paddingTop: 28, paddingBottom: 40 }, heading: { fontSize: 26, fontWeight: '800', marginBottom: 10 }, note: { fontSize: 13, lineHeight: 20, marginBottom: 18 },
+  list: { flexGrow: 1, padding: 22, paddingTop: 16, paddingBottom: 40 }, heading: { fontSize: 26, fontWeight: '800', marginBottom: 10 }, note: { fontSize: 13, lineHeight: 20, marginBottom: 18 },
   card: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14, borderWidth: 1, borderRadius: 14, marginBottom: 14 }, identity: { flex: 1, gap: 5 }, title: { fontSize: 16, fontWeight: '700' }, detail: { fontSize: 12, lineHeight: 18 }, empty: { textAlign: 'center', lineHeight: 23, paddingVertical: 30 },
 });

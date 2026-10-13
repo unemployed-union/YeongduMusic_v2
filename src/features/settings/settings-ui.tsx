@@ -43,7 +43,7 @@ export function SettingsLink({ title, description, icon, href, disabled = false 
 const styles = StyleSheet.create({
   screen: { paddingHorizontal: 22, paddingTop: 16 },
   section: { marginBottom: 24 },
-  heading: { fontSize: 12, fontWeight: '800', letterSpacing: 1.2, marginBottom: 12, marginTop: 8 },
+  heading: { fontSize: 12, fontWeight: '800', letterSpacing: 1.2, marginBottom: 12, marginTop: 0 },
   group: { borderWidth: 1, borderRadius: 15, overflow: 'hidden' },
   row: settingsMenuStyles.row,
   icon: settingsMenuStyles.icon,

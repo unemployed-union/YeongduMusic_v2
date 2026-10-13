@@ -81,6 +81,9 @@ modules['@/features/library/local-music-controls'] = { LocalMusicControls: 'Loca
 modules['@/features/library/library-sort-control'] = { LibrarySortControl: 'LibrarySortControl' };
 modules['@/features/library/queries'] = { useAlbums: () => ({}), useSongs: () => ({}), useArtists: () => ({}) };
 modules['@/features/library/use-refresh-library'] = { useRefreshLibrary: () => ({ refresh: async () => {} }) };
+modules['react-native-reanimated'] = { __esModule: true, default: { View: 'AnimatedView' } };
+let controlsRevealed = 0;
+modules['@/features/library/use-library-controls'] = { useLibraryControls: () => ({ hidden: false, show() { controlsRevealed++; }, selectPage() {}, onScroll() {}, onLayout() {}, frameStyle: {}, contentStyle: {} }) };
 modules['@/stores/auth'] = { useAuthStore: selector => selector({ mode: 'mock' }) };
 const Screen = load('src/app/(tabs)/(library)/index.tsx', modules).default;
 function screen() { stateSlot = 0; refSlot = 0; return Screen(); }
@@ -92,4 +95,8 @@ tree = screen(); assert.equal(sortProps(tree).tab, 'songs'); assert.equal(sortPr
 tree = screen(); swipe(tree, 2); tree = screen(); assert.equal(sortProps(tree).order, 'default'); swipe(tree, 0);
 tree = screen(); assert.equal(sortProps(tree).order, 'descending');
 assert.deepEqual(find(tree, 'ScrollView').props.children.map(page => page.props.sortOrder), ['descending', 'ascending', 'default']);
+const horizontalPager = find(tree, 'ScrollView');
+horizontalPager.props.onScrollBeginDrag(); assert.equal(controlsRevealed, 1, 'Horizontal drag reveals controls immediately');
+horizontalPager.props.onScroll({ nativeEvent: { contentOffset: { x: 100 } } }); assert.equal(controlsRevealed, 2, 'Partial swipe keeps controls visible before settling');
+horizontalPager.props.onScroll({ nativeEvent: { contentOffset: { x: 0 } } }); assert.equal(controlsRevealed, 2, 'Aligned layout events do not reveal controls');
 console.log('PASS: default/order restoration, Korean/numeric names, stable ties, immutable mixed sources, memo reuse, refreshed data, displayed playback queue and sort menu handlers. Native layout is mocked.');

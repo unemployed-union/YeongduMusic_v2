@@ -4,7 +4,7 @@ import { useColors } from '@/theme/tokens';
 
 export function AsyncState({ loading, error, retry, empty, children }: { loading?: boolean; error?: string | null; retry?: () => void; empty?: boolean; children: React.ReactNode }) {
   const colors = useColors();
-  if (loading) return <View style={styles.center}><ActivityIndicator color={colors.tint} /><Text style={[styles.message, { color: colors.muted }]}>불러오는 중…</Text></View>;
+  if (loading) return <View style={styles.center}><ActivityIndicator color={colors.tint} /><Text style={[styles.message, { color: colors.muted }]}>음악 목록을 가져오는 중…</Text></View>;
   if (error) return <View style={styles.center}><Text style={[styles.message, { color: colors.text }]}>{error}</Text><Pressable onPress={retry} style={[styles.retry, { backgroundColor: colors.tint }]}><Text style={styles.retryText}>다시 시도</Text></Pressable></View>;
   if (empty) return <View style={styles.center}><Text style={[styles.message, { color: colors.muted }]}>표시할 음악이 없습니다.</Text></View>;
   return <>{children}</>;

@@ -54,7 +54,7 @@ export function PresetManager() {
 }
 
 const styles = StyleSheet.create({
-  list: { flexGrow: 1, padding: 22, paddingTop: 28, paddingBottom: 40 }, heading: { fontSize: 26, fontWeight: '800', marginBottom: 10 }, note: { fontSize: 13, lineHeight: 20, marginBottom: 14 },
+  list: { flexGrow: 1, padding: 22, paddingTop: 16, paddingBottom: 40 }, heading: { fontSize: 26, fontWeight: '800', marginBottom: 10 }, note: { fontSize: 13, lineHeight: 20, marginBottom: 14 },
   lockRow: { flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderRadius: 14, padding: 14, marginBottom: 20 }, identity: { flex: 1, gap: 5 },
   title: { fontSize: 16, fontWeight: '700' }, detail: { fontSize: 12, lineHeight: 18 }, create: { height: 48, borderRadius: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginBottom: 22 }, createText: { color: 'white', fontSize: 15, fontWeight: '700' },
   card: { padding: 16, borderWidth: 1, borderRadius: 14, marginBottom: 12 }, cardTop: { flexDirection: 'row', alignItems: 'center', gap: 10 }, actions: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 13 }, action: { flexDirection: 'row', gap: 6, paddingVertical: 7 }, empty: { textAlign: 'center', lineHeight: 23, paddingVertical: 30 },

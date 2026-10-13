@@ -30,7 +30,7 @@ export function LocalMusicControls({ sortControl }: { sortControl?: ReactNode })
   return <View style={styles.container}>
     <View style={styles.controlsRow}>
     <Pressable accessibilityRole="button" accessibilityLabel="음악 소스 및 가져오기 메뉴" onPress={() => setOpen(true)} style={styles.trigger}>
-      <Ionicons name={local.source === 'drive' || local.source === 's3' ? 'cloud-outline' : local.source === 'local' ? 'phone-portrait-outline' : local.source === 'nas' ? 'server-outline' : 'musical-notes-outline'} size={18} color={colors.tint} />
+      <Ionicons name={local.source === 'drive' ? 'logo-google' : local.source === 's3' ? 'file-tray-stacked-outline' : local.source === 'local' ? 'phone-portrait-outline' : local.source === 'nas' ? 'server-outline' : 'musical-notes-outline'} size={18} color={colors.tint} />
       <Text style={{ color: colors.tint, fontWeight: '700' }}>{labels[local.source]}</Text><Ionicons name="chevron-down" size={16} color={colors.tint} />
       {local.busy && <ActivityIndicator color={colors.tint} />}
     </Pressable>
@@ -48,8 +48,8 @@ export function LocalMusicControls({ sortControl }: { sortControl?: ReactNode })
       <ScrollView contentContainerStyle={styles.body}>
         {(['all', 'nas', 'local', 'drive', 's3'] as const).map((source) => <Pressable key={source} accessibilityRole="button" accessibilityState={{ selected: local.source === source }} onPress={() => { local.setSource(source); setOpen(false); }} style={styles.option}><Text style={{ flex: 1, color: colors.text, fontWeight: '600' }}>{labels[source]}</Text>{local.source === source && <Ionicons name="checkmark" size={22} color={colors.tint} />}</Pressable>)}
         <View style={{ height: StyleSheet.hairlineWidth, backgroundColor: colors.separator }} />
-        <Pressable accessibilityRole="button" onPress={() => { setOpen(false); router.push('/settings/cloud/google-drive'); }} style={styles.option}><Ionicons name="cloud-outline" size={22} color={colors.tint} /><Text style={{ color: colors.text }}>Google Drive 연결 관리</Text></Pressable>
-        <Pressable accessibilityRole="button" onPress={() => { setOpen(false); router.push('/settings/cloud/s3'); }} style={styles.option}><Ionicons name="cloud-outline" size={22} color={colors.tint} /><Text style={{ color: colors.text }}>S3 연결 관리</Text></Pressable>
+        <Pressable accessibilityRole="button" onPress={() => { setOpen(false); router.push('/settings/cloud/google-drive'); }} style={styles.option}><Ionicons name="logo-google" size={22} color={colors.tint} /><Text style={{ color: colors.text }}>Google Drive 연결 관리</Text></Pressable>
+        <Pressable accessibilityRole="button" onPress={() => { setOpen(false); router.push('/settings/cloud/s3'); }} style={styles.option}><Ionicons name="file-tray-stacked-outline" size={22} color={colors.tint} /><Text style={{ color: colors.text }}>S3 연결 관리</Text></Pressable>
         <Text style={{ color: colors.muted }}>기기 음악 가져오기</Text>
         {Platform.OS === 'android' && <Pressable accessibilityRole="button" disabled={local.busy} onPress={() => startImport('device')} style={styles.option}><Ionicons name="phone-portrait-outline" size={22} color={colors.tint} /><Text style={{ color: colors.text }}>기기의 음악 전체 가져오기</Text></Pressable>}
         {Platform.OS !== 'web' && <Pressable accessibilityRole="button" disabled={local.busy} onPress={() => startImport('folder')} style={styles.option}><Ionicons name="folder-outline" size={22} color={colors.tint} /><Text style={{ color: colors.text }}>폴더 선택 · 하위 폴더 포함</Text></Pressable>}

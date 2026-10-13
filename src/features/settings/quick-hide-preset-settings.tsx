@@ -36,7 +36,7 @@ export function QuickHidePresetSettings() {
 }
 
 const styles = StyleSheet.create({
-  fill: { flex: 1 }, list: { flexGrow: 1, padding: 22, paddingTop: 24, paddingBottom: 32 },
+  fill: { flex: 1 }, list: { flexGrow: 1, padding: 22, paddingTop: 16, paddingBottom: 32 },
   note: { fontSize: 13, lineHeight: 20, marginBottom: 18 }, card: { borderWidth: 1, borderRadius: 15, marginBottom: 12 },
   title: { fontSize: 16, fontWeight: '600' }, detail: { fontSize: 12, lineHeight: 18, marginTop: 5 }, create: { minHeight: 48, justifyContent: 'center' },
 });

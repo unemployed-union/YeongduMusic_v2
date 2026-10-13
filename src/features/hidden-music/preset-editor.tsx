@@ -68,7 +68,7 @@ export function PresetEditor({ preset, songs, busy, error, onCancel, onSave }: P
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, paddingHorizontal: 22 }, headingRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 18, marginBottom: 10 },
+  screen: { flex: 1, paddingHorizontal: 22 }, headingRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 16, marginBottom: 10 },
   heading: { fontSize: 23, fontWeight: '800' }, smallButton: { padding: 10 },
   input: { height: 46, borderWidth: 1, borderRadius: 11, paddingHorizontal: 13, fontSize: 15, marginBottom: 10 },
   tabs: { flexDirection: 'row', gap: 8, marginBottom: 13 }, tab: { paddingHorizontal: 18, paddingVertical: 9, borderRadius: 18 },

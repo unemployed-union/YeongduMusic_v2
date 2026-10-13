@@ -9,17 +9,18 @@ import { LibrarySortControl } from '@/features/library/library-sort-control';
 import type { LibrarySortOrder } from '@/features/library/sort-library';
 import { useAlbums, useArtists, useSongs } from '@/features/library/queries';
 import { useRefreshLibrary } from '@/features/library/use-refresh-library';
-import { useAuthStore } from '@/stores/auth';
 import { useColors } from '@/theme/tokens';
+import Animated from 'react-native-reanimated';
+import { useLibraryControls } from '@/features/library/use-library-controls';
 
 export default function LibraryScreen() {
   const colors = useColors();
   const width = useWindowDimensions().width;
-  const mode = useAuthStore((state) => state.mode);
   const [tab, setTab] = useState<LibraryTab>('albums');
   const [sortOrders, setSortOrders] = useState<Record<LibraryTab, LibrarySortOrder>>({ albums: 'default', songs: 'default', artists: 'default' });
   const pager = useRef<ScrollView>(null);
   const selectedTab = useRef<LibraryTab>('albums');
+  const controls = useLibraryControls();
   const refreshState = useRefreshLibrary();
   const queries = {
     albums: useAlbums(tab === 'albums' && !refreshState.refreshing),
@@ -32,6 +33,7 @@ export default function LibraryScreen() {
   }, [width]);
 
   function selectTab(next: LibraryTab) {
+    controls.selectPage(next);
     selectedTab.current = next;
     setTab(next);
     pager.current?.scrollTo({ x: LIBRARY_TABS.indexOf(next) * width, animated: true });
@@ -40,8 +42,12 @@ export default function LibraryScreen() {
   return <View style={[styles.screen, { backgroundColor: colors.background }]}>
     <ScreenHeader title="보관함" action={<SettingsButton />} bottomSpacing={8} />
     <LocalMusicControls sortControl={<LibrarySortControl tab={tab} order={sortOrders[tab]} onChange={(order) => setSortOrders((current) => ({ ...current, [tab]: order }))} />} />
+    <Animated.View style={[{ overflow: 'hidden', flexShrink: 0 }, controls.frameStyle]} pointerEvents={controls.hidden ? 'none' : 'auto'} accessibilityElementsHidden={controls.hidden} importantForAccessibility={controls.hidden ? 'no-hide-descendants' : 'auto'}>
+    <Animated.View collapsable={false} onLayout={controls.onLayout} style={[{ position: 'absolute', top: 0, left: 0, right: 0 }, controls.contentStyle]}>
     <View style={styles.segments}>{LIBRARY_TABS.map((option) => <Pressable key={option} accessibilityRole="tab" accessibilityState={{ selected: tab === option }} onPress={() => selectTab(option)} style={[styles.segment, { backgroundColor: tab === option ? colors.tint : colors.surface, borderColor: tab === option ? colors.tint : colors.separator }]}><Text style={{ color: tab === option ? 'white' : colors.text, fontWeight: '700' }}>{option === 'albums' ? '앨범' : option === 'songs' ? '노래' : '아티스트'}</Text></Pressable>)}</View>
-    {(refreshState.refreshing || refreshState.error || refreshState.message) && <Pressable accessibilityRole="button" disabled={!refreshState.error || refreshState.refreshing} onPress={() => void refreshState.refresh()} style={styles.refreshNotice}><Text style={{ color: refreshState.error ? colors.tint : colors.muted }}>{refreshState.refreshing ? (mode === 'mock' ? '데모 목록 확인 중…' : 'Audio Station 목록을 가져오는 중…') : refreshState.error ? refreshState.error + ' · 다시 시도' : refreshState.message}</Text></Pressable>}
+    {(refreshState.refreshing || refreshState.error || refreshState.message) && <Pressable accessibilityRole="button" disabled={!refreshState.error || refreshState.refreshing} onPress={() => void refreshState.refresh()} style={styles.refreshNotice}><Text style={{ color: refreshState.error ? colors.tint : colors.muted }}>{refreshState.refreshing ? '음악 목록을 가져오는 중…' : refreshState.error ? refreshState.error + ' · 다시 시도' : refreshState.message}</Text></Pressable>}
+    </Animated.View>
+    </Animated.View>
     <ScrollView
       ref={pager}
       style={styles.pager}
@@ -52,10 +58,19 @@ export default function LibraryScreen() {
       nestedScrollEnabled
       showsHorizontalScrollIndicator={false}
       bounces={false}
+      onTouchStart={controls.onTouchStart}
+      onTouchMove={controls.onTouchMove}
+      onScrollBeginDrag={controls.show}
+      scrollEventThrottle={16}
+      onScroll={(event) => {
+        const alignedOffset = LIBRARY_TABS.indexOf(selectedTab.current) * width;
+        if (Math.abs(event.nativeEvent.contentOffset.x - alignedOffset) > 4) controls.show();
+      }}
       onMomentumScrollEnd={(event) => {
         const pageIndex = Math.max(0, Math.min(LIBRARY_TABS.length - 1, Math.round(event.nativeEvent.contentOffset.x / width)));
         const next = LIBRARY_TABS[pageIndex];
         if (next) {
+          if (next !== selectedTab.current) controls.selectPage(next);
           selectedTab.current = next;
           setTab(next);
         }
@@ -63,7 +78,7 @@ export default function LibraryScreen() {
     >
       {LIBRARY_TABS.map((option) => {
         const query = queries[option];
-        return <LibraryPage key={option} tab={option} sortOrder={sortOrders[option]} data={query.data} isPending={query.isPending} isError={query.isError} error={query.error} isRefetchError={query.isRefetchError} width={width} refreshing={refreshState.refreshing} onRefresh={refreshState.refresh} />;
+        return <LibraryPage key={option} tab={option} sortOrder={sortOrders[option]} data={query.data} isPending={query.isPending} isError={query.isError} error={query.error} isRefetchError={query.isRefetchError} width={width} refreshing={refreshState.refreshing} onRefresh={refreshState.refresh} onListScroll={controls.onScroll} />;
       })}
     </ScrollView>
   </View>;

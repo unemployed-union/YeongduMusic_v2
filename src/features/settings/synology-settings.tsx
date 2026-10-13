@@ -55,7 +55,7 @@ export function SynologySettings() {
   ]);
 
   return <>
-    <Text style={[styles.section, { color: colors.muted, marginTop: 9 }]}>연결</Text>
+    <Text style={[styles.section, { color: colors.muted, marginTop: 0 }]}>연결</Text>
     <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.separator }]}><View style={[styles.icon, { backgroundColor: colors.tint }]}><Ionicons name="server-outline" size={23} color="white" /></View><View style={{ flex: 1 }}><Text style={[styles.name, { color: colors.text }]}>{mode === 'mock' ? '데모 라이브러리' : 'Synology NAS'}</Text><Text numberOfLines={1} style={[styles.detail, { color: colors.muted }]}>{session?.baseUrl ?? '연결 없이 UI 둘러보기'}</Text></View><Ionicons name="checkmark-circle" size={22} color={colors.tint} /></View>
 
     <Text style={[styles.label, { color: colors.text }]}>접속 주소</Text>
