@@ -56,6 +56,7 @@ const uiModules = {
   '@/components/tab-scroll-edge-fade': { TabScrollEdgeFade: 'ScrollEdgeFade' },
   '@/components/scroll-edge-fade': { ScrollEdgeFade: 'ScrollEdgeFade' },
   '@/components/animated-switch': { AnimatedSwitch: 'Switch' },
+  '@/components/toast-notice': { ToastNotice: 'ToastNotice' },
   '@/components/screen-header': { ScreenHeader: 'ScreenHeader' }, '@/components/settings-button': { SettingsButton: 'SettingsButton' },
   '@/components/list-loading': { ListLoading: 'ListLoading' },
   '@/features/settings/quick-hide-settings': { QuickHideSettings: 'QuickHideSettings' },

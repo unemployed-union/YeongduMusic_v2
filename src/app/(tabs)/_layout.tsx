@@ -1,5 +1,5 @@
 import { useRef } from 'react';
-import { StyleSheet, View, useColorScheme } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { Tabs } from 'expo-router';
 import { BlurTargetView, BlurView } from 'expo-blur';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -7,14 +7,14 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useKeyboardState } from 'react-native-keyboard-controller';
 import { MINI_PLAYER_INSET, MiniPlayer } from '@/components/mini-player';
 import { TAB_BAR_HEIGHT, TabBarInsetContext } from '@/components/tab-bar-inset';
-import { useColors } from '@/theme/tokens';
+import { useAppColorScheme, useColors } from '@/theme/tokens';
 import { useMenuPreferences } from '@/stores/menu-preferences';
 import { BOTTOM_MENU_ROUTES, MENU_LABELS, visibleMenuIds } from '@/features/settings/menu-layout';
 import { TabMenuSelection } from '@/features/settings/tab-menu-selection';
 
 export default function TabsLayout() {
   const colors = useColors();
-  const isDark = useColorScheme() === 'dark';
+  const isDark = useAppColorScheme() === 'dark';
   const insets = useSafeAreaInsets();
   const keyboardVisible = useKeyboardState((state) => state.isVisible);
   const bottom = useMenuPreferences(state => state.layout.bottom);

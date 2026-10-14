@@ -20,6 +20,7 @@ const gap = '\u200B';
 for (const { characterWrap } of [helper, fallback, withoutIntl]) {
   for (const [input, expected] of [
     ['가져오는 중…', '가\u200B져\u200B오\u200B는 중\u200B…'],
+    ['가져오는 중...', '가\u200B져\u200B오\u200B는 중\u200B.\u200B.\u200B.'],
     ['Audio Station', 'A\u200Bu\u200Bd\u200Bi\u200Bo S\u200Bt\u200Ba\u200Bt\u200Bi\u200Bo\u200Bn'],
     ['12곡', '1\u200B2\u200B곡'], ['가\n나\r\n다  라', '가\n나\r\n다  라'],
     ['e\u0301한', 'e\u0301\u200B한'], ['\u1100\u1161\u11A8나', '\u1100\u1161\u11A8\u200B나'],
@@ -65,8 +66,8 @@ const { ListLoading } = load('src/components/list-loading.tsx', {
   ...common, react: { useContext: () => 82 }, './tab-bar-inset': { TabBarInsetContext: {} },
 });
 const { AsyncState } = load('src/components/async-state.tsx', common);
-assert.equal(ListLoading().props.children[1].props.children, '불러오는 중…');
-assert.equal(AsyncState({ loading: true }).props.children[1].props.children, '불러오는 중…', 'All generic loaders use the same full message');
+assert.equal(ListLoading().props.children[1].props.children, '가져오는 중...');
+assert.equal(AsyncState({ loading: true }).props.children[1].props.children, '가져오는 중...', 'All generic loaders use the current full message');
 const { LibraryPage, LIBRARY_TABS } = load('src/features/library/library-page.tsx', {
   ...common, react: { memo: fn => fn, useMemo: calculate => calculate(), useCallback: fn => fn },
   'expo-router': { router: {} }, '@expo/vector-icons/Ionicons': { default: 'Icon', __esModule: true },

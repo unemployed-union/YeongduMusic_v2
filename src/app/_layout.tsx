@@ -1,5 +1,5 @@
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
-import { ActivityIndicator, Pressable, useColorScheme, View } from 'react-native';
+import { ActivityIndicator, Pressable, View } from 'react-native';
 import { Text } from '@/components/text';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -7,19 +7,22 @@ import { StatusBar } from 'expo-status-bar';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { useAppBootstrap } from '@/features/startup/use-app-bootstrap';
 import { usePlaybackRecovery } from '@/features/startup/use-playback-recovery';
-import { useColors } from '@/theme/tokens';
+import { useAppColorScheme, useColors } from '@/theme/tokens';
 import { useEffect } from 'react';
 import { useMenuPreferences } from '@/stores/menu-preferences';
 import { useSongMetadataStore } from '@/stores/song-metadata';
 import { AutomaticMetadata } from '@/features/metadata/automatic-metadata';
 import { useSongArtworkStore } from '@/stores/song-artwork';
+import { useThemePreferences } from '@/stores/theme-preferences';
 
 const queryClient = new QueryClient({ defaultOptions: { queries: { staleTime: 30000, retry: 2 } } });
 
 function Navigation() {
   const { ready, displayReady, privacy, scope, ...recovery } = useAppBootstrap();
   const colors = useColors();
-  const scheme = useColorScheme();
+  const scheme = useAppColorScheme();
+  const themeReady = useThemePreferences(state => state.ready), loadTheme = useThemePreferences(state => state.load);
+  useEffect(() => { void loadTheme(); }, [loadTheme]);
   const menuReady = useMenuPreferences(state => state.ready);
   const loadMenus = useMenuPreferences(state => state.load);
   useEffect(() => { void loadMenus(); }, [loadMenus]);
@@ -28,12 +31,12 @@ function Navigation() {
   useEffect(() => { void loadMetadata(); }, [loadMetadata]);
   const artworkReady = useSongArtworkStore(state => state.ready), loadArtwork = useSongArtworkStore(state => state.load);
   useEffect(() => { void loadArtwork(); }, [loadArtwork]);
-  usePlaybackRecovery({ ready: ready && metadataReady && artworkReady, privacyReady: privacy.ready, privacyScope: privacy.scope, scope, ...recovery });
-  if (!ready || !displayReady || !menuReady || !metadataReady || !artworkReady) return <View style={{ flex: 1, justifyContent: 'center', backgroundColor: colors.background }}><ActivityIndicator color={colors.tint} /></View>;
+  usePlaybackRecovery({ ready: ready && metadataReady && artworkReady && themeReady, privacyReady: privacy.ready, privacyScope: privacy.scope, scope, ...recovery });
+  if (!ready || !displayReady || !menuReady || !metadataReady || !artworkReady || !themeReady) return <View style={{ flex: 1, justifyContent: 'center', backgroundColor: colors.background }}><ActivityIndicator color={colors.tint} /></View>;
   if (!privacy.ready || privacy.scope !== scope) return <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 28, backgroundColor: colors.background }}>{privacy.error ? <><Text style={{ color: colors.text, textAlign: 'center', marginBottom: 16 }}>{privacy.error}</Text><Pressable onPress={() => void privacy.load(scope)}><Text style={{ color: colors.tint }}>숨김 설정 다시 불러오기</Text></Pressable></> : <ActivityIndicator color={colors.tint} />}</View>;
   return <ThemeProvider value={scheme === 'dark' ? DarkTheme : DefaultTheme}>
     <AutomaticMetadata />
-    <StatusBar style="auto" />
+    <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
     <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.background }, animation: 'slide_from_right' }}>
       <Stack.Screen name="index" />
       <Stack.Screen name="connect" />

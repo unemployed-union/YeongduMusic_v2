@@ -103,11 +103,22 @@ function checkSettingsUI(store) {
     assert.deepEqual(switches.map(node => node.props.value), layout[group].map((_, index) => index === 1));
   }
   const settings = load('src/app/settings.tsx', {
+    react: { useEffect: () => {}, useState: initial => [initial, () => {}] },
+    '@/components/toast-notice': { ToastNotice: 'Toast' },
     'react/jsx-runtime': { jsx, jsxs: jsx }, '@/features/settings/settings-ui': { SettingsPage: 'Page', SettingsLink: 'Link', SettingsSection: 'Section' },
     '@/features/settings/version-settings': { VersionSettings: 'Version' }, '@/stores/hidden-feature-access': { useHiddenFeatureAccess: selector => selector({ ready: true, enabled: false }) },
   }).default;
   const links = nodes(settings()).filter(node => node.type === 'Link').map(node => node.props.href);
   assert(links.includes('/settings/bottom-menu')); assert(links.includes('/settings/library')); assert(!links.includes('/settings/player-menu')); assert(!links.includes('/settings/other'));
+  assert(links.includes('/settings/playback'), 'Playback settings remain available while hidden settings are off');
+  const playback = load('src/app/settings/playback.tsx', {
+    'react/jsx-runtime': { jsx, jsxs: jsx }, '@/features/settings/settings-ui': { SettingsPage: 'Page', SettingsLink: 'Link', SettingsSection: 'Section' },
+    '@/features/settings/theme-settings': { ThemeSettings: 'ThemeSettings' },
+    '@/features/lyrics/translation-settings': { LyricsTranslationSettings: 'LyricsTranslationSettings' },
+    '@/features/playback/streaming-quality-settings': { StreamingQualitySettings: 'StreamingQualitySettings' },
+    '@/features/playback/playback-options-settings': { PlaybackOptionsSettings: 'PlaybackOptionsSettings' },
+  }).default;
+  assert.equal(nodes(playback()).filter(node => node.type === 'Link' && node.props.href === '/settings/player-menu').length, 1, 'The player menu settings appear once in the playback submenu');
 }
 
 function checkLibraryPager() {

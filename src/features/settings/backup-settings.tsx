@@ -51,7 +51,7 @@ export function BackupSettings() {
     });
   }
   return <SettingsPage>
-    <Text style={[styles.note, { color: colors.muted }]}>앨범 표시·앨범아트·스트리밍 음질·가져오기 제외 폴더를 파일로 백업합니다. 로그인 암호와 인증 정보, 음악 파일, 재생 중인 목록, 시스템 이퀄라이저 설정은 포함하지 않습니다.</Text>
+    <Text style={[styles.note, { color: colors.muted }]}>화면 모드·앨범 표시·앨범아트·스트리밍 음질·가져오기 제외 폴더를 파일로 백업합니다. 로그인 암호와 인증 정보, 음악 파일, 재생 중인 목록, 시스템 이퀄라이저 설정은 포함하지 않습니다.</Text>
     <SettingsSection title="백업">
       {access.ready && access.enabled && Platform.OS !== 'web' && <View style={settingsMenuStyles.row}>
         <View style={settingsMenuStyles.icon}><Ionicons name="options-outline" size={23} color={busy ? colors.muted : colors.tint} /></View>
@@ -74,6 +74,7 @@ export function BackupSettings() {
     </SettingsSection>
     {selected && <View style={[styles.preview, { backgroundColor: colors.surface, borderColor: colors.separator }]}>
       <Text style={[styles.title, { color: colors.text }]}>{selected.name}</Text>
+      <Text style={[styles.detail, { color: colors.muted }]}>화면 모드: {selected.backup.preferences.themeMode === undefined ? '현재 설정 유지' : selected.backup.preferences.themeMode === 'dark' ? '다크' : selected.backup.preferences.themeMode === 'light' ? '화이트' : '자동'}</Text>
       <Text style={[styles.detail, { color: colors.muted }]}>백업 날짜: {new Date(selected.backup.exportedAt).toLocaleString()}{'\n'}앨범아트: {selected.backup.preferences.hideArtwork ? '숨김' : '표시'} · 폴더 앨범: {selected.backup.preferences.includeFolderAlbums ? '표시' : '숨김'}{'\n'}음질: {selected.backup.preferences.quality === 'mp3' ? 'MP3' : '원본'} · 제외 폴더 {selected.backup.preferences.excludedFolders.length}개</Text>
       {selected.backup.account && <View style={styles.option}>
         <View style={styles.copy}><Text style={[styles.title, { color: restoreAccountDisabled ? colors.muted : colors.text }]}>프리셋과 숨김 설정도 복구</Text><Text style={[styles.detail, { color: colors.muted }]}>음악 숨김 프리셋 {selected.backup.account.hidden.presets.length}개 · 플레이리스트 {selected.backup.account.playlists.presets.length}개. 같은 서버·NAS 계정에서만 복구할 수 있습니다. 기타 메뉴 활성화 상태와 빠른 숨기기 설정도 바뀝니다.</Text></View>

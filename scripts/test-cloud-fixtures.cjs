@@ -18,6 +18,10 @@ exports.cloudFixtures = (globals = {}, dependencies = {}) => {
   useSongMetadataStore.getState = () => metadata; useSongMetadataStore.subscribe = () => () => {};
   const shared = { '@/stores/s3': { useS3Store }, ...dependencies };
   const artwork = { ready: true, patches: {}, baseUri: 'file:///artwork/', load: async () => {} };
+  const theme = { mode: 'auto', ready: true, loading: false, saving: false, error: null, load: async () => {}, setMode: async mode => { theme.mode = mode; } };
+  const useThemePreferences = select => select ? select(theme) : theme;
+  useThemePreferences.getState = () => theme; useThemePreferences.subscribe = () => () => {};
+  const themeRules = read('src/theme/mode.ts', globals);
   const useSongArtworkStore = select => select ? select(artwork) : artwork;
   useSongArtworkStore.getState = () => artwork; useSongArtworkStore.subscribe = () => () => {};
   const artworkRules = read('src/features/artwork/rules.ts', globals, {
@@ -26,6 +30,7 @@ exports.cloudFixtures = (globals = {}, dependencies = {}) => {
   const resultHelpers = read('src/features/library/library-result.ts', globals);
   return {
     '@/stores/song-metadata': { useSongMetadataStore },
+    '@/stores/theme-preferences': { useThemePreferences }, '@/theme/mode': themeRules, './mode': themeRules,
     '@/stores/song-artwork': { useSongArtworkStore }, '@/features/artwork/rules': artworkRules, '../artwork/rules': artworkRules,
     '@/features/metadata/rules': read('src/features/metadata/rules.ts', globals),
     '../metadata/rules': read('src/features/metadata/rules.ts', globals),

@@ -57,6 +57,7 @@ function nodes(node) {
   if (!node || typeof node !== 'object') return [];
   return [node, ...nodes(node.props?.children)];
 }
+let appScheme = 'dark';
 const ui = {
   react: { useRef: initial => ({ current: initial }) },
   'react/jsx-runtime': { jsx, jsxs: jsx },
@@ -71,7 +72,7 @@ const ui = {
   'react-native-keyboard-controller': { useKeyboardState: selector => selector({ isVisible: false }) },
   '@/components/mini-player': { MINI_PLAYER_INSET: 12, MiniPlayer: 'MiniPlayer' },
   '@/components/tab-bar-inset': { TAB_BAR_HEIGHT: 66, TabBarInsetContext: { Provider: 'TabBarInsetProvider' } },
-  '@/theme/tokens': { useColors: () => ({ tint: '#f48' }) },
+  '@/theme/tokens': { useColors: () => ({ tint: '#f48' }), useAppColorScheme: () => appScheme },
 };
 const menuRules = renderModule('src/features/settings/menu-layout.ts', {});
 let menuLayout = menuRules.defaultMenuLayout();
@@ -93,6 +94,10 @@ for (const name of ['(library)', '(playlists)', 'search']) {
   assert.equal(nodes(background).find(node => node.type === 'BlurView').props.blurTarget, content.props.ref, 'Tab blur captures the selected tab');
 }
 assert.equal(refs.size, 3);
+for (appScheme of ['light', 'dark']) {
+  const background = TabsLayout().props.screenOptions({ route: { name: 'search' } }).tabBarBackground();
+  assert.equal(nodes(background).find(node => node.type === 'BlurView').props.tint, appScheme, 'Tab blur follows the selected app theme');
+}
 menuLayout.bottom.reverse(); menuLayout.bottom[2].visible = false;
 const customizedTabs = TabsLayout();
 assert.deepEqual(nodes(customizedTabs).filter(node => node.type === 'TabScreen').map(node => node.props.name), ['search', '(playlists)', '(library)']);

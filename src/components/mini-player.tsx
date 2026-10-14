@@ -1,5 +1,5 @@
 import type { RefObject } from 'react';
-import { Pressable, StyleSheet, View, useColorScheme } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { Text } from '@/components/text';
 import { BlurView } from 'expo-blur';
 import Animated, { FadeInDown } from 'react-native-reanimated';
@@ -10,7 +10,7 @@ import { Artwork } from './artwork';
 import { MarqueeText } from './marquee-text';
 import { togglePlayback } from '@/services/playback/controller';
 import { usePlaybackStore } from '@/stores/playback';
-import { useColors } from '@/theme/tokens';
+import { useAppColorScheme, useColors } from '@/theme/tokens';
 
 export const MINI_PLAYER_INSET = 8;
 
@@ -22,7 +22,7 @@ export function MiniPlayer({ blurTarget }: { blurTarget: RefObject<View | null> 
   const { queue, index, playing, position, duration } = usePlaybackStore();
   const song = queue[index];
   const colors = useColors();
-  const isDark = useColorScheme() === 'dark';
+  const isDark = useAppColorScheme() === 'dark';
   const swipeUp = Gesture.Pan()
     .activeOffsetY(-12)
     .failOffsetY(12)

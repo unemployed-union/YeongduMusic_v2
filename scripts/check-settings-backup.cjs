@@ -46,6 +46,9 @@ const menus = load('src/stores/menu-preferences.ts', { ...common, '@/features/se
 const streaming = load('src/stores/streaming-preferences.ts', common).useStreamingPreferences;
 const exclusions = load('src/stores/folder-exclusions.ts', { ...common, '@/services/local-music/folders': folders }).useFolderExclusionStore;
 const access = load('src/stores/hidden-feature-access.ts', common).useHiddenFeatureAccess;
+const themeMocks = { ...common, 'react-native': { Platform: { OS: 'android' }, Appearance: { setColorScheme() {} } },
+  'expo-sqlite/kv-store': { __esModule: true, default: { getItem: storage.getItemAsync, setItem: storage.setItemAsync } } };
+const theme = load('src/stores/theme-preferences.ts', themeMocks).useThemePreferences;
 const hiddenMocks = {
   '@/features/hidden-music/rules': hiddenRules,
   '@/services/hidden-music/biometrics': { authenticateHiddenSettings: async () => { authCalls++; if (failAuth) throw new Error('인증 취소'); } },
@@ -64,6 +67,7 @@ const playlistMocks = {
 };
 const playlists = load('src/stores/playlists.ts', playlistMocks).usePlaylistStore;
 const service = load('src/services/settings-backup.ts', {
+  '@/stores/theme-preferences': { useThemePreferences: theme },
   '@/stores/menu-preferences': { useMenuPreferences: menus },
   '@/stores/display-preferences': { useDisplayPreferences: display }, '@/stores/library-preferences': { useLibraryPreferences: library },
   '@/stores/streaming-preferences': { useStreamingPreferences: streaming }, '@/stores/folder-exclusions': { useFolderExclusionStore: exclusions },
@@ -84,7 +88,7 @@ async function main() {
   assert.throws(() => format.parseSettingsBackup('garbage'));
   for (const change of [{ format: 'other' }, { version: 999 }, { exportedAt: 'invalid' }, { preferences: { ...general.preferences, hideArtwork: 'true' } },
     { preferences: { ...general.preferences, quality: 'lossless' } }, { preferences: { ...general.preferences, excludedFolders: [null] } },
-    { preferences: { ...general.preferences, excludedFolders: Array(201).fill('/Music') } }]) {
+    { preferences: { ...general.preferences, excludedFolders: Array(201).fill('/Music') } }, { preferences: { ...general.preferences, themeMode: 'blue' } }]) {
     assert.throws(() => format.parseSettingsBackup(JSON.stringify({ ...general, ...change })));
   }
   assert.throws(() => format.checkBackupSize('가'.repeat(format.MAX_BACKUP_BYTES / 2)), /2MB/, 'Size limit counts UTF-8 bytes');
@@ -98,7 +102,16 @@ async function main() {
   assert.equal(display.getState().hideArtwork, true); assert.equal(library.getState().includeFolderAlbums, false);
   assert.equal(streaming.getState().quality, 'mp3'); assert.deepEqual(exclusions.getState().folders, ['/storage/primary/Music/제외']);
   const restored = JSON.parse(await service.createSettingsBackup());
-  assert.deepEqual(restored.preferences, { ...clean.preferences, menus: menus.getState().layout }, 'Round trip includes all general settings');
+  assert.deepEqual(restored.preferences, { ...clean.preferences, menus: menus.getState().layout, themeMode: 'auto' }, 'Round trip includes all general settings');
+  const themeBackup = { ...clean, preferences: { ...clean.preferences, themeMode: 'dark' } };
+  await service.restoreSettingsBackup(themeBackup, false); assert.equal(theme.getState().mode, 'dark');
+  assert.equal(JSON.parse(await service.createSettingsBackup()).preferences.themeMode, 'dark');
+  const restartedTheme = load('src/stores/theme-preferences.ts', themeMocks).useThemePreferences;
+  await restartedTheme.getState().load(); assert.equal(restartedTheme.getState().mode, 'dark', 'Restored theme persists across restarts');
+  await service.restoreSettingsBackup(clean, false); assert.equal(theme.getState().mode, 'dark', 'Older backups leave the current theme selection unchanged');
+  await theme.getState().setMode('auto'); failKey = 'yeongdumusic-theme-mode-v1'; failures = 1;
+  await assert.rejects(service.restoreSettingsBackup(themeBackup, false), /기존 설정으로 되돌렸습니다/);
+  assert.equal(theme.getState().mode, 'auto'); failKey = ''; failures = 0;
   const customMenus = menuRules.defaultMenuLayout();
   customMenus.bottom.reverse(); customMenus.bottom[1].visible = false;
   customMenus.library.reverse(); customMenus.library[1].visible = false;

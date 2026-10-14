@@ -39,7 +39,7 @@ new Function('require', 'exports', 'setTimeout', 'clearTimeout', code)(name => {
   return modules[name];
 }, moduleExports, setTimeout, clearTimeout);
 
-async function checkRootRemount({ playing = true, cold = false } = {}) {
+async function checkRootRemount({ playing = true, cold = false, theme = 'dark' } = {}) {
   const effects = [], navigation = [];
   let privacyLoads = 0, stopped = 0, savedReads = 0, persistenceStarts = 0;
   const saved = { queue: [{ id: 'nas-live', source: 'nas' }], index: 0, playing, position: 37, shuffle: false, repeat: 'off', playbackRate: 1.75, preservePitch: false };
@@ -95,7 +95,7 @@ async function checkRootRemount({ playing = true, cold = false } = {}) {
       return true;
     } },
     '@/services/playback/persistence': { readRestoredPlayback: async () => { savedReads++; return saved; }, startPlaybackPersistence: () => { persistenceStarts++; return () => {}; } },
-    '@/theme/tokens': { useColors: () => ({}) },
+    '@/theme/tokens': { useColors: () => ({}), useAppColorScheme: () => theme },
     '@/features/metadata/automatic-metadata': { AutomaticMetadata: 'AutomaticMetadata' },
   };
   const rootCode = ts.transpileModule(fs.readFileSync(path.join(__dirname, '..', 'src/app/_layout.tsx'), 'utf8'), {
@@ -111,7 +111,9 @@ async function checkRootRemount({ playing = true, cold = false } = {}) {
     effects.length = 0;
     let node = rootModule.default();
     while (typeof node.type !== 'function') node = node.props.children;
-    node.type();
+    const themeTree = node.type();
+    assert.equal(themeTree.props.value, theme === 'dark' ? rootMocks['expo-router'].DarkTheme : rootMocks['expo-router'].DefaultTheme);
+    assert.equal(themeTree.props.children[1].props.style, theme === 'dark' ? 'light' : 'dark', 'Status bar follows the app theme rather than the device theme');
     const cleanups = effects.map(effect => effect());
     for (let i = 0; i < 8; i++) await Promise.resolve();
     assert.equal(privacyLoads, 0, 'Remount must not clear the loaded account profile');
@@ -190,6 +192,7 @@ async function main() {
   await checkRootRemount({ playing: false });
   await checkRootRemount({ playing: true, cold: true });
   await checkRootRemount({ playing: false, cold: true });
+  await checkRootRemount({ theme: 'light' });
   console.log('Playback recovery checks passed.');
 }
 main().catch(error => { console.error(error); process.exitCode = 1; });
