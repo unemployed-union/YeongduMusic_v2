@@ -1,4 +1,4 @@
-/* Shared native-free dependencies for legacy regressions with no S3 connection. */
+/* Shared native-free dependencies for regressions without device connections. */
 /* global __dirname */
 const fs = require('node:fs'), path = require('node:path'), ts = require('typescript');
 const root = path.resolve(__dirname, '..');
@@ -22,6 +22,12 @@ exports.cloudFixtures = (globals = {}, dependencies = {}) => {
   const useThemePreferences = select => select ? select(theme) : theme;
   useThemePreferences.getState = () => theme; useThemePreferences.subscribe = () => () => {};
   const themeRules = read('src/theme/mode.ts', globals);
+  const detailRules = read('src/features/library/detail-preferences.ts', globals);
+  const hapticRules = read('src/features/haptics/preferences.ts', globals);
+  const details = { preferences: { ...detailRules.DEFAULT_DETAIL_PREFERENCES }, ready: true, loading: false, saving: false, loadError: false, error: null,
+    load: async () => {}, restore: async value => { details.preferences = detailRules.parseDetailPreferences(value); } };
+  const useLibraryDetailPreferences = select => select ? select(details) : details;
+  useLibraryDetailPreferences.getState = () => details; useLibraryDetailPreferences.subscribe = () => () => {};
   const useSongArtworkStore = select => select ? select(artwork) : artwork;
   useSongArtworkStore.getState = () => artwork; useSongArtworkStore.subscribe = () => () => {};
   const artworkRules = read('src/features/artwork/rules.ts', globals, {
@@ -29,8 +35,12 @@ exports.cloudFixtures = (globals = {}, dependencies = {}) => {
   });
   const resultHelpers = read('src/features/library/library-result.ts', globals);
   return {
+    '@/services/haptics': { playHaptic() {}, prepareHaptics() {} },
+    '@/features/haptics/preferences': hapticRules,
+    '@/components/text-input': { TextInput: dependencies['react-native']?.TextInput ?? 'TextInput' },
     '@/stores/song-metadata': { useSongMetadataStore },
     '@/stores/theme-preferences': { useThemePreferences }, '@/theme/mode': themeRules, './mode': themeRules,
+    '@/stores/library-detail-preferences': { useLibraryDetailPreferences }, '@/features/library/detail-preferences': detailRules,
     '@/stores/song-artwork': { useSongArtworkStore }, '@/features/artwork/rules': artworkRules, '../artwork/rules': artworkRules,
     '@/features/metadata/rules': read('src/features/metadata/rules.ts', globals),
     '../metadata/rules': read('src/features/metadata/rules.ts', globals),

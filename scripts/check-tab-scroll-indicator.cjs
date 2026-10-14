@@ -88,6 +88,17 @@ for (const viewport of [180, 500, 900]) {
     assert.equal(3 + style.transform[0].translateY + style.height, viewport - inset - 3, 'Safe area, keyboard and resized viewport all retain the bottom boundary');
   }
 }
+bottomInset = 82;
+const floatingChild = { ...child, props: { ...child.props, scrollIndicatorInsets: { top: 96 } } };
+const floatingWrapper = TabScrollEdgeFade({ children: floatingChild });
+const floatingFrame = floatingWrapper.type(floatingWrapper.props);
+const floatingTop = floatingFrame.props.children[1].props.style[1].top;
+assert.equal(floatingTop, 99, 'Android starts the indicator below a floating native header');
+const floatingObserver = floatingFrame.props.children[0];
+const floatingList = floatingObserver.type(floatingObserver.props).props.children;
+floatingList.props.onScroll({ nativeEvent: { contentOffset: { y: 1500 }, layoutMeasurement: { height: 500 }, contentSize: { height: 2000 }, contentInset: { top: 0, bottom: 0 } } });
+const floatingStyle = animatedStyle();
+assert.equal(floatingTop + floatingStyle.transform[0].translateY + floatingStyle.height, 500 - 82 - 3, 'Header insets retain the tab boundary');
 cleanup();
 assert.equal(cancellations.length, 1, 'Unmount cancels the delayed fade');
 platform.OS = 'ios';

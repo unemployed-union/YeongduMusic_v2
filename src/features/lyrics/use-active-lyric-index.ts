@@ -1,24 +1,39 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { activeLyricIndex } from '@/services/lyrics/parse-lyrics';
 import { getPlaybackPosition } from '@/services/playback/controller';
 import { usePlaybackStore } from '@/stores/playback';
 import type { LyricLine } from '@/types/lyrics';
 
-export function useActiveLyricIndex(lines: LyricLine[], synced: boolean): number {
-  const position = usePlaybackStore((state) => state.position);
-  const playing = usePlaybackStore((state) => state.playing);
-  const buffering = usePlaybackStore((state) => state.buffering);
-  const [active, setActive] = useState(() => synced ? activeLyricIndex(lines, position) : -1);
+export function useActiveLyricIndex(lines: LyricLine[], synced: boolean, offsetMs = 0): number {
+  const [active, setActive] = useState(() => synced ? activeLyricIndex(lines, usePlaybackStore.getState().position - offsetMs / 1000) : -1);
+  const current = useRef(active);
 
   useEffect(() => {
-    const update = () => setActive(synced ? activeLyricIndex(lines, buffering ? position : getPlaybackPosition()) : -1);
+    const update = () => {
+      const state = usePlaybackStore.getState();
+      const next = synced ? activeLyricIndex(lines, (state.buffering ? state.position : getPlaybackPosition()) - offsetMs / 1000) : -1;
+      if (next === current.current) return;
+      current.current = next; setActive(next);
+    };
     update();
-    if (!synced || !playing || buffering) return;
-    // Only mounted synchronized lyrics poll. Same-index updates bail out, so
-    // the list renders at line boundaries rather than on every clock sample.
-    const timer = setInterval(update, 100);
-    return () => clearInterval(timer);
-  }, [lines, synced, position, playing, buffering]);
+    if (!synced) return;
+    let timer: ReturnType<typeof setInterval> | null = null;
+    const manageTimer = () => {
+      const state = usePlaybackStore.getState();
+      if (state.playing && !state.buffering) {
+        if (timer === null) timer = setInterval(update, 100);
+      } else if (timer !== null) { clearInterval(timer); timer = null; }
+    };
+    // Observe engine status without subscribing React to every position update.
+    // A seek/pause/buffer event updates the line immediately; ordinary samples
+    // do not render the list or restart its polling timer.
+    const unsubscribe = usePlaybackStore.subscribe((state, previous) => {
+      if (state.position !== previous.position || state.playing !== previous.playing || state.buffering !== previous.buffering) update();
+      if (state.playing !== previous.playing || state.buffering !== previous.buffering) manageTimer();
+    });
+    manageTimer();
+    return () => { unsubscribe(); if (timer !== null) clearInterval(timer); };
+  }, [lines, synced, offsetMs]);
 
   return active;
 }

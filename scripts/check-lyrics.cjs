@@ -48,32 +48,54 @@ function runtime(file = 'src/services/lyrics/lrclib.ts', modules = { './parse-ly
 
 async function main() {
   let playback = { position: 0, playing: true, buffering: false };
-  let nativePosition = 0, highlighted = -1, poll = null, cleanup;
+  let nativePosition = 0, highlighted = -1, poll = null, cleanup, updates = 0, timerStarts = 0;
+  const subscribers = new Set();
+  const emitPlayback = patch => { const previous = playback; playback = { ...playback, ...patch }; subscribers.forEach(callback => callback(playback, previous)); };
   const clockHook = load('src/features/lyrics/use-active-lyric-index.ts', {
     react: {
-      useState: (initial) => [initial(), (value) => { highlighted = value; }],
+      useState: (initial) => { highlighted = initial(); return [highlighted, value => { highlighted = value; updates++; }]; },
+      useRef: current => ({ current }),
       useEffect: (effect) => { cleanup = effect(); },
     },
     '@/services/lyrics/parse-lyrics': parser,
     '@/services/playback/controller': { getPlaybackPosition: () => nativePosition },
-    '@/stores/playback': { usePlaybackStore: (select) => select(playback) },
+    '@/stores/playback': { usePlaybackStore: Object.assign(() => { throw Error('Lyric clock must not subscribe React to playback positions'); }, {
+      getState: () => playback, subscribe: callback => { subscribers.add(callback); return () => subscribers.delete(callback); },
+    }) },
   }, {
-    setInterval: (callback, delay) => { assert.equal(delay, 100); poll = callback; return 1; },
+    setInterval: (callback, delay) => { assert.equal(delay, 100); timerStarts++; poll = callback; return 1; },
     clearInterval: () => { poll = null; },
   });
   const timedLines = parser.parseLyrics('[00:01]First\n[00:02]Second', 'nas').lines;
-  const renderClock = (synced = true) => { cleanup?.(); clockHook.useActiveLyricIndex(timedLines, synced); };
+  const renderClock = (synced = true, offsetMs = 0) => { cleanup?.(); clockHook.useActiveLyricIndex(timedLines, synced, offsetMs); };
   renderClock();
   nativePosition = 0.99; poll(); assert.equal(highlighted, -1, 'Never anticipate lyric timestamps');
   nativePosition = 1.05; poll(); assert.equal(highlighted, 0, 'Highlight advances before the next store status event');
   nativePosition = 2.05; poll(); assert.equal(highlighted, 1);
   nativePosition = 0.5; poll(); assert.equal(highlighted, -1, 'Native backward seek rewinds highlighting');
+  const stableUpdates = updates, stableTimer = timerStarts;
+  for (let i = 0; i < 50; i++) { nativePosition = i / 100; emitPlayback({ position: nativePosition }); poll(); }
+  assert.equal(updates, stableUpdates, 'Status events and clock samples within one line never update React');
+  assert.equal(timerStarts, stableTimer, 'Status events do not recreate the polling timer');
+  nativePosition = 1.2; emitPlayback({ position: nativePosition }); assert.equal(highlighted, 0, 'Seek highlights immediately without a React status render');
+  emitPlayback({ playing: false }); assert.equal(poll, null, 'Pause stops polling via the store subscription');
+  emitPlayback({ playing: true }); assert(poll);
+  emitPlayback({ buffering: true, position: 0.5 }); assert.equal(poll, null); assert.equal(highlighted, -1);
+  nativePosition = 1.6; emitPlayback({ buffering: false }); assert(poll); assert.equal(highlighted, 0);
   playback = { position: 1.5, playing: true, buffering: true };
   renderClock(); assert.equal(poll, null); assert.equal(highlighted, 0, 'Buffering holds the confirmed store position');
   playback = { position: 1.5, playing: false, buffering: false }; nativePosition = 1.6;
   renderClock(); assert.equal(poll, null); assert.equal(highlighted, 0, 'Pause samples once without polling');
-  playback.playing = true; renderClock(); assert.ok(poll); cleanup(); assert.equal(poll, null, 'Unmount stops polling');
-  renderClock(false); assert.equal(poll, null); assert.equal(highlighted, -1, 'Plain lyrics never poll');
+  playback.playing = true; renderClock(); assert.ok(poll); cleanup(); assert.equal(poll, null, 'Unmount stops polling'); assert.equal(subscribers.size, 0);
+  renderClock(false); assert.equal(poll, null); assert.equal(highlighted, -1, 'Plain lyrics never poll'); assert.equal(subscribers.size, 0);
+  playback = { position: 1.5, playing: false, buffering: false }; nativePosition = 1.5;
+  renderClock(true, 1000); assert.equal(highlighted, -1, 'Positive correction delays display by one second');
+  renderClock(true, -1000); assert.equal(highlighted, 1, 'Negative correction advances display by one second');
+  playback = { position: 1.5, playing: true, buffering: true }; nativePosition = 99;
+  renderClock(true, 1000); assert.equal(highlighted, -1, 'Buffering applies correction to the confirmed position');
+  playback = { position: 0, playing: true, buffering: false }; nativePosition = 2.9;
+  renderClock(true, 1000); assert.equal(highlighted, 0); nativePosition = 3.01; poll(); assert.equal(highlighted, 1);
+  nativePosition = 0; poll(); assert.equal(highlighted, -1, 'Repeat/backward seek keeps the corrected lyric clock'); cleanup();
   console.log('PASS: live lyric clock, timestamp boundaries, backward seek, pause/buffering, plain lyrics and cleanup.');
   const lrc = parser.parseLyrics('\uFEFF[ar:Example]\r\n[offset:500]\r\n[00:04.00]Later\r\n[00:01.2][00:02.300]Repeated\r\n[00:01.20]Translation\r\n[00:03.000]\r\n', 'nas');
   assert.equal(lrc.kind, 'synced');

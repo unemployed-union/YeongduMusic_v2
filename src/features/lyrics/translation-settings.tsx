@@ -5,6 +5,7 @@ import { AnimatedSwitch } from '@/components/animated-switch';
 import { useColors } from '@/theme/tokens';
 import { useLyricsTranslationStore } from '@/stores/lyrics-translation';
 import { TRANSLATION_LANGUAGES, type TranslationOptions } from './translation-options';
+import { playHaptic } from '@/services/haptics';
 
 export function TranslationLanguageControls({ options, disabled, onChange, dark = false }: {
   options: TranslationOptions; disabled: boolean; onChange: (options: TranslationOptions) => void; dark?: boolean;
@@ -15,7 +16,7 @@ export function TranslationLanguageControls({ options, disabled, onChange, dark 
     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.languages}>
       {TRANSLATION_LANGUAGES.map(language => { const selected = options[field] === language.code, blocked = disabled || field === 'target' && options.source === language.code;
         return <Pressable key={language.code} accessibilityRole="button" hitSlop={{ top: 4, bottom: 4 }} accessibilityLabel={`${field === 'source' ? '원문' : '번역'} 언어 ${language.label}`} accessibilityState={{ selected, disabled: blocked }} disabled={blocked}
-          onPress={() => onChange(field === 'source' ? { source: language.code, target: language.code === options.target ? options.source : options.target } : { ...options, target: language.code })}
+          onPress={() => { if (blocked) return; if (!selected) playHaptic('selection'); onChange(field === 'source' ? { source: language.code, target: language.code === options.target ? options.source : options.target } : { ...options, target: language.code }); }}
           style={[styles.language, { backgroundColor: selected ? dark ? '#FFFFFF30' : colors.tint : dark ? '#FFFFFF12' : colors.separator, opacity: blocked ? 0.4 : 1 }]}>
           <Text style={{ color: selected || dark ? 'white' : colors.text, fontSize: 12, fontWeight: '600' }}>{language.label}</Text>
         </Pressable>;

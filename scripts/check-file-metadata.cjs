@@ -102,10 +102,13 @@ async function main() {
   console.log('PASS: independent jsmediatags reads of ID3v2.3/2.4 and FLAC text/artwork writes; front-cover replacement, back-cover/text/ID3v1/lyrics/ReplayGain/STREAMINFO/audio preservation; malformed rejection, chunked I/O, NAS/S3/local writing/conflict/cancellation, Drive read-only and local crash recovery. Network/native files are mocked.');
 }
 async function checkNativeIO() {
-  let failTransfer = false;
-  const contents = new Map([['input', mp3()]]);
+  let failTransfer = false, uploadStatus = 412;
+  const contents = new Map([['input', mp3()]]), transfers = [];
   class File {
-    constructor(uri) { this.uri = uri; }
+    constructor(uri, name) { this.uri = name ? uri + '/' + name : uri; this.parentDirectory = 'cache'; }
+    get exists() { return contents.has(this.uri); }
+    get size() { return contents.get(this.uri)?.length ?? 0; }
+    delete() { contents.delete(this.uri); }
     create() { if (contents.has(this.uri)) throw Error('exists'); contents.set(this.uri, Buffer.alloc(0)); }
     open() { const file = this; let offset = 0;
       return { get offset() { return offset; }, set offset(value) { offset = value; }, get size() { return contents.get(file.uri).length; },
@@ -113,13 +116,44 @@ async function checkNativeIO() {
         writeBytes(bytes) { const old = contents.get(file.uri), next = Buffer.alloc(Math.max(old.length, offset + bytes.length)); old.copy(next); next.set(bytes, offset); contents.set(file.uri, next); offset += bytes.length; }, close() {} };
     }
   }
-  const io = load('src/services/metadata/file-io.ts', { 'expo-file-system': { File, FileMode: {}, UploadTask: class { async uploadAsync() { if (failTransfer) throw Error('native error https://example.invalid/?_sid=SECRET'); return { status: 412 }; } } }, './tag-writer': writer });
+  const io = load('src/services/metadata/file-io.ts', { 'expo-file-system': { File, FileMode: {}, UploadType: { BINARY_CONTENT: 0 }, UploadTask: class {
+    constructor(file, url, options) { this.file = file; this.url = url; this.options = options; }
+    async uploadAsync() { transfers.push({ body: Buffer.from(contents.get(this.file.uri)), url: this.url, options: this.options }); if (failTransfer) throw Error('native error https://example.invalid/?_sid=SECRET'); return { status: uploadStatus }; }
+  } }, './tag-writer': writer });
   await io.rewriteTags(new File('input'), new File('output'), 'mp3', fields, new AbortController().signal);
   assert.deepEqual(contents.get('output'), render(contents.get('input'), 'mp3'));
   const controller = new AbortController(); controller.abort(); await assert.rejects(io.rewriteTags(new File('input'), new File('cancelled'), 'mp3', fields, controller.signal));
   assert.equal(contents.has('cancelled'), false);
   await assert.rejects(io.uploadFile(new File('output'), 'https://example.invalid', {}, () => {}), /변경/);
+  for (const status of [502, 503, 504]) {
+    uploadStatus = status;
+    await assert.rejects(io.uploadFile(new File('output'), 'https://example.invalid', {}, () => {}), error => error.status === status && /중계 서버/.test(error.message));
+  }
   failTransfer = true; await assert.rejects(io.uploadFile(new File('output'), 'https://example.invalid', {}, () => {}), error => error.message.includes('확인하지 못') && !error.message.includes('SECRET'));
+  failTransfer = false; uploadStatus = 200;
+  const large = Buffer.alloc(700000); for (let index = 0; index < large.length; index++) large[index] = index % 256;
+  contents.set('large', large);
+  const parameters = { api: 'SYNO.FileStation.Upload', version: '2', method: 'upload', path: '/music/한글 & 日本語', create_parents: 'false', overwrite: 'false' };
+  await io.uploadMultipartFile(new File('large'), 'https://example.invalid/upload', parameters, '.yeongdu-new-test', { 'X-SYNO-TOKEN': 'test-token' }, new AbortController().signal, () => {});
+  const transfer = transfers.at(-1);
+  assert.equal(transfer.options.uploadType, 0); assert.equal(transfer.options.httpMethod, 'POST');
+  assert.equal(transfer.options.headers['X-SYNO-TOKEN'], 'test-token');
+  assert.match(transfer.options.headers['Content-Type'], /^multipart\/form-data; boundary=yeongdu-form-/);
+  const form = await new Request(transfer.url, { method: 'POST', headers: transfer.options.headers, body: transfer.body }).formData();
+  for (const [key, value] of Object.entries(parameters)) assert.equal(form.get(key), value);
+  assert.equal(form.get('file').name, '.yeongdu-new-test'); assert.deepEqual(Buffer.from(await form.get('file').arrayBuffer()), large);
+  assert.equal([...form.keys()].at(-1), 'file', 'The binary file is the last part');
+  assert(!transfer.body.includes(Buffer.from('Content-Length:')), 'No per-part Content-Length headers added by native multipart');
+  assert(!transfer.body.includes(Buffer.from('charset=')), 'No per-part charset attribute');
+  assert(![...contents.keys()].some(uri => uri.startsWith('cache/upload-body-')), 'Remove the credential-bearing temporary request after success');
+  const multipartAbort = new AbortController(), transferCount = transfers.length;
+  await assert.rejects(io.uploadMultipartFile(new File('large'), transfer.url, parameters, '.yeongdu-new-cancelled', {}, multipartAbort.signal, () => multipartAbort.abort()), /취소/);
+  assert.equal(transfers.length, transferCount, 'Cancelled preparation never starts a remote upload');
+  uploadStatus = 502;
+  await assert.rejects(io.uploadMultipartFile(new File('large'), transfer.url, parameters, '.yeongdu-new-failed', {}, new AbortController().signal, () => {}), error => error.status === 502);
+  assert(![...contents.keys()].some(uri => uri.startsWith('cache/upload-body-')), 'Remove the temporary request after cancellation or failure');
+  assert.deepEqual(contents.get('large'), large, 'Multipart construction never modifies the source file');
+  await assert.rejects(io.uploadMultipartFile(new File('large'), transfer.url, parameters, 'bad\r\nname', {}, new AbortController().signal, () => {}), /형식/);
 }
 async function checkCloudTargets() {
   const calls = [], uploads = []; let etag = '"first"', tagging = 0;
@@ -141,16 +175,33 @@ async function checkCloudTargets() {
 }
 async function checkNasTarget() {
   const files = new Map([['/music/song.mp3', { size: 123, mtime: 1, ctime: 1 }]]), calls = [];
-  let failRename = false;
+  let failRename = false, failUpload = false, httpStatus = 200, uploadStatus = 200;
+  const cloudRequest = load('src/services/cloud-music/request.ts');
   class File { constructor(parent, name) { this.name = name; this.parentDirectory = parent; this.size = 456; } async copy(to) { to.size = this.size; } }
   const session = { baseUrl: 'https://nas.example.invalid', sid: 'test-sid', token: 'test-token', apis: Object.fromEntries(['List', 'Upload', 'Download', 'CheckPermission', 'Rename'].map(api => ['SYNO.FileStation.' + api, { path: 'entry.cgi', minVersion: 1, maxVersion: 3 }])) };
   const nas = load('src/services/metadata/nas-file.ts', { 'expo-file-system': { File, UploadType: { MULTIPART: 1 } },
-    './file-io': { checkCancelled: signal => { if (signal.aborted) throw Error('cancel'); }, uploadFile: async (file, url, config) => {
-      calls.push({ upload: true, url, config }); assert.equal(config.parameters.overwrite, 'false');
-      files.set('/music/' + file.name, { size: 456, mtime: 2, ctime: 2 }); return { body: '{"success":true}' };
+    '@/services/cloud-music/request': cloudRequest,
+    './file-io': { checkCancelled: signal => { if (signal.aborted) throw Error('cancel'); }, uploadMultipartFile: async (file, url, parameters, filename, headers, uploadSignal) => {
+      calls.push({ upload: true, url });
+      const endpoint = new URL(url);
+      assert.equal(endpoint.origin + endpoint.pathname, 'https://nas.example.invalid/webapi/entry.cgi');
+      assert.deepEqual(Object.fromEntries(endpoint.searchParams), { api: 'SYNO.FileStation.Upload', version: '2', method: 'upload', _sid: session.sid, SynoToken: session.token }, 'DSM needs routing/auth before it can select its multipart handler');
+      assert.deepEqual(parameters, { api: 'SYNO.FileStation.Upload', version: '2', method: 'upload', _sid: session.sid, SynoToken: session.token, path: '/music', create_parents: 'false', overwrite: 'false' });
+      assert.deepEqual(headers, { 'X-SYNO-TOKEN': session.token });
+      assert(filename.startsWith('.yeongdu-new-')); assert.equal(file.name, 'song.mp3');
+      assert.equal(uploadSignal, signal);
+      if (failUpload) return { body: '{"success":false,"error":{"code":401}}' };
+      if (uploadStatus !== 200) throw new cloudRequest.CloudRequestError('Gateway failure https://example.invalid/?_sid=SECRET', uploadStatus);
+      files.set(parameters.path + '/' + filename, { size: 456, mtime: 2, ctime: 2 }); return { body: '{"success":true}' };
     } },
   }, { fetch: async url => {
     const params = new URL(url).searchParams, method = params.get('method'); calls.push({ method }); let data = {};
+    assert.equal(params.get('_sid'), session.sid); assert.equal(params.get('SynoToken'), session.token);
+    if (httpStatus !== 200) return { ok: false, status: httpStatus };
+    if (method === 'write') {
+      assert.equal(JSON.parse(params.get('path')), '/music'); assert.equal(JSON.parse(params.get('filename')), 'song.mp3');
+      assert.equal(JSON.parse(params.get('overwrite')), true); assert.equal(JSON.parse(params.get('create_only')), false);
+    }
     if (method === 'getinfo') {
       const path = JSON.parse(params.get('path'))[0], file = files.get(path);
       if (!file) return { ok: true, json: async () => ({ success: false, error: { code: 408 } }) };
@@ -165,12 +216,29 @@ async function checkNasTarget() {
   } });
   const signal = new AbortController().signal, target = await nas.prepareNasFile(session, '/volume1/music/song.mp3', signal);
   assert.equal(new URL(target.download.uri).searchParams.get('path'), '["/music/song.mp3"]');
+  assert.equal(JSON.parse(new URL(target.download.uri).searchParams.get('mode')), 'download', 'File Station string parameters must be JSON encoded');
+  failUpload = true;
+  const beforeFailure = [...files], renamesBefore = calls.filter(call => call.method === 'rename').length;
+  await assert.rejects(target.commit(new File('cache', 'song.mp3'), () => {}), error => /임시 파일 업로드.*File Station 코드 401/.test(error.message) && !/세션이 만료|test-sid|test-token/.test(error.message));
+  assert.deepEqual([...files], beforeFailure, 'A rejected upload leaves the original untouched');
+  assert.equal(calls.filter(call => call.method === 'rename').length, renamesBefore, 'Do not publish or retry a rejected upload');
+  failUpload = false;
+  for (const status of [502, 503, 504]) {
+    uploadStatus = status;
+    await assert.rejects(target.commit(new File('cache', 'song.mp3'), () => {}), error => error.status === status && /원본은 교체하지 않았/.test(error.message) && !/SECRET|test-sid|test-token/.test(error.message));
+    assert.deepEqual([...files], beforeFailure); assert.equal(calls.filter(call => call.method === 'rename').length, renamesBefore);
+  }
+  uploadStatus = 200;
   await target.commit(new File('cache', 'song.mp3'), () => {});
   assert.equal(files.get('/music/song.mp3').size, 456); assert([...files].some(([path, file]) => path.endsWith('.yeongdu-backup') && file.size === 123));
   const retry = await nas.prepareNasFile(session, '/music/song.mp3', signal); failRename = true;
   await assert.rejects(retry.commit(new File('cache', 'song.mp3'), () => {}), /백업/); assert.equal(files.get('/music/song.mp3').size, 456, 'A failed publish restores the source name');
   for (const path of ['../song.mp3', '/music/../song.mp3', '/music\\song.mp3']) assert.throws(() => nas.nasFilePath(path));
   assert.throws(() => nas.nasFileEndpoint({ ...session, apis: {} }, 'SYNO.FileStation.Upload', 'upload', 2));
+  httpStatus = 401;
+  await assert.rejects(nas.prepareNasFile(session, '/music/song.mp3', signal), /파일 정보 확인 실패 \(HTTP 401\)/);
+  for (const code of [106, 107, 119]) assert.throws(() => nas.parseNasFileResponse({ success: false, error: { code } }), /세션이 만료/);
+  for (const code of [105, 407, 411]) assert.throws(() => nas.parseNasFileResponse({ success: false, error: { code } }, '쓰기 권한 확인'), /쓰기 권한 확인.*읽기·쓰기 권한/);
 }
 async function checkLocalTransaction() {
   const files = new Map(), rows = new Map(); let failWrite = false, failMove = false;

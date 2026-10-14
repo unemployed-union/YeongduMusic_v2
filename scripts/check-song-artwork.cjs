@@ -184,7 +184,7 @@ async function checkQueries(store) {
   assert.equal(queries.useAlbums().select(page).items[0].artworkUrl, original.artworkUrl);
 }
 async function checkEditor(store) {
-  const states = [], refs = [], jsx = (type, props) => ({ type, props }); let slot = 0, refSlot = 0, lookups = 0, downloads = 0, searchGate = null, editingSong = original, fileCalls = 0, failFileAt = 0, visible = [original, second];
+  const states = [], refs = [], jsx = (type, props) => ({ type, props }); let slot = 0, refSlot = 0, lookups = 0, downloads = 0, searchGate = null, editingSong = original, fileCalls = 0, failFileAt = 0, visible = [original, second], editingAlbum = false;
   const auth = create(() => ({ mode: 'mock', session: null })), useAuthStore = () => auth.getState(); useAuthStore.getState = auth.getState;
   const hidden = create(() => ({ ready: true, scope: 'demo', profile: { presets: [] } }));
   const Editor = load('src/features/artwork/artwork-editor.tsx', {
@@ -207,7 +207,7 @@ async function checkEditor(store) {
     '@/services/artwork/search': { searchArtwork: async () => { lookups++; if (searchGate) await searchGate.promise; return [{ id, uri: 'https://example.invalid/candidate', album: 'Album', artist: 'Artist', year: '2026' }]; } },
   }).ArtworkEditor;
   const nodes = tree => Array.isArray(tree) ? tree.flatMap(nodes) : tree && typeof tree === 'object' ? [tree, ...nodes(tree.props?.children)] : [];
-  const render = () => { slot = 0; refSlot = 0; return nodes(Editor({ song: editingSong, album: 'Album', artist: 'Artist', disabled: false, onBusyChange() {} })); };
+  const render = () => { slot = 0; refSlot = 0; return nodes(Editor({ song: editingSong, album: 'Album', artist: 'Artist', disabled: false, onBusyChange() {}, albumSongs: editingAlbum ? visible : undefined })); };
   const button = text => render().find(node => node.type === 'Button' && nodes(node).some(child => child.type === 'Text' && child.props.children === text));
   assert.equal(render().filter(node => node.type === 'Input').length, 0); assert.equal(lookups, 0);
   render().find(node => node.type === 'Button').props.onPress(); assert.equal(render().find(node => node.type === 'Switch').props.value, false);
@@ -250,5 +250,18 @@ async function checkEditor(store) {
   render().find(node => node.type === 'Button').props.onPress();
   render().find(node => node.type === 'Switch' && node.props.accessibilityLabel === '같은 앨범의 곡에도 앨범아트 적용').props.onValueChange(true);
   assert.equal(fileSwitch().props.disabled, true, 'An unsupported file in a bulk selection keeps file saving off');
+  states.length = 0; refs.length = 0; editingAlbum = true;
+  editingSong = { ...original, albumSource: 'fallback' };
+  const folderSecond = { ...second, albumSource: 'fallback' }, other = { ...second, id: 'other-album', album: 'Other album' };
+  visible = [editingSong, folderSecond, other];
+  assert(render().some(node => node.type === 'Input'), 'Album selection opens the editor immediately');
+  assert.equal(render().some(node => node.type === 'Switch' && node.props.accessibilityLabel === '같은 앨범의 곡에도 앨범아트 적용'), false, 'Album-level editing always targets the album');
+  assert.equal(fileSwitch().props.value, false, 'Album-level source writes stay opt-in');
+  const folderKeys = [editingSong, folderSecond].map(song => metadata.metadataKey(song, 'changed'));
+  await store.getState().save(folderKeys, undefined);
+  button('이미지 파일 선택').props.onPress(); await tick(); assert(folderKeys.every(key => !store.getState().patches[key]), 'File selection still requires explicit apply');
+  button('앨범아트 적용').props.onPress(); await tick(); assert(folderKeys.every(key => store.getState().patches[key] === image), 'Explicit folder album selection updates every matching displayed song');
+  assert.equal(store.getState().patches[metadata.metadataKey(other, 'changed')], undefined, 'Unrelated albums cannot join an explicit album edit');
+  button('원래 앨범아트로 되돌리기').props.onPress(); await tick(); assert(folderKeys.every(key => !store.getState().patches[key]));
 }
 main().catch(error => { console.error(error); process.exitCode = 1; });

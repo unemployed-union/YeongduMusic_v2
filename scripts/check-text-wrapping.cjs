@@ -3,6 +3,7 @@ const assert = require('node:assert/strict'), fs = require('node:fs'), path = re
 const ts = require('typescript'), react = require('react'), jsxRuntime = require('react/jsx-runtime');
 const root = path.resolve(__dirname, '..');
 function load(file, mocks = {}, globals = {}) {
+  mocks = { '@/services/haptics': { playHaptic() {}, prepareHaptics() {} }, ...mocks };
   const exports = {};
   const code = ts.transpileModule(fs.readFileSync(path.join(root, file), 'utf8'), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX },
@@ -69,7 +70,8 @@ const { AsyncState } = load('src/components/async-state.tsx', common);
 assert.equal(ListLoading().props.children[1].props.children, '가져오는 중...');
 assert.equal(AsyncState({ loading: true }).props.children[1].props.children, '가져오는 중...', 'All generic loaders use the current full message');
 const { LibraryPage, LIBRARY_TABS } = load('src/features/library/library-page.tsx', {
-  ...common, react: { memo: fn => fn, useMemo: calculate => calculate(), useCallback: fn => fn },
+  ...common, react: { memo: fn => fn, useMemo: calculate => calculate(), useCallback: fn => fn, useState: value => [value, () => {}] },
+  './album-properties': { AlbumProperties: 'AlbumProperties' },
   'expo-router': { router: {} }, '@expo/vector-icons/Ionicons': { default: 'Icon', __esModule: true },
   '@/components/tab-scroll-edge-fade': { TabScrollEdgeFade: 'Fade' }, '@/components/artwork': { Artwork: 'Artwork' },
   '@/components/async-state': { AsyncState }, '@/components/list-loading': { ListLoading }, '@/components/song-row': { SongRow: 'SongRow' },

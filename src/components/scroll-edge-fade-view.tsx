@@ -12,6 +12,8 @@ export type ScrollEdgeFadeProps = {
   children: ReactNode;
   style?: StyleProp<ViewStyle>;
   fadeHeight?: number;
+  /** Screens with a floating header can supply their own top fade. */
+  topEnabled?: boolean;
   /** Preserve explicit dark/light edges in the player. No live blur is captured. */
   tint?: BlurTint;
   /** Opaque #RRGGBB surface color for sheets; defaults to the screen background. */
@@ -31,7 +33,7 @@ const Edge = memo(function Edge({ colors, height, bottom, animatedStyle }: {
 });
 
 /** Two small, pre-mounted gradients; never mask or capture the scroll content. */
-export function ScrollEdgeFade({ children, style, fadeHeight = 28, tint, backgroundColor, fill = true }: ScrollEdgeFadeProps) {
+export function ScrollEdgeFade({ children, style, fadeHeight = 28, topEnabled = true, tint, backgroundColor, fill = true }: ScrollEdgeFadeProps) {
   const colors = useColors();
   const color = backgroundColor ?? (tint === 'dark' ? palette.dark.background : tint === 'light' ? palette.light.background : colors.background);
   const gradients = useMemo(() => {
@@ -39,7 +41,7 @@ export function ScrollEdgeFade({ children, style, fadeHeight = 28, tint, backgro
     return { top, bottom: [...top].reverse() as [string, string, string, string, string] };
   }, [color]);
   const { child, scrollProps, top, bottom } = useScrollEdges(children);
-  const transition = useScrollEdgeTransition(top, bottom);
+  const transition = useScrollEdgeTransition(top && topEnabled, bottom);
   const [height, setHeight] = useState<number | null>(null);
   const edge = Math.min(Math.max(0, fadeHeight), height === null ? fadeHeight : height / 3);
   const layout = fill ? styles.fill : styles.shrink;

@@ -75,6 +75,16 @@ const ui = {
   '@/theme/tokens': { useColors: () => ({ tint: '#f48' }), useAppColorScheme: () => appScheme },
 };
 const menuRules = renderModule('src/features/settings/menu-layout.ts', {});
+const LibraryLayout = renderModule('src/app/(tabs)/(library)/_layout.tsx', {
+  'react/jsx-runtime': { jsx, jsxs: jsx }, 'expo-router': { Stack: { Screen: 'StackScreen' } },
+  '@/theme/tokens': { useColors: () => ({ tint: '#f48', background: '#0c0d12' }) },
+}).default;
+const libraryLayout = LibraryLayout(), albumOptions = nodes(libraryLayout).find(node => node.props?.name === 'album/[id]').props.options;
+assert.equal(albumOptions.headerTransparent, true, 'Album artwork can extend behind the native back button and title');
+assert.equal(albumOptions.headerStyle.backgroundColor, 'transparent', 'The shared stack surface must not override album transparency');
+assert.equal(albumOptions.headerShadowVisible, false);
+assert.equal(albumOptions.scrollEdgeEffects.top, 'hidden', 'Native automatic blur does not tint the album hero');
+assert.equal(libraryLayout.props.screenOptions.headerStyle.backgroundColor, '#0c0d12', 'Artist and other library headers retain the normal surface');
 let menuLayout = menuRules.defaultMenuLayout();
 ui['@/features/settings/menu-layout'] = menuRules;
 ui['@/stores/menu-preferences'] = { useMenuPreferences: selector => selector({ layout: menuLayout }) };
@@ -157,7 +167,7 @@ nodes(ToastSettings()).find(node => node.type === 'VersionSettings').props.onToa
 const toastedPage = ToastSettings(); assert.equal(toastedPage.props.overlay.type, 'ToastNotice'); assert.equal(toastedPage.props.overlay.props.message, '숨김 설정 열림');
 assert(!nodes(toastedPage.props.children).some(node => node.type === 'ToastNotice'), 'The notice is outside clipped settings groups and the scroll content');
 const links = tree => nodes(tree).filter(node => node.type === 'SettingsLink').map(node => [node.props.title, node.props.href]);
-assert.deepEqual(links(Settings()), [['클라우드 연결', '/settings/cloud'], ['재생 및 화면', '/settings/playback'], ['하단 메뉴', '/settings/bottom-menu'], ['보관함', '/settings/library'], ['설정 백업 및 복구', '/settings/backup'], ['플레이리스트 백업 및 복구', '/settings/playlist-backup'], ['오픈소스 라이선스', '/settings/licenses']]);
+assert.deepEqual(links(Settings()), [['클라우드 연결', '/settings/cloud'], ['재생 및 화면', '/settings/playback'], ['햅틱 피드백', '/settings/haptics'], ['하단 메뉴', '/settings/bottom-menu'], ['보관함', '/settings/library'], ['설정 백업 및 복구', '/settings/backup'], ['플레이리스트 백업 및 복구', '/settings/playlist-backup'], ['오픈소스 라이선스', '/settings/licenses']]);
 const backupCategory = nodes(Settings()).find(node => node.type === 'SettingsSection' && node.props.title === '백업 및 복구');
 assert.ok(backupCategory, 'Settings exposes a dedicated backup category');
 assert.deepEqual(links(backupCategory), [['설정 백업 및 복구', '/settings/backup'], ['플레이리스트 백업 및 복구', '/settings/playlist-backup']]);
@@ -188,13 +198,14 @@ for (const [file, modulePath, component] of [
   ['src/app/settings/cloud/google-drive.tsx', '@/features/google-drive/settings', 'GoogleDriveSettings'],
   ['src/app/settings/library.tsx', '@/features/library/folder-exclusion-settings', 'FolderExclusionSettings'],
 ]) {
-  const Screen = renderModule(file, { ...settingsMocks, [modulePath]: { [component]: component } }).default;
+  const Screen = renderModule(file, { ...settingsMocks, '@/features/library/detail-display-settings': { DetailDisplaySettings: 'DetailDisplaySettings' }, [modulePath]: { [component]: component } }).default;
   assert.ok(nodes(Screen()).some(node => node.type === component), 'Detailed settings reuse the existing controls');
 }
 
 let state = { queue: [], index: -1 }, calls = [], navigation = [], finish;
 let action = async (songs, index) => { state = { queue: songs, index }; };
 const modules = {
+  '@/services/haptics': { playHaptic() {} },
   'expo-router': { router: { navigate: route => navigation.push(route) } },
   '@/services/playback/controller': { playQueue: async (...args) => { calls.push(args); await action(...args); } },
   '@/stores/playback': { usePlaybackStore: { getState: () => state } },

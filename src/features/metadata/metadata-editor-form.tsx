@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Platform, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { TextInput } from '@/components/text-input';
 import { useQueryClient } from '@tanstack/react-query';
 import { AnimatedSwitch } from '@/components/animated-switch';
 import { Text } from '@/components/text';
@@ -12,10 +13,9 @@ import { privacyScope } from '@/features/hidden-music/rules';
 import { applyMetadata, METADATA_FIELDS, metadataDraft, metadataKey, parseMetadata } from './rules';
 import { DRIVE_FILE_READ_ONLY_MESSAGE, fileWriteDescription, fileWriteUnavailable } from './file-options';
 import { MetadataWebOptions } from './metadata-web-options';
-import { ArtworkEditor } from '@/features/artwork/artwork-editor';
 import type { Page, Song } from '@/types/music';
 
-export function MetadataEditorForm({ song, onSaved, onCancel }: { song: Song; onSaved: () => void; onCancel: () => void }) {
+export function MetadataEditorForm({ song, onSaved, onCancel, onBusyChange }: { song: Song; onSaved: () => void; onCancel: () => void; onBusyChange?: (busy: boolean) => void }) {
   const colors = useColors(), store = useSongMetadataStore();
   const queryClient = useQueryClient();
   const auth = useAuthStore(), scope = privacyScope(auth.mode, auth.session);
@@ -26,7 +26,6 @@ export function MetadataEditorForm({ song, onSaved, onCancel }: { song: Song; on
   const [writeFile, setWriteFile] = useState(false), [progress, setProgress] = useState<string | null>(null);
   const [toast, setToast] = useState<{ message: string } | null>(null);
   const [searching, setSearching] = useState(false);
-  const [artworkBusy, setArtworkBusy] = useState(false);
   const running = useRef(false), mounted = useRef(true), load = store.load;
   useEffect(() => { void load(); }, [load]);
   useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
@@ -36,7 +35,8 @@ export function MetadataEditorForm({ song, onSaved, onCancel }: { song: Song; on
     return () => clearTimeout(timer);
   }, [toast]);
   const unavailable = !store.ready || store.loading || store.loadError || !key || key !== originalKey;
-  const busy = saving || store.busy || searching || artworkBusy;
+  const busy = saving || store.busy || searching;
+  useEffect(() => { onBusyChange?.(busy); }, [busy, onBusyChange]);
   const fileUnavailable = fileWriteUnavailable(song, auth.mode, Platform.OS);
   const driveReadOnly = song.source === 'drive';
   const showDriveNotice = () => setToast({ message: DRIVE_FILE_READ_ONLY_MESSAGE });
@@ -77,7 +77,7 @@ export function MetadataEditorForm({ song, onSaved, onCancel }: { song: Song; on
   }
   return <><ScrollEdgeFade fill={false} backgroundColor={colors.surface}><ScrollView keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" contentContainerStyle={styles.body}>
     <Text style={[styles.note, { color: colors.muted }]}>{driveReadOnly ? 'Google Drive 원본은 유지하고, 이 기기의 앱에 표시되는 곡 정보만 수정합니다.' : '곡 정보를 이 기기의 앱에 저장합니다. 아래 옵션을 켜면 음악 파일의 태그에도 기록합니다.'}</Text>
-    <MetadataWebOptions songKey={key} draft={draft} onChange={setDraft} disabled={saving || store.busy || unavailable || artworkBusy} onBusyChange={setSearching} />
+    <MetadataWebOptions songKey={key} draft={draft} onChange={setDraft} disabled={saving || store.busy || unavailable} onBusyChange={setSearching} />
     {METADATA_FIELDS.map(field => <View key={field.key} style={styles.field}>
       <Text style={{ color: colors.text, fontWeight: '600' }}>{field.label}{field.key === 'title' ? ' · 필수' : ''}</Text>
       <TextInput accessibilityLabel={field.label} value={draft[field.key]} onChangeText={value => setDraft(current => ({ ...current, [field.key]: value }))}
@@ -85,7 +85,6 @@ export function MetadataEditorForm({ song, onSaved, onCancel }: { song: Song; on
         placeholder={field.key === 'albumArtist' ? '비우면 곡의 아티스트로 분류' : field.numeric ? '선택 사항' : ''} placeholderTextColor={colors.muted}
         style={[styles.input, { color: colors.text, borderColor: colors.separator }]} />
     </View>)}
-    <ArtworkEditor song={song} album={draft.album} artist={draft.albumArtist || draft.artist} disabled={saving || store.busy || unavailable || searching} onBusyChange={setArtworkBusy} />
     {driveReadOnly ? <Pressable accessibilityRole="button" accessibilityLabel="Google Drive 파일 직접 수정 안내" disabled={busy || unavailable} onPress={showDriveNotice} style={styles.fileOption}>{fileOption}</Pressable> : <View style={styles.fileOption}>{fileOption}</View>}
     {progress && <Text accessibilityLiveRegion="polite" style={{ color: colors.tint }}>{progress}</Text>}
     {saving && writeFile && !driveReadOnly && <Text style={[styles.note, { color: colors.muted }]}>이 화면을 닫아도 진행 중인 파일 저장은 계속됩니다.</Text>}

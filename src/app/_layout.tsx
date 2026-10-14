@@ -14,10 +14,12 @@ import { useSongMetadataStore } from '@/stores/song-metadata';
 import { AutomaticMetadata } from '@/features/metadata/automatic-metadata';
 import { useSongArtworkStore } from '@/stores/song-artwork';
 import { useThemePreferences } from '@/stores/theme-preferences';
+import { prepareHaptics } from '@/services/haptics';
 
 const queryClient = new QueryClient({ defaultOptions: { queries: { staleTime: 30000, retry: 2 } } });
 
 function Navigation() {
+  useEffect(() => { prepareHaptics(); }, []);
   const { ready, displayReady, privacy, scope, ...recovery } = useAppBootstrap();
   const colors = useColors();
   const scheme = useAppColorScheme();
@@ -47,6 +49,7 @@ function Navigation() {
       <Stack.Screen name="settings/cloud/google-drive" options={{ headerShown: true, title: 'Google Drive', headerBackTitle: '클라우드 연결', headerTintColor: colors.tint, headerStyle: { backgroundColor: colors.background } }} />
       <Stack.Screen name="settings/cloud/s3" options={{ headerShown: true, title: 'S3 호환 저장소', headerBackTitle: '클라우드 연결', headerTintColor: colors.tint, headerStyle: { backgroundColor: colors.background } }} />
       <Stack.Screen name="settings/playback" options={{ headerShown: true, title: '재생 및 화면', headerBackTitle: '설정', headerTintColor: colors.tint, headerStyle: { backgroundColor: colors.background } }} />
+      <Stack.Screen name="settings/haptics" options={{ headerShown: true, title: '햅틱 피드백', headerBackTitle: '설정', headerTintColor: colors.tint, headerStyle: { backgroundColor: colors.background } }} />
       <Stack.Screen name="settings/library" options={{ headerShown: true, title: '보관함 설정', headerBackTitle: '설정', headerTintColor: colors.tint, headerStyle: { backgroundColor: colors.background } }} />
       <Stack.Screen name="settings/bottom-menu" options={{ headerShown: true, title: '하단 메뉴 설정', headerBackTitle: '설정', headerTintColor: colors.tint, headerStyle: { backgroundColor: colors.background } }} />
       <Stack.Screen name="settings/player-menu" options={{ headerShown: true, title: '재생 화면 메뉴 설정', headerBackTitle: '설정', headerTintColor: colors.tint, headerStyle: { backgroundColor: colors.background } }} />

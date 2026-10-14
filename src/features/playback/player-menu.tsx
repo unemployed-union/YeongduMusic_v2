@@ -13,6 +13,8 @@ import { useMenuPreferences } from '@/stores/menu-preferences';
 import { visibleMenuIds } from '@/features/settings/menu-layout';
 import { sectionClock } from '@/services/playback/section-repeat';
 import { PlaybackSpeedOptions } from './playback-speed-options';
+import { useAppColorScheme, useColors } from '@/theme/tokens';
+import { playHaptic } from '@/services/haptics';
 
 export type PlayerMenuAction = 'lyrics' | 'add-song' | 'save-queue' | 'equalizer' | 'album' | 'artist' | 'download' | 'delete-local' | 'edit-metadata';
 interface Props {
@@ -34,6 +36,7 @@ const EXIT_CARD = FadeOutDown.duration(160).easing(Easing.in(Easing.cubic)).with
 
 /** An inline popover lets playlist dialogs open without stacking native modals. */
 export function PlayerMenu({ kind = 'playback', canDownload = false, localSong = false, blurTarget, panel, bottom, maxHeight, onClose, onSelect }: Props) {
+  const colors = useColors(), light = useAppColorScheme() === 'light';
   const [options, setOptions] = useState<'sleep-timer' | 'section-repeat' | 'playback-speed' | null>(null);
   const preferences = useMenuPreferences(state => state.layout.player);
   const storageBusy = useOfflineMusicStore(state => state.busy);
@@ -66,17 +69,17 @@ export function PlayerMenu({ kind = 'playback', canDownload = false, localSong =
   const activeOptions = options && preferences.some(item => item.id === options && item.visible) ? options : null;
   return <Animated.View collapsable={false} entering={ENTER_OVERLAY} exiting={EXIT_OVERLAY} style={StyleSheet.absoluteFill} pointerEvents="box-none" accessibilityViewIsModal>
     <Pressable style={[StyleSheet.absoluteFill, styles.backdrop]} accessibilityRole="button" accessibilityLabel={kind === 'details' ? '가수 메뉴 닫기' : '재생 메뉴 닫기'} onPress={onClose} />
-    <Animated.View collapsable={false} entering={ENTER_CARD} exiting={EXIT_CARD} style={[styles.card, { bottom, maxHeight }, kind === 'details' && { left: 29, right: undefined }]}><View style={styles.surface}>
-      <BlurView pointerEvents="none" blurTarget={blurTarget} blurMethod="dimezisBlurView" intensity={32} tint="dark" style={StyleSheet.absoluteFill} />
-      <View pointerEvents="none" style={[StyleSheet.absoluteFill, styles.tint]} />
+    <Animated.View collapsable={false} entering={ENTER_CARD} exiting={EXIT_CARD} style={[styles.card, { bottom, maxHeight, borderColor: colors.separator }, light && { backgroundColor: colors.surface }, kind === 'details' && { left: 29, right: undefined }]}><View style={[styles.surface, light && { backgroundColor: colors.surface }]}>
+      {!light && <BlurView pointerEvents="none" blurTarget={blurTarget} blurMethod="dimezisBlurView" intensity={32} tint="dark" style={StyleSheet.absoluteFill} />}
+      {!light && <View pointerEvents="none" style={[StyleSheet.absoluteFill, styles.tint]} />}
       <ScrollView bounces={false} keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content}>
-        {kind === 'playback' && activeOptions === 'sleep-timer' ? <SleepTimerOptions onBack={() => setOptions(null)} onClose={onClose} /> : kind === 'playback' && activeOptions === 'section-repeat' ? <SectionRepeatOptions onBack={() => setOptions(null)} /> : kind === 'playback' && activeOptions === 'playback-speed' ? <PlaybackSpeedOptions onBack={() => setOptions(null)} /> : visibleItems.map(({ action, label, icon, selected }) => <Pressable key={action} disabled={storageBusy && (action === 'download' || action === 'delete-local')} accessibilityRole="button" accessibilityState={{ selected: !!selected }} onPress={() => action === 'sleep-timer' || action === 'section-repeat' || action === 'playback-speed' ? setOptions(action) : onSelect(action)} style={({ pressed }) => [styles.item, pressed && styles.pressed]}>
-          <Ionicons name={icon} size={23} color={selected ? '#FF9BAE' : 'white'} />
-          <Text style={[styles.label, selected && styles.selected]}>{label}</Text>
+        {kind === 'playback' && activeOptions === 'sleep-timer' ? <SleepTimerOptions onBack={() => setOptions(null)} onClose={onClose} /> : kind === 'playback' && activeOptions === 'section-repeat' ? <SectionRepeatOptions onBack={() => setOptions(null)} /> : kind === 'playback' && activeOptions === 'playback-speed' ? <PlaybackSpeedOptions onBack={() => setOptions(null)} /> : visibleItems.map(({ action, label, icon, selected }) => <Pressable key={action} disabled={storageBusy && (action === 'download' || action === 'delete-local')} accessibilityRole="button" accessibilityState={{ selected: !!selected }} onPress={() => { playHaptic('selection'); if (action === 'sleep-timer' || action === 'section-repeat' || action === 'playback-speed') setOptions(action); else onSelect(action); }} style={({ pressed }) => [styles.item, pressed && { backgroundColor: colors.separator }]}>
+          <Ionicons name={icon} size={23} color={selected ? colors.tint : colors.text} />
+          <Text style={[styles.label, { color: selected ? colors.tint : colors.text }]}>{label}</Text>
         </Pressable>)}
         {kind === 'playback' && !activeOptions && visibleItems.length === 0 && <View>
-          <Text style={styles.empty}>선택한 메뉴는 현재 곡에서 사용할 수 없습니다.</Text>
-          <Pressable accessibilityRole="button" onPress={() => { onClose(); router.push('/settings/player-menu'); }} style={styles.item}><Ionicons name="settings-outline" size={23} color="white" /><Text style={styles.label}>재생 화면 메뉴 설정</Text></Pressable>
+          <Text style={[styles.empty, { color: colors.muted }]}>선택한 메뉴는 현재 곡에서 사용할 수 없습니다.</Text>
+          <Pressable accessibilityRole="button" onPress={() => { onClose(); router.push('/settings/player-menu'); }} style={styles.item}><Ionicons name="settings-outline" size={23} color={colors.text} /><Text style={[styles.label, { color: colors.text }]}>재생 화면 메뉴 설정</Text></Pressable>
         </View>}
       </ScrollView>
     </View></Animated.View>

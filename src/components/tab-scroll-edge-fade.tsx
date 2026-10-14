@@ -36,6 +36,7 @@ function AndroidScrollEdgeFade({ children, bottomInset, style, fill = true, ...p
   bottomInset: number;
 }) {
   const colors = useColors();
+  const trackTop = Math.max(3, (children.props.scrollIndicatorInsets?.top ?? 0) + 3);
   const metrics = useRef<Metrics>(INITIAL_METRICS);
   const position = useSharedValue(INITIAL_METRICS);
   const opacity = useSharedValue(0);
@@ -66,7 +67,7 @@ function AndroidScrollEdgeFade({ children, bottomInset, style, fill = true, ...p
     const { content, viewport, offset, insetTop, insetBottom } = position.get();
     const total = content + insetTop + insetBottom;
     const range = total - viewport;
-    const track = Math.max(0, viewport - bottomInset - 6);
+    const track = Math.max(0, viewport - bottomInset - trackTop - 3);
     const height = total > 0 ? Math.min(track, Math.max(24, track * viewport / total)) : 0;
     const progress = range > 0 ? Math.max(0, Math.min(1, (offset + insetTop) / range)) : 0;
     return {
@@ -81,7 +82,7 @@ function AndroidScrollEdgeFade({ children, bottomInset, style, fill = true, ...p
       scrollEventThrottle: children.props.scrollEventThrottle ?? 16,
       onLayout, onContentSizeChange, onScroll,
     }}>{children}</ObservedScrollEdgeFade>
-    <Animated.View pointerEvents="none" accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={[styles.indicator, { backgroundColor: colors.text }, indicatorStyle]} />
+    <Animated.View pointerEvents="none" accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={[styles.indicator, { top: trackTop, backgroundColor: colors.text }, indicatorStyle]} />
   </View>;
 }
 const styles = StyleSheet.create({

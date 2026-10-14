@@ -22,7 +22,8 @@ assert.deepEqual(sort([], 'ascending'), []);
 let memo, calls = 0, queue;
 const jsx = (type, props) => ({ type, props });
 const modules = {
-  react: { memo: fn => fn, useCallback: fn => fn, useMemo: (fn, deps) => { if (!memo || deps.some((value, index) => value !== memo.deps[index])) memo = { deps, value: fn() }; return memo.value; } },
+  react: { memo: fn => fn, useCallback: fn => fn, useState: value => [value, () => {}], useMemo: (fn, deps) => { if (!memo || deps.some((value, index) => value !== memo.deps[index])) memo = { deps, value: fn() }; return memo.value; } },
+  './album-properties': { AlbumProperties: 'AlbumProperties' },
   'react/jsx-runtime': { jsx, jsxs: jsx },
   '@/components/text': { Text: 'Text' },
   '@/components/text': { Text: 'Text' },

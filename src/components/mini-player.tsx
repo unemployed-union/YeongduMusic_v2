@@ -11,10 +11,12 @@ import { MarqueeText } from './marquee-text';
 import { togglePlayback } from '@/services/playback/controller';
 import { usePlaybackStore } from '@/stores/playback';
 import { useAppColorScheme, useColors } from '@/theme/tokens';
+import { playHaptic } from '@/services/haptics';
 
 export const MINI_PLAYER_INSET = 8;
 
 function openPlayer() {
+  playHaptic('menu');
   router.push('/player');
 }
 
@@ -38,7 +40,7 @@ export function MiniPlayer({ blurTarget }: { blurTarget: RefObject<View | null> 
     <Pressable style={styles.body} onPress={openPlayer} accessibilityHint="누르거나 위로 스와이프하면 전체 재생 화면이 열립니다">
       <Artwork item={song} size={45} radius={7} />
       <View style={styles.text}><MarqueeText key={song.id + song.title} text={song.title} style={[styles.title, { color: colors.text }]} /><Text numberOfLines={1} style={[styles.artist, { color: colors.chromeMuted }]}>{song.artist}</Text></View>
-      <Pressable accessibilityLabel={playing ? '일시정지' : '재생'} hitSlop={12} onPress={togglePlayback} style={[styles.control, { backgroundColor: colors.miniControl }]}><Ionicons name={playing ? 'pause' : 'play'} size={21} color={colors.tint} /></Pressable>
+      <Pressable accessibilityLabel={playing ? '일시정지' : '재생'} hitSlop={12} onPress={() => { playHaptic('playback'); togglePlayback(); }} style={[styles.control, { backgroundColor: colors.miniControl }]}><Ionicons name={playing ? 'pause' : 'play'} size={21} color={colors.tint} /></Pressable>
     </Pressable>
     <View style={[styles.progress, { backgroundColor: colors.chromeBorder }]}><View style={[styles.progressActive, { backgroundColor: colors.tint, width: `${duration > 0 ? Math.min(100, position / duration * 100) : 0}%` }]} /></View>
   </Animated.View></GestureDetector>;

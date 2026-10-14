@@ -1,6 +1,6 @@
 {
-  "packageLockSha256": "0d0498625cfdfec214893384ca48b974305d7a6fcb4e1e372bb80ebbc0286e6f",
-  "packageJsonSha256": "d7fd123e5b4614b759301a0e5e418fe17c8c8e530a1274a101f1e506fce357d6",
+  "packageLockSha256": "5a64a43e1c6f2bc03961ebedc55630e8703f7b3a546e075d34b78f5f98127970",
+  "packageJsonSha256": "79b6167f8004ee385839d62879ef11e123bdd7f4b2f527c05041050dba341806",
   "nativeCoordinates": [
     "androidx.activity:activity-compose:1.11.0",
     "androidx.activity:activity-ktx:1.11.0",
@@ -1629,6 +1629,13 @@
       "id": "npm:expo-glass-effect@57.0.4",
       "name": "expo-glass-effect",
       "version": "57.0.4",
+      "license": "MIT",
+      "platform": "all"
+    },
+    {
+      "id": "npm:expo-haptics@57.0.3",
+      "name": "expo-haptics",
+      "version": "57.0.3",
       "license": "MIT",
       "platform": "all"
     },

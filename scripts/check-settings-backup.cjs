@@ -21,7 +21,9 @@ const folders = load('src/services/local-music/folders.ts');
 const hiddenRules = load('src/features/hidden-music/rules.ts');
 const playlistRules = load('src/features/playlists/rules.ts');
 const menuRules = load('src/features/settings/menu-layout.ts');
+const hapticRules = load('src/features/haptics/preferences.ts');
 const format = load('src/features/settings/backup-format.ts', {
+  '@/features/haptics/preferences': hapticRules,
   './menu-layout': menuRules,
   '@/features/hidden-music/rules': hiddenRules, '@/features/playlists/rules': playlistRules, '@/services/local-music/folders': folders,
 });
@@ -49,6 +51,8 @@ const access = load('src/stores/hidden-feature-access.ts', common).useHiddenFeat
 const themeMocks = { ...common, 'react-native': { Platform: { OS: 'android' }, Appearance: { setColorScheme() {} } },
   'expo-sqlite/kv-store': { __esModule: true, default: { getItem: storage.getItemAsync, setItem: storage.setItemAsync } } };
 const theme = load('src/stores/theme-preferences.ts', themeMocks).useThemePreferences;
+const details = load('src/stores/library-detail-preferences.ts', themeMocks).useLibraryDetailPreferences;
+const haptics = load('src/stores/haptic-preferences.ts', { ...themeMocks, '@/features/haptics/preferences': hapticRules }).useHapticPreferences;
 const hiddenMocks = {
   '@/features/hidden-music/rules': hiddenRules,
   '@/services/hidden-music/biometrics': { authenticateHiddenSettings: async () => { authCalls++; if (failAuth) throw new Error('인증 취소'); } },
@@ -67,7 +71,9 @@ const playlistMocks = {
 };
 const playlists = load('src/stores/playlists.ts', playlistMocks).usePlaylistStore;
 const service = load('src/services/settings-backup.ts', {
+  '@/stores/haptic-preferences': { useHapticPreferences: haptics },
   '@/stores/theme-preferences': { useThemePreferences: theme },
+  '@/stores/library-detail-preferences': { useLibraryDetailPreferences: details },
   '@/stores/menu-preferences': { useMenuPreferences: menus },
   '@/stores/display-preferences': { useDisplayPreferences: display }, '@/stores/library-preferences': { useLibraryPreferences: library },
   '@/stores/streaming-preferences': { useStreamingPreferences: streaming }, '@/stores/folder-exclusions': { useFolderExclusionStore: exclusions },
@@ -102,7 +108,28 @@ async function main() {
   assert.equal(display.getState().hideArtwork, true); assert.equal(library.getState().includeFolderAlbums, false);
   assert.equal(streaming.getState().quality, 'mp3'); assert.deepEqual(exclusions.getState().folders, ['/storage/primary/Music/제외']);
   const restored = JSON.parse(await service.createSettingsBackup());
-  assert.deepEqual(restored.preferences, { ...clean.preferences, menus: menus.getState().layout, themeMode: 'auto' }, 'Round trip includes all general settings');
+  assert.deepEqual(restored.preferences, { ...clean.preferences, menus: menus.getState().layout, themeMode: 'auto', libraryDetails: { artistPhotos: true, albumColors: true }, haptics: hapticRules.DEFAULT_HAPTIC_PREFERENCES }, 'Round trip includes all general settings');
+  const hapticPreferences = hapticRules.parseHapticPreferences(hapticRules.DEFAULT_HAPTIC_PREFERENCES);
+  hapticPreferences.events.longPress.strength = 'heavy'; hapticPreferences.events.seek.enabled = false;
+  const hapticBackup = { ...clean, preferences: { ...clean.preferences, haptics: hapticPreferences } };
+  await service.restoreSettingsBackup(hapticBackup, false); assert.deepEqual(haptics.getState().preferences, hapticPreferences);
+  await service.restoreSettingsBackup(clean, false); assert.deepEqual(haptics.getState().preferences, hapticPreferences, 'Older backups preserve current haptics');
+  const restartedHaptics = load('src/stores/haptic-preferences.ts', { ...themeMocks, '@/features/haptics/preferences': hapticRules }).useHapticPreferences;
+  await restartedHaptics.getState().load(); assert.deepEqual(restartedHaptics.getState().preferences, hapticPreferences);
+  failKey = 'yeongdumusic-haptics-v1'; failures = 1;
+  await assert.rejects(service.restoreSettingsBackup({ ...hapticBackup, preferences: { ...hapticBackup.preferences, haptics: hapticRules.DEFAULT_HAPTIC_PREFERENCES } }, false), /기존 설정으로 되돌렸습니다/);
+  assert.deepEqual(haptics.getState().preferences, hapticPreferences); failKey = ''; failures = 0;
+  await haptics.getState().restore(restored.preferences.haptics);
+  const detailBackup = { ...clean, preferences: { ...clean.preferences, libraryDetails: { artistPhotos: false, albumColors: false } } };
+  await service.restoreSettingsBackup(detailBackup, false);
+  assert.deepEqual(details.getState().preferences, detailBackup.preferences.libraryDetails);
+  const restartedDetails = load('src/stores/library-detail-preferences.ts', themeMocks).useLibraryDetailPreferences;
+  await restartedDetails.getState().load(); assert.deepEqual(restartedDetails.getState().preferences, detailBackup.preferences.libraryDetails);
+  await service.restoreSettingsBackup(clean, false); assert.equal(details.getState().preferences.artistPhotos, false, 'Older backups preserve photo and color settings');
+  failKey = 'yeongdumusic-library-details-v1'; failures = 1;
+  await assert.rejects(service.restoreSettingsBackup({ ...detailBackup, preferences: { ...detailBackup.preferences, libraryDetails: { artistPhotos: true, albumColors: true } } }, false), /기존 설정으로 되돌렸습니다/);
+  assert.deepEqual(details.getState().preferences, detailBackup.preferences.libraryDetails); failKey = ''; failures = 0;
+  await details.getState().restore(restored.preferences.libraryDetails);
   const themeBackup = { ...clean, preferences: { ...clean.preferences, themeMode: 'dark' } };
   await service.restoreSettingsBackup(themeBackup, false); assert.equal(theme.getState().mode, 'dark');
   assert.equal(JSON.parse(await service.createSettingsBackup()).preferences.themeMode, 'dark');

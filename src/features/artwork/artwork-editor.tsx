@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Image, Platform, Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { ActivityIndicator, Image, Platform, Pressable, StyleSheet, View } from 'react-native';
+import { TextInput } from '@/components/text-input';
 import { Text } from '@/components/text';
 import { AnimatedSwitch } from '@/components/animated-switch';
 import { useColors } from '@/theme/tokens';
@@ -13,32 +14,33 @@ import { DRIVE_FILE_READ_ONLY_MESSAGE, fileWriteDescription, fileWriteUnavailabl
 import { hiddenMatcher, privacyScope } from '@/features/hidden-music/rules';
 import { metadataKey } from '@/features/metadata/rules';
 import { searchArtwork, type ArtworkCandidate } from '@/services/artwork/search';
-import { artworkTargets, artworkUri } from './rules';
+import { albumArtworkTargets, artworkTargets, artworkUri } from './rules';
 import type { Page, Song } from '@/types/music';
 
-export function ArtworkEditor({ song, album, artist, disabled, onBusyChange }: {
-  song: Song; album: string; artist: string; disabled: boolean; onBusyChange: (busy: boolean) => void;
+export function ArtworkEditor({ song, album, artist, disabled, onBusyChange, albumSongs, standalone = false }: {
+  song: Song; album: string; artist: string; disabled: boolean; onBusyChange: (busy: boolean) => void; albumSongs?: readonly Song[]; standalone?: boolean;
 }) {
   const colors = useColors(), store = useSongArtworkStore();
   const queryClient = useQueryClient();
   const auth = useAuthStore(), scope = privacyScope(auth.mode, auth.session), key = metadataKey(song, scope);
-  const [originalKey] = useState(key), [expanded, setExpanded] = useState(false), [wholeAlbum, setWholeAlbum] = useState(false);
+  const [originalKey] = useState(key), [expanded, setExpanded] = useState(standalone || !!albumSongs), [wholeAlbum, setWholeAlbum] = useState(false);
   const [albumQuery, setAlbumQuery] = useState<string | null>(null), [artistQuery, setArtistQuery] = useState<string | null>(null);
   const [selection, setSelection] = useState<string | null>(null), [selectedId, setSelectedId] = useState<string | null>(null);
   const [results, setResults] = useState<ArtworkCandidate[] | null>(null), [failed, setFailed] = useState<string[]>([]);
   const [working, setWorking] = useState(false), [error, setError] = useState<string | null>(null), [notice, setNotice] = useState<string | null>(null);
   const [writeFile, setWriteFile] = useState(false), [progress, setProgress] = useState<string | null>(null), [toast, setToast] = useState<{ message: string } | null>(null);
   const controller = useRef<AbortController | null>(null), mounted = useRef(true);
-  const { data, isPending, isFetching } = useSongs(expanded);
+  const { data, isPending, isFetching } = useSongs(expanded && !albumSongs);
   const load = store.load;
   useEffect(() => { void load(); }, [load]);
   useEffect(() => { mounted.current = true; return () => { mounted.current = false; controller.current?.abort(); }; }, []);
   useEffect(() => () => { controller.current?.abort(); }, [key]);
   useEffect(() => { if (!toast) return; const timer = setTimeout(() => setToast(null), 3500); return () => clearTimeout(timer); }, [toast]);
-  const currentSong = data?.items.find(item => metadataKey(item, scope) === key) ?? song;
-  const albumKeys = useMemo(() => artworkTargets(currentSong, data?.items ?? [], scope, true), [currentSong, data?.items, scope]);
-  const keys = wholeAlbum ? albumKeys : key ? [key] : [];
-  const targetSongs = [currentSong, ...(data?.items ?? []).filter(item => metadataKey(item, scope) !== key && keys.includes(metadataKey(item, scope) ?? ''))];
+  const visible = albumSongs ?? data?.items;
+  const currentSong = visible?.find(item => metadataKey(item, scope) === key) ?? song;
+  const albumKeys = useMemo(() => albumSongs ? albumArtworkTargets(currentSong, albumSongs, scope) : artworkTargets(currentSong, data?.items ?? [], scope, true), [currentSong, data?.items, scope, albumSongs]);
+  const keys = albumSongs || wholeAlbum ? albumKeys : key ? [key] : [];
+  const targetSongs = [currentSong, ...(visible ?? []).filter(item => metadataKey(item, scope) !== key && keys.includes(metadataKey(item, scope) ?? ''))];
   const fileTargets = targetSongs.filter(item => item.source !== 'drive');
   const driveReadOnly = song.source === 'drive';
   const fileUnavailable = driveReadOnly ? DRIVE_FILE_READ_ONLY_MESSAGE : fileTargets.map(item => fileWriteUnavailable(item, auth.mode, Platform.OS)).find(Boolean) ?? null;
@@ -46,9 +48,9 @@ export function ArtworkEditor({ song, album, artist, disabled, onBusyChange }: {
     const hidden = useHiddenMusicStore.getState();
     if (!hidden.ready || hidden.scope !== scope) return false;
     const matches = hiddenMatcher(hidden.profile.presets);
-    return ![song, ...(data?.items ?? []).filter(item => keys.includes(metadataKey(item, scope) ?? ''))].some(matches);
+    return !targetSongs.some(matches);
   }
-  const unavailable = disabled || !store.ready || store.loading || store.loadError || store.busy || !key || key !== originalKey;
+  const unavailable = disabled || !store.ready || store.loading || store.loadError || store.busy || !key || key !== originalKey || !keys.length;
   const preview = selection ? artworkUri(selection, store.baseUri) : selectedId ? results?.find(item => item.id === selectedId)?.uri
     : key && store.patches[key] ? artworkUri(store.patches[key], store.baseUri) : currentSong.artworkUrl;
   async function work(action: (signal: AbortSignal, allowed: () => boolean) => Promise<void>) {
@@ -62,13 +64,13 @@ export function ArtworkEditor({ song, album, artist, disabled, onBusyChange }: {
     finally { stop(); if (controller.current === current) controller.current = null; if (mounted.current) { setWorking(false); setProgress(null); onBusyChange(false); } }
   }
   const busy = unavailable || working;
-  return <View style={[styles.body, { borderColor: colors.separator }]}>
-    <Pressable accessibilityRole="button" accessibilityState={{ expanded }} onPress={() => setExpanded(value => !value)} style={styles.button}>
+  return <View style={[styles.body, { borderColor: colors.separator }, standalone && styles.standalone]}>
+    {!albumSongs && !standalone && <Pressable accessibilityRole="button" accessibilityState={{ expanded }} onPress={() => setExpanded(value => !value)} style={styles.button}>
       <Text style={{ color: colors.tint, fontWeight: '700' }}>앨범아트 수정 {expanded ? '접기' : '열기'}</Text>
-    </Pressable>
+    </Pressable>}
     {expanded && <>
       {preview ? <Image source={{ uri: preview }} resizeMode="contain" style={styles.preview} accessibilityLabel="앨범아트 미리보기" /> : <View style={[styles.preview, { backgroundColor: colors.separator }]}><Text style={{ color: colors.muted }}>앨범아트 없음</Text></View>}
-      <Text style={[styles.note, { color: colors.muted }]}>아래 ‘앨범아트 적용’으로 별도 저장합니다. 기본값은 앱 표시용이며, ‘파일에도 앨범아트 저장’을 켜면 음악 파일의 앞면 표지도 변경합니다. JPEG·PNG·WebP, {Platform.OS === 'web' ? '2' : '8'}MB 이하의 이미지를 사용할 수 있습니다.</Text>
+      <Text style={[styles.note, { color: colors.muted }]}>이미지를 선택한 뒤 ‘앨범아트 적용’을 눌러 저장하세요. 기본값은 앱 표시용이며, ‘파일에도 앨범아트 저장’을 켜면 음악 파일의 앞면 표지도 변경합니다. JPEG·PNG·WebP, {Platform.OS === 'web' ? '2' : '8'}MB 이하의 이미지를 사용할 수 있습니다.</Text>
       <Pressable accessibilityRole="button" disabled={busy} onPress={() => void work(async (signal, allowed) => {
         const { pickArtwork } = await import('@/services/artwork/files');
         const value = await pickArtwork(signal);
@@ -91,10 +93,10 @@ export function ArtworkEditor({ song, album, artist, disabled, onBusyChange }: {
         <View style={{ flex: 1, gap: 4 }}><Text style={{ color: colors.text }}>{candidate.album}</Text><Text style={[styles.note, { color: colors.muted }]}>{candidate.artist} {candidate.year}</Text>
           {failed.includes(candidate.id) && <Text style={[styles.note, { color: colors.muted }]}>표지를 불러올 수 없습니다</Text>}</View>
       </Pressable>)}
-      <View style={styles.row}><View style={{ flex: 1, gap: 5 }}><Text style={{ color: colors.text }}>같은 앨범의 곡에도 적용</Text>
+      {albumSongs ? <Text style={[styles.note, { color: colors.muted }]}>이 앨범에서 표시 중인 {keys.length}곡에 적용합니다. 숨긴 곡과 다른 앨범의 곡은 변경하지 않습니다.</Text> : <View style={styles.row}><View style={{ flex: 1, gap: 5 }}><Text style={{ color: colors.text }}>같은 앨범의 곡에도 적용</Text>
         <Text style={[styles.note, { color: colors.muted }]}>{isPending || isFetching ? '현재 보관함의 앨범 곡 확인 중' : `현재 보관함의 같은 앨범 ${albumKeys.length}곡 · 끄면 이 곡만 변경`}</Text></View>
         <AnimatedSwitch accessibilityLabel="같은 앨범의 곡에도 앨범아트 적용" value={wholeAlbum} disabled={busy || isPending || isFetching || albumKeys.length < 2} onValueChange={setWholeAlbum} />
-      </View>
+      </View>}
       <View style={styles.row}><View style={{ flex: 1, gap: 5 }}><Text style={{ color: colors.text }}>파일에도 앨범아트 저장</Text>
         <Text style={[styles.note, { color: colors.muted }]}>{fileUnavailable ?? `선택한 표지를 MP3·FLAC 파일에 넣습니다. ${fileWriteDescription(currentSong)}${targetSongs.length !== fileTargets.length ? ` Google Drive ${targetSongs.length - fileTargets.length}곡은 앱 표시용으로만 적용합니다.` : ''}`}</Text></View>
         {driveReadOnly ? <Pressable accessibilityRole="button" accessibilityLabel="Google Drive 앨범아트 파일 직접 수정 안내" style={styles.button} disabled={busy} onPress={() => setToast({ message: DRIVE_FILE_READ_ONLY_MESSAGE })}>
@@ -157,6 +159,6 @@ export function ArtworkEditor({ song, album, artist, disabled, onBusyChange }: {
     {toast && <ToastNotice message={toast.message} />}
   </View>;
 }
-const styles = StyleSheet.create({ body: { gap: 12, borderTopWidth: 1, paddingTop: 12 }, note: { fontSize: 12, lineHeight: 19 }, button: { minHeight: 44, alignItems: 'center', justifyContent: 'center', borderRadius: 12 },
+const styles = StyleSheet.create({ body: { gap: 12, borderTopWidth: 1, paddingTop: 12 }, standalone: { borderTopWidth: 0, paddingTop: 0 }, note: { fontSize: 12, lineHeight: 19 }, button: { minHeight: 44, alignItems: 'center', justifyContent: 'center', borderRadius: 12 },
   preview: { width: 160, height: 160, borderRadius: 12, alignSelf: 'center', alignItems: 'center', justifyContent: 'center' }, input: { minHeight: 46, borderWidth: 1, borderRadius: 12, paddingHorizontal: 12, fontSize: 15 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 12 }, candidate: { flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderRadius: 12, padding: 10 }, thumbnail: { width: 64, height: 64, borderRadius: 8 } });

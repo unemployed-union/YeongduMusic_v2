@@ -7,11 +7,13 @@ import type { StreamingQuality } from '@/types/music';
 import type { QuickHideMode } from '@/stores/hidden-feature-access';
 import { parseMenuLayout, type MenuLayout } from './menu-layout';
 import { parseThemeMode, type ThemeMode } from '@/theme/mode';
+import { parseDetailPreferences, type LibraryDetailPreferences } from '@/features/library/detail-preferences';
+import { parseHapticPreferences, type HapticPreferences } from '@/features/haptics/preferences';
 
 export const MAX_BACKUP_BYTES = 2 * 1024 * 1024;
 export type SettingsBackup = {
   format: 'yeongdu-music-settings'; version: 1; exportedAt: string;
-  preferences: { hideArtwork: boolean; includeFolderAlbums: boolean; quality: StreamingQuality; excludedFolders: string[]; menus?: MenuLayout; themeMode?: ThemeMode };
+  preferences: { hideArtwork: boolean; includeFolderAlbums: boolean; quality: StreamingQuality; excludedFolders: string[]; menus?: MenuLayout; themeMode?: ThemeMode; libraryDetails?: LibraryDetailPreferences; haptics?: HapticPreferences };
   account?: { scope: string; hidden: HiddenMusicProfile; playlists: PlaylistProfile; access: { enabled: boolean; quickHideMode: QuickHideMode } };
 };
 
@@ -46,6 +48,8 @@ export function parseSettingsBackup(text: string): SettingsBackup {
   };
   if (preferences.menus !== undefined) result.preferences.menus = parseMenuLayout(preferences.menus);
   if (preferences.themeMode !== undefined) result.preferences.themeMode = parseThemeMode(preferences.themeMode);
+  if (preferences.libraryDetails !== undefined) result.preferences.libraryDetails = parseDetailPreferences(preferences.libraryDetails);
+  if (preferences.haptics !== undefined) result.preferences.haptics = parseHapticPreferences(preferences.haptics);
   if (value.account !== undefined) {
     const account = object(value.account), access = object(account.access);
     if (typeof account.scope !== 'string' || !account.scope || account.scope.length > 4096) throw new Error('백업의 계정 정보를 확인할 수 없습니다.');

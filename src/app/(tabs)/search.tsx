@@ -1,6 +1,7 @@
 import { TabScrollEdgeFade } from '@/components/tab-scroll-edge-fade';
 import { useEffect, useState } from 'react';
-import { Keyboard, FlatList, Pressable, RefreshControl, StyleSheet, TextInput, View } from 'react-native';
+import { Keyboard, FlatList, Pressable, RefreshControl, StyleSheet, View } from 'react-native';
+import { TextInput } from '@/components/text-input';
 import { Text } from '@/components/text';
 import { useKeyboardState } from 'react-native-keyboard-controller';
 import Ionicons from '@expo/vector-icons/Ionicons';

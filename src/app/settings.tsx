@@ -18,6 +18,7 @@ export default function SettingsScreen() {
     </SettingsSection>
     <SettingsSection title="앱 설정">
       <SettingsLink title="재생 및 화면" description="화면 모드 · 스트리밍 음질 · 앨범아트 · 이퀄라이저" icon="musical-notes-outline" href="/settings/playback" />
+      <SettingsLink title="햅틱 피드백" description="동작별 켜기·끄기 및 강도 조절" icon="phone-portrait-outline" href="/settings/haptics" />
       <SettingsLink title="하단 메뉴" description="보관함 · 플레이리스트 · 검색 순서 및 표시" icon="reorder-three-outline" href="/settings/bottom-menu" />
       <SettingsLink title="보관함" description="메뉴 순서 및 표시 · 앨범 · 웹 메타데이터 · 기기 폴더" icon="library-outline" href="/settings/library" />
       {showOther && <SettingsLink title="기타" icon="ellipsis-horizontal-circle-outline" href="/settings/other" />}

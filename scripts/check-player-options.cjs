@@ -74,6 +74,10 @@ async function main() {
     'react-native-reanimated': { createAnimatedComponent: () => 'AnimatedText' }, '@expo/vector-icons/Ionicons': 'Icon',
     './lyrics-edge-fade': { LyricsEdgeFade: 'Fade' }, '@/services/lyrics/parse-lyrics': {},
     './use-active-lyric-index': { useActiveLyricIndex: () => -1 },
+    './use-lyric-scroll': {},
+    './use-lyric-timing': { useLyricTiming: () => ({ offsetMs: 0, key: null }) },
+    './lyrics-timing-controls': { LyricsTimingControls: 'TimingControls' },
+    './timing': {},
     './use-lyrics': { useLyrics: () => result }, '@/stores/playback': { usePlaybackStore: selector => selector({ duration: 120 }) }, '@/services/playback/controller': {},
     './use-lyrics-translation': { useLyricsTranslation: () => translation }, './lyrics-translation-controls': { LyricsTranslationControls: 'TranslationControls' },
   };

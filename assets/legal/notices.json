@@ -2344,6 +2344,17 @@
       ]
     },
     {
+      "id": "npm:expo-haptics@57.0.3",
+      "name": "expo-haptics",
+      "version": "57.0.3",
+      "license": "MIT",
+      "platform": "all",
+      "url": "https://github.com/expo/expo",
+      "texts": [
+        "371567d5d8999eeffba6"
+      ]
+    },
+    {
       "id": "npm:expo-intent-launcher@57.0.1",
       "name": "expo-intent-launcher",
       "version": "57.0.1",

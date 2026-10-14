@@ -1,6 +1,7 @@
 import { ScrollEdgeFade } from '@/components/scroll-edge-fade';
 import { useRef, useState } from 'react';
-import { ActivityIndicator, Keyboard, Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { ActivityIndicator, Keyboard, Pressable, StyleSheet, View } from 'react-native';
+import { TextInput, type TextInputHandle } from '@/components/text-input';
 import { Text } from '@/components/text';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -14,9 +15,9 @@ import { useColors } from '@/theme/tokens';
 export default function ConnectScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const accountInput = useRef<TextInput>(null);
-  const passwordInput = useRef<TextInput>(null);
-  const otpInput = useRef<TextInput>(null);
+  const accountInput = useRef<TextInputHandle>(null);
+  const passwordInput = useRef<TextInputHandle>(null);
+  const otpInput = useRef<TextInputHandle>(null);
   const connect = useAuthStore((state) => state.connect);
   const enterDemo = useAuthStore((state) => state.useMock);
   const notice = useAuthStore((state) => state.notice);

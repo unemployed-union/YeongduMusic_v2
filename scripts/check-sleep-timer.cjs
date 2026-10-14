@@ -220,6 +220,7 @@ async function main() {
     let slot = 0, closes = 0;
     const values = [], jsx = (type, props) => ({ type, props });
     const { SleepTimerOptions } = h.load('src/features/playback/sleep-timer-options.tsx', {
+      './menu-styles': h.load('src/features/playback/menu-styles.ts'), '@/theme/tokens': { useColors: () => ({ text: '#F7F7FA', muted: '#9B9BA5', separator: '#31313A', tint: '#FF5C80' }) },
       react: { useState: initial => { const index = slot++; if (index >= values.length) values.push(initial); return [values[index], value => { values[index] = value; }]; } },
       'react/jsx-runtime': { jsx, jsxs: jsx },
       '@/components/text': { Text: 'Text' },

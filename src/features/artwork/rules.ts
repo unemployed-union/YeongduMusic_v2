@@ -39,3 +39,7 @@ export function artworkTargets(song: Song, visible: readonly Song[], scope: stri
   const same = entireAlbum && hasAlbumTag(song) ? visible.filter(item => hasAlbumTag(item) && albumId(item) === albumId(song)) : [];
   return [...new Set([song, ...same].map(item => metadataKey(item, scope)).filter((key): key is string => !!key))];
 }
+/** An explicit album-screen selection may include folder albums, but never another album. */
+export function albumArtworkTargets(song: Song, visible: readonly Song[], scope: string | null): string[] {
+  return [...new Set(visible.filter(item => albumId(item) === albumId(song)).map(item => metadataKey(item, scope)).filter((key): key is string => !!key))];
+}

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
+import { TextInput } from '@/components/text-input';
 import { AnimatedSwitch } from '@/components/animated-switch';
 import { Text } from '@/components/text';
 import { useColors } from '@/theme/tokens';

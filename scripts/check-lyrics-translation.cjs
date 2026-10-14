@@ -2,6 +2,7 @@
 const assert = require('node:assert/strict'), fs = require('node:fs'), path = require('node:path'), ts = require('typescript');
 const { create } = require('zustand');
 function load(file, modules = {}, globals = {}) {
+  modules = { '@/services/haptics': { playHaptic() {}, prepareHaptics() {} }, ...modules };
   const exports = {}, code = ts.transpileModule(fs.readFileSync(path.join(__dirname, '..', file), 'utf8'), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX },
   }).outputText;
@@ -149,14 +150,14 @@ function checkRendering() {
   const jsx = (type, props) => ({ type, props }), rowStyles = { row: {}, lyric: {}, translation: {} };
   // Execute the real row body with native/animation functions replaced.
   const code = ts.transpileModule('export const Row = ' + rowSource + ';', { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText;
-  const exports = {}; new Function('exports', 'require', 'useSharedValue', 'useEffect', 'withTiming', 'useAnimatedStyle', 'Pressable', 'AnimatedText', 'styles', code)(exports,
-    () => ({ jsx, jsxs: jsx }), value => ({ value }), () => {}, value => value, () => ({}), 'Button', 'Text', rowStyles);
+  const exports = {}; new Function('exports', 'require', 'useSharedValue', 'useRef', 'useEffect', 'withTiming', 'useAnimatedStyle', 'Pressable', 'AnimatedRow', 'Text', 'styles', code)(exports,
+    () => ({ jsx, jsxs: jsx }), value => ({ value }), current => ({ current }), () => {}, value => value, () => ({}), 'Button', 'AnimatedRow', 'Text', rowStyles);
   let sought;
   const row = exports.Row({ line: document.lines[0], translation: '번역된 테스트 문장', active: true, past: false, synced: true, seekable: true, onSeek: time => { sought = time; } });
-  assert.equal(row.props.children[0].props.children, document.lines[0].text); assert.equal(row.props.children[1].props.children, '번역된 테스트 문장');
+  assert.equal(row.props.children.props.children[0].props.children, document.lines[0].text); assert.equal(row.props.children.props.children[1].props.children, '번역된 테스트 문장');
   row.props.onPress(); assert.equal(sought, 1, 'Translated row seeks using the original timestamp'); assert.equal(row.props.accessibilityState.selected, true);
   const blank = exports.Row({ line: document.lines[1], translation: '', active: false, past: false, synced: true, seekable: true, onSeek() {} });
-  assert.equal(blank.props.children[0].props.children, '···'); assert.equal(blank.props.children[1], false);
+  assert.equal(blank.props.children.props.children[0].props.children, '···'); assert.equal(blank.props.children.props.children[1], false);
   assert(source.includes('translations?.[item.id]') && source.includes('buffering, translations'), 'Virtualized rows update translations without modifying original timed lines');
 }
 function checkControls() {

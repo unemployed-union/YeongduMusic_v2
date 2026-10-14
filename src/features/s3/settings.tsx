@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { ActivityIndicator, Alert, Keyboard, Platform, Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, Keyboard, Platform, Pressable, StyleSheet, View } from 'react-native';
+import { TextInput } from '@/components/text-input';
 import { Text } from '@/components/text';
 import { AnimatedSwitch } from '@/components/animated-switch';
 import { SettingsPage, SettingsSection } from '@/features/settings/settings-ui';

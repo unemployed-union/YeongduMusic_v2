@@ -8,6 +8,7 @@ import { router, type Href } from 'expo-router';
 import { ScrollEdgeFade } from '@/components/scroll-edge-fade';
 import { useColors } from '@/theme/tokens';
 import { settingsMenuStyles } from './settings-menu-layout';
+import { playHaptic } from '@/services/haptics';
 
 export function SettingsPage({ children, overlay }: { children: ReactNode; overlay?: ReactNode }) {
   const colors = useColors();
@@ -33,7 +34,7 @@ export function SettingsLink({ title, description, icon, href, disabled = false 
   title: string; description?: string; icon: ComponentProps<typeof Ionicons>['name']; href: Href; disabled?: boolean;
 }) {
   const colors = useColors();
-  return <Pressable accessibilityRole="button" accessibilityState={{ disabled }} disabled={disabled} onPress={() => { if (!disabled) router.push(href); }} style={({ pressed }) => [styles.row, { opacity: pressed ? 0.55 : 1 }]}>
+  return <Pressable accessibilityRole="button" accessibilityState={{ disabled }} disabled={disabled} onPress={() => { if (!disabled) { playHaptic('menu'); router.push(href); } }} style={({ pressed }) => [styles.row, { opacity: pressed ? 0.55 : 1 }]}>
     <View style={styles.icon}><Ionicons name={icon} size={23} color={disabled ? colors.muted : colors.tint} /></View>
     <View style={styles.copy}><Text style={[styles.title, { color: disabled ? colors.muted : colors.text }]}>{title}</Text>
       {!!description && <Text numberOfLines={2} style={[styles.description, { color: colors.muted }]}>{description}</Text>}

@@ -23,7 +23,7 @@ for (const item of notices.entries) {
   }
   assert(!/^(SQLite|Boost|SwiftDraw|eslint|typescript|expo-build-properties)$/.test(item.name), 'No binary notice obligation or build-only work');
 }
-for (const name of ['react', 'react-native', 'expo-audio', 'jsmediatags', '@tanstack/query-core', '@expo-google-fonts/material-symbols', 'Ionicons · 앱 아이콘 및 로고', 'com.squareup.okhttp3:okhttp', 'Public Suffix List (OkHttp)', 'GoogleSignIn', 'AppCheckCore']) {
+for (const name of ['react', 'react-native', 'expo-audio', 'expo-haptics', 'jsmediatags', '@tanstack/query-core', '@expo-google-fonts/material-symbols', 'Ionicons · 앱 아이콘 및 로고', 'com.squareup.okhttp3:okhttp', 'Public Suffix List (OkHttp)', 'GoogleSignIn', 'AppCheckCore']) {
   assert(notices.entries.some(item => item.name === name), 'Missing required work: ' + name);
 }
 assert(notices.entries.some(item => item.name.startsWith('Google Play services / ')), 'Retain SDK third-party OSS notices');

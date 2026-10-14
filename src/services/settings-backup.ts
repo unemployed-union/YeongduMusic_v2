@@ -2,6 +2,8 @@ import { useDisplayPreferences } from '@/stores/display-preferences';
 import { useLibraryPreferences } from '@/stores/library-preferences';
 import { useMenuPreferences } from '@/stores/menu-preferences';
 import { useThemePreferences } from '@/stores/theme-preferences';
+import { useLibraryDetailPreferences } from '@/stores/library-detail-preferences';
+import { useHapticPreferences } from '@/stores/haptic-preferences';
 import { useStreamingPreferences } from '@/stores/streaming-preferences';
 import { useFolderExclusionStore } from '@/stores/folder-exclusions';
 import { useHiddenFeatureAccess } from '@/stores/hidden-feature-access';
@@ -12,8 +14,8 @@ import { withBackupOperation as exclusive } from './backup-operation';
 
 async function prepare() {
   await Promise.all([useDisplayPreferences.getState().load(true), useLibraryPreferences.getState().load(true), useMenuPreferences.getState().load(true),
-    useStreamingPreferences.getState().load(), useFolderExclusionStore.getState().load(true), useHiddenFeatureAccess.getState().load(true), useThemePreferences.getState().load(true)]);
-  const states = [useDisplayPreferences.getState(), useLibraryPreferences.getState(), useMenuPreferences.getState(), useStreamingPreferences.getState(), useFolderExclusionStore.getState(), useThemePreferences.getState()];
+    useStreamingPreferences.getState().load(), useFolderExclusionStore.getState().load(true), useHiddenFeatureAccess.getState().load(true), useThemePreferences.getState().load(true), useLibraryDetailPreferences.getState().load(true), useHapticPreferences.getState().load(true)]);
+  const states = [useDisplayPreferences.getState(), useLibraryPreferences.getState(), useMenuPreferences.getState(), useStreamingPreferences.getState(), useFolderExclusionStore.getState(), useThemePreferences.getState(), useLibraryDetailPreferences.getState(), useHapticPreferences.getState()];
   for (const state of states) {
     if (!state.ready || state.error) throw new Error(state.error ?? '설정을 먼저 불러와 주세요.');
     if (state.loading || state.saving) throw new Error('설정을 저장 중입니다. 잠시 후 다시 시도해 주세요.');
@@ -40,6 +42,8 @@ function snapshot(includeAccount: boolean): SettingsBackup {
     includeFolderAlbums: useLibraryPreferences.getState().includeFolderAlbums,
     menus: useMenuPreferences.getState().layout,
     themeMode: useThemePreferences.getState().mode,
+    libraryDetails: useLibraryDetailPreferences.getState().preferences,
+    haptics: useHapticPreferences.getState().preferences,
     quality: useStreamingPreferences.getState().quality,
     excludedFolders: [...useFolderExclusionStore.getState().folders],
   };
@@ -110,6 +114,14 @@ export async function restoreSettingsBackup(input: SettingsBackup, includeAccoun
       if (backup.preferences.themeMode !== undefined && previous.preferences.themeMode !== undefined) {
         const mode = backup.preferences.themeMode, original = previous.preferences.themeMode;
         await apply(() => useThemePreferences.getState().setMode(mode), () => useThemePreferences.getState().setMode(original));
+      }
+      if (backup.preferences.libraryDetails && previous.preferences.libraryDetails) {
+        const preferences = backup.preferences.libraryDetails, original = previous.preferences.libraryDetails;
+        await apply(() => useLibraryDetailPreferences.getState().restore(preferences), () => useLibraryDetailPreferences.getState().restore(original));
+      }
+      if (backup.preferences.haptics && previous.preferences.haptics) {
+        const preferences = backup.preferences.haptics, original = previous.preferences.haptics;
+        await apply(() => useHapticPreferences.getState().restore(preferences), () => useHapticPreferences.getState().restore(original));
       }
       if (account && previous.account) {
         const access = useHiddenFeatureAccess.getState(), original = previous.account.access;

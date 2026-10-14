@@ -9,12 +9,17 @@ import { SongRow } from '@/components/song-row';
 import { useArtistSongs } from '@/features/library/queries';
 import { playAndOpenPlayer } from '@/features/playback/play-and-open-player';
 import { useColors } from '@/theme/tokens';
+import { useEffect } from 'react';
+import { ArtistPhoto } from '@/features/library/artist-photo';
+import { useLibraryDetailPreferences } from '@/stores/library-detail-preferences';
 
 export default function ArtistScreen() {
   const params = useLocalSearchParams<{ id: string; name?: string }>();
   const artist = { id: params.id, name: params.name ?? params.id };
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const detail = useLibraryDetailPreferences(), loadDetail = detail.load;
+  useEffect(() => { void loadDetail(); }, [loadDetail]);
   const query = useArtistSongs(artist);
   const songs = query.data?.items ?? [];
   const refresh = () => { void query.refetch(); };
@@ -23,7 +28,7 @@ export default function ArtistScreen() {
       <TabScrollEdgeFade><FlatList data={songs} keyExtractor={(song) => song.id} contentContainerStyle={[styles.list, { paddingBottom: 180 + insets.bottom }]} alwaysBounceVertical
         refreshControl={<RefreshControl refreshing={query.isRefetching} onRefresh={refresh} colors={[colors.tint]} tintColor={colors.tint} progressBackgroundColor={colors.surface} />}
         ListHeaderComponent={songs.length ? <View style={styles.header}>
-          <View style={[styles.icon, { backgroundColor: colors.surface }]}><Ionicons name="person" size={48} color={colors.tint} /></View>
+          <ArtistPhoto name={artist.name} enabled={detail.ready && !detail.loadError && detail.preferences.artistPhotos} />
           <Text style={[styles.title, { color: colors.text }]}>{artist.name}</Text>
           <Text style={[styles.count, { color: colors.muted }]}>{query.data?.total ?? 0}곡</Text>
           {query.data?.stale && <Text style={[styles.message, { color: colors.muted }]}>오프라인 보관함 · 마지막으로 저장된 목록</Text>}
@@ -41,7 +46,6 @@ export default function ArtistScreen() {
 const styles = StyleSheet.create({
   screen: { flex: 1 }, list: { flexGrow: 1, paddingHorizontal: 22, paddingBottom: 110 },
   header: { alignItems: 'center', paddingTop: 27, paddingBottom: 19 },
-  icon: { width: 104, height: 104, borderRadius: 52, alignItems: 'center', justifyContent: 'center' },
   title: { fontSize: 30, fontWeight: '800', marginTop: 20, textAlign: 'center' },
   count: { fontSize: 13, marginTop: 6 }, message: { fontSize: 12, marginTop: 10, textAlign: 'center' },
   play: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 7, height: 44, borderRadius: 11, alignSelf: 'stretch', marginTop: 23 },

@@ -119,6 +119,7 @@ async function checkOptionsUI() {
   let slot = 0;
   const jsx = (type, props) => ({ type, props });
   const component = load('src/features/playback/section-repeat-options.tsx', {
+    './menu-styles': load('src/features/playback/menu-styles.ts'), '@/theme/tokens': { useColors: () => ({ text: '#F7F7FA', muted: '#9B9BA5', separator: '#31313A', tint: '#FF5C80' }) },
     react: { useState: initial => { const i = slot++; if (!(i in states)) states[i] = initial; return [states[i], value => { states[i] = value; }]; } },
     'react/jsx-runtime': { jsx, jsxs: jsx }, 'react-native': { View: 'View', TextInput: 'Input', Pressable: 'Button', StyleSheet: { create: value => value } },
     '@expo/vector-icons/Ionicons': { __esModule: true, default: 'Icon' }, '@/components/text': { Text: 'Text' },
@@ -148,6 +149,7 @@ function checkMenuUI() {
   const animation = { duration: () => animation, easing: () => animation, withInitialValues: () => animation, withTargetValues: () => animation };
   const calls = [], navigation = [];
   const menu = load('src/features/playback/player-menu.tsx', {
+    '@/theme/tokens': { useColors: () => ({ text: '#F7F7FA', muted: '#9B9BA5', separator: '#31313A', tint: '#FF5C80' }), useAppColorScheme: () => 'dark' },
     react: { useEffect: () => {}, useState: initial => { const i = slot++; if (!(i in states)) states[i] = typeof initial === 'function' ? initial() : initial; return [states[i], value => { states[i] = value; }]; } },
     'react/jsx-runtime': { jsx, jsxs: jsx }, 'react-native': { View: 'View', Pressable: 'Button', ScrollView: 'Scroll', StyleSheet: { create: value => value } },
     'expo-router': { router: { push: href => navigation.push(href) } }, 'expo-blur': { BlurView: 'Blur' },
@@ -179,6 +181,7 @@ function checkSpeedUI() {
   let rate = 1, error = null, fail = false, preservePitch = true;
   const rates = load('src/services/playback/playback-rate.ts'), jsx = (type, props) => ({ type, props });
   const Speed = load('src/features/playback/playback-speed-options.tsx', {
+    './menu-styles': load('src/features/playback/menu-styles.ts'), '@/theme/tokens': { useColors: () => ({ text: '#F7F7FA', muted: '#9B9BA5', separator: '#31313A', tint: '#FF5C80' }) },
     react: { useState: () => [error, value => { error = value; }] }, 'react/jsx-runtime': { jsx, jsxs: jsx },
     'react-native': { View: 'View', Pressable: 'Button', StyleSheet: { create: value => value } },
     '@expo/vector-icons/Ionicons': { __esModule: true, default: 'Icon' }, '@/components/text': { Text: 'Text' },
