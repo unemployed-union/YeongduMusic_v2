@@ -2,7 +2,7 @@ import { Platform } from 'react-native';
 import * as SQLite from 'expo-sqlite';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as DocumentPicker from 'expo-document-picker';
-import type { Song } from '@/types/music';
+import type { Song, SongMetadata } from '@/types/music';
 import { useFolderExclusionStore } from '@/stores/folder-exclusions';
 import { folderExcluded, localFolderKey, localSongExcluded } from './folders';
 import { fingerprintFile, withVerifiedCopy } from './file-copy';
@@ -28,15 +28,69 @@ async function open() {
 export async function readLocalSongs(): Promise<Song[]> {
   if (Platform.OS === 'web') return [];
   const rows = await (await open()).getAllAsync<{ value: string }>('SELECT value FROM local_tracks ORDER BY rowid');
-  return rows.map((row) => {
+  return Promise.all(rows.map(async (row) => {
     const song = JSON.parse(row.value) as Song;
     if (!song || song.source !== 'local' || typeof song.title !== 'string' || typeof song.artist !== 'string' || typeof song.album !== 'string' || !Number.isFinite(song.duration) || song.duration < 0 || !Number.isFinite(song.local?.size) || song.local.size <= 0 || !/^local:[a-f0-9]{32}:\d+$/.test(song.id) || !/^[a-f0-9]{32}-\d+\.(mp3|m4a|flac|wav|aac|aiff|aif|ogg|opus|alac)$/.test(song.local?.fileName ?? '')) throw new Error('저장된 로컬 음악 목록 형식을 확인할 수 없습니다.');
     if (song.local.originalFolders !== undefined && (!Array.isArray(song.local.originalFolders) || song.local.originalFolders.some(folder => typeof folder !== 'string' || !folder || localFolderKey(folder) !== folder))) throw new Error('저장된 원본 폴더 정보를 확인할 수 없습니다.');
-    return { ...song, albumSource: song.albumSource ?? 'fallback' };
-  });
+    const recovered = await recoverLocalMetadata(song);
+    return { ...recovered, albumSource: recovered.albumSource ?? 'fallback' };
+  }));
 }
 async function save(song: Song) {
   await (await open()).runAsync('INSERT OR REPLACE INTO local_tracks (id, value) VALUES (?, ?)', song.id, JSON.stringify(song));
+}
+// A small journal retains the original across file/SQLite writes and app termination.
+async function recoverLocalMetadata(song: Song): Promise<Song> {
+  if (song.source !== 'local') return song;
+  const uri = directory() + song.local.fileName, journal = uri + '.metadata-journal', backup = uri + '.metadata-backup', staged = uri + '.metadata-new';
+  if (!(await FileSystem.getInfoAsync(journal)).exists) return song;
+  const entry = JSON.parse(await FileSystem.readAsStringAsync(journal)) as { before: Song; after: Song; digest: string };
+  if (entry.before?.source !== 'local' || entry.after?.source !== 'local' || entry.before.id !== song.id || entry.after.id !== song.id
+    || entry.before.local.fileName !== song.local.fileName || entry.after.local.fileName !== song.local.fileName || !/^[a-f0-9]{32}$/.test(entry.digest)) throw new Error('음악 태그 저장 복구 정보를 읽지 못했습니다.');
+  const current = await FileSystem.getInfoAsync(uri, { md5: true });
+  const committed = JSON.stringify(song) === JSON.stringify(entry.after) && current.exists && current.md5 === entry.digest;
+  if (!committed) {
+    if ((await FileSystem.getInfoAsync(backup)).exists) {
+      await FileSystem.deleteAsync(uri, { idempotent: true });
+      await FileSystem.moveAsync({ from: backup, to: uri });
+    } else if (!current.exists || current.size !== entry.before.local.size) throw new Error('음악 태그 저장 복구에 실패했습니다. 원본 백업을 유지했습니다.');
+    await save(entry.before);
+  }
+  await FileSystem.deleteAsync(staged, { idempotent: true });
+  await FileSystem.deleteAsync(backup, { idempotent: true });
+  await FileSystem.deleteAsync(journal, { idempotent: true });
+  return committed ? entry.after : entry.before;
+}
+export function replaceLocalMetadataFile(id: string, input: string, fields: SongMetadata | undefined, check: () => void, artworkUrl?: string): Promise<Song> {
+  const result = importTail.then(async () => {
+    check();
+    const before = (await readLocalSongs()).find(song => song.id === id);
+    if (!before || before.source !== 'local') throw new Error('앱에 보관된 음악 파일을 찾을 수 없습니다.');
+    const { uri } = await localSource(before), fingerprint = await fingerprintFile(input, '수정한 음악 파일을 읽지 못했습니다.');
+    const after: Song = { ...before, ...(fields ? { ...fields, artist: fields.artist || '알 수 없는 아티스트', album: fields.album || '알 수 없는 앨범',
+      albumId: undefined, albumSource: fields.album ? 'tag' as const : 'fallback' as const, metadataOriginal: undefined } : {}),
+      ...(artworkUrl ? { artworkUrl, palette: undefined, artworkOriginal: undefined } : {}), local: { ...before.local, size: fingerprint.size } };
+    // Keep the song ID and filename stable for playlists and the native player.
+    const staged = uri + '.metadata-new', backup = uri + '.metadata-backup', journal = uri + '.metadata-journal';
+    await withVerifiedCopy({ from: input, to: staged, fingerprint, overwrite: true, check, message: '수정한 음악 파일을 임시 저장하지 못했습니다.' }, async () => {});
+    check();
+    await FileSystem.writeAsStringAsync(journal, JSON.stringify({ before, after, digest: fingerprint.digest }));
+    try {
+      await FileSystem.moveAsync({ from: uri, to: backup });
+      await FileSystem.moveAsync({ from: staged, to: uri });
+      await save(after);
+    } catch (cause) {
+      const latest = await (await open()).getFirstAsync<{ value: string }>('SELECT value FROM local_tracks WHERE id = ?', id);
+      try { await recoverLocalMetadata(latest ? JSON.parse(latest.value) as Song : before); }
+      catch { throw new Error('파일 저장 복구를 완료하지 못했습니다. 원본 백업을 유지했습니다. 앱을 다시 열어 주세요.'); }
+      throw cause;
+    }
+    // A committed journal can be cleaned at the next load if cleanup itself fails.
+    await recoverLocalMetadata(JSON.parse(JSON.stringify(after)) as Song).catch(() => {});
+    return after;
+  });
+  importTail = result.catch(() => {});
+  return result;
 }
 export async function localSource(song: Song): Promise<{ uri: string }> {
   if (song.source !== 'local' || !song.local || !/^[a-f0-9]{32}-\d+\.(mp3|m4a|flac|wav|aac|aiff|aif|ogg|opus|alac)$/.test(song.local.fileName)) throw new Error('로컬 음악 파일 정보가 올바르지 않습니다.');
@@ -54,6 +108,11 @@ export async function localSource(song: Song): Promise<{ uri: string }> {
   return { uri };
 }
 export async function saveLocalDuration(id: string, duration: number): Promise<void> {
+  const result = importTail.then(() => recordLocalDuration(id, duration));
+  importTail = result.catch(() => {});
+  return result;
+}
+async function recordLocalDuration(id: string, duration: number): Promise<void> {
   if (!Number.isFinite(duration) || duration <= 0) return;
   const db = await open();
   const row = await db.getFirstAsync<{ value: string }>('SELECT value FROM local_tracks WHERE id = ?', id);

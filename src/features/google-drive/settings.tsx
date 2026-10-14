@@ -9,7 +9,7 @@ export function GoogleDriveSettings() {
   const drive = useGoogleDriveStore(), colors = useColors(), busy = drive.busy || drive.loading || drive.folderSaving;
   const [folderPicker, setFolderPicker] = useState(false);
   function connect() {
-    Alert.alert('Google Drive 연결', '음악 목록 조회와 스트리밍을 위해 Drive 파일의 읽기·다운로드 권한을 요청합니다. 권한은 Drive 전체에 적용되지만 앱은 연결 후 선택한 음악 폴더만 조회합니다. 파일을 수정하거나 업로드하지 않습니다.', [
+    Alert.alert('Google Drive 연결', '음악 목록 조회와 스트리밍을 위해 Drive 파일의 읽기·다운로드 권한을 요청합니다. 권한은 Drive 전체에 적용되지만 앱은 연결 후 선택한 음악 폴더만 조회합니다. 곡 정보를 수정하면 앱 표시 정보만 변경하며 Drive 원본 파일은 유지합니다.', [
       { text: '취소', style: 'cancel' }, { text: '연결', onPress: () => { void drive.connect(); } },
     ]);
   }
@@ -29,7 +29,7 @@ export function GoogleDriveSettings() {
     </>}
     {!drive.account && drive.error && <Pressable accessibilityRole="button" disabled={busy} onPress={() => void drive.disconnect()} style={{ paddingVertical: 12 }}><Text style={{ color: busy ? colors.muted : colors.tint }}>연결 정보 삭제 다시 시도</Text></Pressable>}
     <Text style={{ color: colors.muted, fontSize: 12, lineHeight: 18 }}>MP3·M4A·FLAC의 곡 제목·아티스트·앨범과 내장 앨범아트를 읽어 기기에 캐시합니다. 태그가 없거나 읽을 수 없는 파일은 파일명과 기본 이미지를 사용합니다. 음질 변환은 NAS 곡에만 적용합니다.</Text>
-    <Text style={{ color: colors.muted, fontSize: 12, lineHeight: 18 }}>앱은 선택한 음악 폴더만 조회하지만 Google 읽기 권한 자체는 Drive 전체에 적용됩니다. 폴더 바로가기는 따라가지 않습니다.</Text>
+    <Text style={{ color: colors.muted, fontSize: 12, lineHeight: 18 }}>앱은 선택한 음악 폴더만 조회하지만 Google 읽기 권한 자체는 Drive 전체에 적용됩니다. 곡 정보 수정은 앱 표시 정보만 변경합니다. Drive 원본 파일은 직접 수정하지 않습니다. 폴더 바로가기는 따라가지 않습니다.</Text>
     {folderPicker && drive.account && <DriveFolderPicker key={`${drive.account.id}:${drive.generation}`} onClose={() => setFolderPicker(false)} />}
   </View>;
 }

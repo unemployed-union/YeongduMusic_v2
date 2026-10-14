@@ -24,7 +24,7 @@ export function usePlaybackRecovery({ ready, privacyReady, privacyScope, scope, 
         }
         const saved = await readRestoredPlayback();
         if (cancelled || !saved || usePlaybackStore.getState().queue.length) return;
-        const restored = await restorePlayback(saved.queue, saved.index, saved.position, saved.playing, saved.shuffle, saved.repeat);
+        const restored = await restorePlayback(saved.queue, saved.index, saved.position, saved.playing, saved.shuffle, saved.repeat, saved.playbackRate, saved.preservePitch);
         if (restored && !cancelled) router.navigate(usePlaybackStore.getState().playing ? '/player' : '/(tabs)/(library)');
       } catch { /* Playback recovery must not block the library. */ }
       finally {

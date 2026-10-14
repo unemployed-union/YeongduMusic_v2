@@ -37,7 +37,7 @@ export function useLibraryControls() {
     const start = touchStart.current;
     if (!start) return;
     const dx = event.nativeEvent.pageX - start.x, dy = event.nativeEvent.pageY - start.y;
-    if (Math.abs(dx) >= 12 || dy >= 12) showForGesture();
+    if ((Math.abs(dx) >= 18 && Math.abs(dx) > Math.abs(dy) * 1.5) || dy >= 12) showForGesture();
   }, [showForGesture]);
   const selectPage = useCallback((page: LibraryTab) => {
     active.current = page;

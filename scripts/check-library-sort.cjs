@@ -77,6 +77,7 @@ modules['react-native'].ScrollView = 'ScrollView'; modules['react-native'].useWi
 modules['@/components/screen-header'] = { ScreenHeader: 'ScreenHeader' };
 modules['@/components/settings-button'] = { SettingsButton: 'SettingsButton' };
 modules['@/features/library/library-page'] = { LIBRARY_TABS: ['albums', 'songs', 'artists'], LibraryPage: 'LibraryPage' };
+modules['@/features/library/library-pager'] = { LibraryPager: 'LibraryPager' };
 modules['@/features/library/local-music-controls'] = { LocalMusicControls: 'LocalMusicControls' };
 modules['@/features/library/library-sort-control'] = { LibrarySortControl: 'LibrarySortControl' };
 modules['@/features/library/queries'] = { useAlbums: () => ({}), useSongs: () => ({}), useArtists: () => ({}) };
@@ -85,18 +86,21 @@ modules['react-native-reanimated'] = { __esModule: true, default: { View: 'Anima
 let controlsRevealed = 0;
 modules['@/features/library/use-library-controls'] = { useLibraryControls: () => ({ hidden: false, show() { controlsRevealed++; }, selectPage() {}, onScroll() {}, onLayout() {}, frameStyle: {}, contentStyle: {} }) };
 modules['@/stores/auth'] = { useAuthStore: selector => selector({ mode: 'mock' }) };
+const menuRules = load('src/features/settings/menu-layout.ts');
+const menuLayout = menuRules.defaultMenuLayout();
+modules['@/features/settings/menu-layout'] = menuRules;
+modules['@/stores/menu-preferences'] = { useMenuPreferences: selector => selector({ layout: menuLayout }) };
 const Screen = load('src/app/(tabs)/(library)/index.tsx', modules).default;
 function screen() { stateSlot = 0; refSlot = 0; return Screen(); }
 function sortProps(tree) { return find(tree, 'LocalMusicControls').props.sortControl.props; }
-function swipe(tree, index) { find(tree, 'ScrollView').props.onMomentumScrollEnd({ nativeEvent: { contentOffset: { x: index * 400 } } }); }
+function swipe(tree, index) { find(tree, 'LibraryPager').props.onPageChange(index); }
 let tree = screen(); assert.equal(sortProps(tree).tab, 'albums'); sortProps(tree).onChange('descending');
 tree = screen(); assert.equal(sortProps(tree).order, 'descending'); swipe(tree, 1);
 tree = screen(); assert.equal(sortProps(tree).tab, 'songs'); assert.equal(sortProps(tree).order, 'default'); sortProps(tree).onChange('ascending');
 tree = screen(); swipe(tree, 2); tree = screen(); assert.equal(sortProps(tree).order, 'default'); swipe(tree, 0);
 tree = screen(); assert.equal(sortProps(tree).order, 'descending');
-assert.deepEqual(find(tree, 'ScrollView').props.children.map(page => page.props.sortOrder), ['descending', 'ascending', 'default']);
-const horizontalPager = find(tree, 'ScrollView');
-horizontalPager.props.onScrollBeginDrag(); assert.equal(controlsRevealed, 1, 'Horizontal drag reveals controls immediately');
-horizontalPager.props.onScroll({ nativeEvent: { contentOffset: { x: 100 } } }); assert.equal(controlsRevealed, 2, 'Partial swipe keeps controls visible before settling');
-horizontalPager.props.onScroll({ nativeEvent: { contentOffset: { x: 0 } } }); assert.equal(controlsRevealed, 2, 'Aligned layout events do not reveal controls');
+assert.deepEqual(find(tree, 'LibraryPager').props.children.map(page => page.props.sortOrder), ['descending', 'ascending', 'default']);
+const horizontalPager = find(tree, 'LibraryPager');
+horizontalPager.props.onSwipeStart(); assert.equal(controlsRevealed, 1, 'An accepted horizontal drag reveals controls immediately');
+assert.deepEqual(horizontalPager.props.children.map(page => page.props.active), [true, false, false]);
 console.log('PASS: default/order restoration, Korean/numeric names, stable ties, immutable mixed sources, memo reuse, refreshed data, displayed playback queue and sort menu handlers. Native layout is mocked.');

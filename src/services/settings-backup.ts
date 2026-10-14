@@ -1,5 +1,6 @@
 import { useDisplayPreferences } from '@/stores/display-preferences';
 import { useLibraryPreferences } from '@/stores/library-preferences';
+import { useMenuPreferences } from '@/stores/menu-preferences';
 import { useStreamingPreferences } from '@/stores/streaming-preferences';
 import { useFolderExclusionStore } from '@/stores/folder-exclusions';
 import { useHiddenFeatureAccess } from '@/stores/hidden-feature-access';
@@ -9,9 +10,9 @@ import { parseSettingsBackup, serializeSettingsBackup, type SettingsBackup } fro
 import { withBackupOperation as exclusive } from './backup-operation';
 
 async function prepare() {
-  await Promise.all([useDisplayPreferences.getState().load(true), useLibraryPreferences.getState().load(true),
+  await Promise.all([useDisplayPreferences.getState().load(true), useLibraryPreferences.getState().load(true), useMenuPreferences.getState().load(true),
     useStreamingPreferences.getState().load(), useFolderExclusionStore.getState().load(true), useHiddenFeatureAccess.getState().load(true)]);
-  const states = [useDisplayPreferences.getState(), useLibraryPreferences.getState(), useStreamingPreferences.getState(), useFolderExclusionStore.getState()];
+  const states = [useDisplayPreferences.getState(), useLibraryPreferences.getState(), useMenuPreferences.getState(), useStreamingPreferences.getState(), useFolderExclusionStore.getState()];
   for (const state of states) {
     if (!state.ready || state.error) throw new Error(state.error ?? '설정을 먼저 불러와 주세요.');
     if (state.loading || state.saving) throw new Error('설정을 저장 중입니다. 잠시 후 다시 시도해 주세요.');
@@ -36,6 +37,7 @@ function snapshot(includeAccount: boolean): SettingsBackup {
   const preferences: SettingsBackup['preferences'] = {
     hideArtwork: useDisplayPreferences.getState().hideArtwork,
     includeFolderAlbums: useLibraryPreferences.getState().includeFolderAlbums,
+    menus: useMenuPreferences.getState().layout,
     quality: useStreamingPreferences.getState().quality,
     excludedFolders: [...useFolderExclusionStore.getState().folders],
   };
@@ -96,6 +98,11 @@ export async function restoreSettingsBackup(input: SettingsBackup, includeAccoun
       const folderAlbums = (value: boolean) => checked(() => library.setIncludeFolderAlbums(value), () => useLibraryPreferences.getState().error);
       await apply(() => hideArtwork(backup.preferences.hideArtwork), () => hideArtwork(previous.preferences.hideArtwork));
       await apply(() => folderAlbums(backup.preferences.includeFolderAlbums), () => folderAlbums(previous.preferences.includeFolderAlbums));
+      if (backup.preferences.menus && previous.preferences.menus) {
+        const menus = backup.preferences.menus, original = previous.preferences.menus;
+        const restoreMenus = (value: typeof menus) => checked(() => useMenuPreferences.getState().restore(value), () => useMenuPreferences.getState().error);
+        await apply(() => restoreMenus(menus), () => restoreMenus(original));
+      }
       await apply(() => streaming.setQuality(backup.preferences.quality), () => streaming.setQuality(previous.preferences.quality));
       await apply(() => folders.setFolders(backup.preferences.excludedFolders), () => folders.setFolders(previous.preferences.excludedFolders));
       if (account && previous.account) {

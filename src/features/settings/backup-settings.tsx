@@ -10,6 +10,7 @@ import { pickSettingsBackup, saveSettingsBackup } from './backup-files';
 import type { SettingsBackup } from './backup-format';
 import { settingsMenuStyles } from './settings-menu-layout';
 import { SettingsPage, SettingsSection } from './settings-ui';
+import { MENU_LABELS, visibleMenuIds } from './menu-layout';
 
 export function BackupSettings() {
   const colors = useColors();
@@ -78,6 +79,7 @@ export function BackupSettings() {
         <View style={styles.copy}><Text style={[styles.title, { color: restoreAccountDisabled ? colors.muted : colors.text }]}>프리셋과 숨김 설정도 복구</Text><Text style={[styles.detail, { color: colors.muted }]}>음악 숨김 프리셋 {selected.backup.account.hidden.presets.length}개 · 플레이리스트 {selected.backup.account.playlists.presets.length}개. 같은 서버·NAS 계정에서만 복구할 수 있습니다. 기타 메뉴 활성화 상태와 빠른 숨기기 설정도 바뀝니다.</Text></View>
         <AnimatedSwitch accessibilityLabel="프리셋과 숨김 설정도 복구" value={restoreAccount} disabled={restoreAccountDisabled} onValueChange={setRestoreAccount} trackColor={{ false: colors.separator, true: colors.tint }} />
       </View>}
+      {selected.backup.preferences.menus && <Text style={[styles.detail, { color: colors.muted }]}>하단 메뉴: {visibleMenuIds(selected.backup.preferences.menus.bottom).map(id => MENU_LABELS[id]).join(' → ')}{'\n'}보관함 메뉴: {visibleMenuIds(selected.backup.preferences.menus.library).map(id => MENU_LABELS[id]).join(' → ')}{'\n'}재생 화면 메뉴: {visibleMenuIds(selected.backup.preferences.menus.player).map(id => MENU_LABELS[id]).join(' → ')}</Text>}
       <Text style={[styles.note, { color: colors.muted, marginTop: 16 }]}>복구하면 위 설정을 백업 내용으로 덮어씁니다. 제외 폴더와 숨김 목록이 바뀌면 표시되는 음악도 바뀔 수 있습니다. 다른 기기에서는 제외 폴더 경로를 확인해 주세요.</Text>
       <Pressable accessibilityRole="button" disabled={busy} onPress={restore} style={[styles.button, { backgroundColor: busy ? colors.separator : colors.tint }]}><Text style={[styles.buttonText, busy && { color: colors.muted }]}>이 설정으로 복구하기</Text></Pressable>
       <Pressable accessibilityRole="button" disabled={busy} onPress={() => { setSelected(null); setRestoreAccount(false); }} style={styles.cancel}><Text style={{ color: colors.muted }}>취소</Text></Pressable>

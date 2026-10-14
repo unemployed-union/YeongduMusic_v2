@@ -20,7 +20,8 @@ import Slider from '@react-native-community/slider';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Artwork } from '@/components/artwork';
 import { openSystemEqualizer } from '@/services/playback/equalizer';
-import { next, playQueue, previous, seek, togglePlayback } from '@/services/playback/controller';
+import { cancelSectionRepeat, next, playQueue, previous, seek, togglePlayback } from '@/services/playback/controller';
+import { sectionClock } from '@/services/playback/section-repeat';
 import { usePlaybackStore } from '@/stores/playback';
 import { AddToPlaylistDialog } from '@/features/playlists/dialogs';
 import { LyricsPanel } from '@/features/lyrics/lyrics-panel';
@@ -28,6 +29,8 @@ import { useAuthStore } from '@/stores/auth';
 import { useOfflineMusicStore } from '@/stores/offline-music';
 import { DownloadStatus } from '@/features/offline-music/download-status';
 import type { LyricsSource } from '@/types/lyrics';
+import type { Song } from '@/types/music';
+import { MetadataEditor } from '@/features/metadata/metadata-editor';
 
 const SIDE_PADDING = 29;
 const SLIDER_INSET = 14;
@@ -41,6 +44,7 @@ function clock(value: number): string {
 export default function PlayerScreen() {
   const { queue, index, playing, buffering, position, duration, shuffle, repeat, error, toggleShuffle, cycleRepeat } = usePlaybackStore();
   const song = queue[index];
+  const section = usePlaybackStore(state => state.sectionRepeat);
   const mode = useAuthStore(state => state.mode);
   const artist = song ? artistName(song.artist) : '';
   const insets = useSafeAreaInsets();
@@ -54,6 +58,7 @@ export default function PlayerScreen() {
   const [screenHeight, setScreenHeight] = useState(height);
   const [controlsTop, setControlsTop] = useState(0);
   const [saveList, setSaveList] = useState<'song' | 'queue' | null>(null);
+  const [editingSong, setEditingSong] = useState<Song | null>(null);
   const detailTarget = useRef<Href | null>(null);
   const dismissPlayer = useCallback(() => {
     if (detailTarget.current) router.dismissTo(detailTarget.current);
@@ -82,6 +87,7 @@ export default function PlayerScreen() {
     if (action === 'album' || action === 'artist') openDetail(action);
     else if (action === 'lyrics') setPanel(panel === 'lyrics' ? 'artwork' : 'lyrics');
     else if (action === 'download' && song) void useOfflineMusicStore.getState().download(song);
+    else if (action === 'edit-metadata' && song) setEditingSong(song);
     else if (action === 'delete-local' && song) Alert.alert('기기 음악 삭제', '앱에 저장된 복사본을 삭제합니다. NAS·Drive·S3·휴대전화의 원본은 유지됩니다.', [
       { text: '취소', style: 'cancel' }, { text: '삭제', style: 'destructive', onPress: () => { void useOfflineMusicStore.getState().remove(song); } },
     ]);
@@ -108,8 +114,9 @@ export default function PlayerScreen() {
       {error ? <Pressable onPress={() => void playQueue(queue, index)}><Text style={styles.error}>{error} · 다시 시도</Text></Pressable> : null}
       <Slider style={[styles.slider, { width: width - SIDE_PADDING * 2 + SLIDER_INSET * 2 }]} minimumValue={0} maximumValue={Math.max(duration || song.duration, 1)} value={Math.min(position, duration || song.duration || 1)} minimumTrackTintColor="white" maximumTrackTintColor="#FFFFFF55" thumbTintColor="white" onSlidingComplete={(value) => void seek(value)} />
       <View style={styles.times}><Text style={styles.time}>{clock(position)}</Text><Text style={styles.time}>-{clock(Math.max(0, (duration || song.duration) - position))}</Text></View>
+      {section?.enabled && section.end !== null && <Pressable accessibilityRole="button" accessibilityLabel="구간 반복 해제" onPress={cancelSectionRepeat} style={{ minHeight: 32, justifyContent: 'center' }}><Text style={{ color: '#FF9BAE', fontSize: 12 }}>구간 반복 {sectionClock(section.start)}–{sectionClock(section.end)} · 해제</Text></Pressable>}
       <View style={styles.controls}><Pressable accessibilityLabel="셔플" onPress={toggleShuffle}><Ionicons name="shuffle" size={24} color={shuffle ? '#FFFFFF' : '#FFFFFF88'} /></Pressable><Pressable accessibilityLabel="이전 곡" onPress={() => void previous()}><Ionicons name="play-skip-back" size={30} color="white" /></Pressable><Pressable accessibilityLabel={playing ? '일시정지' : '재생'} onPress={togglePlayback} style={styles.playControl}>{buffering ? <ActivityIndicator color="#2F2841" /> : <Ionicons name={playing ? 'pause' : 'play'} size={32} color="#2F2841" style={[styles.playIcon, !playing && styles.playIconTriangle]} />}</Pressable><Pressable accessibilityLabel="다음 곡" onPress={() => void next()}><Ionicons name="play-skip-forward" size={30} color="white" /></Pressable><Pressable accessibilityLabel={`반복 ${repeat}`} onPress={cycleRepeat}><Ionicons name={repeat === 'one' ? 'repeat-outline' : 'repeat'} size={24} color={repeat === 'off' ? '#FFFFFF88' : '#FFFFFF'} />{repeat === 'one' && <Text style={styles.repeatOne}>1</Text>}</Pressable></View>
     </View>}
-  </View></BlurTargetView>{menuOpen && song && <PlayerMenu key={menu} canDownload={song.source === 's3' || song.source === 'drive' || (song.source !== 'local' && mode === 'nas')} localSong={song.source === 'local'} kind={menu ?? 'playback'} blurTarget={menuBlurTarget} panel={panel} bottom={Math.max(insets.bottom + 18, screenHeight - controlsTop + 8)} maxHeight={Math.max(80, controlsTop - insets.top - 16)} onClose={() => setMenu(null)} onSelect={selectMenuAction} />}{saveList && song && <AddToPlaylistDialog songs={saveList === 'queue' ? queue : [song]} onClose={() => setSaveList(null)} />}</Animated.View>;
+  </View></BlurTargetView>{menuOpen && song && <PlayerMenu key={`${menu}-${song.id}`} canDownload={song.source === 's3' || song.source === 'drive' || (song.source !== 'local' && mode === 'nas')} localSong={song.source === 'local'} kind={menu ?? 'playback'} blurTarget={menuBlurTarget} panel={panel} bottom={Math.max(insets.bottom + 18, screenHeight - controlsTop + 8)} maxHeight={Math.max(80, controlsTop - insets.top - 16)} onClose={() => setMenu(null)} onSelect={selectMenuAction} />}{saveList && song && <AddToPlaylistDialog songs={saveList === 'queue' ? queue : [song]} onClose={() => setSaveList(null)} />}{editingSong && <MetadataEditor song={editingSong} onClose={() => setEditingSong(null)} />}</Animated.View>;
 }
 const styles = StyleSheet.create({ player: { flex: 1 }, artContainer: { flex: 1, alignItems: 'center', justifyContent: 'center' }, screen: { flex: 1, paddingHorizontal: SIDE_PADDING, justifyContent: 'space-between' }, top: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }, topButton: { width: 36, height: 38, alignItems: 'center', justifyContent: 'center' }, artShadow: { borderRadius: 17, shadowColor: '#070310', shadowOffset: { width: 0, height: 18 }, shadowOpacity: 0.42, shadowRadius: 24, elevation: 18 }, empty: { flex: 1, justifyContent: 'center', alignItems: 'center' }, emptyText: { color: 'white' }, bottom: { paddingBottom: 15 + PLAYER_FOOTER_SPACE }, identity: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 19 }, title: { fontSize: 23, fontWeight: '800', color: 'white', letterSpacing: -0.6 }, artistButton: { alignSelf: 'flex-start', maxWidth: '100%', marginTop: 3 }, artist: { fontSize: 17, color: '#FFFFFFB0' }, slider: { height: 27, marginLeft: -SLIDER_INSET }, times: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 1 }, time: { color: '#FFFFFFA6', fontSize: 12, fontVariant: ['tabular-nums'] }, controls: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 30, paddingHorizontal: 4 }, playControl: { width: 68, height: 68, borderRadius: 34, backgroundColor: 'white', justifyContent: 'center', alignItems: 'center' }, playIcon: { width: 36, height: 36, lineHeight: 36, textAlign: 'center', textAlignVertical: 'center', includeFontPadding: false }, playIconTriangle: { transform: [{ translateX: 2 }] }, repeatOne: { position: 'absolute', right: -3, bottom: -7, color: 'white', fontSize: 11, fontWeight: '900' }, menuButton: { minWidth: 44, minHeight: 44, alignItems: 'flex-end', justifyContent: 'center' }, error: { color: '#FFE2E7', fontSize: 12, marginBottom: 5 }, queue: { flex: 1, paddingTop: 25 }, queueHeading: { color: 'white', fontSize: 21, fontWeight: '800', marginBottom: 11 }, queueContent: { paddingTop: 28, paddingBottom: 28 }, queueRow: { height: 61, flexDirection: 'row', alignItems: 'center', gap: 10, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: '#FFFFFF33' }, queueTitle: { color: 'white', fontSize: 15, fontWeight: '700' }, queueArtist: { color: '#FFFFFFA8', fontSize: 12, marginTop: 3 } });

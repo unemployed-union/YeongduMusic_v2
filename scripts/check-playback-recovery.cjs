@@ -14,7 +14,7 @@ const storage = { getItem: async key => values.get(key) ?? null, setItem: async 
 const auth = create(() => ({ mode: 'nas', session: { baseUrl: 'https://example.invalid', account: 'tester' } }));
 const privacy = create(() => ({ ready: true, scope: 'https://example.invalid:tester', profile: { presets: [] } }));
 const local = create(() => ({ songs: [] }));
-const drive = create(() => ({ account: { id: 'drive-account' } }));
+const drive = create(() => ({ account: { id: 'drive-account' }, songs: [] }));
 const playback = create(() => ({ queue: [], index: -1, position: 0, playing: false, shuffle: false, repeat: 'off' }));
 let appStateListener;
 const modules = {
@@ -42,8 +42,8 @@ new Function('require', 'exports', 'setTimeout', 'clearTimeout', code)(name => {
 async function checkRootRemount({ playing = true, cold = false } = {}) {
   const effects = [], navigation = [];
   let privacyLoads = 0, stopped = 0, savedReads = 0, persistenceStarts = 0;
-  const saved = { queue: [{ id: 'nas-live', source: 'nas' }], index: 0, playing, position: 37, shuffle: false, repeat: 'off' };
-  const live = { queue: cold ? [] : saved.queue, index: cold ? -1 : 0, playing: cold ? false : playing };
+  const saved = { queue: [{ id: 'nas-live', source: 'nas' }], index: 0, playing, position: 37, shuffle: false, repeat: 'off', playbackRate: 1.75, preservePitch: false };
+  const live = { queue: cold ? [] : saved.queue, index: cold ? -1 : 0, playing: cold ? false : playing, playbackRate: cold ? 1 : saved.playbackRate, preservePitch: cold ? true : saved.preservePitch };
   let restores = 0;
   const hidden = { ready: true, scope: 'current-account', profile: { presets: [] },
     load: async () => {
@@ -83,18 +83,20 @@ async function checkRootRemount({ playing = true, cold = false } = {}) {
     '@/stores/local-music': { useLocalMusicStore: store(localState) },
     '@/stores/display-preferences': { useDisplayPreferences: store({ ready: true, load: async () => {} }) },
     '@/stores/library-preferences': { useLibraryPreferences: store({ ready: true, load: async () => {} }) },
+    '@/stores/menu-preferences': { useMenuPreferences: store({ ready: true, load: async () => {} }) },
     '@/stores/hidden-music': { useHiddenMusicStore: store(hidden) },
     '@/stores/playlists': { usePlaylistStore: store({ load: async () => {} }) },
     '@/stores/playback': { usePlaybackStore: store(live) },
     '@/features/hidden-music/rules': { privacyScope: () => 'current-account' },
-    '@/services/playback/controller': { reconcilePlaybackVisibility: reconcile, checkSleepTimer() {}, restorePlayback: async (queue, index, position, wasPlaying) => {
+    '@/services/playback/controller': { reconcilePlaybackVisibility: reconcile, checkSleepTimer() {}, restorePlayback: async (queue, index, position, wasPlaying, shuffle, repeat, playbackRate, preservePitch) => {
       assert.equal(live.queue.length, 0, 'Live playback must not be reloaded');
       restores++;
-      Object.assign(live, { queue, index, position, playing: wasPlaying });
+      Object.assign(live, { queue, index, position, playing: wasPlaying, playbackRate, preservePitch });
       return true;
     } },
     '@/services/playback/persistence': { readRestoredPlayback: async () => { savedReads++; return saved; }, startPlaybackPersistence: () => { persistenceStarts++; return () => {}; } },
     '@/theme/tokens': { useColors: () => ({}) },
+    '@/features/metadata/automatic-metadata': { AutomaticMetadata: 'AutomaticMetadata' },
   };
   const rootCode = ts.transpileModule(fs.readFileSync(path.join(__dirname, '..', 'src/app/_layout.tsx'), 'utf8'), {
     compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX },
@@ -117,6 +119,8 @@ async function checkRootRemount({ playing = true, cold = false } = {}) {
     assert.equal(savedReads, cold ? 1 : 0, 'A live queue takes precedence over the persisted snapshot');
     assert.equal(restores, cold ? 1 : 0);
     assert.equal(live.playing, playing);
+    assert.equal(live.playbackRate, saved.playbackRate, 'Cold restore forwards saved speed and remount preserves live speed');
+    assert.equal(live.preservePitch, false, 'Cold restore and remount retain the pitch preference');
     assert.equal(live.queue[0].id, 'nas-live', 'Paused queue remains available to the mini player');
     assert.equal(navigation.at(-1), playing ? '/player' : '/(tabs)/(library)', 'Only active playback opens the player at startup');
     cleanups.forEach(cleanup => { if (typeof cleanup === 'function') cleanup(); });
@@ -125,22 +129,40 @@ async function checkRootRemount({ playing = true, cold = false } = {}) {
 }
 
 async function main() {
-  const nas = { id: 'nas-1', source: 'nas', title: 'NAS track', artist: 'Artist', album: 'Album', duration: 180, artworkUrl: 'https://example.invalid/cover?_sid=private' };
+  const nas = { id: 'nas-1', source: 'nas', title: 'NAS track', artist: 'Artist', album: 'Album', duration: 180, artworkUrl: 'file:///documents/album-art/custom.jpg',
+    artworkOriginal: { artworkUrl: 'https://example.invalid/cover?_sid=private', palette: ['#111111', '#222222'] } };
   const device = { id: 'local-1', source: 'local', title: 'Device track', artist: 'Artist', album: 'Album', duration: 90, local: { fileName: 'file.mp3', originalName: 'file.mp3', size: 123 } };
   const cloud = { id: 'drive-1', source: 'drive', title: 'Drive track', artist: 'Artist', album: 'Album', duration: 80, drive: { fileId: 'file-id', accountId: 'drive-account', mimeType: 'audio/mpeg' } };
   local.setState({ songs: [device] });
-  playback.setState({ queue: [nas, device, cloud], index: 0, position: 37, playing: true, shuffle: true, repeat: 'all' });
+  drive.setState({ songs: [{ ...cloud, artworkUrl: 'file:///cache/drive-current.jpg' }] });
+  playback.setState({ queue: [nas, device, cloud], index: 0, position: 37, playing: true, shuffle: true, repeat: 'all', playbackRate: 1.75, preservePitch: false });
   const stop = moduleExports.startPlaybackPersistence();
   appStateListener('background');
   await new Promise(resolve => setTimeout(resolve, 20));
   const raw = [...values.values()][0];
   assert.ok(raw && !raw.includes('_sid=private'), 'Session-bearing artwork URL is not persisted');
+  assert.equal(JSON.parse(raw).queue[0].artworkOriginal, undefined, 'Artwork overrides are reapplied from their own store after restoring fresh source images');
+  assert.deepEqual(JSON.parse(raw).queue[0].palette, nas.artworkOriginal.palette);
   assert.equal(JSON.parse(raw).position, 37);
+  assert.equal(JSON.parse(raw).playbackRate, 1.75);
+  assert.equal(JSON.parse(raw).preservePitch, false);
   let saved = await moduleExports.readRestoredPlayback();
   assert.deepEqual(saved.queue.map(song => song.id), ['nas-1', 'local-1', 'drive-1']);
   assert.ok(saved.queue[0].artworkUrl.endsWith('_sid=current'));
+  assert.equal(saved.queue[2].artworkUrl, 'file:///cache/drive-current.jpg', 'Drive original artwork uses the current account cache after restart');
   assert.equal(saved.playing, true);
   assert.equal(saved.repeat, 'all');
+  assert.equal(saved.playbackRate, 1.75);
+  assert.equal(saved.preservePitch, false);
+  const legacyRate = JSON.parse(raw); delete legacyRate.playbackRate; delete legacyRate.preservePitch;
+  values.set('yeongdumusic-playback-v1', JSON.stringify(legacyRate));
+  assert.equal((await moduleExports.readRestoredPlayback()).playbackRate, 1, 'Old playback snapshots use the normal rate');
+  assert.equal((await moduleExports.readRestoredPlayback()).preservePitch, true, 'Old snapshots keep the existing pitch-preserving behavior');
+  legacyRate.playbackRate = 99; values.set('yeongdumusic-playback-v1', JSON.stringify(legacyRate));
+  assert.equal((await moduleExports.readRestoredPlayback()).playbackRate, 1, 'Invalid saved rates cannot reach the native player');
+  legacyRate.preservePitch = 'false'; values.set('yeongdumusic-playback-v1', JSON.stringify(legacyRate));
+  assert.equal((await moduleExports.readRestoredPlayback()).preservePitch, true, 'Malformed pitch preferences use the default');
+  values.set('yeongdumusic-playback-v1', raw);
 
   privacy.setState({ profile: { presets: [{ enabled: true, songIds: ['nas-1'] }] } });
   assert.equal(await moduleExports.readRestoredPlayback(), null, 'Hidden selected track must not be restored');

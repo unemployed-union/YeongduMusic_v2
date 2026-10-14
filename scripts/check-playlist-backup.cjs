@@ -17,6 +17,7 @@ function load(file, mocks = {}, globals = {}) {
 }
 const rules = load('src/features/playlists/rules.ts'), hiddenRules = load('src/features/hidden-music/rules.ts');
 const settingsFormat = load('src/features/settings/backup-format.ts', {
+  './menu-layout': load('src/features/settings/menu-layout.ts'),
   '@/features/hidden-music/rules': hiddenRules, '@/features/playlists/rules': rules,
   '@/services/local-music/folders': load('src/services/local-music/folders.ts'),
 });

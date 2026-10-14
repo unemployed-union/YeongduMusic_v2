@@ -2,6 +2,7 @@ import { createAudioPlayer, setAudioModeAsync, type AudioPlayer, type AudioSourc
 import Constants, { AppOwnership } from 'expo-constants';
 import { Platform } from 'react-native';
 import type { Song } from '@/types/music';
+import { validatePlaybackRate } from './playback-rate';
 
 export type EngineStatus = { playing: boolean; buffering: boolean; position: number; duration: number; ended: boolean; error: string | null };
 export type RemoteTrackCommand = 'next' | 'previous';
@@ -9,8 +10,10 @@ export interface AudioEngine {
   load(source: AudioSource, song: Song, initialPosition?: number): Promise<void>;
   play(): void;
   pause(): void;
-  seek(seconds: number): Promise<void>;
+  seek(seconds: number, precise?: boolean): Promise<void>;
   getPosition(): number;
+  setPlaybackRate(rate: number): void;
+  setPreservePitch(preserve: boolean): void;
   subscribe(listener: (status: EngineStatus) => void): () => void;
   subscribeRemoteNavigation(listener: (command: RemoteTrackCommand) => void): () => void;
   release(): void;
@@ -44,12 +47,45 @@ export class ExpoAudioEngine implements AudioEngine {
   private hasPlayed = false;
   private bufferingSince: number | null = null;
   private player: AudioPlayer | null = null;
+  private playbackRate: number;
+  private preservePitch: boolean;
   private configured: Promise<void> | null = null;
   private listeners = new Set<(status: EngineStatus) => void>();
   private subscription: { remove(): void } | null = null;
 
   private remoteSubscription: { remove(): void } | null = null;
   private remoteListeners = new Set<(command: RemoteTrackCommand) => void>();
+
+  constructor(playbackRate = 1, preservePitch = true) {
+    validatePlaybackRate(playbackRate);
+    this.playbackRate = playbackRate;
+    this.preservePitch = preservePitch;
+  }
+
+  setPlaybackRate(rate: number, preservePitch = this.preservePitch): void {
+    validatePlaybackRate(rate);
+    if (this.player) {
+      this.player.shouldCorrectPitch = preservePitch;
+      // Web derives preservesPitch from this quality argument, while native
+      // platforms use shouldCorrectPitch. Set both to the same preference.
+      this.player.setPlaybackRate(rate, preservePitch ? 'high' : undefined);
+    }
+    this.playbackRate = rate;
+    this.preservePitch = preservePitch;
+  }
+
+  setPreservePitch(preserve: boolean): void {
+    this.setPlaybackRate(this.playbackRate, preserve);
+  }
+
+  private applyPlaybackRate(player: AudioPlayer): void {
+    // replace() creates a new media element on web. Reapply non-default rates;
+    // native iOS also needs the pitch algorithm on the replacement item.
+    if (this.playbackRate !== 1 || !this.preservePitch) {
+      player.shouldCorrectPitch = this.preservePitch;
+      player.setPlaybackRate(this.playbackRate, this.preservePitch ? 'high' : undefined);
+    }
+  }
 
   private async setup(): Promise<AudioPlayer> {
     const lifecycle = this.lifecycle;
@@ -138,7 +174,7 @@ export class ExpoAudioEngine implements AudioEngine {
       this.resume = { operation, position: this.position, seeking: false };
       this.starting = true;
       this.watchStall();
-      try { this.player.pause(); this.player.replace(this.source); }
+      try { this.player.pause(); this.player.replace(this.source); this.applyPlaybackRate(this.player); }
       catch { this.resume = null; this.scheduleRecovery(); }
     }, delay);
     this.publish(true, true);
@@ -251,6 +287,7 @@ export class ExpoAudioEngine implements AudioEngine {
     this.watchStall();
     if (this.position > 0) this.resume = { operation, position: this.position, seeking: false };
     player.replace(source);
+    this.applyPlaybackRate(player);
     if (this.backgroundPlaybackAvailable) {
       // showSkip* and remoteTrackChange are provided by our pinned expo-audio pnpm patch.
       // Stock showSeek* options only move 10 seconds within the current song.
@@ -288,11 +325,14 @@ export class ExpoAudioEngine implements AudioEngine {
     this.player?.pause();
     this.publish(false, false);
   }
-  async seek(seconds: number): Promise<void> {
+  async seek(seconds: number, precise = false): Promise<void> {
     this.resetBufferingObservation();
     this.position = seconds;
     if (this.resume) this.resume.position = seconds;
-    else if (!this.failure) await this.player?.seekTo(seconds);
+    else if (!this.failure) {
+      if (precise) await this.player?.seekTo(seconds, 0, 0);
+      else await this.player?.seekTo(seconds);
+    }
   }
   subscribe(listener: (status: EngineStatus) => void): () => void {
     this.listeners.add(listener);

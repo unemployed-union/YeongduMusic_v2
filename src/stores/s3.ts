@@ -10,6 +10,8 @@ type State = {
   bootstrap: () => Promise<void>; connect: (input: S3Input) => Promise<void>; disconnect: () => Promise<void>;
   refresh: () => Promise<void>; cancel: () => void;
   source: (song: Song) => Promise<{ uri: string }>;
+  fileRequest: (song: Song, method: 'HEAD' | 'PUT', headers?: Record<string, string>) => Promise<{ uri: string }>;
+  recordWrittenSong: (song: Song) => void;
 };
 export const useS3Store = create<State>((set, get) => {
   let credentials: S3Connection | null = null, request: AbortController | null = null;
@@ -80,6 +82,18 @@ export const useS3Store = create<State>((set, get) => {
       } catch (error) {
         if (current(generation) && request === task && !task.signal.aborted) { set({ error: message(error) }); throw error; }
       } finally { if (current(generation) && request === task) { request = null; set({ loading: false }); } }
+    },
+    recordWrittenSong: song => {
+      if (song.source !== 's3' || get().connection?.id !== song.s3.connectionId) return;
+      request?.abort(); request = null;
+      set(state => ({ songs: state.songs.map(item => item.id === song.id ? song : item), loading: false }));
+    },
+    fileRequest: async (song, method, headers) => {
+      const connection = credentials, generation = get().generation;
+      if (song.source !== 's3' || !connection || connection.id !== song.s3.connectionId) throw new S3RequestError('이 음악의 S3 연결을 설정에서 다시 연결해 주세요.');
+      const uri = await signedS3Url(connection, song.s3.key, {}, 900, { method, headers });
+      if (!current(generation) || credentials !== connection) throw new S3RequestError('S3 연결이 변경되었습니다. 곡을 다시 선택해 주세요.');
+      return { uri };
     },
     source: async song => {
       const connection = credentials, generation = get().generation;

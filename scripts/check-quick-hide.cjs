@@ -263,7 +263,10 @@ async function main() {
       useAnimatedStyle: callback => callback(), interpolateColor: (value, _, colors) => colors[value],
     },
   });
-  for (palette of [{ muted: '#797980', separator: '#E5E5EA' }, { muted: '#9B9BA5', separator: '#31313A' }]) {
+  let scheme = 'light';
+  const themes = load('src/theme/tokens.ts', { 'react-native': { useColorScheme: () => scheme } });
+  for (scheme of ['light', 'dark']) {
+    palette = themes.useColors();
     for (const value of [false, true]) {
       let changes = 0;
       const control = AnimatedSwitch({ value, disabled: true, onValueChange: () => changes++, trackColor: { true: '#f48' } });
@@ -271,8 +274,13 @@ async function main() {
       control.props.onPress(); assert.equal(changes, 0, 'Disabled switches cannot change their saved state');
       const track = control.props.children, thumb = track.props.children;
       assert.equal(track.props.style[1].backgroundColor, value ? palette.muted : palette.separator);
-      assert.equal(thumb.props.style[1].backgroundColor, '#C7C7CC');
+      assert.equal(thumb.props.style[1].backgroundColor, palette.switchThumbDisabled);
       assert.equal(thumb.props.style[2].transform[0].translateX, value ? 22 : 0, 'Disabled switches preserve their checked position');
+    }
+    for (const value of [false, true]) {
+      const control = AnimatedSwitch({ value });
+      assert.equal(control.props.children.props.style[1].backgroundColor, value ? palette.tint : palette.separator);
+      assert.equal(control.props.children.props.children.props.style[1].backgroundColor, value ? palette.switchThumbOn : palette.switchThumbOff);
     }
     let next;
     const control = AnimatedSwitch({ value: false, onValueChange: value => { next = value; }, trackColor: { false: '#123', true: '#f48' }, thumbColor: '#fff' });

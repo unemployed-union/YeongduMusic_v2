@@ -10,6 +10,12 @@ import { useHiddenMusicStore } from '@/stores/hidden-music';
 import { hiddenMatcher, privacyScope } from '@/features/hidden-music/rules';
 import type { Song } from '@/types/music';
 import { createSleepTimerScheduler, sleepTimerDecision, timeSleepTimer, trackSleepTimer } from './sleep-timer';
+import { MIN_SECTION_SECONDS, validateSectionPoint, validateSectionRange } from './section-repeat';
+import { validatePlaybackRate } from './playback-rate';
+import { useSongMetadataStore } from '@/stores/song-metadata';
+import { applyMetadata, metadataKey } from '@/features/metadata/rules';
+import { useSongArtworkStore } from '@/stores/song-artwork';
+import { applySongArtwork } from '@/features/artwork/rules';
 
 let engine: ExpoAudioEngine | null = null;
 export function getPlaybackAudioSessionId(): number | null {
@@ -22,7 +28,105 @@ let finishing = false;
 let checkingSession = false;
 let checkedGeneration = -1;
 let recoveredCloudGeneration = -1;
+let sectionTimeout: ReturnType<typeof setTimeout> | null = null;
+let sectionJump: object | null = null;
+let sectionPauseVersion = 0;
+let seekVersion = 0;
 const updateSleepTimerSchedule = createSleepTimerScheduler(() => usePlaybackStore.getState().sleepTimer, () => checkSleepTimer());
+
+function sectionContext() {
+  const state = usePlaybackStore.getState(), song = state.queue[state.index];
+  if (!song || song.id !== loadedSongId) throw new Error('먼저 곡을 재생한 뒤 구간을 설정해 주세요.');
+  return { state, song, duration: state.duration || song.duration };
+}
+
+export function setSectionRepeatStart(position = getPlaybackPosition()): void {
+  const { state, song, duration } = sectionContext();
+  validateSectionPoint(position, duration);
+  if (duration - position < MIN_SECTION_SECONDS) throw new Error('시작점 A는 곡이 끝나기 최소 0.5초 전에 설정해 주세요.');
+  state.setSectionRepeat({ songId: song.id, start: position, end: null, enabled: false });
+}
+
+export function startSectionRepeat(start: number, end: number): void {
+  const { state, song, duration } = sectionContext();
+  validateSectionRange(start, end, duration);
+  if (state.sleepTimer?.mode === 'track') throw new Error('현재 곡 종료 수면 타이머를 해제한 뒤 구간 반복을 켜 주세요.');
+  state.setSectionRepeat({ songId: song.id, start, end, enabled: true });
+  checkSectionRepeat();
+}
+
+export function setSectionRepeatEnd(position = getPlaybackPosition()): void {
+  const { state, song } = sectionContext();
+  if (state.sectionRepeat?.songId !== song.id) throw new Error('시작점 A를 먼저 설정해 주세요.');
+  startSectionRepeat(state.sectionRepeat.start, position);
+}
+
+export function toggleSectionRepeat(): void {
+  const { state } = sectionContext(), repeat = state.sectionRepeat;
+  if (!repeat || repeat.end === null) throw new Error('시작점 A와 종료점 B를 먼저 설정해 주세요.');
+  if (repeat.enabled) state.setSectionRepeat({ ...repeat, enabled: false });
+  else startSectionRepeat(repeat.start, repeat.end);
+}
+
+export function cancelSectionRepeat(): void {
+  usePlaybackStore.getState().setSectionRepeat(null);
+}
+
+export function setPlaybackRate(rate: number): void {
+  validatePlaybackRate(rate);
+  // Publish the choice only after the native player accepts it.
+  engine?.setPlaybackRate(rate);
+  usePlaybackStore.getState().setPlaybackRate(rate);
+}
+
+export function setPreservePitch(preserve: boolean): void {
+  engine?.setPreservePitch(preserve);
+  usePlaybackStore.getState().setPreservePitch(preserve);
+}
+
+/** Poll only an active A–B range; the rest of the app keeps its normal status cadence. */
+function scheduleSectionRepeat(): void {
+  if (sectionTimeout !== null) clearTimeout(sectionTimeout);
+  sectionTimeout = null;
+  const state = usePlaybackStore.getState(), repeat = state.sectionRepeat;
+  if (!repeat?.enabled || repeat.end === null || !state.playing || state.buffering || state.error
+    || repeat.songId !== loadedSongId || repeat.songId !== state.queue[state.index]?.id || sectionJump) return;
+  const delay = Math.min(250, Math.max(20, (repeat.end - getPlaybackPosition()) * 1000 / state.playbackRate));
+  sectionTimeout = setTimeout(() => {
+    sectionTimeout = null;
+    checkSectionRepeat();
+    scheduleSectionRepeat();
+  }, delay);
+}
+
+function checkSectionRepeat(fromEnd = false): boolean {
+  const state = usePlaybackStore.getState(), repeat = state.sectionRepeat, currentEngine = engine;
+  if (!repeat?.enabled || repeat.end === null || !currentEngine || state.error || state.buffering
+    || repeat.songId !== loadedSongId || repeat.songId !== state.queue[state.index]?.id || (!state.playing && !fromEnd)) return false;
+  if (checkSleepTimer(fromEnd)) return true;
+  if (usePlaybackStore.getState().sectionRepeat !== repeat) return false;
+  if (sectionJump) return true;
+  const position = getPlaybackPosition();
+  if (!fromEnd && position >= repeat.start && position < repeat.end) return false;
+  const requestGeneration = generation, pauseVersion = sectionPauseVersion, requestSeek = ++seekVersion, jump = {};
+  sectionJump = jump;
+  if (sectionTimeout !== null) clearTimeout(sectionTimeout);
+  sectionTimeout = null;
+  void currentEngine.seek(repeat.start, true).then(() => {
+    const latest = usePlaybackStore.getState();
+    if (requestGeneration !== generation || requestSeek !== seekVersion || latest.sectionRepeat !== repeat || pauseVersion !== sectionPauseVersion) return;
+    latest.setStatus({ position: repeat.start });
+    if (fromEnd && !checkSleepTimer(true)) currentEngine.play();
+  }).catch(() => {
+    if (requestGeneration !== generation || requestSeek !== seekVersion || usePlaybackStore.getState().sectionRepeat !== repeat) return;
+    usePlaybackStore.getState().setSectionRepeat({ ...repeat, enabled: false });
+    usePlaybackStore.getState().setStatus({ error: '구간 반복 위치로 이동하지 못했습니다. 다시 설정해 주세요.' });
+  }).finally(() => {
+    if (sectionJump === jump) sectionJump = null;
+    scheduleSectionRepeat();
+  });
+  return true;
+}
 
 export function cancelSleepTimer(): void {
   usePlaybackStore.getState().setSleepTimer(null);
@@ -49,11 +153,37 @@ export function checkSleepTimer(fromEnd = false, changingTrack = false): boolean
 }
 usePlaybackStore.subscribe((state, previousState) => {
   const song = state.queue[state.index], previous = previousState.queue[previousState.index];
-  if (song?.source === 'drive' && song.id === loadedSongId && previous?.id === song.id
+  if (song && song.id === loadedSongId && previous?.id === song.id
     && (song.title !== previous.title || song.artist !== previous.artist || song.album !== previous.album || song.artworkUrl !== previous.artworkUrl)) {
-    engine?.updateMetadata?.(song);
+    try { engine?.updateMetadata?.(song); } catch { /* A lock-screen refresh cannot invalidate saved song metadata. */ }
+    if (song.artworkUrl !== previous.artworkUrl || song.palette !== previous.palette) usePlayerBackgroundStore.getState().selectArtwork(song);
   }
   if (state.sleepTimer !== previousState.sleepTimer) updateSleepTimerSchedule(state.sleepTimer);
+  if (!state.playing && previousState.playing) sectionPauseVersion++;
+  // Finish-track timers must be able to reach the actual end of the song.
+  if (state.sleepTimer?.mode === 'track' && state.sectionRepeat?.enabled) {
+    state.setSectionRepeat({ ...state.sectionRepeat, enabled: false });
+  }
+  if (state.sectionRepeat !== previousState.sectionRepeat || state.playing !== previousState.playing
+    || state.buffering !== previousState.buffering || state.error !== previousState.error || state.playbackRate !== previousState.playbackRate || song?.id !== previous?.id) scheduleSectionRepeat();
+});
+
+function currentMetadata(song: Song): Song {
+  const metadata = useSongMetadataStore.getState(), auth = useAuthStore.getState();
+  const key = metadataKey(song, privacyScope(auth.mode, auth.session));
+  const updated = metadata.ready && !metadata.loadError ? applyMetadata(song, key ? metadata.patches[key] : undefined) : song;
+  const artwork = useSongArtworkStore.getState();
+  return artwork.ready && !artwork.loadError ? applySongArtwork(updated, key ? artwork.patches[key] : undefined, artwork.baseUri) : updated;
+}
+function reconcileMetadataQueue(): void {
+  const state = usePlaybackStore.getState(), queue = state.queue.map(currentMetadata);
+  if (queue.some((song, index) => song !== state.queue[index])) usePlaybackStore.setState({ queue });
+}
+useSongMetadataStore.subscribe((state, previous) => {
+  if (state.ready && (state.patches !== previous.patches || state.ready !== previous.ready)) reconcileMetadataQueue();
+});
+useSongArtworkStore.subscribe((state, previous) => {
+  if (state.ready && (state.patches !== previous.patches || state.ready !== previous.ready)) reconcileMetadataQueue();
 });
 
 async function checkPlaybackSession(): Promise<void> {
@@ -86,7 +216,8 @@ async function checkPlaybackSession(): Promise<void> {
 
 function activeEngine(): ExpoAudioEngine {
   if (!engine) {
-    engine = new ExpoAudioEngine();
+    const state = usePlaybackStore.getState();
+    engine = new ExpoAudioEngine(state.playbackRate, state.preservePitch);
     engine.subscribe((status) => {
       usePlaybackStore.getState().setStatus({ playing: status.playing, buffering: status.buffering, position: status.position, duration: status.duration, error: status.error });
       const current = usePlaybackStore.getState().queue[usePlaybackStore.getState().index];
@@ -99,6 +230,7 @@ function activeEngine(): ExpoAudioEngine {
       }
       if (checkSleepTimer()) return;
       if (status.error) void checkPlaybackSession();
+      if (checkSectionRepeat(status.ended)) return;
       if (status.ended && !finishing) {
         finishing = true;
         void next(true).finally(() => { finishing = false; });
@@ -115,11 +247,13 @@ function activeEngine(): ExpoAudioEngine {
 }
 
 async function loadIndex(index: number, initialPosition = 0): Promise<void> {
+  reconcileMetadataQueue();
   const state = usePlaybackStore.getState();
   const song = state.queue[index];
   if (!song || hiddenMatcher(useHiddenMusicStore.getState().profile.presets)(song)) { reconcilePlaybackVisibility(); return; }
   if (state.sleepTimer?.mode === 'track' && !state.sleepTimer.afterDeadline) cancelSleepTimer();
   const currentGeneration = ++generation;
+  sectionJump = null;
   pendingSavedPosition = 0;
   state.setQueue(state.queue, index);
   if (initialPosition > 0) state.setStatus({ position: initialPosition });
@@ -134,17 +268,26 @@ async function loadIndex(index: number, initialPosition = 0): Promise<void> {
       : await musicRepository().streamSource(song);
     if (currentGeneration !== generation) return;
     loadedSongId = song.id;
-    await activeEngine().load(source, song, initialPosition);
+    const currentSong = usePlaybackStore.getState().queue[index];
+    await activeEngine().load(source, currentSong, initialPosition);
+    if (currentGeneration !== generation) return;
+    const latest = usePlaybackStore.getState().queue[index];
+    if (latest && latest !== currentSong) {
+      try { engine?.updateMetadata?.(latest); } catch { /* Keep audio loading independent of lock-screen label updates. */ }
+    }
   } catch (error) {
     if (currentGeneration === generation) state.setStatus({ buffering: false, playing: false, error: error instanceof Error ? error.message : '재생을 시작할 수 없습니다.' });
   }
 }
 
 /** Restore only when there is no newer user-selected queue. The native source is rebuilt with current credentials. */
-export async function restorePlayback(queue: Song[], index: number, position: number, wasPlaying: boolean, shuffle: boolean, repeat: RepeatMode): Promise<boolean> {
+export async function restorePlayback(queue: Song[], index: number, position: number, wasPlaying: boolean, shuffle: boolean, repeat: RepeatMode, playbackRate = 1, preservePitch = true): Promise<boolean> {
   if (usePlaybackStore.getState().queue.length || !queue[index]) return false;
+  validatePlaybackRate(playbackRate);
+  setPlaybackRate(playbackRate);
+  setPreservePitch(preservePitch);
   const state = usePlaybackStore.getState();
-  state.setQueue(queue, index);
+  state.setQueue(queue.map(currentMetadata), index);
   usePlaybackStore.setState({ shuffle, repeat });
   usePlayerBackgroundStore.getState().selectArtwork(queue[index]);
   if (wasPlaying) await loadIndex(index, position);
@@ -165,7 +308,7 @@ export async function playQueue(queue: Song[], index = 0): Promise<void> {
   if (hidden(queue[index])) return;
   const visible = queue.filter((song) => !hidden(song));
   const selected = queue.slice(0, index).filter((song) => !hidden(song)).length;
-  usePlaybackStore.getState().setQueue(visible, selected);
+  usePlaybackStore.getState().setQueue(visible.map(currentMetadata), selected);
   await loadIndex(selected);
 }
 export async function enqueue(song: Song): Promise<void> {
@@ -174,7 +317,7 @@ export async function enqueue(song: Song): Promise<void> {
   if (isNasSong(song) && (privacy.scope !== privacyScope(auth.mode, auth.session) || !privacy.ready || hiddenMatcher(privacy.profile.presets)(song))) return;
   const state = usePlaybackStore.getState();
   if (state.index < 0) { await playQueue([song]); return; }
-  state.enqueue(song);
+  state.enqueue(currentMetadata(song));
 }
 export function togglePlayback(): void {
   reconcilePlaybackVisibility();
@@ -188,8 +331,14 @@ export function getPlaybackPosition(): number {
 }
 
 export async function seek(seconds: number): Promise<void> {
-  await activeEngine().seek(seconds);
-  usePlaybackStore.getState().setStatus({ position: seconds });
+  const state = usePlaybackStore.getState(), repeat = state.sectionRepeat;
+  const requestedGeneration = generation;
+  const requestSeek = ++seekVersion;
+  const target = repeat?.enabled && repeat.end !== null ? Math.max(repeat.start, Math.min(seconds, repeat.end - 0.01)) : seconds;
+  await activeEngine().seek(target, !!repeat?.enabled);
+  if (requestedGeneration !== generation || requestSeek !== seekVersion) return;
+  usePlaybackStore.getState().setStatus({ position: target });
+  scheduleSectionRepeat();
 }
 export async function next(fromEnd = false): Promise<void> {
   if (checkSleepTimer(fromEnd, !fromEnd)) return;
@@ -222,6 +371,7 @@ export function stopNasPlayback(): void {
 }
 export function stopPlayback(): void {
   generation++;
+  sectionJump = null;
   loadedSongId = null;
   pendingSavedPosition = 0;
   engine?.pause();

@@ -8,6 +8,8 @@ import { useLocalMusicStore } from '@/stores/local-music';
 import { usePlaybackStore, type RepeatMode } from '@/stores/playback';
 import type { Song } from '@/types/music';
 import { SynologyClient } from '@/services/synology/api';
+import { isPlaybackRate } from './playback-rate';
+import { applySongArtwork } from '@/features/artwork/rules';
 
 const KEY = 'yeongdumusic-playback-v1';
 const SAVE_INTERVAL_MS = 4000;
@@ -21,13 +23,15 @@ type Snapshot = {
   playing: boolean;
   shuffle: boolean;
   repeat: RepeatMode;
+  playbackRate?: number;
+  preservePitch?: boolean;
   nasScope: string | null;
   driveAccountId: string | null;
   s3ConnectionId?: string | null;
   savedAt: number;
 };
 
-export type RestoredPlayback = Pick<Snapshot, 'queue' | 'index' | 'position' | 'playing' | 'shuffle' | 'repeat'>;
+export type RestoredPlayback = Pick<Snapshot, 'queue' | 'index' | 'position' | 'playing' | 'shuffle' | 'repeat'> & { playbackRate: number; preservePitch: boolean };
 
 async function read(): Promise<string | null> {
   if (Platform.OS === 'web') return typeof localStorage === 'undefined' ? null : localStorage.getItem(KEY);
@@ -85,19 +89,25 @@ export async function readRestoredPlayback(): Promise<RestoredPlayback | null> {
   const driveAccountId = useGoogleDriveStore.getState().account?.id ?? null;
   const scope = privacyScope(auth.mode, auth.session);
   const currentLocal = new Map(local.songs.map((song) => [song.id, song]));
+  const currentDrive = new Map(useGoogleDriveStore.getState().songs.map(song => [song.id, song]));
+  const currentS3 = new Map(useS3Store.getState().songs.map(song => [song.id, song]));
   const hidden = hiddenMatcher(privacy.profile.presets);
   const nasClient = auth.mode === 'nas' && auth.session ? new SynologyClient(auth.session) : null;
   const selectedId = saved.queue[saved.index].id;
   const queue: Song[] = [];
   let index = -1;
   for (let i = 0; i < saved.queue.length; i++) {
-    const song = saved.queue[i];
+    const { artworkOriginal: _original, ...song } = applySongArtwork(saved.queue[i], undefined, '');
     let restored: Song | null = null;
     if (song.source === 'local') restored = currentLocal.get(song.id) ?? null;
-    else if (song.source === 'drive') restored = song.drive.accountId === driveAccountId && saved.driveAccountId === driveAccountId ? song : null;
+    else if (song.source === 'drive') {
+      const current = currentDrive.get(song.id);
+      restored = song.drive.accountId === driveAccountId && saved.driveAccountId === driveAccountId ? { ...song, artworkUrl: current?.artworkUrl, palette: current?.palette ?? song.palette } : null;
+    }
     else if (song.source === 's3') {
       const connection = useS3Store.getState().connection;
-      restored = connection && saved.s3ConnectionId === connection.id && song.s3.connectionId === connection.id && song.s3.key.startsWith(connection.prefix) ? song : null;
+      const current = currentS3.get(song.id);
+      restored = connection && saved.s3ConnectionId === connection.id && song.s3.connectionId === connection.id && song.s3.key.startsWith(connection.prefix) ? { ...song, artworkUrl: current?.artworkUrl, palette: current?.palette ?? song.palette } : null;
     }
     else if (saved.nasScope === scope && privacy.ready && privacy.scope === scope && !hidden(song)) {
       restored = nasClient ? { ...song, artworkUrl: nasClient.coverUrl(song.nasId ?? song.id) } : auth.mode === 'mock' ? song : null;
@@ -107,7 +117,8 @@ export async function readRestoredPlayback(): Promise<RestoredPlayback | null> {
     queue.push(restored);
   }
   if (index < 0) return null;
-  return { queue, index, position: saved.position, playing: saved.playing, shuffle: saved.shuffle, repeat: saved.repeat };
+  return { queue, index, position: saved.position, playing: saved.playing, shuffle: saved.shuffle, repeat: saved.repeat,
+    playbackRate: isPlaybackRate(saved.playbackRate) ? saved.playbackRate : 1, preservePitch: typeof saved.preservePitch === 'boolean' ? saved.preservePitch : true };
 }
 
 function snapshot(): string | null {
@@ -117,12 +128,17 @@ function snapshot(): string | null {
   const current: Snapshot = {
     version: 1,
     // Cover URLs can contain a NAS session ID. Rebuild them from the current session on restore.
-    queue: state.queue.map(({ artworkUrl: _artworkUrl, ...song }) => song as Song),
+    queue: state.queue.map(item => {
+      const { artworkUrl: _artworkUrl, artworkOriginal: _original, ...song } = applySongArtwork(item, undefined, '');
+      return song as Song;
+    }),
     index: state.index,
     position: state.position,
     playing: state.playing,
     shuffle: state.shuffle,
     repeat: state.repeat,
+    playbackRate: state.playbackRate,
+    preservePitch: state.preservePitch,
     nasScope: privacyScope(auth.mode, auth.session),
     driveAccountId: useGoogleDriveStore.getState().account?.id ?? null,
     s3ConnectionId: useS3Store.getState().connection?.id ?? null,
@@ -149,7 +165,7 @@ export function startPlaybackPersistence(): () => void {
   };
   const unsubscribe = usePlaybackStore.subscribe((state, previous) => {
     const changed = state.queue !== previous.queue || state.index !== previous.index || state.playing !== previous.playing ||
-      state.shuffle !== previous.shuffle || state.repeat !== previous.repeat;
+      state.shuffle !== previous.shuffle || state.repeat !== previous.repeat || state.playbackRate !== previous.playbackRate || state.preservePitch !== previous.preservePitch;
     if (changed || Math.abs(state.position - previous.position) >= 0.5) schedule(changed);
   });
   const appState = AppState.addEventListener('change', (next) => { if (next === 'background') persist(); });

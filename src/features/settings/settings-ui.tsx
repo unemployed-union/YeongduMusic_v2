@@ -9,13 +9,14 @@ import { ScrollEdgeFade } from '@/components/scroll-edge-fade';
 import { useColors } from '@/theme/tokens';
 import { settingsMenuStyles } from './settings-menu-layout';
 
-export function SettingsPage({ children }: { children: ReactNode }) {
+export function SettingsPage({ children, overlay }: { children: ReactNode; overlay?: ReactNode }) {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   return <View style={{ flex: 1, backgroundColor: colors.background }}>
     <ScrollEdgeFade><KeyboardAwareScrollView style={{ flex: 1 }} bottomOffset={16} contentContainerStyle={[styles.screen, { paddingBottom: 24 + insets.bottom }]} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
       {children}
     </KeyboardAwareScrollView></ScrollEdgeFade>
+    {overlay}
   </View>;
 }
 

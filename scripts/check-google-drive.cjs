@@ -30,6 +30,7 @@ function harness(saved = null, platform = 'android', iosId, webId = 'public-fixt
   const h = { stored: saved, nativeUser: null, calls: [], selection: 'A', token: 'fixture-token', signInGate: null, tokenGate: null, writeGate: null, writeFails: false, silentGate: null, deleteFails: false, revokeFails: false, listGate: null, signInError: null, configureError: null, options: null };
   const sdk = {
     configure: options => { h.calls.push('configure'); if (h.configureError) throw h.configureError; h.options = options; assert.deepEqual(options.scopes, ['https://www.googleapis.com/auth/drive.readonly']); assert.equal(options.offlineAccess, false); },
+    addScopes: async () => { throw Error('Read-only Drive must never request additional scopes'); },
     hasPlayServices: async () => true,
     signOut: async () => { h.calls.push('out'); h.nativeUser = null; },
     signIn: async () => { h.calls.push('in'); if (h.signInError) throw h.signInError; const account = h.selection; if (h.signInGate) await h.signInGate.promise; if (account === 'cancel') return { type: 'cancelled' }; h.nativeUser = { user: { id: account, email: 'fixture@example.invalid' } }; return { type: 'success', data: h.nativeUser }; },
@@ -52,6 +53,7 @@ function harness(saved = null, platform = 'android', iosId, webId = 'public-fixt
     return response({ files });
   });
   h.module = load('src/stores/google-drive.ts', {
+    '@/stores/song-metadata': { useSongMetadataStore: { getState: () => ({ patches: h.metadataPatches ?? {} }) } },
     'expo-secure-store': secure, 'react-native': { Platform: { OS: platform } },
     '@/services/google-drive/config': { DRIVE_SCOPE: 'https://www.googleapis.com/auth/drive.readonly', GOOGLE_WEB_CLIENT_ID: webId, GOOGLE_IOS_CLIENT_ID: iosId },
     '@/services/google-drive/api': h.api,
@@ -187,6 +189,8 @@ async function main() {
   const web = harness(null, 'web'); await web.store.getState().connect(); assert.match(web.store.getState().error, /Android\/iOS/);
   const noWrite = harness(); noWrite.writeFails = true; await noWrite.store.getState().connect(); assert.equal(noWrite.store.getState().account, null); assert.equal(noWrite.stored, null);
   const source = await h.module.driveSource(h.store.getState().songs[0]); assert.equal(source.headers.Authorization, 'Bearer fixture-token'); assert.ok(!source.uri.includes('fixture-token'));
+  assert.equal(h.store.getState().requestWriteAccess, undefined, 'Drive exposes no permission-escalation action');
+  assert.deepEqual(h.options.scopes, ['https://www.googleapis.com/auth/drive.readonly']);
   const metadataGate = deferred(); h.metadataGate = metadataGate;
   h.playback = { queue: [h.store.getState().songs[0]], position: 42, playing: true, index: 0 };
   h.metadataSongs = [{ ...h.playback.queue[0], title: 'Tagged title', artworkUrl: 'file:///cache/cover.jpg' }];
@@ -195,6 +199,14 @@ async function main() {
   assert.equal(h.store.getState().metadataLoading, true);
   metadataGate.resolve(); await until(() => !h.store.getState().metadataLoading);
   assert.equal(h.playback.queue[0].title, 'Tagged title'); assert.equal(h.playback.position, 42); assert.equal(h.playback.playing, true);
+  const editRules = load('src/features/metadata/rules.ts');
+  h.metadataPatches = { [editRules.metadataKey(h.playback.queue[0], null)]: editRules.parseMetadata({ ...h.playback.queue[0], title: 'My title' }) };
+  await h.store.getState().refresh(); await until(() => !h.store.getState().metadataLoading);
+  assert.equal(h.store.getState().songs[0].title, 'Tagged title', 'Source library keeps its original tags');
+  assert.equal(h.playback.queue[0].title, 'My title', 'Late tag enrichment preserves local display edits');
+  assert.equal(h.playback.queue[0].metadataOriginal.title, 'Tagged title');
+  assert.equal(h.playback.position, 42); assert.equal(h.playback.playing, true);
+  h.metadataPatches = {};
   h.metadataGate = null; h.metadataSongs = null;
   const staleMetadata = harness(); await staleMetadata.store.getState().connect();
   await staleMetadata.store.getState().selectFolders([{ id: 'music', name: 'Music' }]);

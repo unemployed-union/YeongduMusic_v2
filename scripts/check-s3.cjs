@@ -34,15 +34,16 @@ const api = load('src/services/s3/api.ts', { './connection': connectionModule, '
 const hmac = (key, text) => crypto.createHmac('sha256', key).update(text).digest();
 const hash = value => crypto.createHash('sha256').update(value).digest('hex');
 const encode = text => encodeURIComponent(text).replace(/[!'()*]/g, char => '%' + char.charCodeAt(0).toString(16).toUpperCase());
-function checkSignature(urlString, config) {
+function checkSignature(urlString, config, method = 'GET', headers = {}) {
   const url = new URL(urlString), signature = url.searchParams.get('X-Amz-Signature');
   const credential = url.searchParams.get('X-Amz-Credential'), scope = credential.slice(credential.indexOf('/') + 1);
   const [date, region, service] = scope.split('/');
   assert.equal(region, config.region); assert.equal(service, 's3');
-  assert.equal(url.searchParams.get('X-Amz-SignedHeaders'), 'host');
+  const signedHeaders = url.searchParams.get('X-Amz-SignedHeaders');
   const query = [...url.searchParams].filter(([key]) => key !== 'X-Amz-Signature').map(([key, value]) => [encode(key), encode(value)])
     .sort(([a, av], [b, bv]) => a < b ? -1 : a > b ? 1 : av < bv ? -1 : av > bv ? 1 : 0).map(([key, value]) => key + '=' + value).join('&');
-  const canonical = ['GET', url.pathname, query, 'host:' + url.host + '\n', 'host', 'UNSIGNED-PAYLOAD'].join('\n');
+  const canonicalHeaders = signedHeaders.split(';').map(name => name + ':' + (name === 'host' ? url.host : headers[name]).trim().replace(/\s+/g, ' ') + '\n').join('');
+  const canonical = [method, url.pathname, query, canonicalHeaders, signedHeaders, 'UNSIGNED-PAYLOAD'].join('\n');
   const signingKey = hmac(hmac(hmac(hmac('AWS4' + config.secretAccessKey, date), region), service), 'aws4_request');
   assert.equal(hmac(signingKey, ['AWS4-HMAC-SHA256', url.searchParams.get('X-Amz-Date'), scope, hash(canonical)].join('\n')).toString('hex'), signature);
   assert.ok(!urlString.includes(config.secretAccessKey));
@@ -70,6 +71,12 @@ async function main() {
   const key = 'music/한 글%+/song & one.MP3';
   const signed = await api.signedS3Url(connection, key);
   checkSignature(signed, connection);
+  checkSignature(await api.signedS3Url(connection, key, {}, 900, { method: 'HEAD' }), connection, 'HEAD');
+  const writeHeaders = { 'if-match': '"original-etag"', 'content-type': 'audio/mpeg', 'x-amz-meta-owner': 'fixture' };
+  const putUrl = await api.signedS3Url(connection, key, {}, 900, { method: 'PUT', headers: writeHeaders });
+  checkSignature(putUrl, connection, 'PUT', writeHeaders);
+  assert(new URL(putUrl).searchParams.get('X-Amz-SignedHeaders').includes('if-match'), 'Conditional writes are authenticated by the signature');
+  assert.equal(new URL(putUrl).searchParams.has('x-amz-meta-owner'), false, 'Object metadata remains in the signed request headers');
   assert.equal(new URL(signed).searchParams.get('X-Amz-Security-Token'), input.sessionToken);
   assert.equal(new URL(signed).searchParams.get('X-Amz-Expires'), '86400');
   assert.equal(decodeURIComponent(new URL(signed).pathname), '/' + input.bucket + '/' + key);
@@ -170,7 +177,7 @@ async function checkLibraryAndRecovery(s3) {
     'react-native': { Platform: { OS: 'android' }, AppState: { addEventListener: () => ({ remove: () => {} }) } },
     '@/stores/s3': { useS3Store: s3 }, '@/stores/playback': { usePlaybackStore: playback },
     '@/stores/auth': { useAuthStore: { getState: () => auth } },
-    '@/stores/google-drive': { useGoogleDriveStore: { getState: () => ({ account: null }) } },
+    '@/stores/google-drive': { useGoogleDriveStore: { getState: () => ({ account: null, songs: [] }) } },
     '@/stores/local-music': { useLocalMusicStore: { getState: () => ({ songs: [] }) } },
     '@/stores/hidden-music': { useHiddenMusicStore: { getState: () => ({ ready: true, scope: null, profile: { presets: [] } }) } },
     '@/features/hidden-music/rules': rules,

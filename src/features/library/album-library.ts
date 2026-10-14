@@ -20,6 +20,7 @@ export function hasAlbumTag(song: Song): boolean {
 
 export function albumsFromSongs(library: Page<Song>, includeFolderAlbums = true): Page<Album> {
   const albums = new Map<string, Album>();
+  const customArtwork = new Set<string>();
   for (const song of library.items) {
     if (!includeFolderAlbums && !hasAlbumTag(song)) continue;
     const id = albumId(song);
@@ -27,12 +28,14 @@ export function albumsFromSongs(library: Page<Song>, includeFolderAlbums = true)
     if (previous) {
       previous.songCount = (previous.songCount ?? 0) + 1;
       previous.artworkUrl ??= song.artworkUrl;
+      if (song.artworkOriginal && !customArtwork.has(id)) { previous.artworkUrl = song.artworkUrl; previous.palette = song.palette; }
     } else {
       albums.set(id, {
         id, title: song.album, artist: song.albumArtist || song.artist,
         year: song.year, artworkUrl: song.artworkUrl, palette: song.palette, songCount: 1,
       });
     }
+    if (song.artworkOriginal) customArtwork.add(id);
   }
   const items = [...albums.values()].sort((a, b) => a.title.localeCompare(b.title) || a.artist.localeCompare(b.artist));
   return { items, total: items.length, stale: library.stale };

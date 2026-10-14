@@ -8,17 +8,31 @@ import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { useAppBootstrap } from '@/features/startup/use-app-bootstrap';
 import { usePlaybackRecovery } from '@/features/startup/use-playback-recovery';
 import { useColors } from '@/theme/tokens';
+import { useEffect } from 'react';
+import { useMenuPreferences } from '@/stores/menu-preferences';
+import { useSongMetadataStore } from '@/stores/song-metadata';
+import { AutomaticMetadata } from '@/features/metadata/automatic-metadata';
+import { useSongArtworkStore } from '@/stores/song-artwork';
 
 const queryClient = new QueryClient({ defaultOptions: { queries: { staleTime: 30000, retry: 2 } } });
 
 function Navigation() {
   const { ready, displayReady, privacy, scope, ...recovery } = useAppBootstrap();
-  usePlaybackRecovery({ ready, privacyReady: privacy.ready, privacyScope: privacy.scope, scope, ...recovery });
   const colors = useColors();
   const scheme = useColorScheme();
-  if (!ready || !displayReady) return <View style={{ flex: 1, justifyContent: 'center', backgroundColor: colors.background }}><ActivityIndicator color={colors.tint} /></View>;
+  const menuReady = useMenuPreferences(state => state.ready);
+  const loadMenus = useMenuPreferences(state => state.load);
+  useEffect(() => { void loadMenus(); }, [loadMenus]);
+  const metadataReady = useSongMetadataStore(state => state.ready);
+  const loadMetadata = useSongMetadataStore(state => state.load);
+  useEffect(() => { void loadMetadata(); }, [loadMetadata]);
+  const artworkReady = useSongArtworkStore(state => state.ready), loadArtwork = useSongArtworkStore(state => state.load);
+  useEffect(() => { void loadArtwork(); }, [loadArtwork]);
+  usePlaybackRecovery({ ready: ready && metadataReady && artworkReady, privacyReady: privacy.ready, privacyScope: privacy.scope, scope, ...recovery });
+  if (!ready || !displayReady || !menuReady || !metadataReady || !artworkReady) return <View style={{ flex: 1, justifyContent: 'center', backgroundColor: colors.background }}><ActivityIndicator color={colors.tint} /></View>;
   if (!privacy.ready || privacy.scope !== scope) return <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 28, backgroundColor: colors.background }}>{privacy.error ? <><Text style={{ color: colors.text, textAlign: 'center', marginBottom: 16 }}>{privacy.error}</Text><Pressable onPress={() => void privacy.load(scope)}><Text style={{ color: colors.tint }}>숨김 설정 다시 불러오기</Text></Pressable></> : <ActivityIndicator color={colors.tint} />}</View>;
   return <ThemeProvider value={scheme === 'dark' ? DarkTheme : DefaultTheme}>
+    <AutomaticMetadata />
     <StatusBar style="auto" />
     <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.background }, animation: 'slide_from_right' }}>
       <Stack.Screen name="index" />
@@ -31,6 +45,8 @@ function Navigation() {
       <Stack.Screen name="settings/cloud/s3" options={{ headerShown: true, title: 'S3 호환 저장소', headerBackTitle: '클라우드 연결', headerTintColor: colors.tint, headerStyle: { backgroundColor: colors.background } }} />
       <Stack.Screen name="settings/playback" options={{ headerShown: true, title: '재생 및 화면', headerBackTitle: '설정', headerTintColor: colors.tint, headerStyle: { backgroundColor: colors.background } }} />
       <Stack.Screen name="settings/library" options={{ headerShown: true, title: '보관함 설정', headerBackTitle: '설정', headerTintColor: colors.tint, headerStyle: { backgroundColor: colors.background } }} />
+      <Stack.Screen name="settings/bottom-menu" options={{ headerShown: true, title: '하단 메뉴 설정', headerBackTitle: '설정', headerTintColor: colors.tint, headerStyle: { backgroundColor: colors.background } }} />
+      <Stack.Screen name="settings/player-menu" options={{ headerShown: true, title: '재생 화면 메뉴 설정', headerBackTitle: '설정', headerTintColor: colors.tint, headerStyle: { backgroundColor: colors.background } }} />
       <Stack.Screen name="settings/backup" options={{ headerShown: true, title: '설정 백업 및 복구', headerBackTitle: '설정', headerTintColor: colors.tint, headerStyle: { backgroundColor: colors.background } }} />
       <Stack.Screen name="settings/playlist-backup" options={{ headerShown: true, title: '플레이리스트 백업 및 복구', headerBackTitle: '뒤로', headerTintColor: colors.tint, headerStyle: { backgroundColor: colors.background } }} />
       <Stack.Screen name="settings/licenses" options={{ headerShown: true, title: '오픈소스 라이선스', headerBackTitle: '설정', headerTintColor: colors.tint, headerStyle: { backgroundColor: colors.background } }} />

@@ -161,7 +161,7 @@ async function main() {
   const Detail = load('src/app/(tabs)/(playlists)/playlists/[id].tsx', uiModules).default;
   assert.equal(flatList(Detail()), undefined, 'A direct hidden route must not reveal tracks');
   assert.ok(!text(Detail()).includes('Private'));
-  const Dialog = load('src/features/playlists/dialogs.tsx', uiModules).AddToPlaylistDialog;
+  const Dialog = load('src/features/playlists/dialogs.tsx', { ...uiModules, '@/features/metadata/metadata-editor-form': { MetadataEditorForm: 'MetadataEditorForm' } }).AddToPlaylistDialog;
   const dialog = Dialog({ songs: [{ id: 'song', source: 'local' }], onClose: () => {} });
   assert.ok(!text(dialog).includes('Private')); assert.ok(text(dialog).includes('Public'));
   const Manager = load('src/features/playlists/hidden-playlist-manager.tsx', uiModules).HiddenPlaylistManager;

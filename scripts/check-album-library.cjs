@@ -78,7 +78,7 @@ const queries = load('src/features/library/queries.ts', {
   '@/stores/google-drive': { useGoogleDriveStore: selector => selector({ songs: [], loading: false, error: null }) },
   '@/stores/local-music': { useLocalMusicStore: selector => selector(localFixture) },
   '@tanstack/react-query': { ...tanstack, useQuery: options => options },
-  '../hidden-music/rules': { visibleSongs: library => library },
+  '../hidden-music/rules': { privacyScope: () => 'demo', visibleSongs: library => library },
   '@/stores/hidden-music': { useHiddenMusicStore: selector => selector({ ready: true, profile: { presets: [] } }) },
   './album-library': albumHelpers, './load-song-library': metadata, './search-songs': search,
   './repository': { musicRepository: repository, libraryIdentity: repoModule.libraryIdentity },

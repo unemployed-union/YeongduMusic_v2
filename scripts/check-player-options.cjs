@@ -66,6 +66,7 @@ async function main() {
   console.log('PASS: official equalizer action/package/int extras, active/no-session cases, duplicate launch guard, unsupported platforms and missing-panel sound-settings fallback; existing player session getter validation. Native UI is mocked.');
   // Exercise the actual retry handlers and UI for cached missing results.
   let search = false, result = { data: { kind: 'missing', lines: [], provider: 'lrclib' }, isFetching: false, refetch: () => { retries++; } }, retries = 0;
+  const translation = { enabled: true, shown: false };
   const panelModules = {
     react: { memo: fn => fn, useState: () => [search, value => { search = value; }] }, 'react/jsx-runtime': { jsx, jsxs: jsx },
     '@/components/text': { Text: 'Text' },
@@ -74,6 +75,7 @@ async function main() {
     './lyrics-edge-fade': { LyricsEdgeFade: 'Fade' }, '@/services/lyrics/parse-lyrics': {},
     './use-active-lyric-index': { useActiveLyricIndex: () => -1 },
     './use-lyrics': { useLyrics: () => result }, '@/stores/playback': { usePlaybackStore: selector => selector({ duration: 120 }) }, '@/services/playback/controller': {},
+    './use-lyrics-translation': { useLyricsTranslation: () => translation }, './lyrics-translation-controls': { LyricsTranslationControls: 'TranslationControls' },
   };
   const { LyricsPanel } = load('src/features/lyrics/lyrics-panel.tsx', panelModules);
   const panelProps = { song: { id: 'demo' }, source: 'auto', onSourceChange() {} };
@@ -83,6 +85,11 @@ async function main() {
   result = { ...result, isFetching: true }; panel = LyricsPanel(panelProps); assert.equal(findAll(panel, 'Spinner').length, 2); assert(!findAll(panel, 'Text').some(node => node.props.children === '이 곡의 가사를 찾지 못했어요'));
   result = { ...result, isFetching: false, isError: true, error: new Error('retry failed') }; panel = LyricsPanel(panelProps); assert(findAll(panel, 'Text').some(node => node.props.children === 'retry failed'));
   search = false; result = { ...result, isError: false }; LyricsPanel({ ...panelProps, source: 'nas' }).props.children[0].props.children[1].props.onPress(); assert.equal(search, false); assert.equal(retries, 2);
+  result = { ...result, data: { kind: 'plain', lines: [{ id: 'first', time: null, text: 'Original lyrics' }], provider: 'lrclib' } };
+  assert.equal(findAll(LyricsPanel(panelProps), 'TranslationControls').length, 1);
+  translation.enabled = false; const disabledPanel = LyricsPanel(panelProps);
+  assert.equal(findAll(disabledPanel, 'TranslationControls').length, 0, 'Disabling the feature removes all translation controls');
+  assert(disabledPanel.props.children.some(node => typeof node?.type === 'function' && node.type.name === 'LyricLines'), 'Original lyrics remain available');
   console.log('PASS: manual re-search switches strategy, repeated/NAS retries refetch, cached missing results show loading and retry errors. React/native rendering is mocked.');
 }
 main().catch(error => { console.error(error); process.exitCode = 1; });

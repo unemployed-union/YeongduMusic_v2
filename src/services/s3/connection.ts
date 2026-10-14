@@ -37,7 +37,8 @@ export function publicS3Connection(connection: S3Connection): S3PublicConnection
   return visible;
 }
 const encode = (value: string) => encodeURIComponent(value).replace(/[!'()*]/g, char => '%' + char.charCodeAt(0).toString(16).toUpperCase());
-export async function signedS3Url(connection: S3Connection, key?: string, query: Record<string, string> = {}, expiresIn = 86400): Promise<string> {
+export async function signedS3Url(connection: S3Connection, key?: string, query: Record<string, string> = {}, expiresIn = 86400,
+  request: { method: 'GET' | 'HEAD' | 'PUT'; headers?: Record<string, string> } = { method: 'GET' }): Promise<string> {
   if (key !== undefined && (!key || !key.startsWith(connection.prefix) || key.split('/').some(part => part === '.' || part === '..'))) throw new S3RequestError('S3 음악 경로나 선택한 접두사가 변경되었습니다. 목록을 다시 불러와 주세요.');
   const endpoint = new URL(connection.endpoint);
   if (!connection.pathStyle && endpoint.hostname.includes(':')) throw new S3RequestError('IP 주소 엔드포인트에는 Path-style을 사용하세요.');
@@ -45,5 +46,6 @@ export async function signedS3Url(connection: S3Connection, key?: string, query:
   const presigner = new S3RequestPresigner({ region: connection.region, sha256: Sha256,
     credentials: { accessKeyId: connection.accessKeyId, secretAccessKey: connection.secretAccessKey, sessionToken: connection.sessionToken } });
   return formatUrl(await presigner.presign(new HttpRequest({ protocol: endpoint.protocol, hostname: connection.pathStyle ? endpoint.hostname : connection.bucket + '.' + endpoint.hostname,
-    port: endpoint.port ? Number(endpoint.port) : undefined, path, query, method: 'GET', headers: {} }), { expiresIn }));
+    port: endpoint.port ? Number(endpoint.port) : undefined, path, query, method: request.method, headers: request.headers ?? {} }), { expiresIn,
+    unhoistableHeaders: new Set(Object.keys(request.headers ?? {}).filter(header => header.startsWith('x-amz-'))) }));
 }

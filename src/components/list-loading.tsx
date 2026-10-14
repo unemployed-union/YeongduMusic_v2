@@ -10,7 +10,7 @@ export function ListLoading() {
   const bottomInset = useContext(TabBarInsetContext);
   return <View pointerEvents="none" accessibilityLiveRegion="polite" style={[styles.center, { marginBottom: bottomInset }]}>
     <ActivityIndicator color={colors.tint} />
-    <Text style={[styles.message, { color: colors.muted }]}>음악 목록을 가져오는 중…</Text>
+    <Text style={[styles.message, { color: colors.muted }]}>가져오는 중...</Text>
   </View>;
 }
 const styles = StyleSheet.create({

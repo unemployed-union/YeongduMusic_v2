@@ -28,7 +28,10 @@ let selections = 0;
 const callbacks = new Map();
 const EMPTY_DRIVE_SONGS = [];
 const localFixture = { songs: [], ready: true, source: 'nas' };
+const displayMetadata = { ready: true, patches: {} };
+const editRules = load(path.join(root, 'src/features/metadata/rules.ts'));
 const queries = load(process.argv[2] || path.join(root, 'src/features/library/queries.ts'), {
+  '@/stores/song-metadata': { useSongMetadataStore: selector => selector(displayMetadata) },
   '@/stores/library-preferences': { useLibraryPreferences: selector => selector({ ready: true, includeFolderAlbums: true }) },
   react: { useMemo: factory => factory(), useCallback: (callback, dependencies) => {
     const previous = callbacks.get(activeHook + ':' + hookSlot++);
@@ -42,7 +45,7 @@ const queries = load(process.argv[2] || path.join(root, 'src/features/library/qu
   './album-library': helpers,
   './load-song-library': metadata,
   './search-songs': search,
-  '../hidden-music/rules': { visibleSongs: (...args) => { selections++; return rules.visibleSongs(...args); } },
+  '../hidden-music/rules': { privacyScope: rules.privacyScope, visibleSongs: (...args) => { selections++; return rules.visibleSongs(...args); } },
   './repository': { libraryIdentity: () => account, musicRepository: () => { throw new Error('No network request expected'); } },
   '@/stores/auth': { useAuthStore: selector => selector({ mode: 'mock', session: null }) },
   '@/stores/hidden-music': { useHiddenMusicStore: selector => selector({ ready: true, profile: { presets } }) },
@@ -84,6 +87,19 @@ try {
   assert.deepEqual(observers[1].observer.getCurrentResult().data, visible);
   assert.deepEqual(observers[0].observer.getCurrentResult().data, helpers.albumsFromSongs(visible));
   assert.equal(observers[2].observer.getCurrentResult().data.items.some(item => item.name === 'New artist'), true);
+  const editedSong = songs[3];
+  displayMetadata.patches = { [editRules.metadataKey(editedSong, 'demo')]: editRules.parseMetadata({ ...editedSong, title: 'Edited track', artist: 'Edited artist', album: 'Edited album', albumArtist: 'Edited artist' }) };
+  for (const { hook, observer } of observers) observer.setOptions(options(hook, true));
+  assert.equal(observers[1].observer.getCurrentResult().data.items[0].title, 'Edited track', 'Saving a display edit immediately invalidates the actual QueryObserver selection');
+  assert(observers[0].observer.getCurrentResult().data.items.some(item => item.title === 'Edited album'));
+  assert(observers[2].observer.getCurrentResult().data.items.some(item => item.name === 'Edited artist'));
+  assert.equal(client.getQueryData(key()).items[3].title, editedSong.title, 'Display edits never overwrite source query metadata');
+  const afterEdit = selections;
+  for (const { hook, observer } of observers) observer.setOptions(options(hook, true));
+  assert.equal(selections, afterEdit, 'Unrelated renders keep edited selections cached');
+  displayMetadata.patches = {};
+  for (const { hook, observer } of observers) observer.setOptions(options(hook, true));
+  assert.equal(observers[1].observer.getCurrentResult().data.items[0].title, editedSong.title, 'Removing an edit restores the original query selection');
   account = 'fixture-b';
   for (const { hook, observer } of observers) observer.setOptions(options(hook, false));
   for (const { observer } of observers) assert.equal(observer.getCurrentResult().data, undefined, 'Another account must not reuse prior results');

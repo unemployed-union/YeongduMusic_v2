@@ -11,6 +11,7 @@ import { useHiddenMusicStore } from '@/stores/hidden-music';
 import { hiddenMatcher } from '@/features/hidden-music/rules';
 import { useColors } from '@/theme/tokens';
 import type { Song } from '@/types/music';
+import { MetadataEditorForm } from '@/features/metadata/metadata-editor-form';
 
 export function PlaylistSheet({ title, onClose, children, visible = true, onDismiss }: { title: string; onClose: () => void; children: ReactNode; visible?: boolean; onDismiss?: () => void }) {
   const colors = useColors(), insets = useSafeAreaInsets();
@@ -43,6 +44,7 @@ export function AddToPlaylistDialog({ songs, onClose, allowEnqueue = false }: { 
   const store = usePlaylistStore();
   const privacy = useHiddenMusicStore();
   const [name, setName] = useState(''), [error, setError] = useState<string | null>(null), [message, setMessage] = useState<string | null>(null);
+  const [editingMetadata, setEditingMetadata] = useState(false);
   const available = store.ready && store.scope === privacy.scope && privacy.ready;
   const hidden = hiddenMatcher(privacy.profile.presets);
   const eligible = songs.filter((song) => !hidden(song));
@@ -64,9 +66,10 @@ export function AddToPlaylistDialog({ songs, onClose, allowEnqueue = false }: { 
     if (!eligible[0]) return;
     try { await enqueue(eligible[0]); onClose(); } catch (cause) { setError(cause instanceof Error ? cause.message : '추가하지 못했습니다.'); }
   }
-  return <PlaylistSheet title="플레이리스트에 추가" onClose={onClose}><ScrollEdgeFade fill={false} backgroundColor={colors.surface}><ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={[styles.body, styles.scrollBody]}>
+  return <PlaylistSheet title={editingMetadata ? '메타데이터 수정' : allowEnqueue ? '곡 메뉴' : '플레이리스트에 추가'} onClose={onClose}>{editingMetadata && eligible[0] ? <MetadataEditorForm song={eligible[0]} onSaved={onClose} onCancel={() => setEditingMetadata(false)} /> : <ScrollEdgeFade fill={false} backgroundColor={colors.surface}><ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={[styles.body, styles.scrollBody]}>
     <Text style={{ color: colors.muted }}>{ids.length}곡 · 여러 목록에 저장할 수 있습니다.</Text>
     {allowEnqueue && <Pressable style={styles.option} onPress={() => void addToQueue()} disabled={!eligible.length}><Ionicons name="list" size={22} color={colors.tint} /><Text style={{ color: colors.text }}>다음 재생 대기열에 추가</Text></Pressable>}
+    {allowEnqueue && songs.length === 1 && eligible[0] && <Pressable accessibilityRole="button" style={styles.option} onPress={() => setEditingMetadata(true)}><Ionicons name="create-outline" size={22} color={colors.tint} /><Text style={{ color: colors.text }}>메타데이터 수정</Text></Pressable>}
     {!available ? <View><Text style={{ color: colors.muted }}>{store.error ?? '플레이리스트를 불러오는 중입니다.'}</Text>{store.error && <Pressable onPress={() => void store.load(privacy.scope)} style={styles.option}><Text style={{ color: colors.tint }}>다시 불러오기</Text></Pressable>}</View> : <>
       <TextInput underlineColorAndroid="transparent" accessibilityLabel="새 플레이리스트 이름" placeholder="새 플레이리스트 이름" placeholderTextColor={colors.muted} value={name} onChangeText={setName} maxLength={60} editable={!store.busy} style={[styles.input, { color: colors.text, borderColor: colors.separator }]} />
       <Pressable accessibilityRole="button" disabled={store.busy || !name.trim() || !ids.length} onPress={() => void save()} style={[styles.primary, { backgroundColor: colors.tint, opacity: store.busy || !name.trim() || !ids.length ? 0.5 : 1 }]}><Text style={styles.primaryText}>새 목록으로 저장</Text></Pressable>
@@ -74,6 +77,6 @@ export function AddToPlaylistDialog({ songs, onClose, allowEnqueue = false }: { 
     </>}
     {store.busy && <ActivityIndicator color={colors.tint} />}
     {(error || message) && <Text accessibilityRole={error ? 'alert' : undefined} accessibilityLiveRegion="polite" style={{ color: colors.tint }}>{error ?? message}</Text>}
-  </ScrollView></ScrollEdgeFade></PlaylistSheet>;
+  </ScrollView></ScrollEdgeFade>}</PlaylistSheet>;
 }
 const styles = StyleSheet.create({ overlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: '#00000066' }, sheet: { borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingTop: 12 }, header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 22 }, heading: { flex: 1, fontSize: 20, fontWeight: '800' }, icon: { padding: 10, marginRight: -10 }, body: { padding: 22, gap: 16 }, scrollBody: { paddingVertical: 28 }, input: { minHeight: 48, borderWidth: 1, borderRadius: 12, paddingHorizontal: 14, fontSize: 16 }, primary: { minHeight: 48, alignItems: 'center', justifyContent: 'center', borderRadius: 12 }, primaryText: { color: 'white', fontWeight: '700', fontSize: 15 }, option: { minHeight: 52, flexDirection: 'row', alignItems: 'center', gap: 12 } });

@@ -8,7 +8,11 @@ import { artistName, loadSongLibrary, songsForArtist } from './load-song-library
 import { searchSongs } from './search-songs';
 import { libraryIdentity, musicRepository } from './repository';
 import { libraryResult } from './library-result';
-import { visibleSongs } from '../hidden-music/rules';
+import { privacyScope, visibleSongs } from '../hidden-music/rules';
+import { applyMetadataLibrary } from '../metadata/rules';
+import { useSongMetadataStore } from '@/stores/song-metadata';
+import { useSongArtworkStore } from '@/stores/song-artwork';
+import { applyArtworkLibrary } from '../artwork/rules';
 import { useAuthStore } from '@/stores/auth';
 import { useHiddenMusicStore } from '@/stores/hidden-music';
 import { useLibraryPreferences } from '@/stores/library-preferences';
@@ -18,6 +22,11 @@ function useSongLibrary<T>(select: (library: Page<Song>) => T, enabled = true, n
   const mode = useAuthStore((state) => state.mode);
   const session = useAuthStore((state) => state.session);
   const ready = useHiddenMusicStore((state) => state.ready);
+  const patches = useSongMetadataStore(state => state.patches);
+  const metadataReady = useSongMetadataStore(state => state.ready);
+  const metadataScope = privacyScope(mode, session);
+  const artworkPatches = useSongArtworkStore(state => state.patches), artworkReady = useSongArtworkStore(state => state.ready);
+  const artworkBaseUri = useSongArtworkStore(state => state.baseUri);
   const source = useLocalMusicStore((state) => state.source);
   const localSongs = useLocalMusicStore((state) => state.songs);
   const localReady = useLocalMusicStore((state) => state.ready);
@@ -32,20 +41,20 @@ function useSongLibrary<T>(select: (library: Page<Song>) => T, enabled = true, n
   const identity = libraryIdentity(mode, session);
   const includeNas = nasOnly || ((source === 'nas' || source === 'all') && mode !== 'setup');
   const combined = useCallback((library: Page<Song>) => {
-    if (nasOnly || source === 'nas') return select(library);
+    if (nasOnly || source === 'nas') return select(applyArtworkLibrary(applyMetadataLibrary(library, patches, metadataScope), artworkPatches, metadataScope, artworkBaseUri));
     const items = [...(includeNas ? library.items : []), ...(source === 'all' || source === 'local' ? localSongs : []), ...(includeDrive ? driveSongs : []), ...(includeS3 ? s3Songs : [])];
-    return select({ ...library, items, total: items.length });
-  }, [select, nasOnly, source, includeNas, localSongs, includeDrive, driveSongs, includeS3, s3Songs]);
+    return select(applyArtworkLibrary(applyMetadataLibrary({ ...library, items, total: items.length }, patches, metadataScope), artworkPatches, metadataScope, artworkBaseUri));
+  }, [select, nasOnly, source, includeNas, localSongs, includeDrive, driveSongs, includeS3, s3Songs, patches, metadataScope, artworkPatches, artworkBaseUri]);
   const query = useQuery({
-    queryKey: includeNas ? ['song-library', identity] : ['local-library'], enabled: ready && (nasOnly || localReady) && enabled,
+    queryKey: includeNas ? ['song-library', identity] : ['local-library'], enabled: ready && metadataReady && artworkReady && (nasOnly || localReady) && enabled,
     queryFn: ({ signal }) => includeNas && mode !== 'setup' ? loadSongLibrary(musicRepository(), signal) : Promise.resolve({ items: [] as Song[], total: 0 }),
     select: combined, retry: 2,
   });
   // Keep local files usable when NAS is unreachable, without publishing a
   // partial library as a successful NAS query or suppressing its retry notice.
   const fallback = useMemo(() => !nasOnly && source === 'all' && query.isError && !query.data && (localSongs.length || driveSongs.length || s3Songs.length)
-    ? select({ items: [...localSongs, ...driveSongs, ...s3Songs], total: localSongs.length + driveSongs.length + s3Songs.length }) : undefined,
-  [nasOnly, source, query.isError, query.data, localSongs, driveSongs, s3Songs, select]);
+    ? select(applyArtworkLibrary(applyMetadataLibrary({ items: [...localSongs, ...driveSongs, ...s3Songs], total: localSongs.length + driveSongs.length + s3Songs.length }, patches, metadataScope), artworkPatches, metadataScope, artworkBaseUri)) : undefined,
+  [nasOnly, source, query.isError, query.data, localSongs, driveSongs, s3Songs, select, patches, metadataScope, artworkPatches, artworkBaseUri]);
   const cloudError = [includeDrive && driveError, includeS3 && s3Error].filter(Boolean).join('\n');
   return libraryResult(query, {
     fallback, cloudError,

@@ -79,6 +79,30 @@ export function mapTags(tags: Record<string, unknown>): EmbeddedTags {
   }
   return { fields };
 }
+async function additionalFlacTags(reader: RangeReader): Promise<MusicTags> {
+  // jsmediatags' FLAC reader exposes only five common tags. Read these additional
+  // fields from the same bounded byte cache so written album/year/disc tags round-trip.
+  let offset = 4;
+  for (let block = 0; block < 32; block++) {
+    const header = await reader.bytes(offset, offset + 3), length = header[1] * 65536 + header[2] * 256 + header[3];
+    if ((header[0] & 127) === 4) {
+      const bytes = await reader.bytes(offset + 4, offset + 3 + length), view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+      let cursor = 0;
+      const u32 = () => { if (cursor + 4 > bytes.length) throw new Error('Invalid FLAC comment length'); const value = view.getUint32(cursor, true); cursor += 4; return value; };
+      const string = () => { const size = u32(); if (cursor + size > bytes.length) throw new Error('Invalid FLAC comment length'); const value = new TextDecoder().decode(bytes.subarray(cursor, cursor + size)); cursor += size; return value; };
+      string(); const count = u32(); if (count > 100000) throw new Error('Invalid FLAC comment count');
+      const values: Record<string, string> = {};
+      for (let i = 0; i < count; i++) {
+        const entry = string(), separator = entry.indexOf('='), key = entry.slice(0, separator).toUpperCase();
+        if (['ALBUMARTIST', 'ALBUM_ARTIST', 'DATE', 'YEAR', 'DISCNUMBER'].includes(key)) values[key] = entry.slice(separator + 1);
+      }
+      return mapTags(values).fields;
+    }
+    if (header[0] & 128) return {};
+    offset += 4 + length;
+  }
+  throw new Error('FLAC block limit exceeded');
+}
 export async function readEmbeddedTags(size: number, readBytes: ByteReader, signal: AbortSignal): Promise<EmbeddedTags> {
   const reader = new RangeReader(size, readBytes, signal);
   await new Promise<void>((resolve, reject) => reader.init({ onSuccess: resolve, onError: reject }));
@@ -96,6 +120,7 @@ export async function readEmbeddedTags(size: number, readBytes: ByteReader, sign
   });
   const result = mapTags(tags.tags);
   if (Parser === FLACTagReader && size >= 42) {
+    Object.assign(result.fields, await additionalFlacTags(reader));
     const stream = await reader.bytes(8, 41);
     const sampleRate = stream[10] * 4096 + stream[11] * 16 + (stream[12] >> 4);
     const samples = (stream[13] & 15) * 4294967296 + stream[14] * 16777216 + stream[15] * 65536 + stream[16] * 256 + stream[17];

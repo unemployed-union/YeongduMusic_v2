@@ -20,7 +20,9 @@ function load(file, mocks = {}, globals = {}) {
 const folders = load('src/services/local-music/folders.ts');
 const hiddenRules = load('src/features/hidden-music/rules.ts');
 const playlistRules = load('src/features/playlists/rules.ts');
+const menuRules = load('src/features/settings/menu-layout.ts');
 const format = load('src/features/settings/backup-format.ts', {
+  './menu-layout': menuRules,
   '@/features/hidden-music/rules': hiddenRules, '@/features/playlists/rules': playlistRules, '@/services/local-music/folders': folders,
 });
 const saved = new Map(), hiddenProfiles = new Map(), playlistProfiles = new Map();
@@ -40,6 +42,7 @@ const common = { '@/components/text': { Text: 'Text' },
   'react-native': { Platform: { OS: 'android' } }, 'expo-secure-store': storage };
 const display = load('src/stores/display-preferences.ts', common).useDisplayPreferences;
 const library = load('src/stores/library-preferences.ts', common).useLibraryPreferences;
+const menus = load('src/stores/menu-preferences.ts', { ...common, '@/features/settings/menu-layout': menuRules }).useMenuPreferences;
 const streaming = load('src/stores/streaming-preferences.ts', common).useStreamingPreferences;
 const exclusions = load('src/stores/folder-exclusions.ts', { ...common, '@/services/local-music/folders': folders }).useFolderExclusionStore;
 const access = load('src/stores/hidden-feature-access.ts', common).useHiddenFeatureAccess;
@@ -61,6 +64,7 @@ const playlistMocks = {
 };
 const playlists = load('src/stores/playlists.ts', playlistMocks).usePlaylistStore;
 const service = load('src/services/settings-backup.ts', {
+  '@/stores/menu-preferences': { useMenuPreferences: menus },
   '@/stores/display-preferences': { useDisplayPreferences: display }, '@/stores/library-preferences': { useLibraryPreferences: library },
   '@/stores/streaming-preferences': { useStreamingPreferences: streaming }, '@/stores/folder-exclusions': { useFolderExclusionStore: exclusions },
   '@/stores/hidden-feature-access': { useHiddenFeatureAccess: access }, '@/stores/hidden-music': { useHiddenMusicStore: privacy },
@@ -94,7 +98,21 @@ async function main() {
   assert.equal(display.getState().hideArtwork, true); assert.equal(library.getState().includeFolderAlbums, false);
   assert.equal(streaming.getState().quality, 'mp3'); assert.deepEqual(exclusions.getState().folders, ['/storage/primary/Music/제외']);
   const restored = JSON.parse(await service.createSettingsBackup());
-  assert.deepEqual(restored.preferences, clean.preferences, 'Round trip includes all general settings');
+  assert.deepEqual(restored.preferences, { ...clean.preferences, menus: menus.getState().layout }, 'Round trip includes all general settings');
+  const customMenus = menuRules.defaultMenuLayout();
+  customMenus.bottom.reverse(); customMenus.bottom[1].visible = false;
+  customMenus.library.reverse(); customMenus.library[1].visible = false;
+  customMenus.player.reverse(); customMenus.player[1].visible = false;
+  const menuBackup = { ...clean, preferences: { ...clean.preferences, menus: customMenus } };
+  await service.restoreSettingsBackup(menuBackup, false);
+  assert.deepEqual(JSON.parse(await service.createSettingsBackup()).preferences.menus, customMenus);
+  await service.restoreSettingsBackup(clean, false);
+  assert.deepEqual(menus.getState().layout, customMenus, 'Older backups preserve menu settings');
+  const invalidMenus = menuRules.defaultMenuLayout(); invalidMenus.bottom.forEach(item => { item.visible = false; });
+  const writesBeforeInvalidMenus = storageWrites;
+  await assert.rejects(service.restoreSettingsBackup({ ...menuBackup, preferences: { ...menuBackup.preferences, menus: invalidMenus } }, false), /최소 하나/);
+  assert.equal(storageWrites, writesBeforeInvalidMenus, 'All-hidden backups are rejected before any writes');
+  await menus.getState().restore(restored.preferences.menus);
   const reloadedDisplay = load('src/stores/display-preferences.ts', common).useDisplayPreferences;
   await reloadedDisplay.getState().load(); assert.equal(reloadedDisplay.getState().hideArtwork, true, 'Restore survives restart');
   failKey = 'yeongdumusic-streaming-quality-v1'; failures = 1;
@@ -220,6 +238,7 @@ async function checkUI(privateBackup) {
   let stateIndex = 0, refIndex = 0, nextFile = null, readFailure = false, restoreCount = 0;
   const exported = [], imported = [];
   const BackupSettings = load('src/features/settings/backup-settings.tsx', {
+    './menu-layout': menuRules,
     react: { useEffect: () => {}, useRef: value => refs[refIndex++] ??= { current: value },
       useState: initial => { const index = stateIndex++; states[index] ??= initial; return [states[index], value => { states[index] = value; }]; } },
     'react/jsx-runtime': { jsx, jsxs: jsx },

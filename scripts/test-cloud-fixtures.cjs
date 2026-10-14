@@ -13,9 +13,22 @@ exports.cloudFixtures = (globals = {}, dependencies = {}) => {
     bootstrap: async () => {}, refresh: async () => {}, cancel: () => {} };
   const useS3Store = select => select ? select(state) : state;
   useS3Store.getState = () => state; useS3Store.subscribe = () => () => {};
+  const metadata = { ready: true, patches: {}, load: async () => {} };
+  const useSongMetadataStore = select => select ? select(metadata) : metadata;
+  useSongMetadataStore.getState = () => metadata; useSongMetadataStore.subscribe = () => () => {};
   const shared = { '@/stores/s3': { useS3Store }, ...dependencies };
+  const artwork = { ready: true, patches: {}, baseUri: 'file:///artwork/', load: async () => {} };
+  const useSongArtworkStore = select => select ? select(artwork) : artwork;
+  useSongArtworkStore.getState = () => artwork; useSongArtworkStore.subscribe = () => () => {};
+  const artworkRules = read('src/features/artwork/rules.ts', globals, {
+    '@/features/metadata/rules': read('src/features/metadata/rules.ts', globals), '@/features/library/album-library': read('src/features/library/album-library.ts', globals),
+  });
   const resultHelpers = read('src/features/library/library-result.ts', globals);
   return {
+    '@/stores/song-metadata': { useSongMetadataStore },
+    '@/stores/song-artwork': { useSongArtworkStore }, '@/features/artwork/rules': artworkRules, '../artwork/rules': artworkRules,
+    '@/features/metadata/rules': read('src/features/metadata/rules.ts', globals),
+    '../metadata/rules': read('src/features/metadata/rules.ts', globals),
     // Older hook fixtures return Query options so they can exercise the real selector.
     // Preserve only those test options; normal Query snapshots use the real result adapter.
     './library-result': { libraryResult: (query, options) => {
@@ -23,6 +36,8 @@ exports.cloudFixtures = (globals = {}, dependencies = {}) => {
       return 'queryKey' in query ? { ...query, ...result } : result;
     } },
     './sleep-timer': read('src/services/playback/sleep-timer.ts', globals),
+    './section-repeat': read('src/services/playback/section-repeat.ts', globals),
+    './playback-rate': read('src/services/playback/playback-rate.ts', globals),
     ...('expo-file-system/legacy' in dependencies ? { './file-copy': read('src/services/local-music/file-copy.ts', globals, dependencies) } : {}),
     ...('@/services/playback/persistence' in dependencies && 'react' in dependencies ? {
       '@/features/startup/use-app-bootstrap': read('src/features/startup/use-app-bootstrap.ts', globals, shared),

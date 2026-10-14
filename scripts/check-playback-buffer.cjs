@@ -7,7 +7,7 @@ const code = ts.transpileModule(fs.readFileSync(path.join(root, 'src/services/pl
   compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS },
 }).outputText;
 
-function harness({ os = 'android', dev = true, ownership = 'standalone', mode = async () => {}, seek = async () => {}, pauseStatus = null } = {}) {
+function harness({ os = 'android', dev = true, ownership = 'standalone', mode = async () => {}, seek = async () => {}, pauseStatus = null, playbackRate = 1, preservePitch = true } = {}) {
   let now = 0;
   let timerId = 0;
   const timers = new Map();
@@ -18,7 +18,8 @@ function harness({ os = 'android', dev = true, ownership = 'standalone', mode = 
       subscriptions.set(name, listener);
       return { remove: () => { subscriptions.delete(name); events.push(['unsubscribe', name]); } };
     },
-    replace: source => { player.isLoaded = false; events.push(['replace', source]); },
+    replace: source => { player.isLoaded = false; player.playbackRate = 1; events.push(['replace', source]); },
+    setPlaybackRate: (rate, quality) => { player.playbackRate = rate; events.push(['rate', rate, quality, player.shouldCorrectPitch]); },
     setActiveForLockScreen: (...args) => events.push(['lockscreen', ...args]),
     play: () => events.push(['play']), pause: () => {
       events.push(['pause']);
@@ -27,6 +28,7 @@ function harness({ os = 'android', dev = true, ownership = 'standalone', mode = 
     seekTo: async seconds => { events.push(['seek', seconds]); await seek(seconds); }, release: () => events.push(['release']),
   };
   const modules = {
+    './playback-rate': require('./test-cloud-fixtures.cjs').cloudFixtures()['./playback-rate'],
     'expo-audio': {
       createAudioPlayer: (source, options) => { events.push(['create', source, options]); return player; },
       setAudioModeAsync: options => { events.push(['mode', options]); return mode(); },
@@ -41,11 +43,11 @@ function harness({ os = 'android', dev = true, ownership = 'standalone', mode = 
     (callback, delay) => { timers.set(++timerId, { callback, at: now + delay }); return timerId; },
     id => timers.delete(id),
   );
-  const engine = new exports.ExpoAudioEngine();
+  const engine = new exports.ExpoAudioEngine(playbackRate, preservePitch);
   const states = [];
   engine.subscribe(status => states.push(status));
   return {
-    engine, events, logs, states, subscriptions, timers,
+    engine, player, events, logs, states, subscriptions, timers,
     nativePosition: value => { player.currentTime = value; },
     time: value => { now = value; },
     advance: ms => {
@@ -69,6 +71,34 @@ function harness({ os = 'android', dev = true, ownership = 'standalone', mode = 
 const song = { id: 'mock-id', title: 'Private title', artist: 'Private artist', album: 'Private album', duration: 180 };
 const source = { uri: 'https://example.invalid/webapi/stream.cgi?_sid=secret', headers: { Authorization: 'secret-header' } };
 async function main() {
+  for (const os of ['android', 'ios', 'web']) {
+    const speed = harness({ os, playbackRate: 1.5 });
+    await speed.engine.load(source, song);
+    assert.equal(speed.player.playbackRate, 1.5);
+    assert.deepEqual(speed.events.find(event => event[0] === 'rate'), ['rate', 1.5, 'high', true]);
+    speed.engine.setPreservePitch(false);
+    assert.deepEqual(speed.events.at(-1), ['rate', 1.5, undefined, false], 'Disabling pitch correction also disables the web quality flag');
+    speed.engine.pause();
+    const playsBefore = speed.events.filter(event => event[0] === 'play').length;
+    speed.engine.setPlaybackRate(0.75);
+    assert.equal(speed.player.shouldCorrectPitch, false, 'Changing speed preserves the pitch preference');
+    assert.equal(speed.events.filter(event => event[0] === 'play').length, playsBefore, 'Changing speed while paused must not start playback');
+    speed.engine.play(); assert.equal(speed.player.playbackRate, 0.75);
+    await speed.engine.load(source, { ...song, id: 'next' }); assert.equal(speed.player.playbackRate, 0.75, 'Source replacement preserves speed');
+    assert.deepEqual(speed.events.filter(event => event[0] === 'rate').at(-1), ['rate', 0.75, undefined, false]);
+    speed.emit({ error: 'network', currentTime: 12 }); speed.advance(1000);
+    assert.equal(speed.player.playbackRate, 0.75, 'Stream reconnection reapplies speed after replacing the native item');
+    assert.equal(speed.player.shouldCorrectPitch, false, 'Stream reconnection preserves pitch correction being off');
+    speed.engine.setPreservePitch(true);
+    assert.deepEqual(speed.events.at(-1), ['rate', 0.75, 'high', true]);
+    speed.engine.setPlaybackRate(1); assert.equal(speed.player.playbackRate, 1);
+    for (const invalid of [0, -1, 0.49, 2.01, NaN, Infinity]) assert.throws(() => speed.engine.setPlaybackRate(invalid));
+    assert.equal(speed.player.playbackRate, 1, 'Rejected values do not alter the native rate');
+    speed.engine.release();
+    const noPitch = harness({ os, preservePitch: false }); await noPitch.engine.load(source, song);
+    noPitch.engine.setPlaybackRate(2); assert.deepEqual(noPitch.events.at(-1), ['rate', 2, undefined, false], 'Turning pitch correction off at 1x survives a later speed change');
+    noPitch.engine.release();
+  }
   const restored = harness();
   await restored.engine.load(source, song, 42);
   assert.equal(restored.events.some(event => event[0] === 'play'), false, 'Recovery must seek before playback');

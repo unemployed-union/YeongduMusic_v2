@@ -5,11 +5,12 @@ import type { HiddenMusicProfile } from '@/types/hidden-music';
 import type { PlaylistProfile } from '@/types/playlists';
 import type { StreamingQuality } from '@/types/music';
 import type { QuickHideMode } from '@/stores/hidden-feature-access';
+import { parseMenuLayout, type MenuLayout } from './menu-layout';
 
 export const MAX_BACKUP_BYTES = 2 * 1024 * 1024;
 export type SettingsBackup = {
   format: 'yeongdu-music-settings'; version: 1; exportedAt: string;
-  preferences: { hideArtwork: boolean; includeFolderAlbums: boolean; quality: StreamingQuality; excludedFolders: string[] };
+  preferences: { hideArtwork: boolean; includeFolderAlbums: boolean; quality: StreamingQuality; excludedFolders: string[]; menus?: MenuLayout };
   account?: { scope: string; hidden: HiddenMusicProfile; playlists: PlaylistProfile; access: { enabled: boolean; quickHideMode: QuickHideMode } };
 };
 
@@ -42,6 +43,7 @@ export function parseSettingsBackup(text: string): SettingsBackup {
     format: 'yeongdu-music-settings', version: 1, exportedAt: value.exportedAt,
     preferences: { hideArtwork: bool(preferences.hideArtwork), includeFolderAlbums: bool(preferences.includeFolderAlbums), quality: preferences.quality, excludedFolders: [...new Set((folders as string[]).map(localFolderKey))] },
   };
+  if (preferences.menus !== undefined) result.preferences.menus = parseMenuLayout(preferences.menus);
   if (value.account !== undefined) {
     const account = object(value.account), access = object(account.access);
     if (typeof account.scope !== 'string' || !account.scope || account.scope.length > 4096) throw new Error('백업의 계정 정보를 확인할 수 없습니다.');

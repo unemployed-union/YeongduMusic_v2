@@ -6,6 +6,8 @@ import { driveJson, driveMediaUrl, loadDriveSongs, readDriveFolder, type DriveFo
 import type { Song } from '@/types/music';
 import { enrichDriveSongs } from '@/services/google-drive/metadata';
 import { usePlaybackStore } from '@/stores/playback';
+import { useSongMetadataStore } from '@/stores/song-metadata';
+import { applyMetadata, metadataKey } from '@/features/metadata/rules';
 const KEY = 'yeongdu-google-drive-v1';
 type Account = { id: string; email: string };
 type State = {
@@ -232,7 +234,9 @@ export const useGoogleDriveStore = create<State>((set, get) => {
               // Refresh labels/artwork in the existing queue without reloading audio.
               usePlaybackStore.setState(state => ({ queue: state.queue.map(song => {
                 const latest = metadata.get(song.id);
-                return latest && song.source === 'drive' ? { ...latest, duration: latest.duration || song.duration } : song;
+                if (!latest || song.source !== 'drive') return song;
+                const key = metadataKey(latest, null);
+                return applyMetadata({ ...latest, duration: latest.duration || song.duration }, key ? useSongMetadataStore.getState().patches[key] : undefined);
               }) }));
             })
             .then(failures => { if (isCurrent() && failures) set({ metadataWarning: '일부 곡의 태그·앨범아트를 읽지 못했습니다. 음악 목록 다시 불러오기로 재시도할 수 있습니다.' }); })

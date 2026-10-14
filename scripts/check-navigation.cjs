@@ -39,7 +39,7 @@ assert.equal(library.screens['artist/[id]'].path, 'artist/:id');
 assert.equal(config.screens['album/[id]'], undefined);
 assert.equal(config.screens['artist/[id]'], undefined);
 assert.ok(config.screens.player, 'Player remains outside tabs as a full-screen modal');
-for (const route of ['settings/cloud', 'settings/cloud/synology', 'settings/cloud/google-drive', 'settings/playback', 'settings/library', 'settings/other', 'settings/playlist-backup']) {
+for (const route of ['settings/cloud', 'settings/cloud/synology', 'settings/cloud/google-drive', 'settings/playback', 'settings/library', 'settings/bottom-menu', 'settings/player-menu', 'settings/other', 'settings/playlist-backup']) {
   assert.equal(config.screens[route].path, route, 'Settings destinations resolve through the real route tree');
 }
 
@@ -73,6 +73,12 @@ const ui = {
   '@/components/tab-bar-inset': { TAB_BAR_HEIGHT: 66, TabBarInsetContext: { Provider: 'TabBarInsetProvider' } },
   '@/theme/tokens': { useColors: () => ({ tint: '#f48' }) },
 };
+const menuRules = renderModule('src/features/settings/menu-layout.ts', {});
+let menuLayout = menuRules.defaultMenuLayout();
+ui['@/features/settings/menu-layout'] = menuRules;
+ui['@/stores/menu-preferences'] = { useMenuPreferences: selector => selector({ layout: menuLayout }) };
+ui.react.useEffect = effect => effect();
+ui['@/features/settings/tab-menu-selection'] = renderModule('src/features/settings/tab-menu-selection.tsx', { ...ui, './menu-layout': menuRules });
 const TabsLayout = renderModule('src/app/(tabs)/_layout.tsx', ui).default;
 const tabs = TabsLayout();
 assert.deepEqual(nodes(tabs).filter(node => node.type === 'TabScreen').map(node => [node.props.name, node.props.options.title]), [['(library)', '보관함'], ['(playlists)', '플레이리스트'], ['search', '검색']]);
@@ -87,6 +93,20 @@ for (const name of ['(library)', '(playlists)', 'search']) {
   assert.equal(nodes(background).find(node => node.type === 'BlurView').props.blurTarget, content.props.ref, 'Tab blur captures the selected tab');
 }
 assert.equal(refs.size, 3);
+menuLayout.bottom.reverse(); menuLayout.bottom[2].visible = false;
+const customizedTabs = TabsLayout();
+assert.deepEqual(nodes(customizedTabs).filter(node => node.type === 'TabScreen').map(node => node.props.name), ['search', '(playlists)', '(library)']);
+assert.equal(nodes(customizedTabs).find(node => node.type === 'TabScreen' && node.props.name === '(library)').props.options.href, null);
+assert.equal(customizedTabs.props.initialRouteName, 'search');
+const tabMoves = [];
+const tabNavigation = { getState: () => ({ index: 0, routes: [{ name: '(library)' }] }), navigate: name => tabMoves.push(name) };
+const customizedLayout = customizedTabs.props.layout({ children: null, state: tabNavigation.getState(), navigation: tabNavigation });
+nodes(customizedLayout).find(node => typeof node.type === 'function').type({ navigation: tabNavigation });
+assert.deepEqual(tabMoves, ['search'], 'Hiding the active menu selects the first visible menu');
+tabNavigation.getState = () => ({ index: 0, routes: [{ name: '(playlists)' }] });
+nodes(customizedLayout).find(node => typeof node.type === 'function').type({ navigation: tabNavigation });
+assert.equal(tabMoves.length, 1, 'Visible selection survives reordering');
+menuLayout = menuRules.defaultMenuLayout();
 const keyboardTabs = renderModule('src/app/(tabs)/_layout.tsx', { ...ui,
   'react-native-keyboard-controller': { useKeyboardState: selector => selector({ isVisible: true }) },
 }).default();
@@ -115,14 +135,24 @@ assert.ok(!fs.readFileSync(path.join(root, 'src/app/(tabs)/(library)/index.tsx')
 const settingsUI = { SettingsLink: 'SettingsLink', SettingsPage: 'SettingsPage', SettingsSection: 'SettingsSection' };
 let extrasEnabled = false;
 const settingsMocks = { ...ui,
+  react: { ...ui.react, useState: initial => [initial, () => {}], useEffect: () => {} },
+  '@/components/toast-notice': { ToastNotice: 'ToastNotice' },
+  '@/features/settings/menu-layout-settings': { MenuLayoutSettings: 'MenuLayoutSettings' },
   '@/features/settings/settings-ui': settingsUI,
   '@/features/settings/version-settings': { VersionSettings: 'VersionSettings' },
   '@/features/library/album-display-settings': { AlbumDisplaySettings: 'AlbumDisplaySettings' },
+  '@/features/metadata/web-metadata-settings': { WebMetadataSettings: 'WebMetadataSettings' },
   '@/stores/hidden-feature-access': { useHiddenFeatureAccess: selector => selector({ ready: true, enabled: extrasEnabled }) },
 };
 const Settings = renderModule('src/app/settings.tsx', settingsMocks).default;
+let settingsToast = null;
+const ToastSettings = renderModule('src/app/settings.tsx', { ...settingsMocks, react: { ...settingsMocks.react,
+  useState: () => [settingsToast, value => { settingsToast = value; }] } }).default;
+nodes(ToastSettings()).find(node => node.type === 'VersionSettings').props.onToast('숨김 설정 열림');
+const toastedPage = ToastSettings(); assert.equal(toastedPage.props.overlay.type, 'ToastNotice'); assert.equal(toastedPage.props.overlay.props.message, '숨김 설정 열림');
+assert(!nodes(toastedPage.props.children).some(node => node.type === 'ToastNotice'), 'The notice is outside clipped settings groups and the scroll content');
 const links = tree => nodes(tree).filter(node => node.type === 'SettingsLink').map(node => [node.props.title, node.props.href]);
-assert.deepEqual(links(Settings()), [['클라우드 연결', '/settings/cloud'], ['재생 및 화면', '/settings/playback'], ['보관함', '/settings/library'], ['설정 백업 및 복구', '/settings/backup'], ['플레이리스트 백업 및 복구', '/settings/playlist-backup'], ['오픈소스 라이선스', '/settings/licenses']]);
+assert.deepEqual(links(Settings()), [['클라우드 연결', '/settings/cloud'], ['재생 및 화면', '/settings/playback'], ['하단 메뉴', '/settings/bottom-menu'], ['보관함', '/settings/library'], ['설정 백업 및 복구', '/settings/backup'], ['플레이리스트 백업 및 복구', '/settings/playlist-backup'], ['오픈소스 라이선스', '/settings/licenses']]);
 const backupCategory = nodes(Settings()).find(node => node.type === 'SettingsSection' && node.props.title === '백업 및 복구');
 assert.ok(backupCategory, 'Settings exposes a dedicated backup category');
 assert.deepEqual(links(backupCategory), [['설정 백업 및 복구', '/settings/backup'], ['플레이리스트 백업 및 복구', '/settings/playlist-backup']]);
