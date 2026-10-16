@@ -9,7 +9,7 @@ export type RemoteTrackCommand = 'next' | 'previous';
 export interface AudioEngine {
   load(source: AudioSource, song: Song, initialPosition?: number): Promise<void>;
   play(): void;
-  pause(): void;
+  pause(forTrackTransition?: boolean): void;
   seek(seconds: number, precise?: boolean): Promise<void>;
   getPosition(): number;
   setPlaybackRate(rate: number): void;
@@ -55,6 +55,7 @@ export class ExpoAudioEngine implements AudioEngine {
 
   private remoteSubscription: { remove(): void } | null = null;
   private remoteListeners = new Set<(command: RemoteTrackCommand) => void>();
+  private lockScreenActive = false;
 
   constructor(playbackRate = 1, preservePitch = true) {
     validatePlaybackRate(playbackRate);
@@ -291,12 +292,16 @@ export class ExpoAudioEngine implements AudioEngine {
     if (this.backgroundPlaybackAvailable) {
       // showSkip* and remoteTrackChange are provided by our pinned expo-audio pnpm patch.
       // Stock showSeek* options only move 10 seconds within the current song.
-      player.setActiveForLockScreen(true,
-        { title: song.title, artist: song.artist, albumTitle: song.album, artworkUrl: song.artworkUrl },
-        Platform.OS === 'android'
-          ? { isLiveStream: false, showSkipPrevious: true, showSkipNext: true, showSeekBackward: false, showSeekForward: false }
-          : undefined
-      );
+      if (this.lockScreenActive) this.updateMetadata(song);
+      else {
+        player.setActiveForLockScreen(true,
+          { title: song.title, artist: song.artist, albumTitle: song.album, artworkUrl: song.artworkUrl },
+          Platform.OS === 'android'
+            ? { isLiveStream: false, showSkipPrevious: true, showSkipNext: true, showSeekBackward: false, showSeekForward: false }
+            : undefined
+        );
+        this.lockScreenActive = true;
+      }
     }
     if (this.resume) void this.resumePlayback();
     else player.play();
@@ -316,13 +321,16 @@ export class ExpoAudioEngine implements AudioEngine {
     if (this.failure) { this.retries = 0; this.scheduleRecovery(); }
     else { this.starting = true; this.watchStall(); this.player?.play(); }
   }
-  pause(): void {
+  pause(forTrackTransition = false): void {
     this.operation++;
     this.wantsPlayback = this.starting = false;
     this.resume = null;
     this.clearRecoveryTimers();
     this.resetBufferingObservation();
     this.player?.pause();
+    // Preserve the native end-of-track wake lock until the next source starts.
+    // Explicit pause, final queue end, sleep timers and stop release it now.
+    if (!forTrackTransition && Platform.OS === 'android') this.player?.finishTrackTransition?.();
     this.publish(false, false);
   }
   async seek(seconds: number, precise = false): Promise<void> {
@@ -355,6 +363,7 @@ export class ExpoAudioEngine implements AudioEngine {
     this.remoteSubscription?.remove();
     this.remoteSubscription = null;
     if (this.backgroundPlaybackAvailable) this.player?.setActiveForLockScreen(false);
+    this.lockScreenActive = false;
     this.player?.release();
     this.player = null;
     this.configured = null;

@@ -21,6 +21,8 @@ function harness({ os = 'android', dev = true, ownership = 'standalone', mode = 
     replace: source => { player.isLoaded = false; player.playbackRate = 1; events.push(['replace', source]); },
     setPlaybackRate: (rate, quality) => { player.playbackRate = rate; events.push(['rate', rate, quality, player.shouldCorrectPitch]); },
     setActiveForLockScreen: (...args) => events.push(['lockscreen', ...args]),
+    updateLockScreenMetadata: metadata => events.push(['metadata', metadata]),
+    finishTrackTransition: () => events.push(['finish-transition']),
     play: () => events.push(['play']), pause: () => {
       events.push(['pause']);
       if (pauseStatus) subscriptions.get('playbackStatusUpdate')?.({ playing: false, isLoaded: true, ...pauseStatus });
@@ -167,6 +169,14 @@ async function main() {
   assert.equal(h.events.filter(event => event[0] === 'create').length, 1, 'Reuse the global player across tracks');
   assert.equal(h.events.filter(event => event[0] === 'mode').length, 1);
   assert.equal(h.events.filter(event => event[0] === 'replace').length, 2);
+  assert.equal(h.events.filter(event => event[0] === 'lockscreen').length, 1, 'Track changes must retain the existing background media session');
+  assert.equal(h.events.filter(event => event[0] === 'metadata').length, 1, 'Update labels without rebuilding the media session');
+  const releasedTransitions = () => h.events.filter(event => event[0] === 'finish-transition').length;
+  const held = releasedTransitions();
+  h.engine.pause(true);
+  assert.equal(releasedTransitions(), held, 'Preparing the next source must retain native handoff execution');
+  h.engine.pause();
+  assert.equal(releasedTransitions(), held + 1, 'Intentional pause must release the handoff lock');
   const remote = [];
   h.engine.subscribeRemoteNavigation(direction => remote.push(direction));
   h.subscriptions.get('remoteTrackChange')({ direction: 'next' });

@@ -229,5 +229,62 @@ run('javac', ['-d', classes, ...java]);
 run('java', ['-cp', classes, 'expo.modules.audio.service.ListenerForwardingTest']);
 run('java', ['-cp', compiler.join(path.delimiter), 'org.jetbrains.kotlin.cli.jvm.K2JVMCompiler', '-no-stdlib', '-no-reflect', '-jvm-target', '17', '-classpath', classes + path.delimiter + compiler[1], '-d', classes, source, stubs, cases]);
 run('java', ['-cp', classes + path.delimiter + compiler[1], 'expo.modules.audio.service.TestKt']);
+
+// Run the actual bounded handoff-lock implementation with a virtual Android
+// clock. This checks expiration and reference counting without keeping a device awake.
+const wakeContext = write('WakeContext.kt', `package android.content
+import android.os.PowerManager
+class Context(val power: PowerManager) {
+ companion object { const val POWER_SERVICE = "power" }
+ fun getSystemService(name: String): Any { check(name == POWER_SERVICE); return power }
+}`);
+const wakePower = write('WakePower.kt', `package android.os
+class PowerManager {
+ companion object { const val PARTIAL_WAKE_LOCK = 1 }
+ val lock = WakeLock()
+ var flags = 0
+ var tag = ""
+ fun newWakeLock(flags: Int, tag: String): WakeLock { this.flags = flags; this.tag = tag; return lock }
+ class WakeLock {
+  var now = 0L
+  var deadline = 0L
+  var counted = true
+  var releases = 0
+  val isHeld: Boolean get() = now < deadline
+  fun setReferenceCounted(value: Boolean) { counted = value }
+  fun acquire(timeout: Long) { check(timeout > 0); deadline = now + timeout }
+  fun release() { check(isHeld); releases++; deadline = now }
+ }
+}`);
+const wakeCases = write('WakeTest.kt', `package expo.modules.audio
+import android.content.Context
+import android.os.PowerManager
+fun main() {
+ val power = PowerManager()
+ val transition = TrackTransitionWakeLock(Context(power))
+ check(power.flags == PowerManager.PARTIAL_WAKE_LOCK) { "Must not turn the display on" }
+ check(!power.lock.isHeld && !power.lock.counted)
+ transition.acquire(); check(power.lock.deadline == 30000L)
+ power.lock.now = 1200L; transition.acquire(); check(power.lock.deadline == 31200L)
+ transition.release(); check(!power.lock.isHeld && power.lock.releases == 1)
+ transition.release(); check(power.lock.releases == 1)
+ transition.acquire(); power.lock.now += 30001L
+ check(!power.lock.isHeld) { "A missing JS response must not hold the CPU forever" }
+ transition.release(); check(power.lock.releases == 1)
+ transition.acquire(); check(power.lock.isHeld)
+ transition.release(); check(power.lock.releases == 2)
+ println("PASS: real native handoff-lock code uses display-off CPU mode, a 30-second deadline, no reference-count leak, early release and safe timeout/reuse (mock Android).")
+}`);
+const wakeSource = path.join(root, 'node_modules/expo-audio/android/src/main/java/expo/modules/audio/TrackTransitionWakeLock.kt');
+run('java', ['-cp', compiler.join(path.delimiter), 'org.jetbrains.kotlin.cli.jvm.K2JVMCompiler', '-no-stdlib', '-no-reflect', '-jvm-target', '17', '-classpath', compiler[1], '-d', classes, wakeSource, wakeContext, wakePower, wakeCases]);
+run('java', ['-cp', classes + path.delimiter + compiler[1], 'expo.modules.audio.WakeTestKt']);
+const sdk = process.env.ANDROID_HOME || path.join(os.homedir(), 'AppData/Local/Android/Sdk');
+const platforms = path.join(sdk, 'platforms');
+const androidJar = (fs.existsSync(platforms) ? fs.readdirSync(platforms).sort().reverse() : [])
+  .map(version => path.join(platforms, version, 'android.jar')).find(file => fs.existsSync(file));
+if (androidJar) {
+  run('java', ['-cp', compiler.join(path.delimiter), 'org.jetbrains.kotlin.cli.jvm.K2JVMCompiler', '-no-stdlib', '-no-reflect', '-jvm-target', '17', '-classpath', compiler[1] + path.delimiter + androidJar, '-d', path.join(temp, 'android-api-classes'), wakeSource]);
+  console.log('PASS: handoff-lock source compiles against the installed real Android SDK API (no mock Android types).');
+}
 console.log('Real Media3 compilation and Samsung/NAS behavior need separate validation. No NAS requests are made.');
 

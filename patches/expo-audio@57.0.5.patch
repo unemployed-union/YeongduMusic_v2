@@ -1,5 +1,5 @@
 diff --git a/android/src/main/java/expo/modules/audio/AudioModule.kt b/android/src/main/java/expo/modules/audio/AudioModule.kt
-index 992239ba7631ce0c97c0b41c5fbf61cc842386fe..a60b526c972cf17bc5eed9c4216ef50c9e970c69 100644
+index 992239ba7631ce0c97c0b41c5fbf61cc842386fe..34c97bee50f222884cad0448ba90acd0e1781144 100644
 --- a/android/src/main/java/expo/modules/audio/AudioModule.kt
 +++ b/android/src/main/java/expo/modules/audio/AudioModule.kt
 @@ -376,6 +376,11 @@ class AudioModule : Module() {
@@ -14,22 +14,102 @@ index 992239ba7631ce0c97c0b41c5fbf61cc842386fe..a60b526c972cf17bc5eed9c4216ef50c
        Property("isBuffering") { player ->
          runOnMain {
            player.ref.playbackState == Player.STATE_BUFFERING
+@@ -486,6 +491,10 @@ class AudioModule : Module() {
+         }
+       }
+ 
++      Function("finishTrackTransition") { player: AudioPlayer ->
++        runOnMain { player.finishTrackTransition() }
++      }
++
+       Function("replace") { player: AudioPlayer, source: AudioSource ->
+         runOnMain {
+           if (player.ref.availableCommands.contains(Player.COMMAND_CHANGE_MEDIA_ITEMS)) {
 diff --git a/android/src/main/java/expo/modules/audio/AudioPlayer.kt b/android/src/main/java/expo/modules/audio/AudioPlayer.kt
-index c76a9fd2a53743a691782e0f67d0d71401df58f6..df59e81533c32c7b40904941ae564896f5a1ffa8 100644
+index c76a9fd2a53743a691782e0f67d0d71401df58f6..e15eff76d7dba7ee7a678400e541dcba8a39c45c 100644
 --- a/android/src/main/java/expo/modules/audio/AudioPlayer.kt
 +++ b/android/src/main/java/expo/modules/audio/AudioPlayer.kt
-@@ -219,6 +219,11 @@ class AudioPlayer(
+@@ -78,6 +78,12 @@ class AudioPlayer(
+ 
+   private var samplingEnabled = false
+   private var visualizer: Visualizer? = null
++  private val trackTransitionWakeLock = TrackTransitionWakeLock(context)
++  private val trackTransitionListener = object : Player.Listener {
++    override fun onIsPlayingChanged(isPlaying: Boolean) {
++      if (isPlaying) finishTrackTransition()
++    }
++  }
+   private val context by lazy {
+     appContext.reactContext
+       ?: throw Exceptions.ReactContextLost()
+@@ -85,6 +91,7 @@ class AudioPlayer(
+ 
+   init {
+     installPlayerListeners()
++    ref.addListener(trackTransitionListener)
+     source?.let {
+       setMediaSource(source)
+     }
+@@ -118,6 +125,7 @@ class AudioPlayer(
+         )
+       }
+     } else if (isActiveForLockScreen) {
++      finishTrackTransition()
+       this.isActiveForLockScreen = false
+       serviceConnection.playbackServiceBinder?.service?.unregisterPlayer()
+     }
+@@ -139,6 +147,7 @@ class AudioPlayer(
+   }
+ 
+   fun clearLockScreenControls() {
++    finishTrackTransition()
+     if (isActiveForLockScreen) {
+       serviceConnection.playbackServiceBinder?.service?.unregisterPlayer()
+     }
+@@ -149,6 +158,9 @@ class AudioPlayer(
+       "playbackState" to playbackStateToString(playbackState)
+     )
+     if (justFinished) {
++      // Acquire before emitting the end event: a JS timer cannot keep the CPU
++      // awake once ExoPlayer releases its playback lock at the end of the item.
++      if (isActiveForLockScreen) trackTransitionWakeLock.acquire()
+       updateMap["didJustFinish"] = true
+       updateMap["playing"] = false
+     }
+@@ -156,6 +168,7 @@ class AudioPlayer(
+   }
+ 
+   override fun onPlayerError(error: PlaybackException) {
++    finishTrackTransition()
+     sendStatusUpdate(
+       mapOf(
+         "error" to error.message
+@@ -219,6 +232,16 @@ class AudioPlayer(
      )
    }
  
 +  // YeongduMusic: JS owns the queue, shuffle, repeat and authenticated source resolution.
 +  internal fun requestTrackNavigation(direction: String) {
++    if (isActiveForLockScreen) trackTransitionWakeLock.acquire()
 +    emit("remoteTrackChange", mapOf("direction" to direction))
++  }
++
++  internal fun finishTrackTransition() {
++    trackTransitionWakeLock.release()
 +  }
 +
    internal fun assignBasicMediaSession() {
      mediaSession.release()
      mediaSession = buildBasicMediaSession(context, ref)
+@@ -277,6 +300,8 @@ class AudioPlayer(
+   }
+ 
+   override fun releasePlayer() {
++    finishTrackTransition()
++    ref.removeListener(trackTransitionListener)
+     mediaSession.release()
+     if (isActiveForLockScreen) {
+       serviceConnection.playbackServiceBinder?.service?.unregisterPlayer()
 diff --git a/android/src/main/java/expo/modules/audio/AudioRecords.kt b/android/src/main/java/expo/modules/audio/AudioRecords.kt
 index 86880d92fd5b6413e8596e1b2b8ae28f2981addd..9272a21d1ea3547966f7e82a9be646cc75ec5338 100644
 --- a/android/src/main/java/expo/modules/audio/AudioRecords.kt
@@ -45,6 +125,32 @@ index 86880d92fd5b6413e8596e1b2b8ae28f2981addd..9272a21d1ea3547966f7e82a9be646cc
  ) : Record
  
  enum class InterruptionMode(val value: String) : Enumerable {
+diff --git a/android/src/main/java/expo/modules/audio/TrackTransitionWakeLock.kt b/android/src/main/java/expo/modules/audio/TrackTransitionWakeLock.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..4a079a8bc3196f24bdb56c59ce5c0989a1015531
+--- /dev/null
++++ b/android/src/main/java/expo/modules/audio/TrackTransitionWakeLock.kt
+@@ -0,0 +1,20 @@
++package expo.modules.audio
++
++import android.content.Context
++import android.os.PowerManager
++
++// ExoPlayer's own wake lock stops at STATE_ENDED. JS still needs time to
++// resolve the next authenticated/local source while the display stays off.
++internal class TrackTransitionWakeLock(context: Context) {
++  private val lock = (context.getSystemService(Context.POWER_SERVICE) as PowerManager)
++    .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "YeongduMusic:TrackTransition")
++    .apply { setReferenceCounted(false) }
++
++  fun acquire() {
++    lock.acquire(30_000L)
++  }
++
++  fun release() {
++    if (lock.isHeld) lock.release()
++  }
++}
 diff --git a/android/src/main/java/expo/modules/audio/service/AudioControlsService.kt b/android/src/main/java/expo/modules/audio/service/AudioControlsService.kt
 index 196a5d57f887c2667a88543bd2f6a80044a044f2..fb569e2968c3d544e8d7a7cc9d3e5382697bed9b 100644
 --- a/android/src/main/java/expo/modules/audio/service/AudioControlsService.kt
@@ -530,7 +636,7 @@ index cfd92ad0ff5765254c4e6db974fe44bce34aad06..cb7efe8477a203e631b174975b1fcb35
       * Whether the seek backward button should be displayed on the lock screen.
       */
 diff --git a/build/AudioModule.types.d.ts b/build/AudioModule.types.d.ts
-index f3ae4ee4044d86032cd5c6dbcfee6f905d1ce99f..c34c53a8dc978c451c28149bdcdd389ceeb2b0a2 100644
+index f3ae4ee4044d86032cd5c6dbcfee6f905d1ce99f..17f4ffb69d460a14e6fed07055fa3786e806a50d 100644
 --- a/build/AudioModule.types.d.ts
 +++ b/build/AudioModule.types.d.ts
 @@ -22,6 +22,8 @@ export declare class NativeAudioModule extends NativeModule {
@@ -542,7 +648,17 @@ index f3ae4ee4044d86032cd5c6dbcfee6f905d1ce99f..c34c53a8dc978c451c28149bdcdd389c
      /**
       * Initializes a new audio player instance with the given source.
       * @hidden
-@@ -218,6 +220,8 @@ export type AudioSampleChannel = {
+@@ -137,6 +139,9 @@ export declare class AudioPlayer extends SharedObject<AudioEvents> {
+      * Pauses the player.
+      */
+     pause(): void;
++
++    /** Android: release YeongduMusic's bounded track-handoff CPU lock. */
++    finishTrackTransition?: () => void;
+     /**
+      * Replaces the current audio source with a new one.
+      */
+@@ -218,6 +223,8 @@ export type AudioSampleChannel = {
   * Use `player.addListener()` to subscribe to these events.
   */
  export type AudioEvents = {
@@ -567,7 +683,7 @@ index dcc0452f7cae66b1bfaf77ed211416b092965bd9..2eab12a1a7027ee36dd99bbfd9f15e88
     * Whether the seek backward button should be displayed on the lock screen.
     */
 diff --git a/src/AudioModule.types.ts b/src/AudioModule.types.ts
-index 7e7537173d067fecef767a03dc0f1860c8aca7ac..ffd97ba93009e640b1c6bd51c9007168beacaa10 100644
+index 7e7537173d067fecef767a03dc0f1860c8aca7ac..6578ca7598e9b1a30313577db7b6454fcba53498 100644
 --- a/src/AudioModule.types.ts
 +++ b/src/AudioModule.types.ts
 @@ -40,6 +40,8 @@ export declare class NativeAudioModule extends NativeModule {
@@ -579,7 +695,17 @@ index 7e7537173d067fecef767a03dc0f1860c8aca7ac..ffd97ba93009e640b1c6bd51c9007168
    /**
     * Initializes a new audio player instance with the given source.
     * @hidden
-@@ -276,6 +278,8 @@ export type AudioSampleChannel = {
+@@ -177,6 +179,9 @@ export declare class AudioPlayer extends SharedObject<AudioEvents> {
+    */
+   pause(): void;
+ 
++  /** Android: release YeongduMusic's bounded track-handoff CPU lock. */
++  finishTrackTransition?: () => void;
++
+   /**
+    * Replaces the current audio source with a new one.
+    */
+@@ -276,6 +281,8 @@ export type AudioSampleChannel = {
   * Use `player.addListener()` to subscribe to these events.
   */
  export type AudioEvents = {

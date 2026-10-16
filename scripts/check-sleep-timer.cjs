@@ -32,7 +32,7 @@ function harness() {
     emit(status = {}) { this.position = status.position ?? this.position ?? 0; this.listener({ playing: true, buffering: false, position: this.position, duration: 180, ended: false, error: null, ...status }); }
     async load(source, song) { events.push(['load', song.id]); this.emit({ position: 0 }); }
     play() { events.push(['play']); this.emit(); }
-    pause() { events.push(['pause']); this.emit({ playing: false }); }
+    pause(forTrackTransition = false) { events.push(['pause', forTrackTransition]); this.emit({ playing: false }); }
     release() { events.push(['release']); }
     async seek(position) { events.push(['seek', position]); }
   }
@@ -61,6 +61,28 @@ function harness() {
 }
 const songs = ['first', 'second'].map(id => ({ id, title: id, artist: 'fixture', album: 'fixture', duration: 180 }));
 async function main() {
+  {
+    const h = harness(); await h.controller.playQueue(songs);
+    const gate = deferred(); h.pending(gate);
+    h.engine.emit({ playing: false, ended: true, position: 180 });
+    assert.equal(h.playback.getState().index, 1);
+    assert.deepEqual(h.events.filter(event => event[0] === 'pause').at(-1), ['pause', true], 'End-to-source handoff retains native execution while the source resolves');
+    gate.resolve({ uri: 'https://example.invalid/next' });
+    for (let i = 0; i < 12; i++) await tick();
+    assert.equal(h.events.filter(event => event[0] === 'load').at(-1)[1], 'second');
+    assert.equal(h.playback.getState().playing, true);
+    h.engine.emit({ playing: false, ended: true, position: 180 }); await tick();
+    assert.deepEqual(h.events.filter(event => event[0] === 'pause').at(-1), ['pause', false], 'Final queue end releases the native handoff');
+    h.controller.stopPlayback();
+  }
+  {
+    const h = harness(); await h.controller.playQueue(songs);
+    h.pending({ promise: Promise.reject(new Error('fixture source unavailable')) });
+    await h.controller.next();
+    assert.deepEqual(h.events.filter(event => event[0] === 'pause').at(-1), ['pause', false], 'Source failure must release the handoff');
+    assert.match(h.playback.getState().error, /source unavailable/);
+    h.controller.stopPlayback();
+  }
   {
     const h = harness();
     assert.throws(() => h.controller.startSleepTimer(5), /먼저/);

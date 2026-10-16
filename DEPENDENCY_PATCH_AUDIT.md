@@ -1,5 +1,7 @@
 # 의존성 수정 점검 — 2026-10-12
 
+2026-10-16 추가: 화면 꺼짐 상태의 곡 전환을 위해 기존 pnpm 절차로 `TrackTransitionWakeLock.kt`를 추가하고 `AudioPlayer.kt`, `AudioModule.kt` 및 소스·배포 타입을 갱신했다. 아래 12개 파일과 해시는 10월 12일 점검 당시 기록이다. 현재 패치는 13개 파일이며 원래의 잠금 화면 곡 이동·탐색·오디오 세션 패치를 유지한다. `pnpm patch --edit-dir .expo/audio-handoff-patch`의 복사본만 편집하고 `pnpm patch-commit`으로 패치와 잠금 파일을 함께 갱신했다. workspace 등록은 기존 경로를 그대로 사용한다. 기존 설치를 삭제하지 않고 별도 `.expo/audio-handoff-install`에서 `--frozen-lockfile --ignore-scripts --side-effects-cache=false --offline` 새 설치를 실행했다. 패치 13개 파일이 설치 간 바이트 단위로 일치하고 현재 SHA-256과 잠금 파일도 일치함을 확인했다. 새 잠금 클래스는 실제 Android SDK API로 컴파일했고 가상 Android 시계로 만료·조기 해제·재사용을 검증했다. 전체 Gradle 컴파일은 로컬 NDK 미설치로 실행되지 않았다. 실기기 재생 검사는 사용자 요청에 따라 생략했다.
+
 ## 결론
 
 현재 실행 코드가 의존하는 라이브러리 수정은 `expo-audio@57.0.5`의 12개 파일이며, 모두 기존 `patches/expo-audio@57.0.5.patch`에 포함되어 있다. 임시 폴더에 새로 설치한 의존성에서도 12개 파일이 기존 설치와 바이트 단위로 동일했다. 패치에 기록되지 않은 실행 코드 수정은 발견하지 못했다.

@@ -260,7 +260,7 @@ async function loadIndex(index: number, initialPosition = 0): Promise<void> {
   usePlayerBackgroundStore.getState().selectArtwork(song);
   try {
     loadedSongId = null;
-    engine?.pause();
+    engine?.pause(true);
     state.setStatus({ buffering: true, playing: false });
     const source = song.source === 'local'
       ? await (await import('@/services/local-music/storage')).localSource(song)
@@ -276,7 +276,10 @@ async function loadIndex(index: number, initialPosition = 0): Promise<void> {
       try { engine?.updateMetadata?.(latest); } catch { /* Keep audio loading independent of lock-screen label updates. */ }
     }
   } catch (error) {
-    if (currentGeneration === generation) state.setStatus({ buffering: false, playing: false, error: error instanceof Error ? error.message : '재생을 시작할 수 없습니다.' });
+    if (currentGeneration === generation) {
+      engine?.pause();
+      state.setStatus({ buffering: false, playing: false, error: error instanceof Error ? error.message : '재생을 시작할 수 없습니다.' });
+    }
   }
 }
 
