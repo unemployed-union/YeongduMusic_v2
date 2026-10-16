@@ -6,8 +6,8 @@ import type { LibraryTab } from './library-page';
 /** Keep per-page offsets so a restored page does not immediately hide its controls. */
 export function useLibraryControls() {
   const active = useRef<LibraryTab>('albums');
-  const offsets = useRef<Record<LibraryTab, number>>({ albums: 0, songs: 0, artists: 0 });
-  const viewports = useRef<Record<LibraryTab, number>>({ albums: 0, songs: 0, artists: 0 });
+  const offsets = useRef<Record<LibraryTab, number>>({ albums: 0, songs: 0, artists: 0, favorites: 0 });
+  const viewports = useRef<Record<LibraryTab, number>>({ albums: 0, songs: 0, artists: 0, favorites: 0 });
   const distance = useRef(0);
   const collapsed = useRef(false);
   const touchStart = useRef<{ x: number; y: number } | null>(null);

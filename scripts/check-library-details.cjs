@@ -90,6 +90,18 @@ async function checkPhotos() {
   status = 429; await assert.rejects(service.findArtistPhoto('Other', new AbortController().signal, true), /가져오지/);
   const throttled = calls.length; await assert.rejects(service.findArtistPhoto('Other', new AbortController().signal, true), /혼잡/);
   assert.equal(calls.length, throttled, 'Wikimedia Retry-After prevents repeated requests');
+  for (const os of ['android', 'ios', 'web']) {
+    const platformService = load('src/services/artwork/artist-photo.ts', {
+      'react-native': { Platform: { OS: os } }, '@/services/cloud-music/request': request, '@/services/metadata/web-search': {},
+    });
+    const sourceProp = platformService.artistPhotoSource(photo.uri);
+    assert.equal(Array.isArray(sourceProp), os === 'android', 'RN 0.86 Android requires an array source to forward headers to the native Image');
+    const source = Array.isArray(sourceProp) ? sourceProp[0] : sourceProp;
+    assert.equal(source.uri, photo.uri);
+    if (os === 'web') assert.equal(source.headers, undefined, 'Browser images retain the browser User-Agent');
+    else assert.equal(source.headers['User-Agent'], calls[0].options.headers['User-Agent'], 'Native image bytes identify the app just like metadata requests');
+  }
+  return service;
 }
 async function checkPreferences() {
   const saved = new Map(); let failRead = false, failWrite = false;
@@ -140,10 +152,10 @@ function headerModule(h) {
     },
   }) };
 }
-async function checkPhotoLifecycle() {
+async function checkPhotoLifecycle(service) {
   const h = hooks(), pending = [];
   const Component = load('src/features/library/artist-photo.tsx', { ...uiMocks, react: h.react, 'expo-router': { useFocusEffect: h.focus }, 'expo-linking': { openURL: async () => {} },
-    '@/services/artwork/artist-photo': { searchableArtist: name => !!name, findArtistPhoto: (name, signal) => { const work = deferred(); pending.push({ name, signal, ...work }); return work.promise; } },
+    '@/services/artwork/artist-photo': { artistPhotoSource: service.artistPhotoSource, searchableArtist: name => !!name, findArtistPhoto: (name, signal, refresh) => { const work = deferred(); pending.push({ name, signal, refresh, ...work }); return work.promise; } },
   }).ArtistPhoto;
   let enabled = false, name = 'A'; const render = () => h.render(() => Component({ name, enabled }));
   render(); assert.equal(pending.length, 0);
@@ -154,34 +166,67 @@ async function checkPhotoLifecycle() {
   enabled = true; render(); name = 'B'; render(); assert.equal(pending[1].signal.aborted, true);
   pending[2].resolve({ uri: 'https://upload.wikimedia.org/b', sourceUrl: 'https://commons.wikimedia.org/wiki/File:B', credit: 'B', license: 'CC BY' }); await flush();
   let tree = render(); const image = nodes(tree).find(node => node.type === 'Image');
-  assert.equal(image.props.source.uri, 'https://upload.wikimedia.org/b');
+  assert(Array.isArray(image.props.source), 'The Android Image receives the array form so RN forwards the request headers');
+  assert.equal(image.props.source[0].uri, 'https://upload.wikimedia.org/b');
+  assert(image.props.source[0].headers['User-Agent'].startsWith('YeongduMusic/'), 'The rendered Image sends the app identification to avoid Wikimedia 403 errors');
   const spinner = nodes(tree).find(node => node.type === 'Spinner'); assert(spinner, 'The spinner remains until the image bytes finish loading');
   const overlay = nodes(tree).find(node => node.props?.children === spinner);
   assert.equal(overlay.props.style.alignItems, 'center'); assert.equal(overlay.props.style.justifyContent, 'center'); assert.equal(overlay.props.style.left, 0); assert.equal(overlay.props.style.right, 0);
   image.props.onLoad(); tree = render(); assert(!nodes(tree).some(node => node.type === 'Spinner'), 'Successful image loading stops the centered spinner');
   image.props.onError(); assert(!nodes(render()).some(node => node.type === 'Image'), 'Broken images expose a retry control and fallback icon');
-  h.blur(); render(); assert(pending[2].signal.aborted);
+  nodes(render()).find(node => node.type === 'Pressable' && node.props.accessibilityRole === 'button').props.onPress();
+  render(); assert(pending[2].signal.aborted); assert.equal(pending[3].refresh, true);
+  pending[3].resolve({ uri: image.props.source[0].uri, sourceUrl: 'https://commons.wikimedia.org/wiki/File:B', credit: 'B', license: 'CC BY' }); await flush();
+  const retriedImage = nodes(render()).find(node => node.type === 'Image');
+  assert(retriedImage, 'Retry can display the same URL after a failed download');
+  assert.deepEqual(retriedImage.props.source, image.props.source, 'Retry also includes the required native request header');
+  retriedImage.props.onLoad(); assert(!nodes(render()).some(node => node.type === 'Spinner'));
+  h.blur(); render(); assert(pending[3].signal.aborted);
 }
 async function checkAlbumColors() {
-  let available = true, calls = 0;
+  let available = true, calls = 0, gate = null, fail = false;
   const result = { platform: 'android', dominant: '#ff0000', vibrant: '#00ff00' };
-  const service = load('src/services/artwork/palette.ts', { 'react-native': native, expo: { requireOptionalNativeModule: () => available ? { getColors: async () => { calls++; return result; } } : null },
+  const service = load('src/services/artwork/palette.ts', { 'react-native': native, expo: { requireOptionalNativeModule: () => available ? { getColors: async () => { calls++; if (gate) await gate.promise; if (fail) throw Error('extract'); return result; } } : null },
     '@/services/cloud-music/request': request, '@/features/playback/artwork-colors': palette });
   assert.deepEqual(await service.readArtworkColors('file:///art', new AbortController().signal), palette.gradientFromImageColors(result));
-  available = false; assert.equal(await service.readArtworkColors('file:///art', new AbortController().signal), null);
+  assert.deepEqual(service.cachedArtworkColors('file:///art'), palette.gradientFromImageColors(result));
+  await service.readArtworkColors('file:///art', new AbortController().signal); assert.equal(calls, 1, 'Reopening an album reuses extracted colors');
+  available = false; assert.equal(await service.readArtworkColors('file:///unsupported', new AbortController().signal), null);
   const cancel = new AbortController(); cancel.abort(); await assert.rejects(service.readArtworkColors('file:///art', cancel.signal)); assert.equal(calls, 1);
-  const h = hooks(), pending = [];
+  available = true; gate = deferred();
+  const waiter = new AbortController(), first = service.readArtworkColors('file:///shared', waiter.signal), second = service.readArtworkColors('file:///shared', new AbortController().signal);
+  await flush(); assert.equal(calls, 2, 'Touch prewarming and the screen share one extraction');
+  waiter.abort(); await assert.rejects(first); gate.resolve(); await second; await flush(); gate = null;
+  assert.deepEqual(service.cachedArtworkColors('file:///shared'), palette.gradientFromImageColors(result), 'Canceling one screen does not cancel shared preparation');
+  fail = true; await assert.rejects(service.readArtworkColors('file:///failure', new AbortController().signal));
+  assert.equal(service.cachedArtworkColors('file:///failure'), undefined, 'Failed extraction stays retryable');
+  fail = false; await service.readArtworkColors('file:///failure', new AbortController().signal);
+  const h = hooks(), pending = [], cached = new Map();
   const useColors = load('src/features/library/use-album-colors.ts', { react: h.react, 'expo-router': { useFocusEffect: h.focus }, '@/features/playback/artwork-colors': palette,
-    '@/services/artwork/palette': { readArtworkColors: (uri, signal) => { const work = deferred(); pending.push({ uri, signal, ...work }); return work.promise; } },
+    '@/services/artwork/palette': { cachedArtworkColors: uri => cached.get(uri), readArtworkColors: (uri, signal) => { const work = deferred(); pending.push({ uri, signal, ...work }); return work.promise; } },
   }).useAlbumColors;
   let enabled = false, uri = 'file:///one'; const render = () => h.render(() => useColors(uri, undefined, enabled));
-  render(); assert.equal(pending.length, 0); enabled = true; render(); uri = 'file:///two'; render(); assert(pending[0].signal.aborted);
+  assert.equal(render().ready, true); assert.equal(pending.length, 0); enabled = true;
+  assert.equal(render().ready, false, 'The album waits for its first palette instead of displaying an unrelated gradient');
+  uri = 'file:///two'; assert.equal(render().ready, false); assert(pending[0].signal.aborted);
   const red = palette.createArtworkGradient('#ff0000', '#ff0000'), blue = palette.createArtworkGradient('#0000ff', '#0000ff');
-  pending[1].resolve(blue); await flush(); pending[0].resolve(red); await flush(); assert.deepEqual(render(), blue);
-  enabled = false; assert.deepEqual(render(), palette.DEFAULT_PLAYER_COLORS); assert(pending[1].signal.aborted);
+  pending[1].resolve(blue); await flush(); pending[0].resolve(red); await flush(); assert.deepEqual(render(), { colors: blue, ready: true });
+  cached.set('file:///cached', red); uri = 'file:///cached'; assert.deepEqual(render(), { colors: red, ready: true }, 'A warm album has final colors on the very first render');
+  assert.equal(pending.length, 2);
+  uri = 'file:///error'; assert.equal(render().ready, false); pending[2].reject(Error('failed')); await flush();
+  assert.deepEqual(render(), { colors: palette.DEFAULT_PLAYER_COLORS, ready: true }, 'Extraction failure cannot leave the album stuck loading');
+  enabled = false; assert.deepEqual(render(), { colors: palette.DEFAULT_PLAYER_COLORS, ready: true }); assert(pending[2].signal.aborted);
+  let hidden = false, enabledPreference = true, reads = 0;
+  const prepare = load('src/features/library/prepare-album-colors.ts', {
+    '@/stores/display-preferences': { useDisplayPreferences: { getState: () => ({ hideArtwork: hidden }) } },
+    '@/stores/library-detail-preferences': { useLibraryDetailPreferences: { getState: () => ({ load: async () => {}, loadError: false, preferences: { albumColors: enabledPreference } }) } },
+    '@/services/artwork/palette': { readArtworkColors: async () => { reads++; } },
+  }).prepareAlbumColors;
+  await prepare(undefined); hidden = true; await prepare('file:///a'); hidden = false; enabledPreference = false; await prepare('file:///a'); assert.equal(reads, 0);
+  enabledPreference = true; await prepare('file:///a'); assert.equal(reads, 1, 'Touch prewarming respects artwork visibility and album-color preferences');
 }
 function checkAlbumScreen(store) {
-  const h = hooks(); let hidden = false, enabled;
+  const h = hooks(); let hidden = false, enabled, colorsReady = true;
   const header = headerModule(h);
   store.setState({ ready: true, loadError: false, preferences: { artistPhotos: true, albumColors: true } });
   const songs = [{ id: 'one', artworkUrl: 'file:///cover' }];
@@ -196,13 +241,22 @@ function checkAlbumScreen(store) {
     '@/features/artwork/album-artwork-editor': { AlbumArtworkEditor: 'AlbumArtworkEditor' },
     '@/features/library/queries': { useAlbumSongs: () => ({ data: { items: songs, total: 1 } }) }, '@/features/playback/play-and-open-player': { playAndOpenPlayer: async () => {} },
     '@/stores/library-detail-preferences': { useLibraryDetailPreferences: () => store.getState() }, '@/stores/display-preferences': { useDisplayPreferences: selector => selector({ hideArtwork: hidden }) },
-    '@/features/library/use-album-colors': { useAlbumColors: (uri, p, value) => { enabled = value; return palette.DEFAULT_PLAYER_COLORS; } },
+    '@/features/library/use-album-colors': { useAlbumColors: (uri, p, value) => { enabled = value; return { colors: palette.DEFAULT_PLAYER_COLORS, ready: colorsReady }; } },
     '@/features/library/use-album-header': header.module,
   }).default;
   const render = () => h.render(Screen);
   let tree = render(), list = nodes(tree).find(node => node.type === 'List');
+  const renderSong = list.props.renderItem;
+  assert.equal(list.props.initialNumToRender, 6, 'Album entry limits the initial native row mount');
+  assert.equal(list.props.maxToRenderPerBatch, 6);
+  assert.equal(nodes(render()).find(node => node.type === 'List').props.renderItem, renderSong, 'Album layout changes retain the row renderer');
   const hasBackdrop = tree => nodes(tree).some(node => node.type === 'Gradient' && node.props.start);
   assert(enabled); assert(hasBackdrop(tree));
+  colorsReady = false; tree = render(); assert(!hasBackdrop(tree));
+  assert.equal(nodes(tree).find(node => node.type === 'Async').props.loading, true, 'The first content frame waits for matching colors');
+  colorsReady = true; tree = render(); assert(hasBackdrop(tree));
+  store.setState({ ready: false }); tree = render(); assert(!hasBackdrop(tree)); assert.equal(nodes(tree).find(node => node.type === 'Async').props.loading, true);
+  store.setState({ ready: true }); tree = render();
   assert.equal(nodes(tree).find(node => node.type === 'ScrollFade').props.topEnabled, false, 'The album header supplies the top fade without tinting the cover while it scrolls');
   assert.equal(list.props.contentInsetAdjustmentBehavior, 'never');
   assert.equal(list.props.scrollIndicatorInsets.top, 96);
@@ -224,6 +278,7 @@ function checkAlbumScreen(store) {
   assert(nodes(list.props.ListHeaderComponent).some(node => node.type === 'Artwork'), 'Artwork scrolls in the same virtualized list');
   assert.equal(style(list.props.renderItem({ item: songs[0], index: 0 }).props.style).backgroundColor, colors.background, 'Full-width song surface covers the fixed gradient');
   assert.equal(list.props.ListFooterComponent.props.style.backgroundColor, colors.background, 'Short albums and bottom spacing never expose the hero behind the list');
+  assert.equal(nodes(list.props.renderItem({ item: songs[0], index: 0 })).find(node => node.type === 'Song').props.favoriteLocation, 'album', 'Album rows use the independent album favorite display setting');
   const selectImage = nodes(list.props.ListHeaderComponent).find(node => node.props?.accessibilityLabel === '앨범 이미지 선택');
   selectImage.props.onLongPress();
   const editor = nodes(render()).find(node => node.type === 'AlbumArtworkEditor');
@@ -250,6 +305,6 @@ function checkAlbumEditor() {
   nodes(tree).find(node => node.type === 'Editor').props.onBusyChange(false); tree = render(); tree.props.onClose(); assert.equal(closed, 1);
 }
 (async () => {
-  await checkPhotos(); const store = await checkPreferences(); await checkPhotoLifecycle(); await checkAlbumColors(); checkAlbumScreen(store); checkAlbumEditor();
+  const service = await checkPhotos(); const store = await checkPreferences(); await checkPhotoLifecycle(service); await checkAlbumColors(); checkAlbumScreen(store); checkAlbumEditor();
   console.log('PASS: artist identity/alias/ambiguity checks, Wikidata and Commons image/credit parsing, safe origins, caching, cancellation, retry backoff, persistent independent native/web options and failed writes, photo focus/disable/late responses, palette fallback/cancellation, scrollable album hero and opaque list/footer. Network, native palette and rendering are mocked.');
 })().catch(error => { console.error(error); process.exitCode = 1; });

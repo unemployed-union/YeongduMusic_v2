@@ -11,6 +11,8 @@ import type { SettingsBackup } from './backup-format';
 import { settingsMenuStyles } from './settings-menu-layout';
 import { SettingsPage, SettingsSection } from './settings-ui';
 import { MENU_LABELS, visibleMenuIds } from './menu-layout';
+import { BLUR_AREAS, BLUR_LABELS } from './blur-preferences';
+import { APPEARANCE_FIELDS, APPEARANCE_LABELS } from '@/theme/appearance';
 
 export function BackupSettings() {
   const colors = useColors();
@@ -19,6 +21,8 @@ export function BackupSettings() {
   const [includeAccount, setIncludeAccount] = useState(false);
   const [restoreAccount, setRestoreAccount] = useState(false);
   const [selected, setSelected] = useState<{ name: string; backup: SettingsBackup } | null>(null);
+  const selectedBlur = selected?.backup.preferences.blur;
+  const selectedBlurEnabled = selectedBlur?.enabled ?? selected?.backup.preferences.blurEnabled;
   const [busy, setBusy] = useState(false), [message, setMessage] = useState<string | null>(null), [error, setError] = useState<string | null>(null);
   const running = useRef(false);
   const restoreAccountDisabled = busy || Platform.OS === 'web';
@@ -76,6 +80,13 @@ export function BackupSettings() {
       <Text style={[styles.title, { color: colors.text }]}>{selected.name}</Text>
       <Text style={[styles.detail, { color: colors.muted }]}>화면 모드: {selected.backup.preferences.themeMode === undefined ? '현재 설정 유지' : selected.backup.preferences.themeMode === 'dark' ? '다크' : selected.backup.preferences.themeMode === 'light' ? '화이트' : '자동'}</Text>
       <Text style={[styles.detail, { color: colors.muted }]}>보관함 상세 화면: {selected.backup.preferences.libraryDetails ? `아티스트 사진 ${selected.backup.preferences.libraryDetails.artistPhotos ? '켬' : '끔'} · 앨범 색상 ${selected.backup.preferences.libraryDetails.albumColors ? '켬' : '끔'}` : '현재 설정 유지'}</Text>
+      <Text style={[styles.detail, { color: colors.muted }]}>블러 효과: {selectedBlurEnabled === undefined ? '현재 설정 유지' : selectedBlurEnabled ? '켬' : '끔'}</Text>
+      <Text style={[styles.detail, { color: colors.muted }]}>색상 설정: {selected.backup.preferences.appearance ? APPEARANCE_FIELDS.map(field => `${APPEARANCE_LABELS[field]} ${selected.backup.preferences.appearance![field] ?? '기본'}`).join(' · ') : '현재 설정 유지'}</Text>
+      {selectedBlur && <Text style={[styles.detail, { color: colors.muted }]}>{BLUR_AREAS.map(area => {
+        const option = selectedBlur.areas[area];
+        return `${BLUR_LABELS[area]} ${option.enabled ? '켬' : '끔'} · 강도 ${option.intensity}`;
+      }).join('\n')}</Text>}
+      <Text style={[styles.detail, { color: colors.muted }]}>좋아요 버튼 표시: {selected.backup.preferences.favoriteDisplay ? `전체 ${selected.backup.preferences.favoriteDisplay.enabled ? '켬' : '끔'} · 노래 ${selected.backup.preferences.favoriteDisplay.songs ? '켬' : '끔'} · 재생 화면 ${selected.backup.preferences.favoriteDisplay.player ? '켬' : '끔'} · 앨범 ${selected.backup.preferences.favoriteDisplay.album ? '켬' : '끔'}` : '현재 설정 유지'}</Text>
       <Text style={[styles.detail, { color: colors.muted }]}>백업 날짜: {new Date(selected.backup.exportedAt).toLocaleString()}{'\n'}앨범아트: {selected.backup.preferences.hideArtwork ? '숨김' : '표시'} · 폴더 앨범: {selected.backup.preferences.includeFolderAlbums ? '표시' : '숨김'}{'\n'}음질: {selected.backup.preferences.quality === 'mp3' ? 'MP3' : '원본'} · 제외 폴더 {selected.backup.preferences.excludedFolders.length}개</Text>
       {selected.backup.account && <View style={styles.option}>
         <View style={styles.copy}><Text style={[styles.title, { color: restoreAccountDisabled ? colors.muted : colors.text }]}>프리셋과 숨김 설정도 복구</Text><Text style={[styles.detail, { color: colors.muted }]}>음악 숨김 프리셋 {selected.backup.account.hidden.presets.length}개 · 플레이리스트 {selected.backup.account.playlists.presets.length}개. 같은 서버·NAS 계정에서만 복구할 수 있습니다. 기타 메뉴 활성화 상태와 빠른 숨기기 설정도 바뀝니다.</Text></View>

@@ -57,8 +57,9 @@ function nodes(node) {
   if (!node || typeof node !== 'object') return [];
   return [node, ...nodes(node.props?.children)];
 }
-let appScheme = 'dark';
+let appScheme = 'dark', blurEnabled = true;
 const ui = {
+  '@/stores/blur-preferences': { useBlurIntensity: area => { assert.equal(area, 'tabBar'); return blurEnabled ? 75 : 0; } },
   react: { useRef: initial => ({ current: initial }) },
   'react/jsx-runtime': { jsx, jsxs: jsx },
   '@/components/text': { Text: 'Text' },
@@ -72,7 +73,7 @@ const ui = {
   'react-native-keyboard-controller': { useKeyboardState: selector => selector({ isVisible: false }) },
   '@/components/mini-player': { MINI_PLAYER_INSET: 12, MiniPlayer: 'MiniPlayer' },
   '@/components/tab-bar-inset': { TAB_BAR_HEIGHT: 66, TabBarInsetContext: { Provider: 'TabBarInsetProvider' } },
-  '@/theme/tokens': { useColors: () => ({ tint: '#f48' }), useAppColorScheme: () => appScheme },
+  '@/theme/tokens': { useColors: () => ({ tint: '#f48', surface: appScheme === 'light' ? '#FFFFFF' : '#1B1C23' }), useAppColorScheme: () => appScheme },
 };
 const menuRules = renderModule('src/features/settings/menu-layout.ts', {});
 const LibraryLayout = renderModule('src/app/(tabs)/(library)/_layout.tsx', {
@@ -80,6 +81,7 @@ const LibraryLayout = renderModule('src/app/(tabs)/(library)/_layout.tsx', {
   '@/theme/tokens': { useColors: () => ({ tint: '#f48', background: '#0c0d12' }) },
 }).default;
 const libraryLayout = LibraryLayout(), albumOptions = nodes(libraryLayout).find(node => node.props?.name === 'album/[id]').props.options;
+assert.equal(libraryLayout.props.screenOptions.freezeOnBlur, true, 'Covered library screens stop rendering during detail navigation');
 assert.equal(albumOptions.headerTransparent, true, 'Album artwork can extend behind the native back button and title');
 assert.equal(albumOptions.headerStyle.backgroundColor, 'transparent', 'The shared stack surface must not override album transparency');
 assert.equal(albumOptions.headerShadowVisible, false);
@@ -97,6 +99,7 @@ const refs = new Set();
 for (const name of ['(library)', '(playlists)', 'search']) {
   const content = tabs.props.screenLayout({ children: jsx('Screen', {}), route: { name } });
   assert.equal(nodes(content).find(node => node.type === 'TabBarInsetProvider').props.value, 82, 'Scroll indicators reserve the tab height and bottom safe area');
+  assert.equal(nodes(content).find(node => node.type === 'ScreenBlurTargetProvider').props.value, content.props.ref, 'Library menus reuse the active screen capture surface');
   refs.add(content.props.ref);
   const layout = tabs.props.layout({ children: content, state: { routes: [{ name }], index: 0 } });
   assert.equal(nodes(layout).find(node => node.type === 'MiniPlayer').props.blurTarget, content.props.ref, 'Mini player captures the selected tab');
@@ -107,6 +110,11 @@ assert.equal(refs.size, 3);
 for (appScheme of ['light', 'dark']) {
   const background = TabsLayout().props.screenOptions({ route: { name: 'search' } }).tabBarBackground();
   assert.equal(nodes(background).find(node => node.type === 'BlurView').props.tint, appScheme, 'Tab blur follows the selected app theme');
+  blurEnabled = false;
+  const opaque = TabsLayout().props.screenOptions({ route: { name: 'search' } }).tabBarBackground();
+  assert(!nodes(opaque).some(node => node.type === 'BlurView'));
+  assert(nodes(opaque).some(node => [node.props?.style].flat().some(value => value?.backgroundColor === (appScheme === 'light' ? '#FFFFFF' : '#1B1C23'))));
+  blurEnabled = true;
 }
 menuLayout.bottom.reverse(); menuLayout.bottom[2].visible = false;
 const customizedTabs = TabsLayout();
@@ -198,8 +206,9 @@ for (const [file, modulePath, component] of [
   ['src/app/settings/cloud/google-drive.tsx', '@/features/google-drive/settings', 'GoogleDriveSettings'],
   ['src/app/settings/library.tsx', '@/features/library/folder-exclusion-settings', 'FolderExclusionSettings'],
 ]) {
-  const Screen = renderModule(file, { ...settingsMocks, '@/features/library/detail-display-settings': { DetailDisplaySettings: 'DetailDisplaySettings' }, [modulePath]: { [component]: component } }).default;
+  const Screen = renderModule(file, { ...settingsMocks, '@/features/library/detail-display-settings': { DetailDisplaySettings: 'DetailDisplaySettings' }, '@/features/favorites/favorite-display-settings': { FavoriteDisplaySettings: 'FavoriteDisplaySettings' }, [modulePath]: { [component]: component } }).default;
   assert.ok(nodes(Screen()).some(node => node.type === component), 'Detailed settings reuse the existing controls');
+  if (file === 'src/app/settings/library.tsx') assert(nodes(Screen()).some(node => node.type === 'FavoriteDisplaySettings'), 'Library settings expose the favorite display controls');
 }
 
 let state = { queue: [], index: -1 }, calls = [], navigation = [], finish;
@@ -216,12 +225,14 @@ new Function('require', 'exports', code)(name => modules[name], actions);
 async function main() {
   // Run the real dismissal callback in isolation from native player rendering.
   const playerSource = ts.createSourceFile('player.tsx', fs.readFileSync(path.join(root, 'src/app/player.tsx'), 'utf8'), ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
-  let dismissCallback;
+  let dismissCallback, favoriteLocation;
   function findDismiss(node) {
     if (ts.isVariableDeclaration(node) && node.name.getText(playerSource) === 'dismissPlayer') dismissCallback = node.initializer.arguments[0].getText(playerSource);
+    if (ts.isJsxSelfClosingElement(node) && node.tagName.getText(playerSource) === 'FavoriteButton') favoriteLocation = node.attributes.properties.find(attribute => attribute.name?.text === 'location')?.initializer?.text;
     ts.forEachChild(node, findDismiss);
   }
   findDismiss(playerSource);
+  assert.equal(favoriteLocation, 'player', 'The player uses its own favorite display setting');
   assert.ok(dismissCallback, 'Player provides an animated dismissal callback');
   const detailTarget = { current: null }, dismissCalls = [];
   let history = [];

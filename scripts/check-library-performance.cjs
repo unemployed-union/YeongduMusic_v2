@@ -50,9 +50,9 @@ const queries = load(process.argv[2] || path.join(root, 'src/features/library/qu
   '@/stores/auth': { useAuthStore: selector => selector({ mode: 'mock', session: null }) },
   '@/stores/hidden-music': { useHiddenMusicStore: selector => selector({ ready: true, profile: { presets } }) },
 });
-function options(hook, enabled) {
+function options(hook, enabled, sourceOverride) {
   activeHook = hook; hookSlot = 0;
-  return queries[hook](enabled);
+  return queries[hook](enabled, sourceOverride);
 }
 const songs = Array.from({ length: 10000 }, (_, index) => ({
   id: 'song-' + index, title: 'Track ' + index, artist: 'Artist ' + index % 80,
@@ -109,7 +109,46 @@ try {
     assert.equal(observer.getCurrentResult().data.total, 0);
     assert.equal(observer.getCurrentResult().data.stale, true);
   }
-  console.log('PASS: 10,000-song fixture, 12 tab changes with zero extra selections, metadata/preset invalidation, account isolation, empty/offline lists. Hook callbacks are mocked; native frame rates are not measured.');
+  localFixture.source = 'local';
+  localFixture.songs = [{ ...songs[0], id: 'local-one', source: 'local' }];
+  const allSources = options('useSongs', false, 'all');
+  assert.deepEqual(allSources.queryKey, ['song-library', account], 'Favorite collection includes NAS even while the library filter is local');
+  const allVisible = allSources.select({ items: [fresh, songs[0]], total: 2 });
+  assert.deepEqual(allVisible.items.map(song => song.id), [fresh.id, 'local-one'], 'All-source collection retains the hidden-song filter');
+  assert.equal(localFixture.source, 'local', 'Opening favorites preserves the user\'s library source filter');
+  localFixture.source = 'nas'; account = 'fixture-a';
+  client.setQueryData(key(), library);
+  function detailOptions(hook, target) {
+    activeHook = hook; hookSlot = 0;
+    return queries[hook](target);
+  }
+  const detailTargets = [
+    ['useAlbumSongs', { id: helpers.albumId(songs[3]), title: songs[3].album, artist: songs[3].artist }],
+    ['useArtistSongs', { id: songs[3].artist, name: songs[3].artist }],
+  ];
+  for (const [hook, target] of detailTargets) {
+    const detailObserver = new QueryObserver(client, detailOptions(hook, target));
+    const first = detailObserver.getCurrentResult().data, count = selections;
+    assert(first.items.length > 0);
+    for (let render = 0; render < 12; render++) {
+      detailObserver.setOptions(detailOptions(hook, { ...target }));
+      assert.equal(detailObserver.getCurrentResult().data, first, 'Layout, focus and header updates retain detail list references');
+    }
+    assert.equal(selections, count, 'Detail renders never rescan the 10,000-song library without changed inputs');
+    const changedTarget = hook === 'useAlbumSongs'
+      ? { ...target, id: helpers.albumId(songs[5]) }
+      : { ...target, name: songs[5].artist };
+    detailObserver.setOptions(detailOptions(hook, changedTarget));
+    assert.notEqual(detailObserver.getCurrentResult().data, first, 'Changing the selected album or artist recomputes the list');
+    assert.equal(selections, count + 1);
+    const beforeHidden = detailObserver.getCurrentResult().data;
+    presets = [...presets];
+    detailObserver.setOptions(detailOptions(hook, changedTarget));
+    assert.equal(selections, count + 2, 'Privacy changes still invalidate detail selections');
+    assert.deepEqual(detailObserver.getCurrentResult().data, beforeHidden);
+    detailObserver.destroy();
+  }
+  console.log('PASS: 10,000-song fixture, 12 tab and detail rerenders with zero extra selections, album/artist route and privacy invalidation, metadata updates, account isolation, empty/offline lists and all-source favorites. Hook callbacks are mocked; native frame rates are not measured.');
 } finally {
   for (const { observer } of observers) observer.destroy();
   client.clear();

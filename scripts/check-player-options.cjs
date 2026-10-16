@@ -77,6 +77,7 @@ async function main() {
     './use-lyric-scroll': {},
     './use-lyric-timing': { useLyricTiming: () => ({ offsetMs: 0, key: null }) },
     './lyrics-timing-controls': { LyricsTimingControls: 'TimingControls' },
+    './lyrics-source-control': { LyricsSourceControl: 'SourceControl' },
     './timing': {},
     './use-lyrics': { useLyrics: () => result }, '@/stores/playback': { usePlaybackStore: selector => selector({ duration: 120 }) }, '@/services/playback/controller': {},
     './use-lyrics-translation': { useLyricsTranslation: () => translation }, './lyrics-translation-controls': { LyricsTranslationControls: 'TranslationControls' },

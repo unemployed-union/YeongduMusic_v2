@@ -11,10 +11,13 @@ import { useAppColorScheme, useColors } from '@/theme/tokens';
 import { useMenuPreferences } from '@/stores/menu-preferences';
 import { BOTTOM_MENU_ROUTES, MENU_LABELS, visibleMenuIds } from '@/features/settings/menu-layout';
 import { TabMenuSelection } from '@/features/settings/tab-menu-selection';
+import { ScreenBlurTargetContext } from '@/components/screen-blur-target';
+import { useBlurIntensity } from '@/stores/blur-preferences';
 
 export default function TabsLayout() {
   const colors = useColors();
   const isDark = useAppColorScheme() === 'dark';
+  const blurIntensity = useBlurIntensity('tabBar'), blurEnabled = blurIntensity > 0;
   const insets = useSafeAreaInsets();
   const keyboardVisible = useKeyboardState((state) => state.isVisible);
   const bottom = useMenuPreferences(state => state.layout.bottom);
@@ -27,7 +30,9 @@ export default function TabsLayout() {
     initialRouteName={BOTTOM_MENU_ROUTES[visibleMenuIds(bottom)[0]]}
     // Capture screen content only; both chrome surfaces share the active target.
     screenLayout={({ children, route }) => <BlurTargetView ref={targetFor(route.name)} style={styles.content}>
+      <ScreenBlurTargetContext.Provider value={targetFor(route.name)}>
       <TabBarInsetContext.Provider value={keyboardVisible ? 0 : TAB_BAR_HEIGHT + insets.bottom}>{children}</TabBarInsetContext.Provider>
+      </ScreenBlurTargetContext.Provider>
     </BlurTargetView>}
     layout={({ children, state, navigation }) => <View style={styles.content}>
       <TabMenuSelection navigation={navigation} />
@@ -42,8 +47,8 @@ export default function TabsLayout() {
       tabBarLabelStyle: { fontSize: 11, fontWeight: '700' },
       tabBarStyle: keyboardVisible ? { display: 'none' } : { position: 'absolute', height: TAB_BAR_HEIGHT + insets.bottom, paddingTop: 8, paddingBottom: Math.max(insets.bottom, 8), backgroundColor: 'transparent', borderTopColor: colors.chromeBorder },
       tabBarBackground: () => <View pointerEvents="none" style={StyleSheet.absoluteFill}>
-        <BlurView blurTarget={targetFor(route.name)} blurMethod="dimezisBlurView" intensity={75} tint={isDark ? 'dark' : 'light'} style={StyleSheet.absoluteFill} />
-        <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.tab }]} />
+        {blurEnabled && <BlurView blurTarget={targetFor(route.name)} blurMethod="dimezisBlurView" intensity={blurIntensity} tint={isDark ? 'dark' : 'light'} style={StyleSheet.absoluteFill} />}
+        <View style={[StyleSheet.absoluteFill, { backgroundColor: blurEnabled ? colors.tab : colors.surface }]} />
       </View>,
     })}>
     {bottom.map(item => <Tabs.Screen key={item.id} name={BOTTOM_MENU_ROUTES[item.id]} options={{

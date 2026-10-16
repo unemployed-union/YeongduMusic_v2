@@ -67,12 +67,16 @@ async function checkFeedback() {
 const jsx = (type, props) => ({ type, props });
 const nodes = tree => Array.isArray(tree) ? tree.flatMap(nodes) : tree && typeof tree === 'object' ? [tree, ...nodes(tree.props?.children)] : [];
 const native = { View: 'View', Pressable: 'Button', ScrollView: 'Scroll', Modal: 'Modal', ActivityIndicator: 'Spinner', Platform: { OS: 'android' },
-  StyleSheet: { create: value => value, absoluteFill: {} }, useWindowDimensions: () => ({ height: 800 }) };
+  StyleSheet: { create: value => value, absoluteFill: {} }, useWindowDimensions: () => ({ width: 390, height: 800 }) };
 function checkUI() {
   const calls = [], colors = { text: '#111111', muted: '#555555', tint: '#CC3355', separator: '#E5E5E5', surface: '#FFFFFF' };
   const ui = { 'react/jsx-runtime': { jsx, jsxs: jsx }, 'react-native': native, '@/components/text': { Text: 'Text' }, './text': { Text: 'Text' },
-    '@/theme/tokens': { useColors: () => colors }, '@/services/haptics': { playHaptic: kind => calls.push(kind) }, '@expo/vector-icons/Ionicons': 'Icon',
-    'react-native-safe-area-context': { useSafeAreaInsets: () => ({ top: 24, bottom: 20 }) } };
+    '@/theme/tokens': { useColors: () => colors, useAppColorScheme: () => 'light' }, '@/services/haptics': { playHaptic: kind => calls.push(kind) }, '@expo/vector-icons/Ionicons': 'Icon',
+    'expo-blur': { BlurView: 'BlurView' }, './screen-blur-target': { ScreenBlurTargetContext: {} },
+    '@/stores/blur-preferences': { useBlurIntensity: () => 32 },
+    'react-native-safe-area-context': { useSafeAreaInsets: () => ({ top: 24, right: 0, bottom: 20, left: 0 }) },
+    './favorite-button': { FavoriteButton: 'FavoriteButton' },
+    './action-menu-position': load('src/components/action-menu-position.ts') };
   const Switch = load('src/components/animated-switch.tsx', { ...ui, react: { useEffect() {} }, 'react-native-reanimated': {
     __esModule: true, default: { View: 'AnimatedView' }, ReduceMotion: { System: 'system' },
     useSharedValue: value => ({ value }), useAnimatedStyle: callback => callback(), withTiming: value => value,
@@ -86,15 +90,16 @@ function checkUI() {
   Switch({ value: false, haptics: false, onValueChange: value => { changed = value; } }).props.onPress();
   assert.equal(calls.length, switchCount, 'Disabled and opted-out switches never emit haptics');
   calls.length = 0;
-  let opened = false;
+  let opened = null;
   const Row = load('src/components/song-row.tsx', { ...ui, react: { useState: () => [opened, value => { opened = value; }] },
     './artwork': { Artwork: 'Artwork' }, '@/features/library/song-properties': { SongProperties: 'Properties' } }).SongRow;
   const render = () => nodes(Row({ song: { id: 'one', title: 'Song', artist: 'Artist', album: 'Album' }, onPress() {} }));
-  render().find(node => node.props.onLongPress).props.onLongPress(); assert.equal(opened, true); assert.deepEqual(calls, ['longPress']); assert(render().some(node => node.type === 'Properties'));
-  render().find(node => node.props.accessibilityLabel === 'Song 메뉴').props.onPress(); assert.equal(calls.at(-1), 'menu');
+  const event = { nativeEvent: { pageX: 150, pageY: 300 } };
+  render().find(node => node.props.onLongPress).props.onLongPress(event); assert.deepEqual(opened, { x: 150, y: 300 }); assert.deepEqual(calls, ['longPress']); assert(render().some(node => node.type === 'Properties'));
+  render().find(node => node.props.accessibilityLabel === 'Song 메뉴').props.onPress(event); assert.equal(calls.at(-1), 'menu');
   let selected;
-  const Menu = load('src/components/action-menu.tsx', { ...ui, react: {} }).ActionMenu;
-  const menu = nodes(Menu({ title: 'Actions', visible: true, items: [{ id: 'edit', label: 'Edit', icon: 'pencil' }, { id: 'blocked', label: 'Blocked', icon: 'close', disabled: true }], onSelect: value => { selected = value; }, onClose() {} }));
+  const Menu = load('src/components/action-menu.tsx', { ...ui, react: { useContext: () => undefined, useState: initial => [initial, () => {}] } }).ActionMenu;
+  const menu = nodes(Menu({ title: 'Actions', anchor: { x: 150, y: 300 }, visible: true, items: [{ id: 'edit', label: 'Edit', icon: 'pencil' }, { id: 'blocked', label: 'Blocked', icon: 'close', disabled: true }], onSelect: value => { selected = value; }, onClose() {} }));
   const options = menu.filter(node => node.type === 'Button' && node.props.accessibilityState);
   options[0].props.onPress(); assert.equal(selected, 'edit'); assert.equal(calls.at(-1), 'selection'); const count = calls.length; options[1].props.onPress(); assert.equal(calls.length, count);
   const preference = freshPreferences(), changes = [];
@@ -104,6 +109,12 @@ function checkUI() {
     '@/components/animated-switch': { AnimatedSwitch: 'Switch' }, '@/features/settings/settings-ui': { SettingsSection: 'Section' }, '@/stores/haptic-preferences': { useHapticPreferences: () => state } }).HapticSettings;
   const settings = () => nodes(Settings());
   assert.equal(settings().filter(node => node.type === 'Switch').length, 6); assert(settings().filter(node => node.type === 'Switch').every(node => node.props.haptics === false));
+  const strengthOpacity = () => settings().filter(node => node.props.accessibilityRole === 'radio').map(node => node.props.style[1].opacity);
+  const beforeSaving = strengthOpacity(); state.saving = true;
+  assert(settings().filter(node => node.type === 'Switch').every(node => node.props.busy));
+  assert(settings().filter(node => node.props.accessibilityRole === 'radio').every(node => node.props.disabled));
+  assert.deepEqual(strengthOpacity(), beforeSaving, 'Haptic strength controls keep their appearance while saving');
+  state.saving = false;
   for (const event of rules.HAPTIC_EVENTS) {
     settings().find(node => node.props.accessibilityLabel === `${event.title} 햅틱 강도 강`).props.onPress(); assert.deepEqual(changes.at(-1), [event.id, { strength: 'heavy' }]);
     settings().find(node => node.props.accessibilityLabel === `${event.title} 햅틱 테스트`).props.onPress(); assert.equal(calls.at(-1), event.id);

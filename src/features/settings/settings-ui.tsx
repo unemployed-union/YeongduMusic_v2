@@ -30,11 +30,11 @@ export function SettingsSection({ title, children }: { title: string; children: 
   </View>;
 }
 
-export function SettingsLink({ title, description, icon, href, disabled = false }: {
-  title: string; description?: string; icon: ComponentProps<typeof Ionicons>['name']; href: Href; disabled?: boolean;
+export function SettingsLink({ title, description, icon, href, disabled = false, busy = false }: {
+  title: string; description?: string; icon: ComponentProps<typeof Ionicons>['name']; href: Href; disabled?: boolean; busy?: boolean;
 }) {
   const colors = useColors();
-  return <Pressable accessibilityRole="button" accessibilityState={{ disabled }} disabled={disabled} onPress={() => { if (!disabled) { playHaptic('menu'); router.push(href); } }} style={({ pressed }) => [styles.row, { opacity: pressed ? 0.55 : 1 }]}>
+  return <Pressable accessibilityRole="button" accessibilityState={{ disabled: disabled || busy, ...(busy && { busy: true }) }} disabled={disabled || busy} onPress={() => { if (!disabled && !busy) { playHaptic('menu'); router.push(href); } }} style={({ pressed }) => [styles.row, { opacity: pressed ? 0.55 : 1 }]}>
     <View style={styles.icon}><Ionicons name={icon} size={23} color={disabled ? colors.muted : colors.tint} /></View>
     <View style={styles.copy}><Text style={[styles.title, { color: disabled ? colors.muted : colors.text }]}>{title}</Text>
       {!!description && <Text numberOfLines={2} style={[styles.description, { color: colors.muted }]}>{description}</Text>}

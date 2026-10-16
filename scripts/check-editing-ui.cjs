@@ -2,7 +2,7 @@
 const fs = require('node:fs'), path = require('node:path'), assert = require('node:assert/strict'), ts = require('typescript');
 const jsx = (type, props) => ({ type, props });
 function load(file, mocks = {}, globals = {}) {
-  mocks = { '@/services/haptics': { playHaptic() {}, prepareHaptics() {} }, ...mocks };
+  mocks = { ...require('./test-cloud-fixtures.cjs').cloudFixtures(globals, mocks), '@/services/haptics': { playHaptic() {}, prepareHaptics() {} }, ...mocks };
   const exports = {}, code = ts.transpileModule(fs.readFileSync(path.join(__dirname, '..', file), 'utf8'), { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText;
   new Function('require', 'exports', ...Object.keys(globals), code)(name => { if (name in mocks) return mocks[name]; throw Error(name); }, exports, ...Object.values(globals)); return exports;
 }
@@ -10,6 +10,7 @@ function hooks() {
   const slots = []; let index = 0, effects = [];
   const same = (a, b) => a && b && a.length === b.length && a.every((value, i) => Object.is(value, b[i]));
   return { react: {
+    useContext: () => ({ current: 'screen-capture' }),
     useState: initial => { const i = index++; if (!slots[i]) slots[i] = { value: typeof initial === 'function' ? initial() : initial }; return [slots[i].value, value => { slots[i].value = typeof value === 'function' ? value(slots[i].value) : value; }]; },
     useRef: initial => { const i = index++; return slots[i] ??= { current: initial }; },
     useCallback: (fn, deps) => { const i = index++; if (!same(slots[i]?.deps, deps)) slots[i] = { fn, deps }; return slots[i].fn; },
@@ -19,11 +20,14 @@ function hooks() {
 const nodes = value => Array.isArray(value) ? value.flatMap(nodes) : value && typeof value === 'object' ? [value, ...nodes(value.props?.children)] : [];
 const style = value => Object.assign({}, ...[value].flat(Infinity).filter(Boolean));
 const palette = load('src/theme/tokens.ts', { 'react-native': {}, '@/stores/theme-preferences': {}, './mode': {} }).palette;
-let scheme = 'light'; const timers = new Map(); let id = 0;
-const native = { Platform: { OS: 'android' }, View: 'View', Pressable: 'Button', Modal: 'Modal', ScrollView: 'Scroll', Keyboard: { dismiss() {} }, StyleSheet: { create: value => value, hairlineWidth: 1 }, useWindowDimensions: () => ({ height: 800 }) };
+let scheme = 'light', blurEnabled = true, blurArea, blurStrength = 32; const timers = new Map(); let id = 0;
+const native = { Platform: { OS: 'android' }, View: 'View', Pressable: 'Button', Modal: 'Modal', ScrollView: 'Scroll', Keyboard: { dismiss() {} }, StyleSheet: { create: value => value, hairlineWidth: 1 }, useWindowDimensions: () => ({ width: 390, height: 800 }) };
 const ui = { 'react/jsx-runtime': { jsx, jsxs: jsx }, 'react-native': native, '@/components/text': { Text: 'Text' }, './text': { Text: 'Text' },
+  '@/stores/blur-preferences': { useBlurIntensity: area => { blurArea = area; return blurEnabled ? blurStrength : 0; } },
   '@expo/vector-icons/Ionicons': { __esModule: true, default: 'Icon' }, '@/theme/tokens': { useColors: () => palette[scheme], useAppColorScheme: () => scheme },
-  'react-native-safe-area-context': { useSafeAreaInsets: () => ({ top: 24, bottom: 16 }) } };
+  'react-native-safe-area-context': { useSafeAreaInsets: () => ({ top: 24, right: 0, bottom: 16, left: 0 }) },
+  'expo-blur': { BlurView: 'BlurView' }, './screen-blur-target': { ScreenBlurTargetContext: {} },
+  './action-menu-position': load('src/components/action-menu-position.ts') };
 function menuModule(h) { return load('src/components/action-menu.tsx', { ...ui, react: h.react }, { setTimeout: fn => { timers.set(++id, fn); return id; }, clearTimeout: key => timers.delete(key) }); }
 for (const os of ['android', 'ios']) {
   native.Platform.OS = os; const h = hooks(), menu = menuModule(h); let state = h.render(() => menu.useMenuAction());
@@ -38,13 +42,26 @@ native.Platform.OS = 'android';
   const h = hooks(), menu = menuModule(h); let state = h.render(() => menu.useMenuAction()); state.select('metadata'); h.render(() => menu.useMenuAction()); h.unmount(); assert.equal(timers.size, 0, 'Closing the owner cancels a queued handoff');
   for (const mode of ['light', 'dark']) {
     scheme = mode; let picked, closed = false;
-    const tree = menu.ActionMenu({ title: 'Song', visible: true, onDismiss() {}, onClose: () => { closed = true; }, onSelect: value => { picked = value; }, items: [{ id: 'metadata', label: '메타데이터 수정', icon: 'create-outline' }] });
-    const card = nodes(tree).find(node => style(node.props?.style).width === 300);
-    assert.equal(style(card.props.style).backgroundColor, mode === 'light' ? '#FFFFFF' : palette.dark.surface);
+    const appearanceHooks = hooks(), appearance = menuModule(appearanceHooks);
+    const render = () => appearanceHooks.render(() => appearance.ActionMenu({ title: 'Song', anchor: { x: 150, y: 300 }, visible: true, onDismiss() {}, onClose: () => { closed = true; }, onSelect: value => { picked = value; }, items: [{ id: 'metadata', label: '메타데이터 수정', icon: 'create-outline' }] }));
+    let tree = render(), card = nodes(tree).find(node => style(node.props?.style).width === 300);
+    card.props.onLayout({ nativeEvent: { layout: { height: 260 } } }); tree = render(); card = nodes(tree).find(node => style(node.props?.style).width === 300);
+    assert.equal(style(card.props.style).opacity, 1);
+    assert.equal(style(card.props.style).backgroundColor, mode === 'light' ? '#FFFFFF40' : '#00000040', 'The card surface must allow the blur to show through');
+    const blur = nodes(tree).find(node => node.type === 'BlurView');
+    assert.equal(blurArea, 'libraryMenu');
+    assert.equal(blur.props.intensity, 32, 'Library blur matches the player menu intensity'); assert.equal(blur.props.tint, mode);
+    assert.equal(blur.props.blurTarget.current, 'screen-capture'); assert.equal(blur.props.blurMethod, 'dimezisBlurView', 'Android must receive the screen capture target');
     const option = nodes(tree).find(node => node.type === 'Button' && !node.props.accessibilityLabel);
     option.props.onPress(); assert.equal(picked, 'metadata');
     assert.equal(nodes(option).find(node => node.type === 'Text').props.style[1].color, palette[mode].text);
     nodes(tree).find(node => node.props?.accessibilityLabel === '작업 메뉴 닫기').props.onPress(); assert(closed);
+    blurEnabled = false; tree = render();
+    assert(!nodes(tree).some(node => node.type === 'BlurView'), 'Disabled blur unmounts the library blur view');
+    card = nodes(tree).find(node => style(node.props?.style).width === 300);
+    assert.equal(style(card.props.style).backgroundColor, palette[mode].surface, 'Disabled blur has a readable opaque themed surface');
+    blurEnabled = true;
+    blurStrength = 57; assert.equal(nodes(render()).find(node => node.type === 'BlurView').props.intensity, 57); blurStrength = 32;
   }
 }
 {
@@ -94,10 +111,17 @@ for (const mode of ['light', 'dark']) {
   }).PlayerMenu;
   for (const mode of ['light', 'dark']) {
     scheme = mode;
-    const tree = PlayerMenu({ panel: 'artwork', bottom: 100, maxHeight: 400, onClose() {}, onSelect() {} });
+    const props = { panel: 'artwork', bottom: 100, maxHeight: 400, onClose() {}, onSelect() {} };
+    const tree = PlayerMenu(props);
+    assert.equal(blurArea, 'playerMenu');
     assert.equal(nodes(tree).some(node => node.type === 'Blur'), mode === 'dark', 'Light player menus use an opaque white surface');
     if (mode === 'light') assert(nodes(tree).some(node => node.type === 'View' && style(node.props.style).backgroundColor === '#FFFFFF'));
     assert.equal(style(nodes(tree).find(node => node.type === 'Text' && node.props.children === '메타데이터 수정').props.style).color, palette[mode].text);
+    blurEnabled = false; const opaqueMenu = PlayerMenu(props);
+    assert(!nodes(opaqueMenu).some(node => node.type === 'Blur'));
+    assert(nodes(opaqueMenu).some(node => node.type === 'View' && style(node.props.style).backgroundColor === palette[mode].surface));
+    blurEnabled = true;
+    if (mode === 'dark') { blurStrength = 68; assert.equal(nodes(PlayerMenu(props)).find(node => node.type === 'Blur').props.intensity, 68); blurStrength = 32; }
   }
 }
 console.log('PASS: Android/iOS modal handoff and cleanup, song action selection, lazy separate editors, retained drafts/artwork results, busy-write guards, accessible hidden tabs and light/dark menu/input contrast. Native presentation is mocked.');

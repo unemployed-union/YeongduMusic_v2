@@ -1,5 +1,5 @@
 export const BOTTOM_MENU_IDS = ['library', 'playlists', 'search'] as const;
-export const LIBRARY_MENU_IDS = ['albums', 'songs', 'artists'] as const;
+export const LIBRARY_MENU_IDS = ['albums', 'songs', 'artists', 'favorites'] as const;
 export const PLAYER_MENU_IDS = ['lyrics', 'download', 'add-song', 'save-queue', 'equalizer', 'sleep-timer', 'section-repeat', 'playback-speed', 'delete-local', 'edit-metadata'] as const;
 export type BottomMenuId = typeof BOTTOM_MENU_IDS[number];
 export type LibraryMenuId = typeof LIBRARY_MENU_IDS[number];
@@ -11,6 +11,7 @@ export type MenuGroup = keyof MenuLayout;
 
 export const MENU_LABELS: Record<MenuId, string> = {
   library: '보관함', playlists: '플레이리스트', search: '검색', albums: '앨범', songs: '노래', artists: '아티스트',
+  favorites: '좋아요',
   lyrics: '가사 보기', download: '이 기기에 보관', 'add-song': '플레이리스트에 추가', 'save-queue': '대기열을 플레이리스트로 저장',
   equalizer: '시스템 이퀄라이저', 'sleep-timer': '수면 타이머', 'section-repeat': '구간 반복', 'delete-local': '기기의 음악 복사본 삭제',
   'playback-speed': '배속',
@@ -40,9 +41,17 @@ function parseItems<T extends MenuId>(value: unknown, ids: readonly T[]): MenuIt
 export function parseMenuLayout(value: unknown): MenuLayout {
   if (!value || typeof value !== 'object') throw new Error('메뉴 설정 형식이 올바르지 않습니다.');
   const layout = value as Record<string, unknown>;
-  return { bottom: parseItems(layout.bottom, BOTTOM_MENU_IDS), library: parseItems(layout.library, LIBRARY_MENU_IDS),
+  return { bottom: parseItems(layout.bottom, BOTTOM_MENU_IDS), library: parseLibraryItems(layout.library),
     // Settings saved before player-menu customization retain all playback actions.
     player: parsePlayerItems(layout.player) };
+}
+
+function parseLibraryItems(value: unknown): MenuItem<LibraryMenuId>[] {
+  const legacyIds = LIBRARY_MENU_IDS.filter(id => id !== 'favorites');
+  if (Array.isArray(value) && value.length === legacyIds.length && value.every(item => item?.id !== 'favorites')) {
+    return [...parseItems(value, legacyIds), { id: 'favorites', visible: true }];
+  }
+  return parseItems(value, LIBRARY_MENU_IDS);
 }
 
 function parsePlayerItems(value: unknown): MenuItem<PlayerMenuId>[] {

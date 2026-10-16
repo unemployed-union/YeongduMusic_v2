@@ -1,11 +1,13 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
 import { Text } from '@/components/text';
 import { TranslationLanguageControls } from './translation-settings';
 import { translationLanguageName } from './translation-options';
 import type { useLyricsTranslation } from './use-lyrics-translation';
 
-export function LyricsTranslationControls({ translation }: { translation: ReturnType<typeof useLyricsTranslation> }) {
+export function LyricsTranslationControls({ translation, trailingAction, trailingContent }: {
+  translation: ReturnType<typeof useLyricsTranslation>; trailingAction?: ReactNode; trailingContent?: ReactNode;
+}) {
   const [expanded, setExpanded] = useState(false);
   const { preferences } = translation;
   const disabled = !preferences.ready || preferences.loading || preferences.saving || preferences.loadError;
@@ -17,8 +19,9 @@ export function LyricsTranslationControls({ translation }: { translation: Return
         <Text style={styles.buttonText}>{translation.loading ? '번역 취소' : translation.lines ? translation.shown ? '원문만 보기' : '번역 표시' : translation.error ? '번역 다시 시도' : '번역'}</Text>
       </Pressable>
       <Pressable accessibilityRole="button" hitSlop={{ top: 4, bottom: 4 }} accessibilityLabel="가사 번역 언어 선택" accessibilityState={{ expanded }} onPress={() => setExpanded(value => !value)} style={styles.button}>
-        <Text style={styles.buttonText}>{translationLanguageName(preferences.options.source)}{'  →  '}{translationLanguageName(preferences.options.target)}{'  '}{expanded ? '⌃' : '⌄'}</Text>
+        <Text style={styles.buttonText}>{translationLanguageName(preferences.options.source)}{'  →  '}{translationLanguageName(preferences.options.target)}</Text>
       </Pressable>
+      {trailingAction && <View style={styles.trailingAction}>{trailingAction}</View>}
     </View>
     {expanded && <TranslationLanguageControls dark options={preferences.options} disabled={disabled}
       onChange={options => void preferences.save(options).catch(() => {})} />}
@@ -27,8 +30,10 @@ export function LyricsTranslationControls({ translation }: { translation: Return
     {(translation.error || preferences.error) && <Text accessibilityRole="alert" style={styles.error}>{translation.error || preferences.error}</Text>}
     {preferences.loadError && <Pressable accessibilityRole="button" hitSlop={{ top: 4, bottom: 4 }} disabled={preferences.loading} onPress={() => void preferences.load(true)} style={styles.button}><Text style={styles.buttonText}>번역 설정 다시 불러오기</Text></Pressable>}
     {translation.shown && <Text style={styles.notice}>MyMemory 번역</Text>}
+    {trailingContent}
   </View>;
 }
 const styles = StyleSheet.create({ body: { gap: 5, marginBottom: 7 }, actions: { flexDirection: 'row', flexWrap: 'wrap', gap: 7 },
+  trailingAction: { marginLeft: 'auto' },
   button: { minHeight: 36, borderRadius: 18, paddingHorizontal: 12, paddingVertical: 8, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: '#FFFFFF18' },
   buttonText: { color: 'white', fontSize: 12, fontWeight: '600' }, notice: { color: '#FFFFFF99', fontSize: 11, lineHeight: 16 }, error: { color: '#FFE2E7', fontSize: 12, lineHeight: 18 } });

@@ -101,7 +101,8 @@ function checkControls() {
   const value = { key: 'song', ready: true, offsetMs: 0, loading: false, saving: false, loadError: false,
     adjust: async value => { adjusted = value; }, reset: async () => { resets++; }, reload: async () => {} };
   const Controls = load('src/features/lyrics/lyrics-timing-controls.tsx', { react: h.react, 'react/jsx-runtime': { jsx, jsxs: jsx },
-    'react-native': native, '@/components/text': { Text: 'Text' }, './timing': timing }).LyricsTimingControls;
+    'react-native': native, '@/components/text': { Text: 'Text' }, './timing': timing,
+    './lyrics-translation-controls': { LyricsTranslationControls: 'TranslationControls' } }).LyricsTimingControls;
   const render = () => nodes(h.render(() => Controls({ timing: value })));
   const button = label => render().find(node => node.props.accessibilityLabel === label);
   button('가사 타이밍 조절').props.onPress(); button('가사를 0.1초 앞당기기').props.onPress(); assert.equal(adjusted, -100);
@@ -120,6 +121,7 @@ async function checkSeeking() {
     './lyrics-edge-fade': { LyricsEdgeFade: 'Fade' }, './use-active-lyric-index': { useActiveLyricIndex: (lines, synced, value) => { activeOffset = value; return 0; } },
     './use-lyric-scroll': { useLyricScroll: () => ({ following: true, resume: () => { resumed++; } }) },
     './timing': timing, './use-lyric-timing': { useLyricTiming: () => ({ key: 'track', offsetMs }) }, './lyrics-timing-controls': { LyricsTimingControls: 'TimingControls' },
+    './lyrics-source-control': { LyricsSourceControl: 'SourceControl' },
     './use-lyrics': { useLyrics: () => ({ data: document }) }, './use-lyrics-translation': { useLyricsTranslation: () => ({ enabled: false }) }, './lyrics-translation-controls': {},
     '@/stores/playback': { usePlaybackStore: select => select(playback) }, '@/services/playback/controller': { seek: async time => { sought = time; } },
   }, {}, '\nexport { LyricLines };');

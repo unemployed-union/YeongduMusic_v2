@@ -41,7 +41,7 @@ export function albumsFromSongs(library: Page<Song>, includeFolderAlbums = true)
   return { items, total: items.length, stale: library.stale };
 }
 
-export function songsForAlbum(library: Page<Song>, album: Album): Page<Song> {
+export function songsForAlbum(library: Page<Song>, album: Pick<Album, 'id'>): Page<Song> {
   const items = library.items.filter((song) => albumId(song) === album.id)
     .sort((a, b) => (a.discNumber ?? 1) - (b.discNumber ?? 1) || (a.trackNumber ?? 0) - (b.trackNumber ?? 0));
   return { items, total: items.length, stale: library.stale };

@@ -22,6 +22,9 @@ const hiddenRules = load('src/features/hidden-music/rules.ts');
 const playlistRules = load('src/features/playlists/rules.ts');
 const menuRules = load('src/features/settings/menu-layout.ts');
 const hapticRules = load('src/features/haptics/preferences.ts');
+const favoriteDisplayRules = load('src/features/favorites/display-preferences.ts');
+const blurRules = load('src/features/settings/blur-preferences.ts');
+const appearanceRules = load('src/theme/appearance.ts');
 const format = load('src/features/settings/backup-format.ts', {
   '@/features/haptics/preferences': hapticRules,
   './menu-layout': menuRules,
@@ -53,6 +56,9 @@ const themeMocks = { ...common, 'react-native': { Platform: { OS: 'android' }, A
 const theme = load('src/stores/theme-preferences.ts', themeMocks).useThemePreferences;
 const details = load('src/stores/library-detail-preferences.ts', themeMocks).useLibraryDetailPreferences;
 const haptics = load('src/stores/haptic-preferences.ts', { ...themeMocks, '@/features/haptics/preferences': hapticRules }).useHapticPreferences;
+const favoriteDisplay = load('src/stores/favorite-display-preferences.ts', themeMocks).useFavoriteDisplayPreferences;
+const blur = load('src/stores/blur-preferences.ts', themeMocks).useBlurPreferences;
+const appearance = load('src/stores/appearance-preferences.ts', themeMocks).useAppearancePreferences;
 const hiddenMocks = {
   '@/features/hidden-music/rules': hiddenRules,
   '@/services/hidden-music/biometrics': { authenticateHiddenSettings: async () => { authCalls++; if (failAuth) throw new Error('인증 취소'); } },
@@ -71,6 +77,9 @@ const playlistMocks = {
 };
 const playlists = load('src/stores/playlists.ts', playlistMocks).usePlaylistStore;
 const service = load('src/services/settings-backup.ts', {
+  '@/stores/appearance-preferences': { useAppearancePreferences: appearance },
+  '@/stores/blur-preferences': { useBlurPreferences: blur },
+  '@/stores/favorite-display-preferences': { useFavoriteDisplayPreferences: favoriteDisplay },
   '@/stores/haptic-preferences': { useHapticPreferences: haptics },
   '@/stores/theme-preferences': { useThemePreferences: theme },
   '@/stores/library-detail-preferences': { useLibraryDetailPreferences: details },
@@ -108,7 +117,47 @@ async function main() {
   assert.equal(display.getState().hideArtwork, true); assert.equal(library.getState().includeFolderAlbums, false);
   assert.equal(streaming.getState().quality, 'mp3'); assert.deepEqual(exclusions.getState().folders, ['/storage/primary/Music/제외']);
   const restored = JSON.parse(await service.createSettingsBackup());
-  assert.deepEqual(restored.preferences, { ...clean.preferences, menus: menus.getState().layout, themeMode: 'auto', libraryDetails: { artistPhotos: true, albumColors: true }, haptics: hapticRules.DEFAULT_HAPTIC_PREFERENCES }, 'Round trip includes all general settings');
+  assert.deepEqual(restored.preferences, { ...clean.preferences, menus: menus.getState().layout, themeMode: 'auto', libraryDetails: { artistPhotos: true, albumColors: true }, haptics: hapticRules.DEFAULT_HAPTIC_PREFERENCES, favoriteDisplay: favoriteDisplayRules.DEFAULT_FAVORITE_DISPLAY, blurEnabled: true, blur: blurRules.DEFAULT_BLUR_PREFERENCES, appearance: appearanceRules.DEFAULT_APPEARANCE }, 'Round trip includes all general settings');
+  const customColors = { ...appearanceRules.DEFAULT_APPEARANCE, accent: '#123456', miniBackground: '#F29B4B' };
+  const colorBackup = { ...clean, preferences: { ...clean.preferences, appearance: customColors } };
+  await service.restoreSettingsBackup(colorBackup, false);
+  assert.deepEqual(JSON.parse(await service.createSettingsBackup()).preferences.appearance, customColors);
+  await service.restoreSettingsBackup(clean, false); assert.deepEqual(appearance.getState().preferences, customColors, 'Older backups preserve color choices');
+  failKey = 'yeongdumusic-appearance-v1'; failures = 1;
+  await assert.rejects(service.restoreSettingsBackup({ ...clean, preferences: { ...clean.preferences, appearance: appearanceRules.DEFAULT_APPEARANCE } }, false), /기존 설정으로 되돌렸습니다/);
+  assert.deepEqual(appearance.getState().preferences, customColors); failKey = ''; failures = 0;
+  assert.throws(() => format.parseSettingsBackup(JSON.stringify({ ...colorBackup, preferences: { ...colorBackup.preferences, appearance: { ...customColors, accent: 'red' } } })));
+  await appearance.getState().restore(appearanceRules.DEFAULT_APPEARANCE);
+  const blurBackup = { ...clean, preferences: { ...clean.preferences, blurEnabled: false } };
+  await service.restoreSettingsBackup(blurBackup, false); assert.equal(blur.getState().enabled, false);
+  assert.equal(JSON.parse(await service.createSettingsBackup()).preferences.blurEnabled, false);
+  await service.restoreSettingsBackup(clean, false); assert.equal(blur.getState().enabled, false, 'Older backups retain the blur choice');
+  failKey = 'yeongdumusic-blur-enabled-v1'; failures = 1;
+  await assert.rejects(service.restoreSettingsBackup({ ...blurBackup, preferences: { ...blurBackup.preferences, blurEnabled: true } }, false), /기존 설정으로 되돌렸습니다/);
+  assert.equal(blur.getState().enabled, false); failKey = ''; failures = 0;
+  assert.throws(() => format.parseSettingsBackup(JSON.stringify({ ...clean, preferences: { ...clean.preferences, blurEnabled: 'false' } })));
+  await blur.getState().setEnabled(true);
+  const customBlur = blurRules.parseBlurPreferences(false); customBlur.areas.libraryMenu.enabled = false; customBlur.areas.miniPlayer.intensity = 83;
+  const detailedBlurBackup = { ...clean, preferences: { ...clean.preferences, blur: customBlur } };
+  await service.restoreSettingsBackup(detailedBlurBackup, false);
+  assert.deepEqual(JSON.parse(await service.createSettingsBackup()).preferences.blur, customBlur);
+  await service.restoreSettingsBackup({ ...clean, preferences: { ...clean.preferences, blurEnabled: true } }, false);
+  assert.deepEqual(blur.getState().areas, customBlur.areas, 'Legacy master-only backups preserve area choices and strengths');
+  assert.throws(() => format.parseSettingsBackup(JSON.stringify({ ...detailedBlurBackup, preferences: { ...detailedBlurBackup.preferences, blurEnabled: true } })), /일치/);
+  failKey = 'yeongdumusic-blur-enabled-v1'; failures = 1;
+  await assert.rejects(service.restoreSettingsBackup({ ...clean, preferences: { ...clean.preferences, blur: blurRules.DEFAULT_BLUR_PREFERENCES } }, false), /기존 설정으로 되돌렸습니다/);
+  assert.deepEqual(blur.getState().areas, customBlur.areas); failKey = ''; failures = 0;
+  await blur.getState().restore(blurRules.DEFAULT_BLUR_PREFERENCES);
+  const favoritePreferences = { enabled: false, songs: true, player: false, album: true };
+  const favoriteBackup = { ...clean, preferences: { ...clean.preferences, favoriteDisplay: favoritePreferences } };
+  await service.restoreSettingsBackup(favoriteBackup, false);
+  assert.deepEqual(JSON.parse(await service.createSettingsBackup()).preferences.favoriteDisplay, favoritePreferences);
+  await service.restoreSettingsBackup(clean, false); assert.deepEqual(favoriteDisplay.getState().preferences, favoritePreferences, 'Older backups retain favorite display choices');
+  failKey = 'yeongdumusic-favorite-display-v1'; failures = 1;
+  await assert.rejects(service.restoreSettingsBackup({ ...favoriteBackup, preferences: { ...favoriteBackup.preferences, favoriteDisplay: favoriteDisplayRules.DEFAULT_FAVORITE_DISPLAY } }, false), /기존 설정으로 되돌렸습니다/);
+  assert.deepEqual(favoriteDisplay.getState().preferences, favoritePreferences); failKey = ''; failures = 0;
+  assert.throws(() => format.parseSettingsBackup(JSON.stringify({ ...favoriteBackup, preferences: { ...favoriteBackup.preferences, favoriteDisplay: { ...favoritePreferences, songs: 'true' } } })));
+  await favoriteDisplay.getState().restore(restored.preferences.favoriteDisplay);
   const hapticPreferences = hapticRules.parseHapticPreferences(hapticRules.DEFAULT_HAPTIC_PREFERENCES);
   hapticPreferences.events.longPress.strength = 'heavy'; hapticPreferences.events.seek.enabled = false;
   const hapticBackup = { ...clean, preferences: { ...clean.preferences, haptics: hapticPreferences } };

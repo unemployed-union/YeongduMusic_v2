@@ -17,6 +17,19 @@ exports.cloudFixtures = (globals = {}, dependencies = {}) => {
   const useSongMetadataStore = select => select ? select(metadata) : metadata;
   useSongMetadataStore.getState = () => metadata; useSongMetadataStore.subscribe = () => () => {};
   const shared = { '@/stores/s3': { useS3Store }, ...dependencies };
+  const appearanceRules = read('src/theme/appearance.ts', globals);
+  const appearance = { preferences: { ...appearanceRules.DEFAULT_APPEARANCE }, ready: true, loading: false, saving: false, loadError: false, error: null,
+    load: async () => {}, restore: async preferences => { appearance.preferences = appearanceRules.parseAppearance(preferences); } };
+  const useAppearancePreferences = select => select ? select(appearance) : appearance;
+  useAppearancePreferences.getState = () => appearance;
+  const favorites = { songs: {}, ready: true, loading: false, loadError: false, error: null, load: async () => {}, setLiked: async () => {} };
+  const useFavoritesStore = select => select ? select(favorites) : favorites;
+  useFavoritesStore.getState = () => favorites;
+  const blurRules = read('src/features/settings/blur-preferences.ts', globals);
+  const blur = { ...blurRules.parseBlurPreferences(true), ready: true, loading: false, saving: false, loadError: false, error: null, load: async () => {},
+    setEnabled: async enabled => { blur.enabled = enabled; }, restore: async preferences => Object.assign(blur, blurRules.parseBlurPreferences(preferences)) };
+  const useBlurPreferences = select => select ? select(blur) : blur;
+  useBlurPreferences.getState = () => blur;
   const artwork = { ready: true, patches: {}, baseUri: 'file:///artwork/', load: async () => {} };
   const theme = { mode: 'auto', ready: true, loading: false, saving: false, error: null, load: async () => {}, setMode: async mode => { theme.mode = mode; } };
   const useThemePreferences = select => select ? select(theme) : theme;
@@ -24,6 +37,11 @@ exports.cloudFixtures = (globals = {}, dependencies = {}) => {
   const themeRules = read('src/theme/mode.ts', globals);
   const detailRules = read('src/features/library/detail-preferences.ts', globals);
   const hapticRules = read('src/features/haptics/preferences.ts', globals);
+  const favoriteDisplayRules = read('src/features/favorites/display-preferences.ts', globals);
+  const favoriteDisplay = { preferences: { ...favoriteDisplayRules.DEFAULT_FAVORITE_DISPLAY }, ready: true, loading: false, saving: false, loadError: false, error: null,
+    load: async () => {}, restore: async value => { favoriteDisplay.preferences = favoriteDisplayRules.parseFavoriteDisplay(value); } };
+  const useFavoriteDisplayPreferences = select => select ? select(favoriteDisplay) : favoriteDisplay;
+  useFavoriteDisplayPreferences.getState = () => favoriteDisplay;
   const details = { preferences: { ...detailRules.DEFAULT_DETAIL_PREFERENCES }, ready: true, loading: false, saving: false, loadError: false, error: null,
     load: async () => {}, restore: async value => { details.preferences = detailRules.parseDetailPreferences(value); } };
   const useLibraryDetailPreferences = select => select ? select(details) : details;
@@ -35,6 +53,17 @@ exports.cloudFixtures = (globals = {}, dependencies = {}) => {
   });
   const resultHelpers = read('src/features/library/library-result.ts', globals);
   return {
+    '@/stores/appearance-preferences': { useAppearancePreferences }, '@/theme/appearance': appearanceRules, './appearance': appearanceRules,
+    '@/theme/use-player-colors': { useMiniPlayerColors: () => dependencies['@/theme/tokens']?.useColors?.() ?? {}, usePlayerAccent: () => appearanceRules.playerAccent(null, ['#111111']) },
+    '@/components/screen-blur-target': { ScreenBlurTargetContext: { Provider: 'ScreenBlurTargetProvider' } },
+    '@/stores/favorites': { useFavoritesStore },
+    '@/stores/blur-preferences': { useBlurPreferences, useBlurIntensity: area => blurRules.blurIntensity(blur, area) },
+    '@/features/settings/blur-preferences': blurRules, './blur-preferences': blurRules,
+    '@/features/settings/blur-settings': { BlurSettings: 'BlurSettings' },
+    '@/stores/favorite-display-preferences': { useFavoriteDisplayPreferences }, '@/features/favorites/display-preferences': favoriteDisplayRules,
+    '@/components/favorite-button': { FavoriteButton: 'FavoriteButton' }, './favorite-button': { FavoriteButton: 'FavoriteButton' },
+    '@/features/favorites/liked-songs-screen': { LikedSongsScreen: 'LikedSongsScreen' },
+    './prepare-album-colors': { prepareAlbumColors: async () => {} },
     '@/services/haptics': { playHaptic() {}, prepareHaptics() {} },
     '@/features/haptics/preferences': hapticRules,
     '@/components/text-input': { TextInput: dependencies['react-native']?.TextInput ?? 'TextInput' },

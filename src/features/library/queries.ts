@@ -16,9 +16,9 @@ import { applyArtworkLibrary } from '../artwork/rules';
 import { useAuthStore } from '@/stores/auth';
 import { useHiddenMusicStore } from '@/stores/hidden-music';
 import { useLibraryPreferences } from '@/stores/library-preferences';
-import type { Album, Artist, Page, Song } from '@/types/music';
+import type { Album, Artist, MusicSourceFilter, Page, Song } from '@/types/music';
 
-function useSongLibrary<T>(select: (library: Page<Song>) => T, enabled = true, nasOnly = false) {
+function useSongLibrary<T>(select: (library: Page<Song>) => T, enabled = true, nasOnly = false, sourceOverride?: MusicSourceFilter) {
   const mode = useAuthStore((state) => state.mode);
   const session = useAuthStore((state) => state.session);
   const ready = useHiddenMusicStore((state) => state.ready);
@@ -27,7 +27,8 @@ function useSongLibrary<T>(select: (library: Page<Song>) => T, enabled = true, n
   const metadataScope = privacyScope(mode, session);
   const artworkPatches = useSongArtworkStore(state => state.patches), artworkReady = useSongArtworkStore(state => state.ready);
   const artworkBaseUri = useSongArtworkStore(state => state.baseUri);
-  const source = useLocalMusicStore((state) => state.source);
+  const preferredSource = useLocalMusicStore((state) => state.source);
+  const source = sourceOverride ?? preferredSource;
   const localSongs = useLocalMusicStore((state) => state.songs);
   const localReady = useLocalMusicStore((state) => state.ready);
   const driveSongs = useGoogleDriveStore((state) => state.songs);
@@ -67,10 +68,10 @@ function useSongLibrary<T>(select: (library: Page<Song>) => T, enabled = true, n
 export function useRawSongLibrary(enabled = true) {
   return useSongLibrary((library) => library, enabled, true);
 }
-export function useSongs(enabled = true) {
+export function useSongs(enabled = true, sourceOverride?: MusicSourceFilter) {
   const presets = useHiddenMusicStore((state) => state.profile.presets);
   const select = useCallback((library: Page<Song>) => visibleSongs(library, presets), [presets]);
-  return useSongLibrary(select, enabled);
+  return useSongLibrary(select, enabled, false, sourceOverride);
 }
 export function useAlbums(enabled = true) {
   const presets = useHiddenMusicStore((state) => state.profile.presets);
@@ -97,11 +98,15 @@ export function useArtists(enabled = true) {
 }
 export function useAlbumSongs(album: Album) {
   const presets = useHiddenMusicStore((state) => state.profile.presets);
-  return useSongLibrary((library) => songsForAlbum(visibleSongs(library, presets), album));
+  const id = album.id;
+  const select = useCallback((library: Page<Song>) => songsForAlbum(visibleSongs(library, presets), { id }), [presets, id]);
+  return useSongLibrary(select);
 }
 export function useArtistSongs(artist: Artist) {
   const presets = useHiddenMusicStore((state) => state.profile.presets);
-  return useSongLibrary((library) => songsForArtist(visibleSongs(library, presets), artist.name));
+  const name = artist.name;
+  const select = useCallback((library: Page<Song>) => songsForArtist(visibleSongs(library, presets), name), [presets, name]);
+  return useSongLibrary(select);
 }
 export function useSearch(term: string) {
   const presets = useHiddenMusicStore((state) => state.profile.presets);

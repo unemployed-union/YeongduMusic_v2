@@ -65,7 +65,7 @@ let control = LibrarySortControl(controlProps);
 control.props.children[0].props.onPress(); assert.equal(open, true);
 control = LibrarySortControl(controlProps);
 const sheet = control.props.children[1]; assert.equal(sheet.props.visible, true); assert.equal(sheet.props.title, '아티스트 정렬');
-const options = sheet.props.children.props.children[1];
+const options = sheet.props.children.props.children.at(-1);
 assert.equal(options[0].props.accessibilityState.checked, true);
 for (let i = 0; i < 3; i++) { options[i].props.onPress(); assert.equal(selected, ['default', 'ascending', 'descending'][i]); assert.equal(open, false); }
 // Exercise per-tab state through the actual library screen, including swipe navigation.
@@ -100,8 +100,10 @@ tree = screen(); assert.equal(sortProps(tree).order, 'descending'); swipe(tree, 
 tree = screen(); assert.equal(sortProps(tree).tab, 'songs'); assert.equal(sortProps(tree).order, 'default'); sortProps(tree).onChange('ascending');
 tree = screen(); swipe(tree, 2); tree = screen(); assert.equal(sortProps(tree).order, 'default'); swipe(tree, 0);
 tree = screen(); assert.equal(sortProps(tree).order, 'descending');
-assert.deepEqual(find(tree, 'LibraryPager').props.children.map(page => page.props.sortOrder), ['descending', 'ascending', 'default']);
+assert.deepEqual(find(tree, 'LibraryPager').props.children.map(page => page.props.sortOrder), ['descending', 'ascending', 'default', 'default']);
 const horizontalPager = find(tree, 'LibraryPager');
 horizontalPager.props.onSwipeStart(); assert.equal(controlsRevealed, 1, 'An accepted horizontal drag reveals controls immediately');
-assert.deepEqual(horizontalPager.props.children.map(page => page.props.active), [true, false, false]);
+assert.deepEqual(horizontalPager.props.children.map(page => page.props.active), [true, false, false, false]);
+swipe(tree, 3); tree = screen(); assert.equal(sortProps(tree).tab, 'favorites'); sortProps(tree).onChange('ascending');
+tree = screen(); assert.equal(find(tree, 'LikedSongsScreen').props.sortOrder, 'ascending');
 console.log('PASS: default/order restoration, Korean/numeric names, stable ties, immutable mixed sources, memo reuse, refreshed data, displayed playback queue and sort menu handlers. Native layout is mocked.');

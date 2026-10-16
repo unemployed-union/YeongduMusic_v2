@@ -10,6 +10,7 @@ import { useLyrics } from './use-lyrics';
 import { useLyricsTranslation } from './use-lyrics-translation';
 import { LyricsTranslationControls } from './lyrics-translation-controls';
 import { LyricsTimingControls } from './lyrics-timing-controls';
+import { LyricsSourceControl } from './lyrics-source-control';
 import { useLyricTiming } from './use-lyric-timing';
 import { lyricPlaybackTime } from './timing';
 import { playHaptic } from '@/services/haptics';
@@ -19,16 +20,13 @@ import { seek } from '@/services/playback/controller';
 import type { LyricLine, LyricsSource } from '@/types/lyrics';
 import type { Song } from '@/types/music';
 
-const sources: { value: LyricsSource; label: string }[] = [
-  { value: 'auto', label: '자동' }, { value: 'nas', label: 'NAS' }, { value: 'online', label: '온라인' },
-];
 const AnimatedRow = createAnimatedComponent(View);
 const lyricKey = (line: LyricLine) => line.id;
 // Wrap the native list directly to retain its measured CellRendererComponent.
 const AnimatedLyricList = createAnimatedComponent(FlatList<LyricLine>);
 
-const LyricRow = memo(function LyricRow({ line, active, past, synced, seekable, onSeek, translation }: {
-  line: LyricLine; active: boolean; past: boolean; synced: boolean; seekable: boolean; onSeek: (time: number) => void; translation?: string;
+const LyricRow = memo(function LyricRow({ line, active, past, synced, seekable, onSeek, translation, accentColor, highlightColor }: {
+  line: LyricLine; active: boolean; past: boolean; synced: boolean; seekable: boolean; onSeek: (time: number) => void; translation?: string; accentColor?: string; highlightColor?: string;
 }) {
   const level = synced ? active ? 1 : past ? 0.5 : 0.3 : 0.9;
   const opacity = useSharedValue(level), lastLevel = useRef(level);
@@ -40,15 +38,15 @@ const LyricRow = memo(function LyricRow({ line, active, past, synced, seekable, 
   const animatedStyle = useAnimatedStyle(() => ({ opacity: opacity.get() }));
   return <Pressable disabled={!seekable} accessibilityRole={seekable ? 'button' : 'text'} accessibilityLabel={translation ? `${line.text}\n${translation}` : line.text || '간주'} accessibilityHint={seekable ? '이 가사가 시작되는 위치로 이동' : undefined} accessibilityState={synced ? { selected: active } : undefined} onPress={() => { if (line.time !== null) onSeek(line.time); }} style={styles.row}>
     <AnimatedRow style={animatedStyle}>
-      <Text style={styles.lyric}>{line.text || '···'}</Text>
-      {!!translation && <Text style={styles.translation}>{translation}</Text>}
+      <Text style={[styles.lyric, active && accentColor ? { color: accentColor } : undefined]}>{line.text || '···'}</Text>
+      {!!translation && <Text style={[styles.translation, highlightColor ? { color: highlightColor } : undefined]}>{translation}</Text>}
     </AnimatedRow>
   </Pressable>;
 });
 
 // Own the scrolling state per track/source so returning to the player starts
 // at the current engine position, without briefly rendering another track.
-const LyricLines = memo(function LyricLines({ lines, synced, translations, offsetMs = 0 }: { lines: LyricLine[]; synced: boolean; translations?: TranslatedLyrics; offsetMs?: number }) {
+const LyricLines = memo(function LyricLines({ lines, synced, translations, offsetMs = 0, accentColor, highlightColor }: { lines: LyricLine[]; synced: boolean; translations?: TranslatedLyrics; offsetMs?: number; accentColor?: string; highlightColor?: string }) {
   const duration = usePlaybackStore((state) => state.duration);
   const buffering = usePlaybackStore((state) => state.buffering);
   const active = useActiveLyricIndex(lines, synced, offsetMs);
@@ -61,9 +59,9 @@ const LyricLines = memo(function LyricLines({ lines, synced, translations, offse
     setError(null);
     void seek(target).then(resume).catch(() => setError('재생 위치를 변경하지 못했습니다. 다시 눌러 주세요.'));
   }, [buffering, duration, offsetMs, resume]);
-  const extraData = useMemo(() => ({ active, duration, buffering, translations, offsetMs }), [active, duration, buffering, translations, offsetMs]);
-  const renderItem = useCallback<ListRenderItem<LyricLine>>(({ item, index }) => <LyricRow line={item} translation={translations?.[item.id]} active={index === active} past={active >= 0 && index < active} synced={synced} seekable={synced && !buffering && duration > 0 && item.time !== null && lyricPlaybackTime(item.time, offsetMs) <= duration} onSeek={seekToLine} />,
-    [active, buffering, duration, offsetMs, seekToLine, synced, translations]);
+  const extraData = useMemo(() => ({ active, duration, buffering, translations, offsetMs, accentColor, highlightColor }), [active, duration, buffering, translations, offsetMs, accentColor, highlightColor]);
+  const renderItem = useCallback<ListRenderItem<LyricLine>>(({ item, index }) => <LyricRow line={item} translation={translations?.[item.id]} active={index === active} past={active >= 0 && index < active} synced={synced} seekable={synced && !buffering && duration > 0 && item.time !== null && lyricPlaybackTime(item.time, offsetMs) <= duration} onSeek={seekToLine} accentColor={accentColor} highlightColor={highlightColor} />,
+    [active, buffering, duration, offsetMs, seekToLine, synced, translations, accentColor, highlightColor]);
   return <View style={styles.lines}>
     <LyricsEdgeFade><AnimatedLyricList ref={listRef} data={lines} extraData={extraData} keyExtractor={lyricKey}
       showsVerticalScrollIndicator={false} initialNumToRender={10} windowSize={7} contentContainerStyle={styles.listContent}
@@ -77,7 +75,7 @@ const LyricLines = memo(function LyricLines({ lines, synced, translations, offse
   </View>;
 });
 
-export function LyricsPanel({ song, source, onSourceChange }: { song: Song; source: LyricsSource; onSourceChange: (source: LyricsSource) => void }) {
+export function LyricsPanel({ song, source, onSourceChange, accentColor, highlightColor }: { song: Song; source: LyricsSource; onSourceChange: (source: LyricsSource) => void; accentColor?: string; highlightColor?: string }) {
   const duration = usePlaybackStore((state) => state.duration);
   const [searchOnline, setSearchOnline] = useState(false);
   const lyrics = useLyrics(song, source, duration, searchOnline);
@@ -93,10 +91,10 @@ export function LyricsPanel({ song, source, onSourceChange }: { song: Song; sour
   const sourceName = data?.provider === 'nas' ? 'NAS' : data?.provider === 'demo' ? '데모 가사' : 'LRCLIB';
   const lyricsKey = `${song.id}:${source}:${data?.provider}:${data?.kind}`;
   return <View style={styles.panel}>
-    <View style={styles.header}><Text style={styles.heading}>가사</Text><Pressable accessibilityRole="button" accessibilityLabel="가사 다시 찾기" disabled={lyrics.isFetching} onPress={findAgain} style={styles.findAgain}>{lyrics.isFetching ? <ActivityIndicator color="white" size="small" /> : <Ionicons name="refresh-outline" size={20} color="white" />}</Pressable><View style={styles.sources}>{sources.map((option) => <Pressable key={option.value} accessibilityRole="button" accessibilityState={{ selected: source === option.value }} onPress={() => changeSource(option.value)} style={[styles.source, source === option.value && styles.selectedSource]}><Text style={[styles.sourceText, source === option.value && styles.selectedText]}>{option.label}</Text></Pressable>)}</View></View>
-    {translation.enabled && data && (data.kind === 'synced' || data.kind === 'plain') && <LyricsTranslationControls translation={translation} />}
-    {data?.kind === 'synced' && <LyricsTimingControls key={timing.key} timing={timing} />}
-    {lyrics.isPending || lyrics.isFetching && (!data || data.kind === 'missing' || data.kind === 'instrumental') ? <View style={styles.message}><ActivityIndicator color="white" /><Text style={styles.messageText}>가사를 찾고 있어요</Text></View> : lyrics.isError && (!data || data.kind === 'missing' || data.kind === 'instrumental') ? <View style={styles.message}><Ionicons name="cloud-offline-outline" size={32} color="#FFFFFFAA" /><Text style={styles.messageText}>{lyrics.error instanceof Error ? lyrics.error.message : '가사를 불러오지 못했습니다.'}</Text><Pressable accessibilityRole="button" disabled={lyrics.isFetching} onPress={findAgain} style={styles.retry}><Text style={styles.retryText}>다시 시도</Text></Pressable></View> : data?.kind === 'missing' || data?.kind === 'instrumental' ? <View style={styles.message}><Ionicons name="musical-note-outline" size={34} color="#FFFFFF99" /><Text style={styles.messageText}>{data.kind === 'instrumental' ? '가사가 없는 연주곡입니다' : '이 곡의 가사를 찾지 못했어요'}</Text><Text style={styles.hint}>{source === 'nas' ? 'NAS에 저장된 가사가 있는지 확인하거나 온라인 가사를 선택해 주세요.' : '곡 제목·아티스트·앨범 태그가 정확한지 확인해 주세요.'}</Text><Pressable accessibilityRole="button" disabled={lyrics.isFetching} onPress={findAgain} style={styles.retry}><Text style={styles.retryText}>다시 찾기</Text></Pressable></View> : data ? <LyricLines key={lyricsKey} lines={data.lines} synced={data.kind === 'synced'} offsetMs={timing.offsetMs} translations={translation.shown ? translation.lines : undefined} /> : null}
+    <View style={styles.header}><Text style={styles.heading}>가사</Text><Pressable accessibilityRole="button" accessibilityLabel="가사 다시 찾기" disabled={lyrics.isFetching} onPress={findAgain} style={styles.findAgain}>{lyrics.isFetching ? <ActivityIndicator color="white" size="small" /> : <Ionicons name="refresh-outline" size={20} color="white" />}</Pressable><LyricsSourceControl source={source} onChange={changeSource} /></View>
+    {data?.kind === 'synced' ? <LyricsTimingControls key={timing.key} timing={timing} translation={translation} />
+      : translation.enabled && data?.kind === 'plain' && <LyricsTranslationControls translation={translation} />}
+    {lyrics.isPending || lyrics.isFetching && (!data || data.kind === 'missing' || data.kind === 'instrumental') ? <View style={styles.message}><ActivityIndicator color="white" /><Text style={styles.messageText}>가사를 찾고 있어요</Text></View> : lyrics.isError && (!data || data.kind === 'missing' || data.kind === 'instrumental') ? <View style={styles.message}><Ionicons name="cloud-offline-outline" size={32} color="#FFFFFFAA" /><Text style={styles.messageText}>{lyrics.error instanceof Error ? lyrics.error.message : '가사를 불러오지 못했습니다.'}</Text><Pressable accessibilityRole="button" disabled={lyrics.isFetching} onPress={findAgain} style={styles.retry}><Text style={styles.retryText}>다시 시도</Text></Pressable></View> : data?.kind === 'missing' || data?.kind === 'instrumental' ? <View style={styles.message}><Ionicons name="musical-note-outline" size={34} color="#FFFFFF99" /><Text style={styles.messageText}>{data.kind === 'instrumental' ? '가사가 없는 연주곡입니다' : '이 곡의 가사를 찾지 못했어요'}</Text><Text style={styles.hint}>{source === 'nas' ? 'NAS에 저장된 가사가 있는지 확인하거나 온라인 가사를 선택해 주세요.' : '곡 제목·아티스트·앨범 태그가 정확한지 확인해 주세요.'}</Text><Pressable accessibilityRole="button" disabled={lyrics.isFetching} onPress={findAgain} style={styles.retry}><Text style={styles.retryText}>다시 찾기</Text></Pressable></View> : data ? <LyricLines accentColor={accentColor} highlightColor={highlightColor} key={lyricsKey} lines={data.lines} synced={data.kind === 'synced'} offsetMs={timing.offsetMs} translations={translation.shown ? translation.lines : undefined} /> : null}
     {lyrics.isRefetchError && data && (data.kind === 'plain' || data.kind === 'synced') && <Text accessibilityRole="alert" style={styles.error}>{lyrics.error.message}</Text>}
     {data && data.kind !== 'missing' && <Text style={styles.credit}>{sourceName} · {data.kind === 'synced' ? '재생 시간에 맞춰 표시 · 가사를 눌러 이동' : data.kind === 'plain' ? '시간 정보가 없는 일반 가사' : '연주곡'}</Text>}
   </View>;
@@ -107,11 +105,6 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 },
   findAgain: { marginRight: 'auto', marginLeft: 8, minWidth: 40, minHeight: 40, alignItems: 'center', justifyContent: 'center' },
   heading: { color: 'white', fontSize: 20, fontWeight: '800' },
-  sources: { flexDirection: 'row', gap: 7 },
-  source: { minHeight: 36, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 18, alignItems: 'center', justifyContent: 'center', backgroundColor: '#FFFFFF18' },
-  selectedSource: { backgroundColor: '#FFFFFF30' },
-  sourceText: { color: '#FFFFFF99', fontSize: 12, fontWeight: '600' },
-  selectedText: { color: 'white' },
   lines: { flex: 1 },
   listContent: { paddingTop: 18, paddingBottom: 120 },
   row: { paddingVertical: 13 },

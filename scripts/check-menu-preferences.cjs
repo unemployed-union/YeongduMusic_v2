@@ -68,6 +68,9 @@ async function main() {
   }
   const legacy = rules.defaultMenuLayout(); delete legacy.player;
   assert.deepEqual(rules.parseMenuLayout(legacy).player, rules.defaultMenuLayout().player, 'Existing settings migrate to a complete player menu');
+  const beforeFavorites = rules.defaultMenuLayout(); beforeFavorites.library = beforeFavorites.library.filter(item => item.id !== 'favorites').reverse();
+  beforeFavorites.library[1].visible = false;
+  assert.deepEqual(rules.parseMenuLayout(beforeFavorites).library, [...beforeFavorites.library, { id: 'favorites', visible: true }], 'Favorites migration preserves existing order and visibility');
   const beforeSpeed = rules.defaultMenuLayout(); beforeSpeed.player = beforeSpeed.player.filter(item => !['playback-speed', 'edit-metadata'].includes(item.id)).reverse();
   beforeSpeed.player[1].visible = false;
   const migrated = rules.parseMenuLayout(beforeSpeed);
@@ -101,6 +104,13 @@ function checkSettingsUI(store) {
     const switches = nodes(ui({ group })).filter(node => node.type === 'Switch');
     assert.deepEqual(switches.map(node => node.props.disabled), layout[group].map((_, index) => index === 1));
     assert.deepEqual(switches.map(node => node.props.value), layout[group].map((_, index) => index === 1));
+    const before = nodes(ui({ group })).filter(node => node.type === 'Icon').map(node => node.props.color);
+    store.setState({ saving: true });
+    const pending = nodes(ui({ group })), pendingSwitches = pending.filter(node => node.type === 'Switch');
+    assert(pendingSwitches.every(node => node.props.busy), 'Saving prevents repeated toggle input');
+    assert.deepEqual(pendingSwitches.map(node => node.props.disabled), switches.map(node => node.props.disabled), 'Saving does not change the permanent disabled appearance');
+    assert.deepEqual(pending.filter(node => node.type === 'Icon').map(node => node.props.color), before, 'Reorder arrows do not flash while toggling');
+    store.setState({ saving: false });
   }
   const settings = load('src/app/settings.tsx', {
     react: { useEffect: () => {}, useState: initial => [initial, () => {}] },
@@ -114,11 +124,14 @@ function checkSettingsUI(store) {
   const playback = load('src/app/settings/playback.tsx', {
     'react/jsx-runtime': { jsx, jsxs: jsx }, '@/features/settings/settings-ui': { SettingsPage: 'Page', SettingsLink: 'Link', SettingsSection: 'Section' },
     '@/features/settings/theme-settings': { ThemeSettings: 'ThemeSettings' },
+    '@/features/settings/blur-settings': { BlurSettings: 'BlurSettings' },
     '@/features/lyrics/translation-settings': { LyricsTranslationSettings: 'LyricsTranslationSettings' },
     '@/features/playback/streaming-quality-settings': { StreamingQualitySettings: 'StreamingQualitySettings' },
     '@/features/playback/playback-options-settings': { PlaybackOptionsSettings: 'PlaybackOptionsSettings' },
   }).default;
   assert.equal(nodes(playback()).filter(node => node.type === 'Link' && node.props.href === '/settings/player-menu').length, 1, 'The player menu settings appear once in the playback submenu');
+  assert(nodes(playback()).some(node => node.type === 'BlurSettings'), 'Playback/display settings expose the global blur switch');
+  assert(nodes(playback()).some(node => node.type === 'Link' && node.props.href === '/settings/colors'), 'App and mini-player colors have a settings entry');
 }
 
 function checkLibraryPager() {
@@ -137,6 +150,7 @@ function checkLibraryPager() {
     react, 'react/jsx-runtime': { jsx, jsxs: jsx }, 'react-native': { ...native, useWindowDimensions: () => ({ width }) },
     'react-native-reanimated': { __esModule: true, default: { View: 'AnimatedView' } },
     '@/components/text': { Text: 'Text' }, '@/components/screen-header': { ScreenHeader: 'Header' }, '@/components/settings-button': { SettingsButton: 'Settings' },
+    '@/features/favorites/liked-songs-screen': { LikedSongsScreen: 'LikedSongsScreen' },
     '@/features/library/library-page': { LibraryPage: 'LibraryPage' }, '@/features/library/local-music-controls': { LocalMusicControls: 'Controls' },
     '@/features/library/library-pager': { LibraryPager: 'LibraryPager' },
     '@/features/library/library-sort-control': { LibrarySortControl: 'Sort' }, '@/features/library/queries': { useAlbums: () => query, useSongs: () => query, useArtists: () => query },
@@ -146,10 +160,15 @@ function checkLibraryPager() {
   }).default;
   const render = () => { slot = 0; const tree = screen(); effects.splice(0).forEach(effect => effect()); return tree; };
   const pager = tree => nodes(tree).find(node => node.type === 'LibraryPager');
-  const pages = tree => nodes(tree).filter(node => node.type === 'LibraryPage').map(node => node.props.tab);
-  render();
-  layout = { ...layout, library: [{ id: 'artists', visible: true }, { id: 'songs', visible: true }, { id: 'albums', visible: false }] };
+  const pages = tree => nodes(tree).filter(node => ['LibraryPage', 'LikedSongsScreen'].includes(node.type)).map(node => node.type === 'LikedSongsScreen' ? 'favorites' : node.props.tab);
   let tree = render();
+  assert.deepEqual(pages(tree), ['albums', 'songs', 'artists', 'favorites']); assert.equal(pager(tree).props.pageCount, 4);
+  assert.equal(nodes(tree).find(node => node.type === 'Header').props.action.type, 'Settings', 'Header only has the settings action');
+  pager(tree).props.onPageChange(3); tree = render();
+  assert.equal(nodes(tree).find(node => node.type === 'LikedSongsScreen').props.active, true);
+  assert.equal(nodes(tree).find(node => node.type === 'Controls').props.sortControl.props.tab, 'favorites');
+  layout = { ...layout, library: [{ id: 'artists', visible: true }, { id: 'songs', visible: true }, { id: 'albums', visible: false }, { id: 'favorites', visible: false }] };
+  tree = render();
   assert.deepEqual(pages(tree), ['artists', 'songs']); assert.equal(selections.at(-1), 'artists'); assert.equal(pager(tree).props.pageIndex, 0);
   pager(tree).props.onPageChange(1); tree = render();
   assert.equal(nodes(tree).find(node => node.type === 'Controls').props.sortControl.props.tab, 'songs');

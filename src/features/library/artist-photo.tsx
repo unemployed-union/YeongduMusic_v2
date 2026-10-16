@@ -4,7 +4,7 @@ import { useFocusEffect } from 'expo-router';
 import { openURL } from 'expo-linking';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Text } from '@/components/text';
-import { findArtistPhoto, searchableArtist, type ArtistPhoto as Photo } from '@/services/artwork/artist-photo';
+import { artistPhotoSource, findArtistPhoto, searchableArtist, type ArtistPhoto as Photo } from '@/services/artwork/artist-photo';
 import { useColors } from '@/theme/tokens';
 
 type PhotoState = { name: string; photo: Photo | null; loading: boolean; error: string | null };
@@ -35,7 +35,7 @@ export function ArtistPhoto({ name, enabled }: { name: string; enabled: boolean 
   }
   return <View style={styles.frame}>
     <View style={[styles.icon, { backgroundColor: colors.surface, borderRadius: photo ? 16 : 52 }]}>
-      {photo ? <Image key={`${name}:${retry}`} source={{ uri: photo.uri }} style={styles.image} resizeMode="contain" accessibilityLabel={name + ' 사진'}
+      {photo ? <Image key={`${name}:${retry}`} source={artistPhotoSource(photo.uri)} style={styles.image} resizeMode="contain" accessibilityLabel={name + ' 사진'}
         onLoad={() => setLoadedUri(photo.uri)} onError={() => setFailedUri(photo.uri)} /> : !loading && <Ionicons name="person" size={48} color={colors.tint} />}
       {loading && <View pointerEvents="none" style={styles.spinner}><ActivityIndicator color={colors.tint} accessibilityLabel="아티스트 사진 불러오는 중" /></View>}
     </View>

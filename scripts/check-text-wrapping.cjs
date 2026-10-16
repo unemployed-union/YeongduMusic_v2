@@ -72,6 +72,7 @@ assert.equal(AsyncState({ loading: true }).props.children[1].props.children, 'ê°
 const { LibraryPage, LIBRARY_TABS } = load('src/features/library/library-page.tsx', {
   ...common, react: { memo: fn => fn, useMemo: calculate => calculate(), useCallback: fn => fn, useState: value => [value, () => {}] },
   './album-properties': { AlbumProperties: 'AlbumProperties' },
+  './prepare-album-colors': { prepareAlbumColors: async () => {} },
   'expo-router': { router: {} }, '@expo/vector-icons/Ionicons': { default: 'Icon', __esModule: true },
   '@/components/tab-scroll-edge-fade': { TabScrollEdgeFade: 'Fade' }, '@/components/artwork': { Artwork: 'Artwork' },
   '@/components/async-state': { AsyncState }, '@/components/list-loading': { ListLoading }, '@/components/song-row': { SongRow: 'SongRow' },

@@ -3,14 +3,16 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { Text } from '@/components/text';
 import { formatLyricOffset, LYRIC_OFFSET_STEP_MS, MAX_LYRIC_OFFSET_MS } from './timing';
 import type { useLyricTiming } from './use-lyric-timing';
+import type { useLyricsTranslation } from './use-lyrics-translation';
+import { LyricsTranslationControls } from './lyrics-translation-controls';
 
-export function LyricsTimingControls({ timing }: { timing: ReturnType<typeof useLyricTiming> }) {
+export function LyricsTimingControls({ timing, translation }: { timing: ReturnType<typeof useLyricTiming>; translation?: ReturnType<typeof useLyricsTranslation> }) {
   const [expanded, setExpanded] = useState(false);
   const disabled = !timing.key || !timing.ready || timing.loading || timing.saving || timing.loadError;
-  return <View style={styles.body}>
-    <Pressable accessibilityRole="button" accessibilityLabel="가사 타이밍 조절" accessibilityState={{ expanded }} onPress={() => setExpanded(value => !value)} style={[styles.button, styles.toggle]}>
-      <Text style={styles.text}>가사 타이밍 · {formatLyricOffset(timing.offsetMs)} {expanded ? '⌃' : '⌄'}</Text>
-    </Pressable>
+  const toggle = <Pressable accessibilityRole="button" accessibilityLabel="가사 타이밍 조절" accessibilityState={{ expanded }} onPress={() => setExpanded(value => !value)} style={[styles.button, styles.toggle]}>
+      <Text style={styles.text}>가사 타이밍 · {formatLyricOffset(timing.offsetMs)}</Text>
+    </Pressable>;
+  const details = <>
     {expanded && <>
       <View style={styles.actions}>
         <Pressable accessibilityRole="button" accessibilityLabel="가사를 0.1초 앞당기기" disabled={disabled || timing.offsetMs <= -MAX_LYRIC_OFFSET_MS} onPress={() => void timing.adjust(-LYRIC_OFFSET_STEP_MS).catch(() => {})} style={[styles.button, (disabled || timing.offsetMs <= -MAX_LYRIC_OFFSET_MS) && styles.disabled]}><Text style={styles.text}>−0.1초 · 먼저</Text></Pressable>
@@ -23,7 +25,9 @@ export function LyricsTimingControls({ timing }: { timing: ReturnType<typeof use
       {timing.loadError && <Pressable accessibilityRole="button" disabled={timing.loading} onPress={() => void timing.reload()} style={[styles.button, styles.toggle]}><Text style={styles.text}>타이밍 다시 불러오기</Text></Pressable>}
     </>}
     {timing.error && <Text accessibilityRole="alert" style={styles.error}>{timing.error}</Text>}
-  </View>;
+  </>;
+  if (translation?.enabled) return <LyricsTranslationControls translation={translation} trailingAction={toggle} trailingContent={details} />;
+  return <View style={styles.body}>{toggle}{details}</View>;
 }
 const styles = StyleSheet.create({
   body: { gap: 5, marginBottom: 7 }, actions: { flexDirection: 'row', flexWrap: 'wrap', gap: 7 }, toggle: { alignSelf: 'flex-start' },

@@ -1,5 +1,5 @@
 import { TabScrollEdgeFade } from '@/components/tab-scroll-edge-fade';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { Text } from '@/components/text';
 import { Stack, useIsFocused, useLocalSearchParams } from 'expo-router';
@@ -13,7 +13,7 @@ import { mockAlbums } from '@/features/library/mock-repository';
 import { playAndOpenPlayer } from '@/features/playback/play-and-open-player';
 import { useAlbumSongs } from '@/features/library/queries';
 import { useAppColorScheme, useColors } from '@/theme/tokens';
-import type { Album } from '@/types/music';
+import type { Album, Song } from '@/types/music';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLibraryDetailPreferences } from '@/stores/library-detail-preferences';
 import { useDisplayPreferences } from '@/stores/display-preferences';
@@ -23,6 +23,8 @@ import { useAlbumHeader } from '@/features/library/use-album-header';
 import Animated from 'react-native-reanimated';
 import { StatusBar } from 'expo-status-bar';
 import { playHaptic } from '@/services/haptics';
+
+const EMPTY_SONGS: Song[] = [];
 
 export default function AlbumScreen() {
   const params = useLocalSearchParams<{ id: string; title?: string; artist?: string; artworkUrl?: string }>();
@@ -35,32 +37,34 @@ export default function AlbumScreen() {
   const hideArtwork = useDisplayPreferences(state => state.hideArtwork);
   const album: Album = useMemo(() => mockAlbums.find((item) => item.id === params.id) ?? { id: params.id, title: params.title ?? '앨범', artist: params.artist ?? '', artworkUrl: params.artworkUrl || undefined }, [params.id, params.title, params.artist, params.artworkUrl]);
   const query = useAlbumSongs(album);
-  const songs = query.data?.items ?? [];
+  const songs = query.data?.items ?? EMPTY_SONGS;
   const artworkSong = songs.find(song => song.artworkOriginal && song.artworkUrl) ?? songs.find(song => song.artworkUrl);
   const artworkAlbum = { ...album, artworkUrl: artworkSong?.artworkUrl, palette: artworkSong ? artworkSong.palette : album.palette };
   const decorated = detail.ready && !detail.loadError && detail.preferences.albumColors && !hideArtwork && !!(artworkAlbum.artworkUrl || artworkAlbum.palette);
-  const albumColors = useAlbumColors(artworkAlbum.artworkUrl, artworkAlbum.palette, decorated);
+  const { colors: albumColors, ready: colorsReady } = useAlbumColors(artworkAlbum.artworkUrl, artworkAlbum.palette, decorated);
+  const appearanceReady = detail.ready && colorsReady;
   const artworkSize = Math.max(100, Math.min(width - 100, 292));
   const [heroHeight, setHeroHeight] = useState(artworkSize + 170 + headerHeight);
   const header = useAlbumHeader(album.id, heroHeight, headerHeight);
-  const lightHeader = decorated && songs.length > 0 && !header.overSongs;
+  const lightHeader = appearanceReady && decorated && songs.length > 0 && !header.overSongs;
   const [starting, setStarting] = useState(false);
   const [playError, setPlayError] = useState<string | null>(null);
   const [editingArtwork, setEditingArtwork] = useState(false);
-  const play = async (selected = 0) => {
+  const play = useCallback(async (selected = 0) => {
     setStarting(true); setPlayError(null);
     try {
       await playAndOpenPlayer(songs, selected);
     } catch (error) {
       setPlayError(error instanceof Error ? error.message : '앨범을 재생할 수 없습니다.');
     } finally { setStarting(false); }
-  };
+  }, [songs]);
+  const renderSong = useCallback(({ item, index }: { item: Song; index: number }) => <View style={[styles.song, { backgroundColor: colors.background }]}><SongRow song={item} index={index} favoriteLocation="album" onPress={() => void play(index)} /></View>, [colors.background, play]);
   return <View style={[styles.screen, { backgroundColor: colors.background }]}>
     <Stack.Screen options={{ headerTintColor: lightHeader ? '#FFFFFF' : colors.tint, headerTitleStyle: { color: lightHeader ? '#FFFFFF' : colors.text } }} />
     {focused && <StatusBar style={lightHeader || scheme === 'dark' ? 'light' : 'dark'} animated />}
-    {decorated && songs.length > 0 && <LinearGradient pointerEvents="none" accessibilityElementsHidden importantForAccessibility="no-hide-descendants"
+    {appearanceReady && decorated && songs.length > 0 && <LinearGradient pointerEvents="none" accessibilityElementsHidden importantForAccessibility="no-hide-descendants"
       colors={albumColors} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={[styles.backdrop, { height: heroHeight }]} />}
-    <AsyncState loading={query.isPending} error={query.isError && !query.data ? query.error.message : null} retry={() => void query.refetch()}>
+    <AsyncState loading={query.isPending || !appearanceReady} error={query.isError && !query.data ? query.error.message : null} retry={() => void query.refetch()}>
       <TabScrollEdgeFade topEnabled={false}><FlatList key={album.id} data={songs} keyExtractor={(song) => song.id} contentContainerStyle={styles.list} alwaysBounceVertical
         contentInsetAdjustmentBehavior="never" automaticallyAdjustContentInsets={false} scrollIndicatorInsets={{ top: headerHeight }} onScroll={header.onScroll} scrollEventThrottle={16}
         refreshControl={<RefreshControl refreshing={query.isRefetching} onRefresh={() => void query.refetch()} progressViewOffset={headerHeight} colors={[colors.tint]} tintColor={colors.tint} progressBackgroundColor={colors.surface} />}
@@ -85,7 +89,7 @@ export default function AlbumScreen() {
         </View> : null}
         ListEmptyComponent={<Text style={[styles.empty, { paddingTop: headerHeight + 30, color: colors.muted, backgroundColor: colors.background }]}>이 앨범의 곡이 없습니다. 아래로 당겨 다시 확인하세요.</Text>}
         ListFooterComponent={<View style={{ flex: 1, minHeight: 180 + insets.bottom, backgroundColor: colors.background }} />} ListFooterComponentStyle={styles.footer}
-        renderItem={({ item, index }) => <View style={[styles.song, { backgroundColor: colors.background }]}><SongRow song={item} index={index} onPress={() => void play(index)} /></View>} /></TabScrollEdgeFade>
+        initialNumToRender={6} maxToRenderPerBatch={6} windowSize={7} renderItem={renderSong} /></TabScrollEdgeFade>
     </AsyncState>
     <Animated.View pointerEvents="none" accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={[styles.headerGradient, { height: headerHeight + 28 }, header.gradientStyle]}>
       <LinearGradient colors={[colors.background, colors.background, colors.background + '00']} locations={[0, headerHeight / (headerHeight + 28), 1]} style={StyleSheet.absoluteFill} />

@@ -9,23 +9,28 @@ type Props = Pick<SwitchProps, 'value' | 'disabled' | 'onValueChange' | 'accessi
   thumbColor?: string;
   ios_backgroundColor?: string;
   haptics?: boolean;
+  /** Temporarily block repeated input while preserving the enabled appearance. */
+  busy?: boolean;
 };
 
-export function AnimatedSwitch({ value = false, disabled = false, onValueChange, accessibilityLabel, trackColor, thumbColor, ios_backgroundColor, haptics = true }: Props) {
+export function AnimatedSwitch({ value = false, disabled = false, busy = false, onValueChange, accessibilityLabel, trackColor, thumbColor, ios_backgroundColor, haptics = true }: Props) {
   const colors = useColors();
   const progress = useSharedValue(value ? 1 : 0);
   const off = disabled ? colors.separator : trackColor?.false ?? ios_backgroundColor ?? colors.separator;
   const on = disabled ? colors.muted : trackColor?.true ?? colors.tint;
+  const offThumb = disabled ? colors.switchThumbDisabled : thumbColor ?? colors.switchThumbOff;
+  const onThumb = disabled ? colors.switchThumbDisabled : thumbColor ?? colors.switchThumbOn;
+  const blocked = disabled || busy;
   useEffect(() => {
     progress.value = withTiming(value ? 1 : 0, { duration: 180, reduceMotion: ReduceMotion.System });
   }, [value, progress]);
   const track = useAnimatedStyle(() => ({ backgroundColor: interpolateColor(progress.value, [0, 1], [off, on]) }));
-  const thumb = useAnimatedStyle(() => ({ transform: [{ translateX: progress.value * 22 }] }));
+  const thumb = useAnimatedStyle(() => ({ backgroundColor: interpolateColor(progress.value, [0, 1], [offThumb, onThumb]), transform: [{ translateX: progress.value * 22 }] }));
   return <Pressable accessibilityRole="switch" accessibilityLabel={accessibilityLabel}
-    accessibilityState={{ checked: value, disabled }} disabled={disabled}
-    onPress={() => { if (!disabled && onValueChange) { if (haptics) playHaptic('selection'); onValueChange(!value); } }} style={styles.touch}>
+    accessibilityState={{ checked: value, disabled: blocked, ...(busy && { busy: true }) }} disabled={blocked}
+    onPress={() => { if (!blocked && onValueChange) { if (haptics) playHaptic('selection'); onValueChange(!value); } }} style={styles.touch}>
     <Animated.View style={[styles.track, track]} pointerEvents="none">
-      <Animated.View style={[styles.thumb, { backgroundColor: disabled ? colors.switchThumbDisabled : thumbColor ?? (value ? colors.switchThumbOn : colors.switchThumbOff) }, thumb]} />
+      <Animated.View style={[styles.thumb, thumb]} />
     </Animated.View>
   </Pressable>;
 }

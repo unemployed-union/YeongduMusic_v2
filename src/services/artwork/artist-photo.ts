@@ -1,8 +1,15 @@
-import { Platform } from 'react-native';
+import { Platform, type ImageURISource } from 'react-native';
 import { CloudRequestError, cloudRequest } from '@/services/cloud-music/request';
 import { musicBrainzRequest } from '@/services/metadata/web-search';
 
 export type ArtistPhoto = { uri: string; sourceUrl: string; credit: string; license: string; provider?: string };
+const userAgent = 'YeongduMusic/1.0 (https://github.com/unemployed-union/YeongduMusic_v2)';
+/** RN 0.86 Android forwards source headers only for the array form. */
+export function artistPhotoSource(uri: string): ImageURISource | ImageURISource[] {
+  if (Platform.OS === 'web') return { uri };
+  const source = { uri, headers: { 'User-Agent': userAgent } };
+  return Platform.OS === 'android' ? [source] : source;
+}
 type Json = Record<string, unknown>;
 const object = (value: unknown): Json => value && typeof value === 'object' && !Array.isArray(value) ? value as Json : {};
 const array = (value: unknown): unknown[] => Array.isArray(value) ? value : [];
@@ -133,7 +140,7 @@ async function wikimediaRequest(url: string, signal: AbortSignal) {
   if (Date.now() < blockedUntil) throw new CloudRequestError('사진 서버가 혼잡합니다. 잠시 후 다시 시도해 주세요.');
   return cloudRequest('아티스트 사진', async requestSignal => {
     const response = await fetch(url, { signal: requestSignal, headers: { Accept: 'application/json',
-      [Platform.OS === 'web' ? 'Api-User-Agent' : 'User-Agent']: 'YeongduMusic/1.0 (https://github.com/unemployed-union/YeongduMusic_v2)' } });
+      [Platform.OS === 'web' ? 'Api-User-Agent' : 'User-Agent']: userAgent } });
     if (!response.ok) {
       if (response.status === 429 || response.status === 503) {
         const seconds = Number(response.headers.get('Retry-After'));

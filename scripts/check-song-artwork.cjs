@@ -73,7 +73,7 @@ async function main() {
   const dataImage = 'data:image/png;base64,iVBORw0KGgo='; await webStore.getState().save([key], dataImage);
   await webStore.getState().load(true); assert.equal(webStore.getState().patches[key], dataImage);
   await webStore.getState().save([key], undefined); await store.getState().load(true);
-  await checkPlayback(store); await checkEditor(store); await checkQueries(store);
+  checkPreview(); await checkPlayback(store); await checkEditor(store); await checkQueries(store);
   console.log('PASS: artwork lookup/escaping/shared throttle, validated image import/download/cleanup, persistent scoped song/album edits/reset, storage failures/races, explicit preview/apply UI and live queue/lock-screen updates without audio reload/seek. Native files, rendering and network are mocked.');
 }
 async function checkSearch() {
@@ -183,8 +183,35 @@ async function checkQueries(store) {
   await store.getState().save([nextKey], undefined);
   assert.equal(queries.useAlbums().select(page).items[0].artworkUrl, original.artworkUrl);
 }
+function checkPreview() {
+  const jsx = (type, props) => ({ type, props });
+  const nodes = tree => Array.isArray(tree) ? tree.flatMap(nodes) : tree && typeof tree === 'object' ? [tree, ...nodes(tree.props?.children)] : [];
+  const flatten = value => Object.assign({}, ...[value].flat(Infinity).filter(Boolean));
+  const palette = load('src/theme/tokens.ts', { 'react-native': {}, '@/stores/theme-preferences': {}, './mode': {} }).palette;
+  for (const mode of ['light', 'dark']) {
+    const slots = []; let cursor = 0;
+    const Preview = load('src/features/artwork/artwork-preview.tsx', {
+      react: { useState: initial => { const i = cursor++; if (!(i in slots)) slots[i] = initial; return [slots[i], value => { slots[i] = value; }]; } },
+      'react/jsx-runtime': { jsx, jsxs: jsx }, 'react-native': { View: 'View', Image: 'Image', ActivityIndicator: 'Spinner', StyleSheet: { create: value => value } },
+      '@expo/vector-icons/Ionicons': { __esModule: true, default: 'Icon' }, '@/components/text': { Text: 'Text' }, '@/theme/tokens': { useColors: () => palette[mode] },
+    }).ArtworkPreview;
+    const render = uri => { cursor = 0; return nodes(Preview({ uri })); };
+    let tree = render(undefined);
+    assert(tree.some(node => node.type === 'Text' && node.props.children === '앨범아트 없음'));
+    assert(tree.some(node => node.type === 'Icon')); assert(!tree.some(node => node.type === 'Image' || node.type === 'Spinner'));
+    assert.equal(flatten(tree[0].props.style).backgroundColor, palette[mode].background);
+    slots.length = 0; tree = render('https://example.invalid/cover');
+    assert(tree.some(node => node.type === 'Spinner'), 'Preview distinguishes loading from no artwork');
+    tree.find(node => node.type === 'Image').props.onLoad(); assert(!render('https://example.invalid/cover').some(node => node.type === 'Spinner'));
+    slots.length = 0; tree = render('https://example.invalid/broken'); tree.find(node => node.type === 'Image').props.onError();
+    tree = render('https://example.invalid/broken');
+    assert(!tree.some(node => node.type === 'Image' || node.type === 'Spinner'), 'A failed image cannot leave a blank frame or endless spinner');
+    const error = tree.find(node => node.type === 'Text' && node.props.children === '표지를 불러오지 못했습니다');
+    assert(error); assert.equal(flatten(error.props.style).color, palette[mode].text);
+  }
+}
 async function checkEditor(store) {
-  const states = [], refs = [], jsx = (type, props) => ({ type, props }); let slot = 0, refSlot = 0, lookups = 0, downloads = 0, searchGate = null, editingSong = original, fileCalls = 0, failFileAt = 0, visible = [original, second], editingAlbum = false;
+  const states = [], refs = [], jsx = (type, props) => ({ type, props }); let slot = 0, refSlot = 0, lookups = 0, downloads = 0, searchGate = null, downloadGate = null, fileGate = null, editingSong = original, fileCalls = 0, failFileAt = 0, visible = [original, second], editingAlbum = false;
   const auth = create(() => ({ mode: 'mock', session: null })), useAuthStore = () => auth.getState(); useAuthStore.getState = auth.getState;
   const hidden = create(() => ({ ready: true, scope: 'demo', profile: { presets: [] } }));
   const Editor = load('src/features/artwork/artwork-editor.tsx', {
@@ -194,16 +221,17 @@ async function checkEditor(store) {
     'react/jsx-runtime': { jsx, jsxs: jsx }, 'react-native': { Image: 'Image', ActivityIndicator: 'Spinner', Platform: { OS: 'android' },
       Pressable: 'Button', TextInput: 'Input', View: 'View', StyleSheet: { create: value => value } },
     '@/components/text': { Text: 'Text' }, '@/components/animated-switch': { AnimatedSwitch: 'Switch' }, '@/theme/tokens': { useColors: () => ({}) },
+    '@expo/vector-icons/Ionicons': { __esModule: true, default: 'Icon' }, './artwork-preview': { ArtworkPreview: 'Preview' },
     '@/components/toast-notice': { ToastNotice: 'Toast' },
     '@tanstack/react-query': { useQueryClient: () => ({ setQueryData() {} }) },
     '@/features/metadata/file-options': load('src/features/metadata/file-options.ts'),
     '@/features/library/repository': { libraryIdentity: () => 'demo' },
-    '@/services/metadata/write-song-file': { writeSongArtworkFile: async song => { fileCalls++; if (fileCalls === failFileAt) throw Error('file failed'); return { song, message: 'saved' }; } },
+    '@/services/metadata/write-song-file': { writeSongArtworkFile: async (song, image, progress) => { fileCalls++; progress('음악 파일에 표지 기록 중…'); if (fileGate) await fileGate.promise; if (fileCalls === failFileAt) throw Error('file failed'); return { song, message: 'saved' }; } },
     '@/stores/auth': { useAuthStore }, '@/stores/song-artwork': { useSongArtworkStore: () => store.getState() }, '@/stores/hidden-music': { useHiddenMusicStore: hidden },
     '@/features/library/queries': { useSongs: () => ({ data: { items: visible }, isPending: false, isFetching: false }) },
     '@/features/hidden-music/rules': { privacyScope: mode => mode === 'mock' ? 'demo' : 'changed', hiddenMatcher: presets => song => presets.some(preset => preset.songIds.includes(song.id)) },
     '@/features/metadata/rules': metadata, './rules': rules,
-    '@/services/artwork/files': { pickArtwork: async () => image, downloadArtwork: async () => { downloads++; return image; } },
+    '@/services/artwork/files': { pickArtwork: async () => image, downloadArtwork: async () => { downloads++; if (downloadGate) await downloadGate.promise; return image; } },
     '@/services/artwork/search': { searchArtwork: async () => { lookups++; if (searchGate) await searchGate.promise; return [{ id, uri: 'https://example.invalid/candidate', album: 'Album', artist: 'Artist', year: '2026' }]; } },
   }).ArtworkEditor;
   const nodes = tree => Array.isArray(tree) ? tree.flatMap(nodes) : tree && typeof tree === 'object' ? [tree, ...nodes(tree.props?.children)] : [];
@@ -215,10 +243,23 @@ async function checkEditor(store) {
   assert.equal(fileSwitch().props.value, false); assert.equal(fileSwitch().props.disabled, true, 'Demo music never writes source files');
   button('이미지 파일 선택').props.onPress(); await tick(); assert.deepEqual(store.getState().patches, {}, 'Selecting/previews never auto-save');
   button('앨범아트 적용').props.onPress(); await tick(); assert.equal(store.getState().patches[key], image); assert.equal(store.getState().patches[nextKey], undefined);
-  button('웹에서 앨범아트 찾기').props.onPress(); await tick(); assert.equal(lookups, 1); assert.equal(downloads, 0);
+  searchGate = deferred(); button('웹에서 앨범아트 찾기').props.onPress(); await tick(); assert.equal(lookups, 1); assert.equal(downloads, 0);
+  let pending = render(), searchTitle = pending.find(node => node.type === 'Text' && node.props.children === '앨범아트를 찾는 중…');
+  assert(searchTitle); assert.equal(pending.filter(node => node.type === 'Spinner').length, 1);
+  // Compare within one render; every render creates fresh element objects.
+  const indexOfButton = (tree, label) => tree.findIndex(node => node.type === 'Button' && nodes(node).some(child => child.type === 'Text' && child.props.children === label));
+  assert(pending.indexOf(searchTitle) < indexOfButton(pending, '웹에서 앨범아트 찾기'), 'Search progress remains above the initiating button');
+  assert(pending.indexOf(searchTitle) < indexOfButton(pending, '앨범아트 적용'), 'Search feedback appears next to search, before the save controls');
+  searchGate.resolve(); searchGate = null; await tick();
   render().find(node => node.type === 'Button' && node.props.accessibilityState?.selected === false).props.onPress();
   render().find(node => node.type === 'Switch').props.onValueChange(true);
-  button('앨범아트 적용').props.onPress(); await tick(); assert.equal(downloads, 1); assert.equal(store.getState().patches[nextKey], image);
+  downloadGate = deferred(); button('앨범아트 적용').props.onPress(); await tick(); assert.equal(downloads, 1);
+  pending = render(); const appTitle = pending.find(node => node.type === 'Text' && node.props.children === '앱에 앨범아트를 적용하는 중…');
+  assert(appTitle); assert(pending.indexOf(appTitle) < indexOfButton(pending, '앨범아트 적용'), 'Save feedback appears above Apply');
+  const flatten = value => Object.assign({}, ...[value].flat(Infinity).filter(Boolean));
+  assert.equal(flatten(appTitle.props.style).fontSize, 14);
+  assert.equal(flatten(searchTitle.props.style).fontSize, flatten(appTitle.props.style).fontSize);
+  downloadGate.resolve(); downloadGate = null; await tick(); assert.equal(store.getState().patches[nextKey], image);
   button('원래 앨범아트로 되돌리기').props.onPress(); await tick(); assert.deepEqual(store.getState().patches, {});
   button('이미지 파일 선택').props.onPress(); await tick(); hidden.setState({ profile: { presets: [{ songIds: ['two'] }] } });
   button('앨범아트 적용').props.onPress(); await tick(); assert.deepEqual(store.getState().patches, {}, 'Songs hidden while the editor is open block album publication');
@@ -229,7 +270,14 @@ async function checkEditor(store) {
   states.length = 0; refs.length = 0; render().find(node => node.type === 'Button').props.onPress();
   assert.equal(fileSwitch().props.value, false); assert.equal(fileSwitch().props.disabled, false);
   button('이미지 파일 선택').props.onPress(); await tick(); fileSwitch().props.onValueChange(true);
-  button('앨범아트 적용').props.onPress(); await tick(); assert.equal(fileCalls, 1); assert.equal(store.getState().patches[metadata.metadataKey(original, 'changed')], image);
+  fileGate = deferred(); button('앨범아트 적용').props.onPress(); await tick(); assert.equal(fileCalls, 1);
+  pending = render(); const fileTitle = pending.find(node => node.type === 'Text' && node.props.children === '파일과 앱에 앨범아트를 저장하는 중…');
+  const fileProgress = pending.find(node => node.type === 'Text' && String(node.props.children).includes('1/1곡 · 음악 파일에 표지 기록 중'));
+  assert(fileTitle && fileProgress); assert(pending.indexOf(fileTitle) < indexOfButton(pending, '앨범아트 적용'));
+  assert.equal(flatten(fileTitle.props.style).fontSize, flatten(appTitle.props.style).fontSize, 'App-only and source-file status use the same typography');
+  assert.equal(flatten(fileProgress.props.style).fontSize, flatten(fileTitle.props.style).fontSize);
+  assert.equal(flatten(fileProgress.props.style).lineHeight, 20);
+  fileGate.resolve(); fileGate = null; await tick(); assert.equal(store.getState().patches[metadata.metadataKey(original, 'changed')], image);
   render().find(node => node.type === 'Switch' && node.props.accessibilityLabel === '같은 앨범의 곡에도 앨범아트 적용').props.onValueChange(true);
   failFileAt = fileCalls + 2; button('앨범아트 적용').props.onPress(); await tick();
   assert(render().some(node => node.props.accessibilityRole === 'alert' && node.props.children.includes('1곡의 파일')));
@@ -263,5 +311,9 @@ async function checkEditor(store) {
   button('앨범아트 적용').props.onPress(); await tick(); assert(folderKeys.every(key => store.getState().patches[key] === image), 'Explicit folder album selection updates every matching displayed song');
   assert.equal(store.getState().patches[metadata.metadataKey(other, 'changed')], undefined, 'Unrelated albums cannot join an explicit album edit');
   button('원래 앨범아트로 되돌리기').props.onPress(); await tick(); assert(folderKeys.every(key => !store.getState().patches[key]));
+  button('웹에서 앨범아트 찾기').props.onPress(); await tick();
+  render().find(node => node.type === 'Image').props.onError();
+  const failedCandidate = render().find(node => node.type === 'Button' && node.props.accessibilityState?.selected === false);
+  assert(failedCandidate.props.disabled); assert(nodes(failedCandidate).some(node => node.type === 'Icon'), 'Failed search thumbnails show an explicit placeholder');
 }
 main().catch(error => { console.error(error); process.exitCode = 1; });

@@ -275,12 +275,16 @@ async function main() {
       const track = control.props.children, thumb = track.props.children;
       assert.equal(track.props.style[1].backgroundColor, value ? palette.muted : palette.separator);
       assert.equal(thumb.props.style[1].backgroundColor, palette.switchThumbDisabled);
-      assert.equal(thumb.props.style[2].transform[0].translateX, value ? 22 : 0, 'Disabled switches preserve their checked position');
+      assert.equal(thumb.props.style[1].transform[0].translateX, value ? 22 : 0, 'Disabled switches preserve their checked position');
     }
     for (const value of [false, true]) {
       const control = AnimatedSwitch({ value });
       assert.equal(control.props.children.props.style[1].backgroundColor, value ? palette.tint : palette.separator);
       assert.equal(control.props.children.props.children.props.style[1].backgroundColor, value ? palette.switchThumbOn : palette.switchThumbOff);
+      const pending = AnimatedSwitch({ value, busy: true, onValueChange: () => { throw Error('A save is already pending'); } });
+      assert.equal(pending.props.disabled, true); assert.equal(pending.props.accessibilityState.busy, true); pending.props.onPress();
+      assert.deepEqual(pending.props.children.props.style, control.props.children.props.style, 'A pending save must not flash the track into disabled colors');
+      assert.deepEqual(pending.props.children.props.children.props.style, control.props.children.props.children.props.style, 'A pending save preserves thumb color and position in both themes');
     }
     let next;
     const control = AnimatedSwitch({ value: false, onValueChange: value => { next = value; }, trackColor: { false: '#123', true: '#f48' }, thumbColor: '#fff' });

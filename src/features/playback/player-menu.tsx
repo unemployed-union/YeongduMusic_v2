@@ -15,6 +15,7 @@ import { sectionClock } from '@/services/playback/section-repeat';
 import { PlaybackSpeedOptions } from './playback-speed-options';
 import { useAppColorScheme, useColors } from '@/theme/tokens';
 import { playHaptic } from '@/services/haptics';
+import { useBlurIntensity } from '@/stores/blur-preferences';
 
 export type PlayerMenuAction = 'lyrics' | 'add-song' | 'save-queue' | 'equalizer' | 'album' | 'artist' | 'download' | 'delete-local' | 'edit-metadata';
 interface Props {
@@ -37,6 +38,7 @@ const EXIT_CARD = FadeOutDown.duration(160).easing(Easing.in(Easing.cubic)).with
 /** An inline popover lets playlist dialogs open without stacking native modals. */
 export function PlayerMenu({ kind = 'playback', canDownload = false, localSong = false, blurTarget, panel, bottom, maxHeight, onClose, onSelect }: Props) {
   const colors = useColors(), light = useAppColorScheme() === 'light';
+  const blurIntensity = useBlurIntensity('playerMenu'), opaque = light || blurIntensity === 0;
   const [options, setOptions] = useState<'sleep-timer' | 'section-repeat' | 'playback-speed' | null>(null);
   const preferences = useMenuPreferences(state => state.layout.player);
   const storageBusy = useOfflineMusicStore(state => state.busy);
@@ -69,9 +71,9 @@ export function PlayerMenu({ kind = 'playback', canDownload = false, localSong =
   const activeOptions = options && preferences.some(item => item.id === options && item.visible) ? options : null;
   return <Animated.View collapsable={false} entering={ENTER_OVERLAY} exiting={EXIT_OVERLAY} style={StyleSheet.absoluteFill} pointerEvents="box-none" accessibilityViewIsModal>
     <Pressable style={[StyleSheet.absoluteFill, styles.backdrop]} accessibilityRole="button" accessibilityLabel={kind === 'details' ? '가수 메뉴 닫기' : '재생 메뉴 닫기'} onPress={onClose} />
-    <Animated.View collapsable={false} entering={ENTER_CARD} exiting={EXIT_CARD} style={[styles.card, { bottom, maxHeight, borderColor: colors.separator }, light && { backgroundColor: colors.surface }, kind === 'details' && { left: 29, right: undefined }]}><View style={[styles.surface, light && { backgroundColor: colors.surface }]}>
-      {!light && <BlurView pointerEvents="none" blurTarget={blurTarget} blurMethod="dimezisBlurView" intensity={32} tint="dark" style={StyleSheet.absoluteFill} />}
-      {!light && <View pointerEvents="none" style={[StyleSheet.absoluteFill, styles.tint]} />}
+    <Animated.View collapsable={false} entering={ENTER_CARD} exiting={EXIT_CARD} style={[styles.card, { bottom, maxHeight, borderColor: colors.separator }, opaque && { backgroundColor: colors.surface }, kind === 'details' && { left: 29, right: undefined }]}><View style={[styles.surface, opaque && { backgroundColor: colors.surface }]}>
+      {!opaque && <BlurView pointerEvents="none" blurTarget={blurTarget} blurMethod="dimezisBlurView" intensity={blurIntensity} tint="dark" style={StyleSheet.absoluteFill} />}
+      {!opaque && <View pointerEvents="none" style={[StyleSheet.absoluteFill, styles.tint]} />}
       <ScrollView bounces={false} keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content}>
         {kind === 'playback' && activeOptions === 'sleep-timer' ? <SleepTimerOptions onBack={() => setOptions(null)} onClose={onClose} /> : kind === 'playback' && activeOptions === 'section-repeat' ? <SectionRepeatOptions onBack={() => setOptions(null)} /> : kind === 'playback' && activeOptions === 'playback-speed' ? <PlaybackSpeedOptions onBack={() => setOptions(null)} /> : visibleItems.map(({ action, label, icon, selected }) => <Pressable key={action} disabled={storageBusy && (action === 'download' || action === 'delete-local')} accessibilityRole="button" accessibilityState={{ selected: !!selected }} onPress={() => { playHaptic('selection'); if (action === 'sleep-timer' || action === 'section-repeat' || action === 'playback-speed') setOptions(action); else onSelect(action); }} style={({ pressed }) => [styles.item, pressed && { backgroundColor: colors.separator }]}>
           <Ionicons name={icon} size={23} color={selected ? colors.tint : colors.text} />

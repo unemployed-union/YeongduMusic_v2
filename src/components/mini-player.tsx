@@ -10,8 +10,10 @@ import { Artwork } from './artwork';
 import { MarqueeText } from './marquee-text';
 import { togglePlayback } from '@/services/playback/controller';
 import { usePlaybackStore } from '@/stores/playback';
-import { useAppColorScheme, useColors } from '@/theme/tokens';
+import { useAppColorScheme } from '@/theme/tokens';
+import { useMiniPlayerColors } from '@/theme/use-player-colors';
 import { playHaptic } from '@/services/haptics';
+import { useBlurIntensity } from '@/stores/blur-preferences';
 
 export const MINI_PLAYER_INSET = 8;
 
@@ -23,8 +25,9 @@ function openPlayer() {
 export function MiniPlayer({ blurTarget }: { blurTarget: RefObject<View | null> }) {
   const { queue, index, playing, position, duration } = usePlaybackStore();
   const song = queue[index];
-  const colors = useColors();
+  const colors = useMiniPlayerColors();
   const isDark = useAppColorScheme() === 'dark';
+  const blurIntensity = useBlurIntensity('miniPlayer'), blurEnabled = blurIntensity > 0;
   const swipeUp = Gesture.Pan()
     .activeOffsetY(-12)
     .failOffsetY(12)
@@ -35,8 +38,8 @@ export function MiniPlayer({ blurTarget }: { blurTarget: RefObject<View | null> 
     });
   if (!song) return null;
   return <GestureDetector gesture={swipeUp}><Animated.View entering={FadeInDown.duration(250)} style={[styles.shell, { borderColor: colors.chromeBorder }]}>
-    <BlurView pointerEvents="none" blurTarget={blurTarget} blurMethod="dimezisBlurView" intensity={75} tint={isDark ? 'dark' : 'light'} style={StyleSheet.absoluteFill} />
-    <View pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: colors.mini }]} />
+    {blurEnabled && <BlurView pointerEvents="none" blurTarget={blurTarget} blurMethod="dimezisBlurView" intensity={blurIntensity} tint={isDark ? 'dark' : 'light'} style={StyleSheet.absoluteFill} />}
+    <View pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: blurEnabled ? colors.mini : colors.surface }]} />
     <Pressable style={styles.body} onPress={openPlayer} accessibilityHint="누르거나 위로 스와이프하면 전체 재생 화면이 열립니다">
       <Artwork item={song} size={45} radius={7} />
       <View style={styles.text}><MarqueeText key={song.id + song.title} text={song.title} style={[styles.title, { color: colors.text }]} /><Text numberOfLines={1} style={[styles.artist, { color: colors.chromeMuted }]}>{song.artist}</Text></View>

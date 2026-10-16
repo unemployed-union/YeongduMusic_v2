@@ -1,10 +1,14 @@
-import { useEffect, useState } from 'react';
+import { useContext, useEffect, useState } from 'react';
 import { Modal, Platform, Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Text } from './text';
-import { useColors } from '@/theme/tokens';
+import { useAppColorScheme, useColors } from '@/theme/tokens';
 import { playHaptic } from '@/services/haptics';
+import { getActionMenuPosition, type ActionMenuAnchor } from './action-menu-position';
+import { ScreenBlurTargetContext } from './screen-blur-target';
+import { useBlurIntensity } from '@/stores/blur-preferences';
 
 export type ActionMenuItem<T extends string> = { id: T; label: string; icon: keyof typeof Ionicons.glyphMap; disabled?: boolean };
 
@@ -19,14 +23,22 @@ export function useMenuAction<T extends string>() {
   return { action, visible: pending === null, select: setPending, onDismiss: () => { if (pending) setAction(pending); } };
 }
 
-export function ActionMenu<T extends string>({ title, items, visible, onSelect, onClose, onDismiss, error }: {
-  title: string; items: ActionMenuItem<T>[]; visible: boolean; onSelect: (id: T) => void; onClose: () => void; onDismiss: () => void; error?: string | null;
+export function ActionMenu<T extends string>({ title, items, anchor, visible, onSelect, onClose, onDismiss, error }: {
+  title: string; items: ActionMenuItem<T>[]; anchor: ActionMenuAnchor; visible: boolean; onSelect: (id: T) => void; onClose: () => void; onDismiss: () => void; error?: string | null;
 }) {
-  const colors = useColors(), insets = useSafeAreaInsets(), { height } = useWindowDimensions();
-  return <Modal transparent visible={visible} animationType="fade" onRequestClose={onClose} onDismiss={onDismiss}>
+  const colors = useColors(), insets = useSafeAreaInsets(), viewport = useWindowDimensions();
+  const light = useAppColorScheme() === 'light';
+  const blurIntensity = useBlurIntensity('libraryMenu'), blurEnabled = blurIntensity > 0;
+  const blurTarget = useContext(ScreenBlurTargetContext);
+  const [cardHeight, setCardHeight] = useState(0);
+  const position = getActionMenuPosition(anchor, viewport, insets, cardHeight);
+  return <Modal transparent statusBarTranslucent navigationBarTranslucent visible={visible} animationType="fade" onRequestClose={onClose} onDismiss={onDismiss}>
     <View style={StyleSheet.absoluteFill} accessibilityViewIsModal>
       <Pressable accessibilityRole="button" accessibilityLabel="작업 메뉴 닫기" style={[StyleSheet.absoluteFill, styles.backdrop]} onPress={onClose} />
-      <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.separator, bottom: Math.max(insets.bottom + 88, 100), maxHeight: Math.max(120, height - insets.top - insets.bottom - 140) }]}>
+      <View onLayout={event => setCardHeight(event.nativeEvent.layout.height)} pointerEvents={cardHeight ? 'auto' : 'none'}
+        style={[styles.card, position, { backgroundColor: blurEnabled ? light ? '#FFFFFF40' : '#00000040' : colors.surface, borderColor: colors.separator, opacity: cardHeight ? 1 : 0 }]}>
+        {blurEnabled && <BlurView pointerEvents="none" blurTarget={blurTarget} blurMethod={blurTarget ? 'dimezisBlurView' : 'none'} intensity={blurIntensity} tint={light ? 'light' : 'dark'} style={StyleSheet.absoluteFill} />}
+        {blurEnabled && <View pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: light ? '#FFFFFFA6' : '#000000A6' }]} />}
         <ScrollView bounces={false} contentContainerStyle={styles.content}>
           <Text numberOfLines={2} style={[styles.title, { color: colors.muted }]}>{title}</Text>
           {items.map(item => <Pressable key={item.id} accessibilityRole="button" accessibilityState={{ disabled: !!item.disabled }} disabled={item.disabled}
@@ -41,7 +53,7 @@ export function ActionMenu<T extends string>({ title, items, visible, onSelect, 
 }
 const styles = StyleSheet.create({
   backdrop: { backgroundColor: '#00000030' },
-  card: { position: 'absolute', right: 29, width: 300, maxWidth: '85%', borderRadius: 18, borderWidth: StyleSheet.hairlineWidth, overflow: 'hidden', shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.25, shadowRadius: 18, elevation: 12 },
+  card: { position: 'absolute', borderRadius: 18, borderWidth: StyleSheet.hairlineWidth, overflow: 'hidden', shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.25, shadowRadius: 18, elevation: 12 },
   content: { padding: 6 }, title: { fontSize: 13, fontWeight: '600', paddingHorizontal: 14, paddingVertical: 10 },
   item: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 52, paddingHorizontal: 14, paddingVertical: 12, borderRadius: 12 },
   label: { flex: 1, fontSize: 15, fontWeight: '600' }, feedback: { padding: 14, fontSize: 13, lineHeight: 20 },

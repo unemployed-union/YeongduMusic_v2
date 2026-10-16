@@ -52,7 +52,7 @@ export function MetadataWebOptions({ songKey, draft, onChange, disabled, onBusyC
       <Text style={{ color: colors.text, fontWeight: '600' }}>이 곡 자동 적용 제외</Text>
       <Text style={[styles.note, { color: colors.muted }]}>켜면 이 곡은 자동으로 검색하거나 채우지 않습니다. 수동 검색은 계속 사용할 수 있습니다. 선택은 즉시 저장됩니다.</Text>
     </View><AnimatedSwitch accessibilityLabel="이 곡 자동 적용 제외" value={!!songKey && !!preferences.excluded[songKey]}
-      disabled={disabled || loading || !songKey || !preferences.ready || preferences.saving || preferences.loadError}
+      disabled={disabled || loading || !songKey || !preferences.ready || preferences.loadError} busy={preferences.saving}
       onValueChange={value => { if (songKey) void preferences.setExcluded(songKey, value).catch(() => {}); }} /></View>
     {preferences.error && <><Text accessibilityRole="alert" style={{ color: colors.tint }}>{preferences.error}</Text>
       {preferences.loadError && <Pressable accessibilityRole="button" disabled={preferences.loading} onPress={() => void preferences.load(true)} style={styles.button}><Text style={{ color: colors.tint }}>웹 곡 정보 설정 다시 불러오기</Text></Pressable>}</>}
