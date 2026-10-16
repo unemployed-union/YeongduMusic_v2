@@ -9,7 +9,7 @@ function shared(initial) {
 }
 function harness() {
   const slots = [], effects = [], cleanups = [], pending = [], pages = [];
-  let slot = 0, starts = 0;
+  let slot = 0, starts = 0, visible = true;
   const pan = () => {
     const gesture = { options: {}, handlers: {} };
     for (const name of ['enabled', 'maxPointers', 'activeOffsetX', 'failOffsetY']) gesture[name] = value => { gesture.options[name] = value; return gesture; };
@@ -18,6 +18,7 @@ function harness() {
   };
   const jsx = (type, props) => ({ type, props });
   const modules = {
+    '@/features/playback/use-playback-visibility': { usePlaybackVisibility: () => visible },
     react: { useCallback: fn => fn, useMemo: fn => fn(), useRef: initial => slots[slot++] ??= { current: initial },
       useEffect: (fn, deps) => { const i = slot++; if (!slots[i] || deps.some((dep, j) => dep !== slots[i][j])) effects.push(fn); slots[i] = deps; } },
     'react/jsx-runtime': { jsx, jsxs: jsx }, 'react-native': { View: 'View', StyleSheet: { create: value => value } },
@@ -32,7 +33,7 @@ function harness() {
   const render = next => { props = { ...props, ...next }; slot = 0; const tree = exports.LibraryPager(props);
     for (const effect of effects.splice(0)) { const cleanup = effect(); if (cleanup) cleanups.push(cleanup); } return tree; };
   const flush = () => pending.splice(0).forEach(fn => fn());
-  return { render, flush, pages, offset: () => slots[0], get starts() { return starts; }, unmount: () => cleanups.forEach(fn => fn()) };
+  return { render, flush, pages, setVisible: value => { visible = value; }, offset: () => slots[0], get starts() { return starts; }, unmount: () => cleanups.forEach(fn => fn()) };
 }
 // Model the documented pre-activation thresholds; once activated, the axis stays fixed.
 function drag(tree, moves, velocityX = 0, success = true) {
@@ -78,6 +79,13 @@ function main() {
   tree = h.render({ pageIndex: 0, pageCount: 1, layoutKey: 'songs' }); assert.equal(drag(tree, [[-100, 0]]), false);
   tree = h.render({ pageCount: 3, layoutKey: 'songs:albums:artists' }); drag(tree, [[-24, 0], [-180, 0]]); h.offset().finish();
   const beforeUnmount = h.pages.length; h.unmount(); h.flush(); assert.equal(h.pages.length, beforeUnmount, 'Queued callbacks cannot update an unmounted library');
+  const lifecycle = harness(); tree = lifecycle.render(); lifecycle.offset().finish();
+  drag(tree, [[-24, 0], [-180, 0]]);
+  lifecycle.setVisible(false); tree = lifecycle.render(); lifecycle.flush();
+  assert.equal(tree.props.gesture.options.enabled, false, 'A covered or screen-off library cannot retain a pan recognizer');
+  assert.equal(lifecycle.offset().get(), 0, 'Backgrounding discards a partial library swipe');
+  lifecycle.offset().finish(); lifecycle.flush(); assert.deepEqual(lifecycle.pages, [], 'Canceled background snaps cannot switch tabs');
+  lifecycle.setVisible(true); tree = lifecycle.render(); assert.equal(tree.props.gesture.options.enabled, true); lifecycle.unmount();
   console.log('PASS: diagonal/vertical drift ignored, horizontal direction lock, swipe/flick/snap-back, page bounds, cancelled gestures, reorder/resize and unmount cleanup. Gesture arbitration and animation frames are modeled; device scrolling is not verified.');
 }
 main();

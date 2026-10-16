@@ -7,7 +7,7 @@ const ts = require(path.join(root, 'node_modules/typescript'));
 const { create } = require(path.join(root, 'node_modules/zustand'));
 function load(file, modules = {}) {
   modules = { ...require('./test-cloud-fixtures.cjs').cloudFixtures({}, modules), ...modules };
-  const code = ts.transpileModule(fs.readFileSync(path.join(root, file), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
+  const code = ts.transpileModule(fs.readFileSync(path.join(root, file), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX } }).outputText;
   const mod = { exports: {} };
   new Function('require', 'module', 'exports', code)(name => {
     if (name === 'zustand') return { create };
@@ -17,7 +17,8 @@ function load(file, modules = {}) {
   return mod.exports;
 }
 const files = new Map(), rows = new Map(), requests = [], refreshes = [], removed = [];
-let plan = {}, copyFailure = false, dbFailure = false, deleteFailure = false, heldResolve, cancelled = 0;
+let plan = {}, copyFailure = false, dbFailure = false, deleteFailure = false, heldResolve, cancelled = 0, copyGate, commitGate, cancelGate;
+function deferred() { let resolve; const promise = new Promise(done => { resolve = done; }); return { promise, resolve }; }
 const platform = { OS: 'android' };
 const rules = load('src/services/local-music/folders.ts');
 const exclusions = create(() => ({ ready: true, folders: [], load: async () => {} }));
@@ -25,14 +26,14 @@ const fileSystem = {
   documentDirectory: 'file:///app/', cacheDirectory: 'file:///cache/',
   getInfoAsync: async (uri, options = {}) => files.has(uri) ? { exists: true, isDirectory: false, size: files.get(uri).length, md5: options.md5 ? crypto.createHash('md5').update(files.get(uri)).digest('hex') : undefined } : { exists: false },
   makeDirectoryAsync: async () => {},
-  copyAsync: async ({ from, to }) => { files.set(to, Buffer.from(files.get(from))); if (copyFailure) throw Error('Disk full'); },
+  copyAsync: async ({ from, to }) => { files.set(to, Buffer.from(files.get(from))); if (copyGate) await copyGate.promise; if (copyFailure) throw Error('Disk full'); },
   deleteAsync: async uri => { if (deleteFailure && uri.startsWith(fileSystem.documentDirectory)) throw Error('delete failure'); files.delete(uri); removed.push(uri); },
   createDownloadResumable: (url, uri, options, progress) => {
     requests.push({ url, uri, options });
     const current = Array.isArray(plan) ? plan.shift() : plan;
     let stopped = false;
     return {
-      cancelAsync: async () => { cancelled++; stopped = true; heldResolve?.(); },
+      cancelAsync: async () => { cancelled++; stopped = true; heldResolve?.(); if (cancelGate) await cancelGate.promise; },
       downloadAsync: async () => {
         if (current.fail) throw Error('Native exception ' + url);
         files.set(uri, Buffer.from(current.bytes ?? 'ID3audio fixture'));
@@ -49,7 +50,7 @@ const database = {
   execAsync: async () => {},
   getAllAsync: async () => [...rows.values()].map(value => ({ value })),
   getFirstAsync: async (_, id) => rows.has(id) ? { value: rows.get(id) } : null,
-  runAsync: async (sql, id, value) => { if (dbFailure) throw Error('DB failure'); if (sql.startsWith('DELETE')) rows.delete(id); else rows.set(id, value); },
+  runAsync: async (sql, id, value) => { if (dbFailure) throw Error('DB failure'); if (commitGate) await commitGate.promise; if (sql.startsWith('DELETE')) rows.delete(id); else rows.set(id, value); },
 };
 const storageModules = {
   'react-native': { Platform: platform }, 'expo-file-system/legacy': fileSystem,
@@ -176,11 +177,41 @@ async function main() {
   assert.ok(local.getState().songs.some(song => song.title === nas.title));
   assert.equal(offline.getState().error, null);
   plan = { bytes: 'ID3active cancel', hold: true };
+  cancelGate = deferred();
   const pending = offline.getState().download(nas); await flush();
   const requestsBefore = requests.length;
   await offline.getState().download(cloud);
   assert.equal(requests.length, requestsBefore, 'Concurrent downloads are blocked');
-  offline.getState().cancel(); await pending; assertNoParts();
+  const jsx = (type, props) => ({ type, props });
+  const nodes = tree => Array.isArray(tree) ? tree.flatMap(nodes) : tree && typeof tree === 'object' ? [tree, ...nodes(tree.props?.children)] : [];
+  const Status = load('src/features/offline-music/download-status.tsx', {
+    'react/jsx-runtime': { jsx, jsxs: jsx }, 'react-native': { View: 'View', Pressable: 'Button', StyleSheet: { create: value => value } },
+    '@/components/text': { Text: 'Text' }, '@/theme/tokens': { useColors: () => ({}) },
+    '@/stores/offline-music': { useOfflineMusicStore: () => offline.getState() },
+  }).DownloadStatus;
+  const cancelButton = () => nodes(Status({})).find(node => node.props?.accessibilityLabel === '보관 다운로드 취소');
+  assert.equal(cancelButton().props.style[0].minHeight, 44, 'Download cancellation has a full-size touch target');
+  const beforeCancel = cancelled;
+  cancelButton().props.onPress(); offline.getState().cancel();
+  assert.equal(offline.getState().cancelling, true); assert.equal(cancelButton().props.disabled, true);
+  assert.equal(cancelled, beforeCancel + 1, 'Repeated cancel taps cancel the native transfer once');
+  await flush(); assert.equal(offline.getState().busy, true, 'Keep the job locked until native cancellation and cleanup finish');
+  cancelGate.resolve(); await pending; cancelGate = null; assertNoParts();
+  assert.equal(offline.getState().cancelling, false); assert.equal(offline.getState().busy, false);
+  assert.match(offline.getState().message, /취소/); assert.equal(offline.getState().error, null);
+
+  const filesBefore = [...files.keys()].sort(), rowsBefore = rows.size;
+  plan = { bytes: 'ID3cancel-during-verified-copy' }; copyGate = deferred();
+  const copying = offline.getState().download(nas); await flush();
+  assert.equal(offline.getState().saving, false, 'Copying/verifying is still cancellable');
+  cancelButton().props.onPress(); copyGate.resolve(); await copying; copyGate = null;
+  assert.equal(rows.size, rowsBefore); assert.deepEqual([...files.keys()].sort(), filesBefore, 'Canceled copy leaves neither a published song nor a new app copy');
+  plan = { bytes: 'ID3atomic-commit' }; commitGate = deferred();
+  const committing = offline.getState().download(nas); await flush();
+  assert.equal(offline.getState().saving, true); assert.equal(cancelButton(), undefined, 'Final publication cannot be interrupted');
+  offline.getState().cancel(); assert.equal(offline.getState().cancelling, false);
+  commitGate.resolve(); await committing; commitGate = null;
+  assert.equal(offline.getState().error, null); assertNoParts();
   plan = { bytes: 'ID3obsolete NAS', hold: true };
   const previous = offline.getState().download(nas); await flush();
   auth.setState({ generation: auth.getState().generation + 1 });

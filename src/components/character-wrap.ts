@@ -1,5 +1,6 @@
 const BREAK = '\u200B';
 const boundary = /[\s\u200B]/u;
+const korean = /\p{Script=Hangul}/u;
 const extension = /[\p{M}\uFE00-\uFE0F\u{1F3FB}-\u{1F3FF}\u{E0020}-\u{E007F}]/u;
 const regional = /[\u{1F1E6}-\u{1F1FF}]/u;
 const segmenter = typeof Intl !== 'undefined' && typeof Intl.Segmenter === 'function' ? new Intl.Segmenter(undefined, { granularity: 'grapheme' }) : null;
@@ -31,12 +32,16 @@ function fallbackSegments(text: string): string[] {
   return parts;
 }
 
-/** Display-only break opportunities. Never use this for input or persisted data. */
+/** Allow character breaks around Hangul; leave other languages' word boundaries intact.
+ * Display only: never use this for input or persisted data.
+ */
 export function characterWrap(text: string): string {
+  if (!korean.test(text)) return text;
   const parts = segmenter ? Array.from(segmenter.segment(text), part => part.segment) : fallbackSegments(text);
   let output = '', previous = '';
   for (const part of parts) {
-    if (previous && !boundary.test(previous) && !boundary.test(part)) output += BREAK;
+    if (previous && !boundary.test(previous) && !boundary.test(part)
+      && (korean.test(previous) || korean.test(part))) output += BREAK;
     output += part;
     previous = part;
   }

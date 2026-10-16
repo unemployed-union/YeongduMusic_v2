@@ -9,7 +9,7 @@ import { reconcilePlaybackVisibility } from '@/services/playback/controller';
 import type { Song } from '@/types/music';
 
 type State = {
-  busy: boolean; saving: boolean; title: string; progress: DownloadProgress; error: string | null; message: string | null;
+  busy: boolean; saving: boolean; cancelling: boolean; title: string; progress: DownloadProgress; error: string | null; message: string | null;
   retrySong: Song | null;
   download: (song: Song) => Promise<void>; remove: (song: Song) => Promise<void>;
   cancel: () => void; clearNotice: () => void;
@@ -17,16 +17,20 @@ type State = {
 let request: AbortController | null = null;
 let activeSource: 'nas' | 'drive' | 's3' | null = null;
 export const useOfflineMusicStore = create<State>((set, get) => ({
-  busy: false, saving: false, title: '', progress: { written: 0, total: 0 }, error: null, message: null, retrySong: null,
+  busy: false, saving: false, cancelling: false, title: '', progress: { written: 0, total: 0 }, error: null, message: null, retrySong: null,
   clearNotice: () => set({ error: null, message: null, retrySong: null }),
-  cancel: () => { if (!get().saving) request?.abort(); },
+  cancel: () => {
+    if (!request || !get().busy || get().saving || request.signal.aborted) return;
+    set({ cancelling: true, error: null });
+    request.abort();
+  },
   download: async (song) => {
     if (get().busy || useLocalMusicStore.getState().busy) { set({ error: '다른 음악 저장 작업이 끝난 뒤 다시 시도해 주세요.' }); return; }
     const controller = new AbortController(); request = controller; activeSource = song.source === 's3' ? 's3' : song.source === 'drive' ? 'drive' : 'nas';
-    set({ busy: true, saving: false, title: song.title, progress: { written: 0, total: 0 }, error: null, message: null, retrySong: song });
+    set({ busy: true, saving: false, cancelling: false, title: song.title, progress: { written: 0, total: 0 }, error: null, message: null, retrySong: song });
     // Keep import/load from publishing an earlier local-library snapshot during the write.
     await useLocalMusicStore.getState().load();
-    if (controller.signal.aborted) { request = null; activeSource = null; set({ busy: false, message: '음악 보관을 취소했습니다.', retrySong: null }); return; }
+    if (controller.signal.aborted) { request = null; activeSource = null; set({ busy: false, cancelling: false, message: '음악 보관을 취소했습니다.', retrySong: null }); return; }
     if (useLocalMusicStore.getState().busy) { request = null; activeSource = null; set({ busy: false, error: '기기 음악 가져오기가 끝난 뒤 다시 보관해 주세요.' }); return; }
     useLocalMusicStore.setState({ busy: true });
     try {
@@ -38,7 +42,7 @@ export const useOfflineMusicStore = create<State>((set, get) => ({
       request = null; activeSource = null;
       useLocalMusicStore.setState({ busy: false });
       await useLocalMusicStore.getState().load();
-      set({ busy: false, saving: false });
+      set({ busy: false, saving: false, cancelling: false });
     }
   },
   remove: async (song) => {

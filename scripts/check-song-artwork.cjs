@@ -154,6 +154,18 @@ async function checkPlayback(artwork) {
     '@/stores/player-background': { usePlayerBackgroundStore: { getState: () => ({ selectArtwork: song => backgrounds.push(song.artworkUrl), reset() {} }) } },
     '@/features/library/repository': { musicRepository: () => ({ streamSource: async () => ({ uri: 'https://example.invalid/music' }) }) },
     '@/services/synology/api': { SessionExpiredError: class extends Error {}, SynologyError: class extends Error {} } });
+  await artwork.getState().save([key], image);
+  await controller.restorePlayback([original, second], 0, 37, false, false, 'off');
+  assert.equal(backgrounds.at(-1), base + image, 'Paused restore selects the reconciled artwork instead of the stale saved cover');
+  assert.equal(playback.getState().playing, false);
+  assert.deepEqual(events, [], 'Preparing restored artwork does not load or start audio');
+  await artwork.getState().save([key], undefined);
+  assert.equal(backgrounds.at(-1), original.artworkUrl, 'Artwork hydration/edits update a restored player before a native source exists');
+  const beforeProgress = backgrounds.length;
+  playback.getState().setStatus({ position: 38 });
+  assert.equal(backgrounds.length, beforeProgress, 'Playback progress never triggers color preparation');
+  assert.deepEqual(events, []);
+  controller.stopPlayback();
   await controller.playQueue([original, second]); await artwork.getState().save([key, nextKey], image);
   assert.equal(playback.getState().queue[0].artworkUrl, base + image); assert.equal(playback.getState().queue[1].artworkUrl, base + image);
   assert.equal(playback.getState().position, 37); assert.equal(playback.getState().playing, true);

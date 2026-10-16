@@ -123,7 +123,7 @@ async function main() {
   await h.engine.load(source, song);
   const options = h.events.find(event => event[0] === 'create')[2];
   assert.equal(options.preferredForwardBufferDuration, 120);
-  assert.equal(options.updateInterval, 500);
+  assert.equal(options.updateInterval, 1000);
   assert.equal(h.events.filter(event => event[0] === 'mode').length, 1);
   const lockscreen = h.events.find(event => event[0] === 'lockscreen');
   assert.equal(lockscreen[3].isLiveStream, false, 'NAS songs are on-demand files, not live broadcasts');

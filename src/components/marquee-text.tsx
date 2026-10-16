@@ -1,13 +1,14 @@
 import { memo, useEffect, useState } from 'react';
-import { AppState, StyleSheet, View, useWindowDimensions, type StyleProp, type TextStyle } from 'react-native';
+import { StyleSheet, View, useWindowDimensions, type StyleProp, type TextStyle } from 'react-native';
+import { usePlaybackVisibility } from '@/features/playback/use-playback-visibility';
 import { Text } from '@/components/text';
 import Animated, { cancelAnimation, Easing, useAnimatedStyle, useReducedMotion, useSharedValue, withDelay, withRepeat, withTiming } from 'react-native-reanimated';
 
 /** Loop overflowing titles to the left using two identical, evenly spaced copies. */
-export const MarqueeText = memo(function MarqueeText({ text, style }: { text: string; style: StyleProp<TextStyle> }) {
+export const MarqueeText = memo(function MarqueeText({ text, style, active = true }: { text: string; style: StyleProp<TextStyle>; active?: boolean }) {
   const [viewportWidth, setViewportWidth] = useState(0);
   const [textWidth, setTextWidth] = useState(0);
-  const [foreground, setForeground] = useState(AppState.currentState !== 'background' && AppState.currentState !== 'inactive');
+  const foreground = usePlaybackVisibility();
   const { fontScale } = useWindowDimensions();
   const reducedMotion = useReducedMotion();
   const offset = useSharedValue(0);
@@ -16,21 +17,16 @@ export const MarqueeText = memo(function MarqueeText({ text, style }: { text: st
   const scrolling = viewportWidth > 0 && overflow > 2 && !reducedMotion;
 
   useEffect(() => {
-    const subscription = AppState.addEventListener('change', (state) => setForeground(state === 'active'));
-    return () => subscription.remove();
-  }, []);
-
-  useEffect(() => {
     cancelAnimation(offset);
     offset.set(0);
-    if (!scrolling || !foreground) return;
+    if (!scrolling || !foreground || !active) return;
     // At one full cycle the right copy occupies the original copy's position,
     // so resetting the offset is invisible and never reverses the direction.
     offset.set(withDelay(1600, withRepeat(withTiming(-cycleWidth, {
       duration: Math.max(1800, cycleWidth / 22 * 1000), easing: Easing.linear,
     }), -1, false)));
     return () => cancelAnimation(offset);
-  }, [cycleWidth, fontScale, foreground, offset, scrolling, text, viewportWidth]);
+  }, [active, cycleWidth, fontScale, foreground, offset, scrolling, text, viewportWidth]);
 
   const animatedStyle = useAnimatedStyle(() => ({ transform: [{ translateX: offset.get() }] }));
   return <View accessible accessibilityRole="text" accessibilityLabel={text} style={styles.viewport} onLayout={(event) => setViewportWidth(event.nativeEvent.layout.width)}>

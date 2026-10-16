@@ -47,11 +47,12 @@ function runtime(file = 'src/services/lyrics/lrclib.ts', modules = { './parse-ly
 }
 
 async function main() {
-  let playback = { position: 0, playing: true, buffering: false };
+  let playback = { position: 0, playing: true, buffering: false }, visible = true;
   let nativePosition = 0, highlighted = -1, poll = null, cleanup, updates = 0, timerStarts = 0;
   const subscribers = new Set();
   const emitPlayback = patch => { const previous = playback; playback = { ...playback, ...patch }; subscribers.forEach(callback => callback(playback, previous)); };
   const clockHook = load('src/features/lyrics/use-active-lyric-index.ts', {
+    '@/features/playback/use-playback-visibility': { usePlaybackVisibility: () => visible },
     react: {
       useState: (initial) => { highlighted = initial(); return [highlighted, value => { highlighted = value; updates++; }]; },
       useRef: current => ({ current }),
@@ -69,6 +70,12 @@ async function main() {
   const timedLines = parser.parseLyrics('[00:01]First\n[00:02]Second', 'nas').lines;
   const renderClock = (synced = true, offsetMs = 0) => { cleanup?.(); clockHook.useActiveLyricIndex(timedLines, synced, offsetMs); };
   renderClock();
+  visible = false; renderClock();
+  assert.equal(poll, null, 'Hidden/background lyrics have no polling timer');
+  assert.equal(subscribers.size, 0, 'Hidden lyrics do not read native time on playback status events');
+  nativePosition = 1.5;
+  visible = true; renderClock();
+  assert.equal(highlighted, 0, 'Returning to lyrics immediately uses the current native position');
   nativePosition = 0.99; poll(); assert.equal(highlighted, -1, 'Never anticipate lyric timestamps');
   nativePosition = 1.05; poll(); assert.equal(highlighted, 0, 'Highlight advances before the next store status event');
   nativePosition = 2.05; poll(); assert.equal(highlighted, 1);
@@ -302,6 +309,7 @@ async function main() {
   console.log('PASS: verified NAS wire contract with Mock fetch, automatic priority/fallback, explicit sources, demo without network, captured-session expiry and cancellation guards.');
   let auth = { mode: 'nas', session, generation: 7 }, lastRequest;
   const hook = load('src/features/lyrics/use-lyrics.ts', {
+    '@/features/playback/use-playback-visibility': { usePlaybackVisibility: () => visible },
     '@tanstack/react-query': { useQuery: (options) => options },
     './load-lyrics': { loadLyrics: async (options) => { lastRequest = options; return onlineDocument; } },
     '@/features/library/repository': { libraryIdentity: (mode, session) => `${mode}:${session?.sid ?? ''}` },
@@ -310,6 +318,9 @@ async function main() {
     '@/stores/auth': { useAuthStore: (select) => select(auth) },
   });
   const oldQuery = hook.useLyrics(song, 'auto', 120);
+  visible = false;
+  assert.equal(hook.useLyrics(song, 'auto', 120).enabled, false, 'Screen-off track changes do not start lyric network requests');
+  visible = true;
   auth = { ...auth, session: { ...session, sid: 'new-session' }, generation: 8 };
   const newQuery = hook.useLyrics(song, 'auto', 120);
   assert.notDeepEqual(oldQuery.queryKey, newQuery.queryKey, 'Account/session transitions isolate lyric cache');

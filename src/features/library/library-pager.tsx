@@ -3,6 +3,7 @@ import { StyleSheet, View, type ViewProps } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, { cancelAnimation, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
+import { usePlaybackVisibility } from '@/features/playback/use-playback-visibility';
 
 type Props = {
   children: ReactNode; width: number; pageCount: number; pageIndex: number; layoutKey: string;
@@ -12,6 +13,7 @@ type Props = {
 
 /** Only a deliberate horizontal pan can move the row; vertical lists scroll natively. */
 export function LibraryPager({ children, width, pageCount, pageIndex, layoutKey, onPageChange, onSwipeStart, onTouchStart, onTouchMove }: Props) {
+  const visible = usePlaybackVisibility();
   const offset = useSharedValue(pageIndex * width);
   const start = useSharedValue(pageIndex * width);
   const committed = useSharedValue(pageIndex);
@@ -28,15 +30,15 @@ export function LibraryPager({ children, width, pageCount, pageIndex, layoutKey,
     revision.set(revision.get() + 1);
     committed.set(pageIndex);
     cancelAnimation(offset);
-    offset.set(resized ? pageIndex * width : withTiming(pageIndex * width, { duration: 180 }));
-  }, [width, pageIndex, layoutKey, offset, committed, revision]);
+    offset.set(resized || !visible ? pageIndex * width : withTiming(pageIndex * width, { duration: 180 }));
+  }, [visible, width, pageIndex, layoutKey, offset, committed, revision]);
   useEffect(() => {
     mounted.set(true);
     return () => { mounted.set(false); revision.set(revision.get() + 1); cancelAnimation(offset); };
   }, [offset, revision, mounted]);
 
   const gesture = useMemo(() => Gesture.Pan()
-    .enabled(pageCount > 1)
+    .enabled(visible && pageCount > 1)
     .maxPointers(1)
     // Small sideways drift must not win before vertical list scrolling starts.
     .activeOffsetX([-18, 18])
@@ -67,7 +69,7 @@ export function LibraryPager({ children, width, pageCount, pageIndex, layoutKey,
     })
     .onFinalize(() => {
       if (!ended.get() && gestureRevision.get() === revision.get()) offset.set(withTiming(committed.get() * width, { duration: 180 }));
-    }), [pageCount, width, offset, start, committed, revision, gestureRevision, ended, publishStart, publishPage]);
+    }), [visible, pageCount, width, offset, start, committed, revision, gestureRevision, ended, publishStart, publishPage]);
   const rowStyle = useAnimatedStyle(() => ({ transform: [{ translateX: -offset.get() }] }));
 
   return <GestureDetector gesture={gesture}><View collapsable={false} style={styles.viewport} onTouchStart={onTouchStart} onTouchMove={onTouchMove}>

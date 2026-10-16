@@ -53,6 +53,8 @@ exports.cloudFixtures = (globals = {}, dependencies = {}) => {
   });
   const resultHelpers = read('src/features/library/library-result.ts', globals);
   return {
+    '@/features/playback/use-playback-visibility': { usePlaybackVisibility: () => true },
+    './use-playback-visibility': { usePlaybackVisibility: () => true },
     '@/stores/appearance-preferences': { useAppearancePreferences }, '@/theme/appearance': appearanceRules, './appearance': appearanceRules,
     '@/theme/use-player-colors': { useMiniPlayerColors: () => dependencies['@/theme/tokens']?.useColors?.() ?? {}, usePlayerAccent: () => appearanceRules.playerAccent(null, ['#111111']) },
     '@/components/screen-blur-target': { ScreenBlurTargetContext: { Provider: 'ScreenBlurTargetProvider' } },

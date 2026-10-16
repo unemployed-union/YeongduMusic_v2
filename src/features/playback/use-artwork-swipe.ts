@@ -10,10 +10,16 @@ export function useArtworkSwipe(
   ready: SharedValue<boolean>,
   closing: SharedValue<boolean>,
   onSwipe: (direction: ArtworkSwipeDirection) => Promise<void>,
+  active = true,
 ) {
   const translationX = useSharedValue(0);
   const switching = useSharedValue(false);
   const mounted = useRef(true);
+  const interactive = useRef(active);
+  useEffect(() => {
+    interactive.current = active;
+    if (!active) { cancelAnimation(translationX); translationX.set(0); }
+  }, [active, translationX]);
   useEffect(() => {
     mounted.current = true;
     return () => { mounted.current = false; cancelAnimation(translationX); };
@@ -21,13 +27,14 @@ export function useArtworkSwipe(
 
   const changeTrack = useCallback(async (direction: ArtworkSwipeDirection) => {
     try {
-      if (mounted.current && !closing.get()) await onSwipe(direction);
+      if (mounted.current && interactive.current && !closing.get()) await onSwipe(direction);
     } finally {
       switching.set(false);
     }
   }, [closing, onSwipe, switching]);
 
   const gesture = useMemo(() => Gesture.Pan()
+    .enabled(active)
     .activeOffsetX([-12, 12])
     .failOffsetY([-16, 16])
     .onStart(() => {
@@ -37,7 +44,7 @@ export function useArtworkSwipe(
       if (ready.get() && !closing.get() && !switching.get()) translationX.set(event.translationX);
     })
     .onEnd((event, success) => {
-      if (!success || !ready.get() || closing.get() || switching.get()) return;
+      if (!success || !active || !ready.get() || closing.get() || switching.get()) return;
       const distance = Math.abs(event.translationX);
       const threshold = Math.min(120, Math.max(60, artSize * 0.25));
       const flick = distance > 18 && Math.abs(event.velocityX) > 750 && event.translationX * event.velocityX > 0;
@@ -48,7 +55,7 @@ export function useArtworkSwipe(
     })
     .onFinalize(() => {
       translationX.set(withTiming(0, { duration: 180 }));
-    }), [artSize, changeTrack, closing, ready, switching, translationX]);
+    }), [active, artSize, changeTrack, closing, ready, switching, translationX]);
 
   const animatedStyle = useAnimatedStyle(() => ({ transform: [{ translateX: translationX.get() }] }));
   return { gesture, animatedStyle };

@@ -98,14 +98,21 @@ async function checkUI() {
   areaSwitch.props.onValueChange(false); await flush(); assert.equal(state().areas.miniPlayer.enabled, false);
   assert.equal(state().areas.tabBar.enabled, true, 'A local switch never changes other areas');
   await state().setAreaEnabled('miniPlayer', true);
-  const gesture = { activeOffsetY() { return this; }, failOffsetY() { return this; }, failOffsetX() { return this; }, runOnJS() { return this; }, onEnd() { return this; } };
+  const gesture = { enabled() { return this; }, activeOffsetY() { return this; }, failOffsetY() { return this; }, failOffsetX() { return this; }, runOnJS() { return this; }, onEnd() { return this; } };
+  const opening = [], paused = { queue: [{ id: 'one', title: 'Song', artist: 'Artist' }], index: 0, position: 20, duration: 100, playing: false };
+  const usePlaybackStore = selector => selector(paused);
+  usePlaybackStore.getState = () => paused;
   const MiniPlayer = load('src/components/mini-player.tsx', { ...ui,
-    'expo-blur': { BlurView: 'Blur' }, 'expo-router': { router: {} },
+    'expo-blur': { BlurView: 'Blur' }, 'expo-router': { router: { push: route => opening.push(['navigate', route]) } },
     'react-native-reanimated': { __esModule: true, default: { View: 'AnimatedView' }, FadeInDown: { duration: () => ({}) } },
     'react-native-gesture-handler': { Gesture: { Pan: () => gesture }, GestureDetector: 'Gesture' },
     './artwork': { Artwork: 'Artwork' }, './marquee-text': { MarqueeText: 'Marquee' }, '@/services/haptics': { playHaptic() {} },
-    '@/services/playback/controller': {}, '@/stores/playback': { usePlaybackStore: () => ({ queue: [{ id: 'one', title: 'Song', artist: 'Artist' }], index: 0, position: 20, duration: 100, playing: false }) },
+    '@/services/playback/controller': {}, '@/stores/playback': { usePlaybackStore },
+    '@/stores/player-background': { usePlayerBackgroundStore: { getState: () => ({ selectArtwork: (song, options) => opening.push(['prepare', song.id, options]) }) } },
   }).MiniPlayer;
+  nodes(MiniPlayer({ blurTarget: { current: null } })).find(node => node.props.accessibilityHint).props.onPress();
+  assert.deepEqual(opening, [['prepare', 'one', { immediate: true }], ['navigate', '/player']], 'Paused mini-player prepares the current cover before opening the screen');
+  assert.equal(paused.playing, false);
   for (scheme of ['light', 'dark']) for (const enabled of [false, true]) {
     await state().setEnabled(enabled);
     const tree = nodes(MiniPlayer({ blurTarget: { current: null } }));

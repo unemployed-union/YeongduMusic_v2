@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { AppState } from 'react-native';
 import { useDisplayPreferences } from './display-preferences';
 import { requireOptionalNativeModule } from 'expo';
 import type { ImageColorsResult } from 'react-native-image-colors';
@@ -11,7 +12,7 @@ type ImageColorsModule = {
 type BackgroundState = {
   colors: GradientColors;
   artworkKey: string | null;
-  selectArtwork: (song: Song) => void;
+  selectArtwork: (song: Song, options?: { immediate?: boolean }) => void;
   reset: () => void;
 };
 
@@ -54,26 +55,32 @@ function extractColors(uri: string, fallback: GradientColors): Promise<GradientC
 export const usePlayerBackgroundStore = create<BackgroundState>((set, get) => ({
   colors: DEFAULT_PLAYER_COLORS,
   artworkKey: null,
-  selectArtwork: (song) => {
+  selectArtwork: (song, { immediate = false } = {}) => {
     selectedSong = song;
+    if (AppState.currentState === 'background' || AppState.currentState === 'inactive') return;
     if (useDisplayPreferences.getState().hideArtwork) return;
     const uri = song.artworkUrl;
     const fallback = song.palette ? createArtworkGradient(song.palette[0], song.palette[1]) : DEFAULT_PLAYER_COLORS;
     const key = uri ?? JSON.stringify([song.id, song.palette ?? null]);
-    if (get().artworkKey === key) return;
+    if (get().artworkKey === key && (!immediate || delay === undefined)) return;
     const selected = ++selection;
     clearTimeout(delay);
+    delay = undefined;
     const cached = uri ? cache.get(uri) : fallback;
     // Do not flash a default color while waiting for the next album's palette.
     set(cached ? { artworkKey: key, colors: cached } : { artworkKey: key });
     if (cached || !uri) return;
-    delay = setTimeout(() => {
+    const prepare = () => {
+      delay = undefined;
       void extractColors(uri, fallback).then((colors) => {
         if (selection === selected && get().artworkKey === key) set({ colors });
       }, () => {
         if (selection === selected && get().artworkKey === key) set({ colors: fallback });
       });
-    }, 120);
+    };
+    // Opening the player should not wait for the rapid-track-change debounce.
+    if (immediate) prepare();
+    else delay = setTimeout(prepare, 120);
   },
   reset: () => {
     selectedSong = null;
@@ -86,6 +93,18 @@ export const usePlayerBackgroundStore = create<BackgroundState>((set, get) => ({
     set({ artworkKey: null, colors: DEFAULT_PLAYER_COLORS });
   },
 }));
+
+AppState.addEventListener('change', state => {
+  if (state !== 'active') {
+    selection++;
+    clearTimeout(delay);
+    delay = undefined;
+  } else if (selectedSong) {
+    // A canceled extraction may already have assigned its key; retry only the current track.
+    usePlayerBackgroundStore.setState({ artworkKey: null });
+    usePlayerBackgroundStore.getState().selectArtwork(selectedSong);
+  }
+});
 
 useDisplayPreferences.subscribe((state, previous) => {
   if (state.hideArtwork === previous.hideArtwork) return;

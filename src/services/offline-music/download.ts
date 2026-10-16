@@ -30,12 +30,13 @@ export async function downloadSong(song: Song, signal: AbortSignal, onProgress: 
           onProgress({ written: totalBytesWritten, total: totalBytesExpectedToWrite });
         }
       });
-      const cancel = () => { void task.cancelAsync().catch(() => {}); };
+      let cancellation: Promise<void> = Promise.resolve();
+      const cancel = () => { cancellation = task.cancelAsync().then(() => {}, () => {}); };
       signal.addEventListener('abort', cancel, { once: true });
       let result: FileSystem.FileSystemDownloadResult | undefined;
       try { result = await task.downloadAsync(); }
       catch { check(); throw new Error('음악을 내려받지 못했습니다. 네트워크와 저장 공간을 확인하고 다시 시도해 주세요.'); }
-      finally { signal.removeEventListener('abort', cancel); }
+      finally { signal.removeEventListener('abort', cancel); await cancellation; }
       check();
       if (!result) throw new Error('음악을 내려받지 못했습니다. 다시 시도해 주세요.');
       if (song.source === 'drive' && result.status === 401 && attempt === 0) continue;
@@ -56,8 +57,7 @@ export async function downloadSong(song: Song, signal: AbortSignal, onProgress: 
         throw new Error('내려받은 음악이 비어 있거나 불완전합니다. 다시 보관해 주세요.');
       }
       check();
-      onSaving();
-      return await storeDownloadedSong(song, uri, extension, mime, signal);
+      return await storeDownloadedSong(song, uri, extension, mime, signal, onSaving);
     }
     throw new Error('Google 인증 정보를 갱신하지 못했습니다. 다시 연결해 주세요.');
   } finally {

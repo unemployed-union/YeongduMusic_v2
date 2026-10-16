@@ -121,7 +121,7 @@ async function recordLocalDuration(id: string, duration: number): Promise<void> 
   if (song.source === 'local' && Math.abs(song.duration - duration) > 0.5) await save({ ...song, duration });
 }
 // Downloads and deletions use the same serialization as device imports.
-export function storeDownloadedSong(original: Song, uri: string, extension: string, mimeType: string, signal?: AbortSignal): Promise<{ song: Song; duplicate: boolean }> {
+export function storeDownloadedSong(original: Song, uri: string, extension: string, mimeType: string, signal?: AbortSignal, onCommit?: () => void): Promise<{ song: Song; duplicate: boolean }> {
   const result = importTail.then(async () => {
     const check = () => { if (signal?.aborted) throw new Error('음악 보관을 취소했습니다.'); };
     check();
@@ -146,6 +146,9 @@ export function storeDownloadedSong(original: Song, uri: string, extension: stri
         duration: original.duration, trackNumber: original.trackNumber, palette: original.palette,
         local: { fileName, originalName: original.title + '.' + extension, size: info.size, mimeType, downloadedFrom: original.source === 's3' ? 's3' : original.source === 'drive' ? 'drive' : 'nas' },
       };
+      // Cancellation remains available through copy/verification, until publication begins.
+      check();
+      onCommit?.();
       await save(song);
       return { song, duplicate: false };
     });

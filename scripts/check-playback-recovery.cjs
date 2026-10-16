@@ -183,6 +183,7 @@ async function main() {
   assert.equal(saved.index, 1);
   assert.equal(saved.position, 37);
 
+  appStateListener('active');
   playback.setState({ queue: [], index: -1 });
   appStateListener('background');
   await new Promise(resolve => setTimeout(resolve, 20));

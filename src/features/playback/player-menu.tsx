@@ -1,4 +1,5 @@
-import { useEffect, useState, type RefObject } from 'react';
+import { useEffect, useState, type ReactNode, type RefObject } from 'react';
+import { usePlaybackVisibility } from './use-playback-visibility';
 import { BlurView } from 'expo-blur';
 import Animated, { Easing, FadeIn, FadeInDown, FadeOut, FadeOutDown } from 'react-native-reanimated';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
@@ -35,6 +36,13 @@ const EXIT_OVERLAY = FadeOut.duration(160);
 const ENTER_CARD = FadeInDown.duration(200).easing(Easing.out(Easing.cubic)).withInitialValues({ translateY: 8 });
 const EXIT_CARD = FadeOutDown.duration(160).easing(Easing.in(Easing.cubic)).withTargetValues({ translateY: 8 });
 
+/** Stay mounted so a retained exiting backdrop immediately loses hit testing. */
+export function PlayerMenuLayer({ active, children }: { active: boolean; children: ReactNode }) {
+  const interactive = active && !!children;
+  return <View collapsable={false} style={StyleSheet.absoluteFill} pointerEvents={interactive ? 'box-none' : 'none'}
+    accessibilityElementsHidden={!interactive} importantForAccessibility={interactive ? 'auto' : 'no-hide-descendants'}>{children}</View>;
+}
+
 /** An inline popover lets playlist dialogs open without stacking native modals. */
 export function PlayerMenu({ kind = 'playback', canDownload = false, localSong = false, blurTarget, panel, bottom, maxHeight, onClose, onSelect }: Props) {
   const colors = useColors(), light = useAppColorScheme() === 'light';
@@ -42,15 +50,19 @@ export function PlayerMenu({ kind = 'playback', canDownload = false, localSong =
   const [options, setOptions] = useState<'sleep-timer' | 'section-repeat' | 'playback-speed' | null>(null);
   const preferences = useMenuPreferences(state => state.layout.player);
   const storageBusy = useOfflineMusicStore(state => state.busy);
+  const canCancelDownload = useOfflineMusicStore(state => state.busy && !state.saving && !!state.retrySong);
+  const cancellingDownload = useOfflineMusicStore(state => state.cancelling);
+  const cancelDownload = useOfflineMusicStore(state => state.cancel);
   const timer = usePlaybackStore((state) => state.sleepTimer);
   const section = usePlaybackStore(state => state.sectionRepeat);
   const playbackRate = usePlaybackStore(state => state.playbackRate);
   const [now, setNow] = useState(Date.now);
+  const visible = usePlaybackVisibility();
   useEffect(() => {
-    if (kind !== 'playback' || timer?.mode !== 'time') return;
+    if (!visible || kind !== 'playback' || timer?.mode !== 'time') return;
     const interval = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(interval);
-  }, [timer, kind]);
+  }, [timer, kind, visible]);
   const timerLabel = !timer ? '수면 타이머' : timer.mode === 'track' ? '수면 타이머 · 현재 곡 끝나면' : '수면 타이머 · ' + Math.max(0, Math.ceil((timer.endsAt - now) / 60_000)) + '분 남음';
   const items: { action: PlayerMenuAction | 'sleep-timer' | 'section-repeat' | 'playback-speed'; label: string; icon: keyof typeof Ionicons.glyphMap; selected?: boolean }[] = kind === 'details' ? [
     { action: 'album', label: '앨범으로 이동', icon: 'disc-outline' },
@@ -65,7 +77,7 @@ export function PlayerMenu({ kind = 'playback', canDownload = false, localSong =
     { action: 'section-repeat', label: section?.enabled && section.end !== null ? `구간 반복 · ${sectionClock(section.start)}–${sectionClock(section.end)}` : '구간 반복', icon: 'repeat-outline', selected: !!section?.enabled },
     { action: 'playback-speed', label: `배속 · ${playbackRate}배`, icon: 'speedometer-outline', selected: playbackRate !== 1 },
   ];
-  if (kind === 'playback' && canDownload) items.splice(1, 0, { action: 'download', label: storageBusy ? '음악 보관 작업 중' : '이 기기에 보관', icon: 'download-outline' });
+  if (kind === 'playback' && (canDownload || canCancelDownload)) items.splice(1, 0, { action: 'download', label: cancellingDownload ? '보관 다운로드 취소 중…' : canCancelDownload ? '보관 다운로드 취소' : storageBusy ? '음악 보관 작업 중' : '이 기기에 보관', icon: canCancelDownload ? 'stop-circle-outline' : 'download-outline' });
   if (kind === 'playback' && localSong) items.push({ action: 'delete-local', label: '기기의 음악 복사본 삭제', icon: 'trash-outline' });
   const visibleItems = kind === 'details' ? items : visibleMenuIds(preferences).flatMap(action => items.filter(item => item.action === action));
   const activeOptions = options && preferences.some(item => item.id === options && item.visible) ? options : null;
@@ -75,7 +87,12 @@ export function PlayerMenu({ kind = 'playback', canDownload = false, localSong =
       {!opaque && <BlurView pointerEvents="none" blurTarget={blurTarget} blurMethod="dimezisBlurView" intensity={blurIntensity} tint="dark" style={StyleSheet.absoluteFill} />}
       {!opaque && <View pointerEvents="none" style={[StyleSheet.absoluteFill, styles.tint]} />}
       <ScrollView bounces={false} keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content}>
-        {kind === 'playback' && activeOptions === 'sleep-timer' ? <SleepTimerOptions onBack={() => setOptions(null)} onClose={onClose} /> : kind === 'playback' && activeOptions === 'section-repeat' ? <SectionRepeatOptions onBack={() => setOptions(null)} /> : kind === 'playback' && activeOptions === 'playback-speed' ? <PlaybackSpeedOptions onBack={() => setOptions(null)} /> : visibleItems.map(({ action, label, icon, selected }) => <Pressable key={action} disabled={storageBusy && (action === 'download' || action === 'delete-local')} accessibilityRole="button" accessibilityState={{ selected: !!selected }} onPress={() => { playHaptic('selection'); if (action === 'sleep-timer' || action === 'section-repeat' || action === 'playback-speed') setOptions(action); else onSelect(action); }} style={({ pressed }) => [styles.item, pressed && { backgroundColor: colors.separator }]}>
+        {kind === 'playback' && activeOptions === 'sleep-timer' ? <SleepTimerOptions onBack={() => setOptions(null)} onClose={onClose} /> : kind === 'playback' && activeOptions === 'section-repeat' ? <SectionRepeatOptions onBack={() => setOptions(null)} /> : kind === 'playback' && activeOptions === 'playback-speed' ? <PlaybackSpeedOptions onBack={() => setOptions(null)} /> : visibleItems.map(({ action, label, icon, selected }) => <Pressable key={action} disabled={action === 'download' ? !!cancellingDownload || storageBusy && !canCancelDownload : storageBusy && action === 'delete-local'} accessibilityRole="button" accessibilityState={{ selected: !!selected }} onPress={() => {
+          playHaptic('selection');
+          if (action === 'download' && canCancelDownload) { cancelDownload(); onClose(); }
+          else if (action === 'sleep-timer' || action === 'section-repeat' || action === 'playback-speed') setOptions(action);
+          else onSelect(action);
+        }} style={({ pressed }) => [styles.item, pressed && { backgroundColor: colors.separator }]}>
           <Ionicons name={icon} size={23} color={selected ? colors.tint : colors.text} />
           <Text style={[styles.label, { color: selected ? colors.tint : colors.text }]}>{label}</Text>
         </Pressable>)}

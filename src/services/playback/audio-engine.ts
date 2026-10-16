@@ -95,7 +95,8 @@ export class ExpoAudioEngine implements AudioEngine {
     if (lifecycle !== this.lifecycle) throw new Error('재생 요청이 취소되었습니다.');
     if (!this.player) {
       this.player = createAudioPlayer(null, {
-        updateInterval: 500,
+        // Lyrics read the engine clock directly; UI does not need two native events per second.
+        updateInterval: 1000,
         // iOS 57.0.5 applies this only to the constructor's initial AVPlayerItem,
         // not later replace() calls. This reusable player's improvement is Android-only.
         preferredForwardBufferDuration: Platform.OS === 'android' ? ANDROID_FORWARD_BUFFER_SECONDS : 0,

@@ -27,16 +27,20 @@ function shared(value) {
   };
 }
 function environment() {
-  const effects = [], cleanup = [], rnTasks = [], values = [];
-  let focused, back, removed = 0;
+  const effects = [], cleanup = new Map(), rnTasks = [], values = [], slots = [];
+  let focused, back, removed = 0, cursor = 0;
   const pan = () => {
     const gesture = { options: {}, handlers: {} };
-    for (const name of ['activeOffsetX', 'activeOffsetY', 'failOffsetX', 'failOffsetY']) gesture[name] = value => { gesture.options[name] = value; return gesture; };
+    for (const name of ['enabled', 'activeOffsetX', 'activeOffsetY', 'failOffsetX', 'failOffsetY']) gesture[name] = value => { gesture.options[name] = value; return gesture; };
     for (const name of ['onStart', 'onUpdate', 'onEnd', 'onFinalize']) gesture[name] = value => { gesture.handlers[name] = value; return gesture; };
     return gesture;
   };
   const modules = {
-    react: { useCallback: fn => fn, useMemo: fn => fn(), useRef: value => ({ current: value }), useEffect: fn => effects.push(fn) },
+    react: { useCallback: fn => fn, useMemo: fn => fn(), useRef: value => slots[cursor++] ??= { current: value }, useEffect: (fn, deps) => {
+      const slot = cursor++, old = slots[slot];
+      if (!old || deps.some((value, i) => value !== old[i])) effects.push(() => { cleanup.get(slot)?.(); cleanup.set(slot, fn()); });
+      slots[slot] = deps;
+    } },
     'expo-router': { useFocusEffect: fn => { focused = fn; } },
     'react-native': { BackHandler: { addEventListener: (event, listener) => {
       assert.equal(event, 'hardwareBackPress'); back = listener;
@@ -44,18 +48,19 @@ function environment() {
     } } },
     'react-native-gesture-handler': { Gesture: { Pan: pan } },
     'react-native-reanimated': {
-      useSharedValue: value => { const item = shared(value); values.push(item); return item; },
+      useSharedValue: value => { const slot = cursor++; if (!slots[slot]) { slots[slot] = shared(value); values.push(slots[slot]); } return slots[slot]; },
       useAnimatedStyle: fn => fn,
       withTiming: (value, config, callback) => ({ animation: true, value, config, callback }),
       withSpring: (value, config) => ({ animation: true, value, config }),
       cancelAnimation: item => { const animation = item.animation; item.animation = null; animation?.callback?.(false); },
     },
-    'react-native-worklets': { scheduleOnRN: (fn, ...args) => rnTasks.push(() => fn(...args)) },
+    'react-native-worklets': { scheduleOnRN: (fn, ...args) => rnTasks.push(() => fn(...args)), scheduleOnUI: (fn, ...args) => fn(...args) },
   };
   return {
     modules, values, rnTasks, get back() { return back; }, get removed() { return removed; },
-    mount() { for (const effect of effects) { const fn = effect(); if (fn) cleanup.push(fn); } },
-    focus() { return focused(); }, unmount() { for (const fn of cleanup) fn(); },
+    render(fn) { cursor = 0; return fn(); },
+    mount() { for (const effect of effects.splice(0)) effect(); },
+    focus() { return focused(); }, unmount() { for (const fn of cleanup.values()) fn?.(); },
   };
 }
 async function main() {
@@ -81,10 +86,24 @@ async function main() {
   drag.mount(); drag.values[0].finish();
   dragDismiss.gesture.handlers.onUpdate({ translationY: 75 });
   assert.equal(dragDismiss.animatedStyle().transform[0].translateY, 75);
-  dragDismiss.gesture.handlers.onEnd({ translationY: 75, velocityY: 0 });
+  dragDismiss.gesture.handlers.onEnd({ translationY: 75, velocityY: 0 }, true);
   assert.equal(dragDismiss.closing.get(), false); dragDismiss.gesture.handlers.onFinalize(); drag.values[0].finish();
   assert.equal(dragDismiss.animatedStyle().transform[0].translateY, 0);
-  dragDismiss.gesture.handlers.onEnd({ translationY: 170, velocityY: 0 }); assert.equal(dragDismiss.closing.get(), true); drag.unmount();
+  dragDismiss.gesture.handlers.onEnd({ translationY: 170, velocityY: 0 }, true); assert.equal(dragDismiss.closing.get(), true); drag.unmount();
+  const lifecycle = environment();
+  const useDismiss = load('src/features/playback/use-player-dismiss.ts', lifecycle.modules).usePlayerDismiss;
+  const onDismiss = () => { throw Error('A canceled/hidden gesture must not dismiss the player'); };
+  let screen = lifecycle.render(() => useDismiss(900, onDismiss)); lifecycle.mount(); lifecycle.values[0].finish();
+  screen.gesture.handlers.onUpdate({ translationY: 180 });
+  screen.gesture.handlers.onEnd({ translationY: 180, velocityY: 1100 }, false);
+  assert.equal(screen.closing.get(), false, 'Lock-screen/native cancellation cannot be treated as a successful dismiss swipe');
+  screen = lifecycle.render(() => useDismiss(900, onDismiss, false)); lifecycle.mount();
+  assert.equal(screen.gesture.options.enabled, false);
+  assert.equal(screen.animatedStyle().transform[0].translateY, 0, 'Backgrounding discards partial drag geometry without waiting for animation frames');
+  assert.equal(lifecycle.focus(), undefined, 'An inactive player does not consume Android back');
+  screen = lifecycle.render(() => useDismiss(900, onDismiss, true)); lifecycle.mount();
+  assert.equal(screen.gesture.options.enabled, true); assert.equal(screen.ready.get(), true);
+  assert.equal(lifecycle.rnTasks.length, 0); lifecycle.unmount();
   console.log('PASS: focused Android back animates before dismissing, repeated back is consumed, blur/unmount cleanup, vertical drag and snap-back.');
 
   const swipeEnv = environment(); const ready = shared(true), closing = shared(false), commands = [];
@@ -113,6 +132,18 @@ async function main() {
   events.onEnd({ translationX: -100, velocityX: 0 }, true); swipeEnv.unmount();
   await swipeEnv.rnTasks.shift()(); assert.equal(commands.length, 2, 'Unmounted players must not execute queued gestures');
   console.log('PASS: artwork tracks finger position, threshold/flick navigation, short/cancelled drags, snap-back, duplicate suppression and closing/unmount guards.');
+  const resumeSwipe = environment();
+  const useSwipe = load('src/features/playback/use-artwork-swipe.ts', resumeSwipe.modules).useArtworkSwipe;
+  const onSwipe = async () => { throw Error('A queued swipe must not execute in the background'); };
+  let art = resumeSwipe.render(() => useSwipe(320, shared(true), shared(false), onSwipe)); resumeSwipe.mount();
+  art.gesture.handlers.onUpdate({ translationX: -120 });
+  art.gesture.handlers.onEnd({ translationX: -120, velocityX: 0 }, true);
+  art = resumeSwipe.render(() => useSwipe(320, shared(true), shared(false), onSwipe, false)); resumeSwipe.mount();
+  assert.equal(art.gesture.options.enabled, false); assert.equal(art.animatedStyle().transform[0].translateX, 0);
+  await resumeSwipe.rnTasks.shift()();
+  art = resumeSwipe.render(() => useSwipe(320, shared(true), shared(false), onSwipe, true)); resumeSwipe.mount();
+  assert.equal(art.gesture.options.enabled, true); resumeSwipe.unmount();
+  console.log('PASS: canceled dismisses, partial drag cleanup, inactive gesture/back-handler release, skipped queued background swipes and foreground re-enabling.');
 
   const { create } = projectRequire('zustand');
   const rules = load('src/features/hidden-music/rules.ts', {});

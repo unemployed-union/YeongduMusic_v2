@@ -21,16 +21,24 @@ const gap = '\u200B';
 for (const { characterWrap } of [helper, fallback, withoutIntl]) {
   for (const [input, expected] of [
     ['가져오는 중…', '가\u200B져\u200B오\u200B는 중\u200B…'],
-    ['가져오는 중...', '가\u200B져\u200B오\u200B는 중\u200B.\u200B.\u200B.'],
-    ['Audio Station', 'A\u200Bu\u200Bd\u200Bi\u200Bo S\u200Bt\u200Ba\u200Bt\u200Bi\u200Bo\u200Bn'],
-    ['12곡', '1\u200B2\u200B곡'], ['가\n나\r\n다  라', '가\n나\r\n다  라'],
+    ['가져오는 중...', '가\u200B져\u200B오\u200B는 중\u200B...'],
+    ['Audio Station', 'Audio Station'],
+    ['12곡', '12\u200B곡'], ['가\n나\r\n다  라', '가\n나\r\n다  라'],
+    ['안녕 Good morning 세계', '안\u200B녕 Good morning 세\u200B계'],
+    ['한글English단어', '한\u200B글\u200BEnglish\u200B단\u200B어'],
+    ['ㄱㄴㄷ', 'ㄱ\u200Bㄴ\u200Bㄷ'], ['한\u200B글', '한\u200B글'],
     ['e\u0301한', 'e\u0301\u200B한'], ['\u1100\u1161\u11A8나', '\u1100\u1161\u11A8\u200B나'],
     ['👨‍👩‍👧‍👦한', '👨‍👩‍👧‍👦\u200B한'], ['👍🏽한', '👍🏽\u200B한'],
-    ['🇰🇷🇺🇸', '🇰🇷\u200B🇺🇸'], ['1️⃣2️⃣', '1️⃣\u200B2️⃣'], ['❤️한', '❤️\u200B한'], ['', ''],
+    ['🇰🇷🇺🇸', '🇰🇷🇺🇸'], ['1️⃣2️⃣', '1️⃣2️⃣'], ['❤️한', '❤️\u200B한'], ['', ''],
   ]) {
     assert.equal(characterWrap(input), expected);
     assert.equal(characterWrap(expected), expected, 'Repeated display processing must not multiply break markers');
     assert.equal(characterWrap(input).replaceAll(gap, ''), input.replaceAll(gap, ''), 'Visible content stays intact');
+  }
+  for (const text of ['A beautiful morning', 'café déjà vu', 'e\u0301clair', 'Привет мир', 'مرحبا بالعالم', 'नमस्ते दुनिया', '你好 世界', 'こんにちは 世界', 'สวัสดี โลก', '123,456.78', 'Audio\u00A0Station', 'one\ntwo\r\nthree']) {
+    assert.equal(characterWrap(text), text, 'Non-Korean text keeps its original word boundaries for the platform line breaker');
+    const mixed = characterWrap('가 ' + text + ' 나');
+    assert(mixed.includes(text), 'Words stay intact alongside Hangul');
   }
 }
 const platform = { OS: 'android' };
@@ -45,14 +53,17 @@ for (const os of ['android', 'ios', 'web']) {
   assert.equal(node.props.ref, ref); assert.equal(node.props.onPress, onPress); assert.equal(node.props.onLayout, onLayout);
   assert.equal(node.props.selectable, true); assert.equal(node.props.numberOfLines, 2);
   assert.equal(node.props.accessibilityLabel, '글자12\n다음', 'Screen readers receive the unmodified original text');
-  assert.equal(node.props.textBreakStrategy, 'simple'); assert.equal(node.props.lineBreakStrategyIOS, 'none');
+  assert.equal(node.props.textBreakStrategy, 'highQuality'); assert.equal(node.props.lineBreakStrategyIOS, 'standard');
   assert.equal(node.props.android_hyphenationFrequency, 'none');
   if (os === 'web') {
-    assert.deepEqual(node.props.children, ['글자', 12, '\n다음']);
-    assert.equal(node.props.style[1].wordBreak, 'break-all'); assert.equal(node.props.style[1].overflowWrap, 'anywhere');
+    assert.equal(node.props.style[1].wordBreak, 'normal'); assert.equal(node.props.style[1].overflowWrap, 'break-word');
   } else {
-    assert.deepEqual(node.props.children, ['글\u200B자', '1\u200B2', '\n다\u200B음']); assert.equal(node.props.style, style);
+    assert.equal(node.props.style, style);
   }
+  assert.deepEqual(node.props.children, ['글\u200B자', '12', '\n다\u200B음']);
+  const words = Text({ children: 'Good morning 안녕 hello 세계' });
+  assert.deepEqual(words.props.children, ['Good morning 안\u200B녕 hello 세\u200B계']);
+  assert.equal(words.props.accessibilityLabel, 'Good morning 안녕 hello 세계');
   const single = Text({ children: '한 줄 제목', numberOfLines: 1, ellipsizeMode: 'tail' });
   assert.equal(single.props.children, '한 줄 제목', 'Marquee measurement and single-line truncation use original glyphs');
   assert.equal(single.props.ellipsizeMode, 'tail');
@@ -98,4 +109,4 @@ function audit(directory) {
   }
 }
 audit(path.join(root, 'src'));
-console.log('PASS: native/web character wrapping, Hermes/no-Intl fallback, Korean/Jamo/Latin/numbers, emoji/combining marks, newline preservation/idempotence, spoken original text, nested text/refs/events, single-line marquee/truncation, unified loaders including initial artists, and app-wide Text import coverage. Native layout is not rendered.');
+console.log('PASS: app-wide native/web word wrapping with Hangul-only character breaks, mixed languages, multilingual words/numbers, Hermes/no-Intl fallback, emoji/combining marks, whitespace/idempotence, original accessibility labels, nested text/refs/events, single-line marquee/truncation and common Text import coverage. Native layout is not rendered.');

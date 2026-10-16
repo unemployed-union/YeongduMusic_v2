@@ -153,10 +153,13 @@ export function checkSleepTimer(fromEnd = false, changingTrack = false): boolean
 }
 usePlaybackStore.subscribe((state, previousState) => {
   const song = state.queue[state.index], previous = previousState.queue[previousState.index];
+  // Restored/paused queues can receive artwork edits before a native source exists.
+  if (song && (song.id !== previous?.id || song.artworkUrl !== previous.artworkUrl || song.palette !== previous.palette)) {
+    usePlayerBackgroundStore.getState().selectArtwork(song);
+  }
   if (song && song.id === loadedSongId && previous?.id === song.id
     && (song.title !== previous.title || song.artist !== previous.artist || song.album !== previous.album || song.artworkUrl !== previous.artworkUrl)) {
     try { engine?.updateMetadata?.(song); } catch { /* A lock-screen refresh cannot invalidate saved song metadata. */ }
-    if (song.artworkUrl !== previous.artworkUrl || song.palette !== previous.palette) usePlayerBackgroundStore.getState().selectArtwork(song);
   }
   if (state.sleepTimer !== previousState.sleepTimer) updateSleepTimerSchedule(state.sleepTimer);
   if (!state.playing && previousState.playing) sectionPauseVersion++;
@@ -292,7 +295,7 @@ export async function restorePlayback(queue: Song[], index: number, position: nu
   const state = usePlaybackStore.getState();
   state.setQueue(queue.map(currentMetadata), index);
   usePlaybackStore.setState({ shuffle, repeat });
-  usePlayerBackgroundStore.getState().selectArtwork(queue[index]);
+  usePlayerBackgroundStore.getState().selectArtwork(usePlaybackStore.getState().queue[index]);
   if (wasPlaying) await loadIndex(index, position);
   else {
     pendingSavedPosition = position;

@@ -12,7 +12,8 @@ import { isPlaybackRate } from './playback-rate';
 import { applySongArtwork } from '@/features/artwork/rules';
 
 const KEY = 'yeongdumusic-playback-v1';
-const SAVE_INTERVAL_MS = 4000;
+const SAVE_INTERVAL_MS = 15000;
+const BACKGROUND_SAVE_INTERVAL_MS = 30000;
 const MAX_AGE_MS = 24 * 60 * 60 * 1000;
 
 type Snapshot = {
@@ -151,6 +152,7 @@ function snapshot(): string | null {
 export function startPlaybackPersistence(): () => void {
   let timer: ReturnType<typeof setTimeout> | null = null;
   let lastSave = 0;
+  let foreground = AppState.currentState !== 'background' && AppState.currentState !== 'inactive';
   let tail: Promise<void> = Promise.resolve();
   const persist = () => {
     if (timer !== null) clearTimeout(timer);
@@ -160,15 +162,30 @@ export function startPlaybackPersistence(): () => void {
     tail = tail.then(() => write(value)).catch(() => {});
   };
   const schedule = (important: boolean) => {
-    if (timer !== null) clearTimeout(timer);
-    timer = setTimeout(persist, important ? 250 : Math.max(250, SAVE_INTERVAL_MS - (Date.now() - lastSave)));
+    // Position samples must neither allocate a fresh timer nor postpone a pending important save.
+    if (timer !== null) {
+      if (!important) return;
+      clearTimeout(timer);
+    }
+    const interval = foreground ? SAVE_INTERVAL_MS : BACKGROUND_SAVE_INTERVAL_MS;
+    timer = setTimeout(persist, important ? 250 : Math.max(250, interval - (Date.now() - lastSave)));
   };
   const unsubscribe = usePlaybackStore.subscribe((state, previous) => {
     const changed = state.queue !== previous.queue || state.index !== previous.index || state.playing !== previous.playing ||
       state.shuffle !== previous.shuffle || state.repeat !== previous.repeat || state.playbackRate !== previous.playbackRate || state.preservePitch !== previous.preservePitch;
     if (changed || Math.abs(state.position - previous.position) >= 0.5) schedule(changed);
   });
-  const appState = AppState.addEventListener('change', (next) => { if (next === 'background') persist(); });
+  const appState = AppState.addEventListener('change', (next) => {
+    const active = next === 'active';
+    if (foreground === active) return;
+    foreground = active;
+    if (!foreground) persist();
+    else {
+      if (timer !== null) clearTimeout(timer);
+      timer = null;
+      if (usePlaybackStore.getState().queue.length) schedule(false);
+    }
+  });
   if (usePlaybackStore.getState().queue.length) schedule(true);
   return () => { if (timer !== null) clearTimeout(timer); unsubscribe(); appState.remove(); };
 }

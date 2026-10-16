@@ -143,12 +143,14 @@ async function checkOptionsUI() {
   h.controller.stopPlayback();
 }
 function checkMenuUI() {
+  let cancels = 0;
+  const offlineState = { busy: false, saving: false, cancelling: false, retrySong: null, cancel: () => { cancels++; } };
   const jsx = (type, props) => ({ type, props }), states = [];
   let slot = 0, layout = load('src/features/settings/menu-layout.ts').defaultMenuLayout();
   const rules = load('src/features/settings/menu-layout.ts'), time = load('src/services/playback/section-repeat.ts');
   const animation = { duration: () => animation, easing: () => animation, withInitialValues: () => animation, withTargetValues: () => animation };
   const calls = [], navigation = [];
-  const menu = load('src/features/playback/player-menu.tsx', {
+  const menuModule = load('src/features/playback/player-menu.tsx', {
     '@/theme/tokens': { useColors: () => ({ text: '#F7F7FA', muted: '#9B9BA5', separator: '#31313A', tint: '#FF5C80' }), useAppColorScheme: () => 'dark' },
     react: { useEffect: () => {}, useState: initial => { const i = slot++; if (!(i in states)) states[i] = typeof initial === 'function' ? initial() : initial; return [states[i], value => { states[i] = value; }]; } },
     'react/jsx-runtime': { jsx, jsxs: jsx }, 'react-native': { View: 'View', Pressable: 'Button', ScrollView: 'Scroll', StyleSheet: { create: value => value } },
@@ -156,11 +158,18 @@ function checkMenuUI() {
     'react-native-reanimated': { __esModule: true, default: { View: 'AnimatedView' }, Easing: { out: value => value, in: value => value }, FadeIn: animation, FadeOut: animation, FadeInDown: animation, FadeOutDown: animation },
     '@expo/vector-icons/Ionicons': { __esModule: true, default: 'Icon' }, '@/components/text': { Text: 'Text' },
     '@/stores/playback': { usePlaybackStore: selector => selector({ sleepTimer: null, sectionRepeat: null, playbackRate: 1 }) },
-    '@/stores/offline-music': { useOfflineMusicStore: selector => selector({ busy: false }) },
+    '@/stores/offline-music': { useOfflineMusicStore: selector => selector(offlineState) },
     '@/stores/menu-preferences': { useMenuPreferences: selector => selector({ layout }) }, '@/features/settings/menu-layout': rules,
     '@/services/playback/section-repeat': time, './sleep-timer-options': { SleepTimerOptions: 'TimerOptions' }, './section-repeat-options': { SectionRepeatOptions: 'SectionOptions' },
     './playback-speed-options': { PlaybackSpeedOptions: 'SpeedOptions' },
-  }).PlayerMenu;
+  });
+  const menu = menuModule.PlayerMenu;
+  const retainedBackdrop = jsx('OldExitingBackdrop', {});
+  assert.equal(menuModule.PlayerMenuLayer({ active: true, children: retainedBackdrop }).props.pointerEvents, 'box-none');
+  const hiddenLayer = menuModule.PlayerMenuLayer({ active: false, children: retainedBackdrop });
+  assert.equal(hiddenLayer.props.pointerEvents, 'none', 'A retained exiting backdrop cannot intercept touches while screen-off');
+  assert.equal(hiddenLayer.props.importantForAccessibility, 'no-hide-descendants');
+  assert.equal(menuModule.PlayerMenuLayer({ active: true, children: false }).props.pointerEvents, 'none', 'Resuming without a logical menu disables even native-retained exiting children');
   function nodes(node) { if (Array.isArray(node)) return node.flatMap(nodes); return node && typeof node === 'object' ? [node, ...nodes(node.props?.children)] : []; }
   const render = (extra = {}) => { slot = 0; return menu({ blurTarget: { current: null }, panel: 'artwork', bottom: 80, maxHeight: 500, onClose() {}, onSelect: action => calls.push(action), ...extra }); };
   const label = node => nodes(node).find(child => child.type === 'Text')?.props.children;
@@ -176,6 +185,16 @@ function checkMenuUI() {
   nodes(tree).find(node => node.type === 'Button' && label(node) === '재생 화면 메뉴 설정').props.onPress();
   assert.deepEqual(navigation, ['/settings/player-menu'], 'Inapplicable selected actions still allow menu configuration');
   tree = render({ kind: 'details' }); assert(nodes(tree).some(node => node.type === 'Button' && label(node) === '앨범으로 이동'));
+  Object.assign(offlineState, { busy: true, retrySong: { id: 'downloading' } });
+  let closed = 0;
+  tree = render({ onClose: () => { closed++; } });
+  const cancelItem = nodes(tree).find(node => node.type === 'Button' && label(node) === '보관 다운로드 취소');
+  assert(cancelItem && !cancelItem.props.disabled, 'An active download can be canceled from the original menu even after changing tracks');
+  cancelItem.props.onPress(); assert.equal(cancels, 1); assert.equal(closed, 1); assert.deepEqual(calls, ['edit-metadata']);
+  offlineState.cancelling = true; tree = render();
+  assert(nodes(tree).find(node => node.type === 'Button' && label(node) === '보관 다운로드 취소 중…').props.disabled);
+  Object.assign(offlineState, { cancelling: false, saving: true }); tree = render({ canDownload: true });
+  assert(nodes(tree).find(node => node.type === 'Button' && label(node) === '음악 보관 작업 중').props.disabled, 'Final publication remains protected');
 }
 function checkSpeedUI() {
   let rate = 1, error = null, fail = false, preservePitch = true;

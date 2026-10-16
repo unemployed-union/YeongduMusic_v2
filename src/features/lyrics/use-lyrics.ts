@@ -5,10 +5,12 @@ import { libraryIdentity } from '@/features/library/repository';
 import { LyricsRequestError } from '@/services/lyrics/lrclib';
 import { SynologyRequestError } from '@/services/synology/api';
 import { useAuthStore } from '@/stores/auth';
+import { usePlaybackVisibility } from '@/features/playback/use-playback-visibility';
 import type { LyricsSource } from '@/types/lyrics';
 import type { Song } from '@/types/music';
 
 export function useLyrics(song: Song, source: LyricsSource, duration: number, searchOnline = false) {
+  const visible = usePlaybackVisibility();
   const mode = useAuthStore((state) => state.mode);
   const session = useAuthStore((state) => state.session);
   const generation = useAuthStore((state) => state.generation);
@@ -16,7 +18,7 @@ export function useLyrics(song: Song, source: LyricsSource, duration: number, se
   return useQuery({
     queryKey: ['lyrics', libraryIdentity(mode, session), generation, source, song.id, song.title, song.artist, song.album, trackDuration, searchOnline],
     queryFn: ({ signal }) => loadLyrics({ song, source, mode, session, generation, signal, duration: trackDuration, searchOnline }),
-    enabled: !isNasSong(song) || mode === 'mock' || (mode === 'nas' && !!session),
+    enabled: visible && (!isNasSong(song) || mode === 'mock' || (mode === 'nas' && !!session)),
     // A manual search must issue a fresh request even if a prior search was cached.
     staleTime: searchOnline ? 0 : 60 * 60 * 1000,
     refetchOnWindowFocus: !searchOnline,
