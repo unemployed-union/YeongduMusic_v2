@@ -1,5 +1,6 @@
 import { isCloudSong, isNasSong } from '@/services/music-source';
 import { cloudStreamSource } from '@/services/cloud-music/source';
+import { isLosslessPlayback } from './lossless';
 import { ExpoAudioEngine } from './audio-engine';
 import { SessionExpiredError, SynologyClient, SynologyError } from '@/services/synology/api';
 import { musicRepository } from '@/features/library/repository';
@@ -201,6 +202,7 @@ async function checkPlaybackSession(): Promise<void> {
     try {
       const source = await cloudStreamSource(song, true);
       if (requestGeneration !== generation) return;
+      usePlaybackStore.getState().setStatus({ lossless: isLosslessPlayback(song, source) });
       await activeEngine().load(source, song);
       if (requestGeneration !== generation) return;
       await activeEngine().seek(playback.position);
@@ -272,6 +274,7 @@ async function loadIndex(index: number, initialPosition = 0): Promise<void> {
     if (currentGeneration !== generation) return;
     loadedSongId = song.id;
     const currentSong = usePlaybackStore.getState().queue[index];
+    state.setStatus({ lossless: isLosslessPlayback(currentSong, source) });
     await activeEngine().load(source, currentSong, initialPosition);
     if (currentGeneration !== generation) return;
     const latest = usePlaybackStore.getState().queue[index];

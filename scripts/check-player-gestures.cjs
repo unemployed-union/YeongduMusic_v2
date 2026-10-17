@@ -12,7 +12,7 @@ function load(file, overrides) {
   const source = fs.readFileSync(stagedFile && fs.existsSync(stagedFile) ? stagedFile : path.join(root, file), 'utf8');
   const code = ts.transpileModule(source, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS } }).outputText;
   const mod = { exports: {} };
-  new Function('require', 'module', 'exports', code)(name => name in overrides ? overrides[name] : projectRequire(name), mod, mod.exports);
+  new Function('require', 'module', 'exports', 'setTimeout', 'clearTimeout', code)(name => name in overrides ? overrides[name] : projectRequire(name), mod, mod.exports, overrides.__setTimeout ?? setTimeout, overrides.__clearTimeout ?? clearTimeout);
   return mod.exports;
 }
 function shared(value) {
@@ -28,6 +28,7 @@ function shared(value) {
 }
 function environment() {
   const effects = [], cleanup = new Map(), rnTasks = [], values = [], slots = [];
+  const timers = new Map(); let timerId = 0;
   let focused, back, removed = 0, cursor = 0;
   const pan = () => {
     const gesture = { options: {}, handlers: {} };
@@ -36,6 +37,8 @@ function environment() {
     return gesture;
   };
   const modules = {
+    __setTimeout: (fn, delay) => { timers.set(++timerId, { fn, delay }); return timerId; },
+    __clearTimeout: id => timers.delete(id),
     react: { useCallback: fn => fn, useMemo: fn => fn(), useRef: value => slots[cursor++] ??= { current: value }, useEffect: (fn, deps) => {
       const slot = cursor++, old = slots[slot];
       if (!old || deps.some((value, i) => value !== old[i])) effects.push(() => { cleanup.get(slot)?.(); cleanup.set(slot, fn()); });
@@ -57,7 +60,9 @@ function environment() {
     'react-native-worklets': { scheduleOnRN: (fn, ...args) => rnTasks.push(() => fn(...args)), scheduleOnUI: (fn, ...args) => fn(...args) },
   };
   return {
-    modules, values, rnTasks, get back() { return back; }, get removed() { return removed; },
+    modules, values, rnTasks, timers, get back() { return back; }, get removed() { return removed; },
+    flushRN() { for (const task of rnTasks.splice(0)) task(); },
+    runTimers() { for (const [id, timer] of [...timers]) { timers.delete(id); timer.fn(); } },
     render(fn) { cursor = 0; return fn(); },
     mount() { for (const effect of effects.splice(0)) effect(); },
     focus() { return focused(); }, unmount() { for (const fn of cleanup.values()) fn?.(); },
@@ -73,13 +78,13 @@ async function main() {
   assert.equal(env.values[0].animation.value, 900); assert.equal(env.values[0].animation.config.duration, 230);
   assert.equal(dismissals, 0, 'Back must wait for the downward animation');
   const animation = env.values[0].animation; assert.equal(env.back(), true); assert.equal(env.values[0].animation, animation);
-  env.values[0].finish(); await env.rnTasks.shift()(); assert.equal(dismissals, 1);
+  env.values[0].finish(); env.flushRN(); assert.equal(dismissals, 1); assert.equal(env.timers.size, 0);
   blur(); assert.equal(env.back, null); assert.equal(env.removed, 1); env.unmount();
 
   const cancelled = environment();
   const cancelDismiss = load('src/features/playback/use-player-dismiss.ts', cancelled.modules).usePlayerDismiss(900, () => { dismissals++; });
   cancelled.mount(); const unfocus = cancelled.focus(); cancelled.values[0].finish(); cancelDismiss.close(); cancelled.unmount();
-  assert.equal(cancelled.values[0].animation, null); assert.equal(cancelled.rnTasks.length, 0); unfocus();
+  assert.equal(cancelled.values[0].animation, null); cancelled.flushRN(); assert.equal(cancelled.timers.size, 0); assert.equal(dismissals, 1); unfocus();
 
   const drag = environment();
   const dragDismiss = load('src/features/playback/use-player-dismiss.ts', drag.modules).usePlayerDismiss(900, () => {});
@@ -104,7 +109,36 @@ async function main() {
   screen = lifecycle.render(() => useDismiss(900, onDismiss, true)); lifecycle.mount();
   assert.equal(screen.gesture.options.enabled, true); assert.equal(screen.ready.get(), true);
   assert.equal(lifecycle.rnTasks.length, 0); lifecycle.unmount();
+
+  const stalled = environment(); let recoveredDismissals = 0;
+  const stalledDismiss = load('src/features/playback/use-player-dismiss.ts', stalled.modules).usePlayerDismiss(900, () => { recoveredDismissals++; });
+  stalled.mount(); stalled.values[0].finish(); stalledDismiss.close(); stalled.flushRN();
+  assert(stalled.timers.size <= 1, 'Closing must not start repeated polling');
+  const lostCompletion = stalled.values[0].animation.callback;
+  stalled.modules['react-native-reanimated'].cancelAnimation(stalled.values[0]);
+  assert.equal(recoveredDismissals, 0);
+  stalled.runTimers(); assert.equal(recoveredDismissals, 1, 'A canceled closing animation cannot leave an invisible native player over the library');
+  lostCompletion(true); stalled.flushRN(); assert.equal(recoveredDismissals, 1, 'Late completion must not pop a second route');
+  stalled.unmount(); assert.equal(stalled.timers.size, 0);
+
+  const lockedClose = environment(); let lockedDismissals = 0;
+  const useLockedDismiss = load('src/features/playback/use-player-dismiss.ts', lockedClose.modules).usePlayerDismiss;
+  const onLockedDismiss = () => { lockedDismissals++; };
+  let locked = lockedClose.render(() => useLockedDismiss(900, onLockedDismiss)); lockedClose.mount(); lockedClose.values[0].finish();
+  locked.close(); const preLockCompletion = lockedClose.values[0].animation.callback;
+  locked = lockedClose.render(() => useLockedDismiss(900, onLockedDismiss, false)); lockedClose.mount();
+  assert.equal(lockedDismissals, 1, 'Locking during an intentional close finishes navigation without waiting for UI frames');
+  lockedClose.flushRN(); preLockCompletion(true); lockedClose.flushRN(); lockedClose.runTimers();
+  assert.equal(lockedDismissals, 1); assert.equal(lockedClose.timers.size, 0);
+  lockedClose.unmount();
+
+  const queuedUnmount = environment(); let staleDismissals = 0;
+  const queued = load('src/features/playback/use-player-dismiss.ts', queuedUnmount.modules).usePlayerDismiss(900, () => { staleDismissals++; });
+  queuedUnmount.mount(); queuedUnmount.values[0].finish(); queued.close(); queuedUnmount.values[0].finish();
+  queuedUnmount.unmount(); queuedUnmount.flushRN(); queuedUnmount.runTimers();
+  assert.equal(staleDismissals, 0, 'Queued animation callbacks after unmount cannot navigate away from the current screen');
   console.log('PASS: focused Android back animates before dismissing, repeated back is consumed, blur/unmount cleanup, vertical drag and snap-back.');
+  console.log('PASS: interrupted close watchdog, lock-during-close recovery, one navigation despite late completion and queued callback/unmount guards.');
 
   const swipeEnv = environment(); const ready = shared(true), closing = shared(false), commands = [];
   let finishTrack;

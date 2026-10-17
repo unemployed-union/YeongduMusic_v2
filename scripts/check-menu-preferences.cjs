@@ -9,6 +9,11 @@ function load(file, modules) {
   }).outputText;
   const exports = {};
   new Function('require', 'exports', code)(name => {
+    if (name === '@/theme/layout') return load('src/theme/layout.ts');
+    if (name === '@/features/library/library-sidebar') return { LibrarySidebar: 'LibrarySidebar' };
+    if (name === '@/components/content-title-bar') return { ContentTitleBar: 'ContentTitleBar' };
+    if (name === '@/components/content-transition') return { ContentTransition: 'ContentTransition' };
+    if (name === 'react-native-safe-area-context') return { useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }) };
     if (name in modules) return modules[name];
     throw Error('Unexpected import: ' + name);
   }, exports);

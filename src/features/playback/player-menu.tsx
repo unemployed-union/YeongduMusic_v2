@@ -27,6 +27,7 @@ interface Props {
   panel: 'artwork' | 'queue' | 'lyrics';
   bottom: number;
   maxHeight: number;
+  left?: number;
   onClose: () => void;
   onSelect: (action: PlayerMenuAction) => void;
 }
@@ -44,7 +45,7 @@ export function PlayerMenuLayer({ active, children }: { active: boolean; childre
 }
 
 /** An inline popover lets playlist dialogs open without stacking native modals. */
-export function PlayerMenu({ kind = 'playback', canDownload = false, localSong = false, blurTarget, panel, bottom, maxHeight, onClose, onSelect }: Props) {
+export function PlayerMenu({ kind = 'playback', canDownload = false, localSong = false, blurTarget, panel, bottom, maxHeight, left, onClose, onSelect }: Props) {
   const colors = useColors(), light = useAppColorScheme() === 'light';
   const blurIntensity = useBlurIntensity('playerMenu'), opaque = light || blurIntensity === 0;
   const [options, setOptions] = useState<'sleep-timer' | 'section-repeat' | 'playback-speed' | null>(null);
@@ -83,7 +84,7 @@ export function PlayerMenu({ kind = 'playback', canDownload = false, localSong =
   const activeOptions = options && preferences.some(item => item.id === options && item.visible) ? options : null;
   return <Animated.View collapsable={false} entering={ENTER_OVERLAY} exiting={EXIT_OVERLAY} style={StyleSheet.absoluteFill} pointerEvents="box-none" accessibilityViewIsModal>
     <Pressable style={[StyleSheet.absoluteFill, styles.backdrop]} accessibilityRole="button" accessibilityLabel={kind === 'details' ? '가수 메뉴 닫기' : '재생 메뉴 닫기'} onPress={onClose} />
-    <Animated.View collapsable={false} entering={ENTER_CARD} exiting={EXIT_CARD} style={[styles.card, { bottom, maxHeight, borderColor: colors.separator }, opaque && { backgroundColor: colors.surface }, kind === 'details' && { left: 29, right: undefined }]}><View style={[styles.surface, opaque && { backgroundColor: colors.surface }]}>
+    <Animated.View collapsable={false} entering={ENTER_CARD} exiting={EXIT_CARD} style={[styles.card, { bottom, maxHeight, borderColor: colors.separator }, opaque && { backgroundColor: colors.surface }, kind === 'details' && { left: 29, right: undefined }, left !== undefined && { left, right: undefined }]}><View style={[styles.surface, opaque && { backgroundColor: colors.surface }]}>
       {!opaque && <BlurView pointerEvents="none" blurTarget={blurTarget} blurMethod="dimezisBlurView" intensity={blurIntensity} tint="dark" style={StyleSheet.absoluteFill} />}
       {!opaque && <View pointerEvents="none" style={[StyleSheet.absoluteFill, styles.tint]} />}
       <ScrollView bounces={false} keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content}>

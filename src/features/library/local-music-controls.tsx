@@ -15,7 +15,7 @@ import { useOfflineMusicStore } from '@/stores/offline-music';
 import type { ImportKind } from '@/services/local-music/storage';
 
 const labels = musicSourceLabels;
-export function LocalMusicControls({ sortControl }: { sortControl?: ReactNode }) {
+export function LocalMusicControls({ sortControl, menuLabel }: { sortControl?: ReactNode; menuLabel?: string }) {
   const colors = useColors();
   const local = useLocalMusicStore();
   const drive = useGoogleDriveStore();
@@ -31,7 +31,7 @@ export function LocalMusicControls({ sortControl }: { sortControl?: ReactNode })
     <View style={styles.controlsRow}>
     <Pressable accessibilityRole="button" accessibilityLabel="음악 소스 및 가져오기 메뉴" onPress={() => setOpen(true)} style={styles.trigger}>
       <Ionicons name={local.source === 'drive' ? 'logo-google' : local.source === 's3' ? 'file-tray-stacked-outline' : local.source === 'local' ? 'phone-portrait-outline' : local.source === 'nas' ? 'server-outline' : 'musical-notes-outline'} size={18} color={colors.tint} />
-      <Text style={{ color: colors.tint, fontWeight: '700' }}>{labels[local.source]}</Text><Ionicons name="chevron-down" size={16} color={colors.tint} />
+      <Text style={{ color: colors.tint, fontWeight: '700' }}>{menuLabel ?? labels[local.source]}</Text><Ionicons name="chevron-down" size={16} color={colors.tint} />
       {local.busy && <ActivityIndicator color={colors.tint} />}
     </Pressable>
     {sortControl}

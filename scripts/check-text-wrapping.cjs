@@ -9,6 +9,7 @@ function load(file, mocks = {}, globals = {}) {
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX },
   }).outputText;
   new Function('require', 'exports', ...Object.keys(globals), code)(name => {
+    if (name === '@/theme/layout') return load('src/theme/layout.ts');
     if (name in mocks) return mocks[name];
     throw Error('Unexpected module: ' + name);
   }, exports, ...Object.values(globals));

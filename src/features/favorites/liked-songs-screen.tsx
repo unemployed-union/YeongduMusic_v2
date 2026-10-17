@@ -10,11 +10,11 @@ import type { LibrarySortOrder } from '@/features/library/sort-library';
 import type { Album, Artist, Song } from '@/types/music';
 
 type Props = {
-  width?: number; active?: boolean; sortOrder?: LibrarySortOrder;
+  width?: number; active?: boolean; sortOrder?: LibrarySortOrder; spacious?: boolean;
   onListScroll?: (tab: LibraryTab, event: NativeSyntheticEvent<NativeScrollEvent>) => void;
 };
 
-export function LikedSongsScreen({ width, active = true, sortOrder = 'default', onListScroll }: Props = {}) {
+export function LikedSongsScreen({ width, active = true, sortOrder = 'default', spacious = false, onListScroll }: Props = {}) {
   const favorites = useFavoritesStore();
   const mode = useAuthStore(state => state.mode), session = useAuthStore(state => state.session);
   const scope = privacyScope(mode, session);
@@ -34,7 +34,7 @@ export function LikedSongsScreen({ width, active = true, sortOrder = 'default', 
     finally { setRefreshing(false); }
   }
   const error = favorites.loadError ? new Error(favorites.error ?? '좋아요한 곡을 불러오지 못했습니다.') : library.error;
-  return <LibraryPage tab="favorites" width={width} active={active} sortOrder={sortOrder}
+  return <LibraryPage tab="favorites" width={width} active={active} sortOrder={sortOrder} spacious={spacious}
     data={data} isPending={!favorites.ready || !favorites.loadError && library.isPending && !library.data}
     isError={favorites.loadError || library.isError} error={error} isRefetchError={!favorites.loadError && library.isRefetchError}
     refreshing={refreshing} onRefresh={refresh} onListScroll={onListScroll} keyExtractor={keyExtractor} />;

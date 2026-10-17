@@ -203,7 +203,7 @@ export class SynologyClient {
     return this.endpoint('SYNO.AudioStation.Cover', 'getsongcover', { id: songId, size: 320, library: AUDIO_STATION_LIBRARY });
   }
   async songs({ offset, limit, signal }: PageRequest, extra: Record<string, string> = {}): Promise<Page<Song>> {
-    const result = this.collection(await this.call('SYNO.AudioStation.Song', 'list', { offset, limit, additional: 'song_tag', ...extra, library: AUDIO_STATION_LIBRARY }, signal), 'songs');
+    const result = this.collection(await this.call('SYNO.AudioStation.Song', 'list', { offset, limit, additional: 'song_tag,song_audio', ...extra, library: AUDIO_STATION_LIBRARY }, signal), 'songs');
     return { total: result.total, items: result.records.map((item) => this.song(item)) };
   }
   private song(item: Record<string, unknown>): Song {
@@ -211,10 +211,14 @@ export class SynologyClient {
     if (!id) throw new SynologyRequestError('response', '곡 응답에 ID가 없습니다.');
     const tag = item.additional && typeof item.additional === 'object' ? (item.additional as Record<string, unknown>).song_tag : undefined;
     const tags = tag && typeof tag === 'object' ? tag as Record<string, unknown> : {};
+    const additional = item.additional as Record<string, unknown> | undefined;
+    const audio = additional?.song_audio && typeof additional.song_audio === 'object' ? additional.song_audio as Record<string, unknown> : {};
+    const codec = string(audio.codec).trim().slice(0, 64);
+    const encoding = { ...(codec ? { audioCodec: codec } : {}), ...(typeof audio.lossless === 'boolean' ? { lossless: audio.lossless } : {}) };
     const artist = [string(item.artist), string(tags.artist)].find(value => value.trim()) ?? '알 수 없는 아티스트';
     const taggedAlbum = string(tags.album).trim();
     const album = taggedAlbum || string(item.album).trim() || '알 수 없는 앨범';
-    return { id: (id.startsWith('local:') || id.startsWith('drive:') || id.startsWith('s3:')) ? 'nas:' + id : id, nasId: (id.startsWith('local:') || id.startsWith('drive:') || id.startsWith('s3:')) ? id : undefined, source: 'nas', path: string(item.path) || undefined, title: string(item.title, '제목 없음'), artist, album, albumSource: taggedAlbum ? 'tag' : 'fallback', albumArtist: string(tags.album_artist) || undefined, discNumber: number(tags.disc) || undefined, year: number(tags.year) || undefined, duration: number(item.duration), trackNumber: number(item.track, number(tags.track)) || undefined, artworkUrl: this.coverUrl(id) };
+    return { id: (id.startsWith('local:') || id.startsWith('drive:') || id.startsWith('s3:')) ? 'nas:' + id : id, nasId: (id.startsWith('local:') || id.startsWith('drive:') || id.startsWith('s3:')) ? id : undefined, source: 'nas', ...encoding, path: string(item.path) || undefined, title: string(item.title, '제목 없음'), artist, album, albumSource: taggedAlbum ? 'tag' : 'fallback', albumArtist: string(tags.album_artist) || undefined, discNumber: number(tags.disc) || undefined, year: number(tags.year) || undefined, duration: number(item.duration), trackNumber: number(item.track, number(tags.track)) || undefined, artworkUrl: this.coverUrl(id) };
   }
   async albums({ offset, limit, signal }: PageRequest): Promise<Page<Album>> {
     const result = this.collection(await this.call('SYNO.AudioStation.Album', 'list', { offset, limit, library: AUDIO_STATION_LIBRARY }, signal), 'albums');

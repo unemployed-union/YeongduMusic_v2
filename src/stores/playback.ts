@@ -12,6 +12,7 @@ type PlaybackState = {
   buffering: boolean;
   position: number;
   duration: number;
+  lossless: boolean;
   shuffle: boolean;
   repeat: RepeatMode;
   playbackRate: number;
@@ -25,14 +26,14 @@ type PlaybackState = {
   setSleepTimer: (timer: SleepTimer | null) => void;
   setQueue: (queue: Song[], index: number) => void;
   enqueue: (song: Song) => void;
-  setStatus: (status: Partial<Pick<PlaybackState, 'playing' | 'buffering' | 'position' | 'duration' | 'error'>>) => void;
+  setStatus: (status: Partial<Pick<PlaybackState, 'playing' | 'buffering' | 'position' | 'duration' | 'error' | 'lossless'>>) => void;
   toggleShuffle: () => void;
   cycleRepeat: () => void;
   clear: () => void;
 };
 
 export const usePlaybackStore = create<PlaybackState>((set) => ({
-  queue: [], index: -1, playing: false, buffering: false, position: 0, duration: 0,
+  queue: [], index: -1, playing: false, buffering: false, position: 0, duration: 0, lossless: false,
   shuffle: false, repeat: 'off', error: null, sleepTimer: null, sectionRepeat: null,
   playbackRate: 1,
   setPlaybackRate: (playbackRate) => set({ playbackRate }),
@@ -40,10 +41,10 @@ export const usePlaybackStore = create<PlaybackState>((set) => ({
   setPreservePitch: (preservePitch) => set({ preservePitch }),
   setSectionRepeat: (sectionRepeat) => set({ sectionRepeat }),
   setSleepTimer: (sleepTimer) => set({ sleepTimer }),
-  setQueue: (queue, index) => set({ queue, index, position: 0, duration: 0, buffering: true, error: null, sectionRepeat: null }),
+  setQueue: (queue, index) => set({ queue, index, position: 0, duration: 0, lossless: false, buffering: true, error: null, sectionRepeat: null }),
   enqueue: (song) => set((state) => ({ queue: [...state.queue, song] })),
   setStatus: (status) => set(status),
   toggleShuffle: () => set((state) => ({ shuffle: !state.shuffle })),
   cycleRepeat: () => set((state) => ({ repeat: state.repeat === 'off' ? 'all' : state.repeat === 'all' ? 'one' : 'off' })),
-  clear: () => set({ queue: [], index: -1, playing: false, buffering: false, position: 0, duration: 0, error: null, sleepTimer: null, sectionRepeat: null }),
+  clear: () => set({ queue: [], index: -1, playing: false, buffering: false, position: 0, duration: 0, lossless: false, error: null, sleepTimer: null, sectionRepeat: null }),
 }));

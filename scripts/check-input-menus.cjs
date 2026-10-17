@@ -3,6 +3,7 @@ const fs = require('node:fs'), path = require('node:path'), assert = require('no
 const root = path.resolve(__dirname, '..'), jsx = (type, props) => ({ type, props });
 function load(file, modules) {
   modules = { '@/services/haptics': { playHaptic() {}, prepareHaptics() {} }, './favorite-button': { FavoriteButton: 'FavoriteButton' }, ...modules };
+  if (file !== 'src/theme/layout.ts') modules['@/theme/layout'] = load('src/theme/layout.ts', {});
   const exports = {}, code = ts.transpileModule(fs.readFileSync(path.join(root, file), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX } }).outputText;
   new Function('require', 'exports', code)(name => { if (name in modules) return modules[name]; throw Error(name); }, exports); return exports;
 }

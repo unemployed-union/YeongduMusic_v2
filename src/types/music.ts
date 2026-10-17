@@ -18,6 +18,9 @@ export type Song = {
   discNumber?: number;
   year?: number;
   duration: number;
+  /** Source encoding information; playback may still use a lossy transcode. */
+  audioCodec?: string;
+  lossless?: boolean;
   trackNumber?: number;
   artworkUrl?: string;
   palette?: readonly [string, string];

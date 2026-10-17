@@ -12,7 +12,7 @@ export default function SettingsScreen() {
     const timer = setTimeout(() => setToast(null), 3500);
     return () => clearTimeout(timer);
   }, [toast]);
-  return <SettingsPage overlay={toast && <ToastNotice message={toast.message} />}>
+  return <SettingsPage overview overlay={toast && <ToastNotice message={toast.message} />}>
     <SettingsSection title="연결">
       <SettingsLink title="클라우드 연결" description="Synology · Google Drive · S3" icon="cloud-outline" href="/settings/cloud" />
     </SettingsSection>

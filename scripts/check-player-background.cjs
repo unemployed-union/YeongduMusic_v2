@@ -15,7 +15,7 @@ function tick(delay) {
 }
 function load(file, resolve) {
   const result = ts.transpileModule(fs.readFileSync(path.join(root, file), 'utf8'), {
-    compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS }
+    compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX }
   });
   const exports = {};
   new Function('require', 'exports', 'setTimeout', 'clearTimeout', result.outputText)(resolve, exports, schedule, unschedule);
@@ -48,7 +48,71 @@ const select = (id) => store.getState().selectArtwork(song(id));
 const flush = async () => { for (let i = 0; i < 16; i++) await Promise.resolve(); };
 async function start(id) { select(id); tick(120); await flush(); return requests.at(-1); }
 
+function checkBackgroundRendering() {
+  const slots = [], effects = [], animationCallbacks = [], rnTasks = [];
+  let cursor = 0, dirty = false, timingCount = 0;
+  const jsx = (type, props, key) => ({ type, props, key });
+  const { PlayerBackground } = load('src/features/playback/player-background.tsx', name => {
+    const modules = {
+      react: {
+        useCallback: fn => fn, useEffect: fn => effects.push(fn),
+        useState: initial => {
+          const index = cursor++; if (!(index in slots)) slots[index] = initial;
+          return [slots[index], next => { slots[index] = next; dirty = true; }];
+        },
+        useReducer: (reducer, initial, init) => {
+          const index = cursor++; if (!(index in slots)) slots[index] = init(initial);
+          return [slots[index], action => { slots[index] = reducer(slots[index], action); dirty = true; }];
+        },
+      },
+      'react/jsx-runtime': { jsx, jsxs: jsx },
+      'react-native': { View: 'View', StyleSheet: { absoluteFill: {} } },
+      'expo-linear-gradient': { LinearGradient: 'Gradient' },
+      'react-native-reanimated': { __esModule: true, default: { View: 'AnimatedView' },
+        useSharedValue: initial => ({ value: initial, get() { return this.value; }, set(value) { this.value = value; } }),
+        useAnimatedStyle: fn => fn(), cancelAnimation() {}, Easing: { inOut: value => value, cubic: 'cubic' },
+        withTiming: (to, options, callback) => { timingCount++; animationCallbacks.push(callback); return { to, options }; },
+      },
+      'react-native-worklets': { scheduleOnRN: (fn, ...args) => rnTasks.push(() => fn(...args)) },
+      './background-layers': layers,
+    };
+    assert(name in modules, name); return modules[name];
+  });
+  const render = (colors, active = true) => {
+    let tree, passes = 0;
+    do { dirty = false; cursor = 0; tree = PlayerBackground({ colors, active }); assert(++passes < 8); } while (dirty);
+    return tree;
+  };
+  const renderFreshLayer = node => { effects.length = 0; const tree = node.type(node.props); effects.splice(0).forEach(effect => effect()); return tree; };
+  let tree = render(red);
+  assert.equal(renderFreshLayer(tree.props.children[0]).props.style[1].opacity, 1);
+  tree = render(blue);
+  const transitioning = tree.props.children.at(-1);
+  renderFreshLayer(transitioning); assert.equal(timingCount, 1);
+  tree = render(blue, false);
+  assert.equal(tree.props.children.length, 1, 'Locking settles an interrupted crossfade to one opaque background');
+  renderFreshLayer(tree.props.children[0]); assert.equal(timingCount, 1, 'The locked background has no continuing UI animation');
+  tree = render(green, false);
+  assert.equal(tree.props.children[0].props.layer.animate, false, 'Screen-off color changes do not start a transparent layer');
+  const lockedKey = tree.props.children[0].key;
+  tree = render(green, true);
+  const restored = tree.props.children[0];
+  assert.notEqual(restored.key, lockedKey, 'Resume recreates the native gradient even without a new color request');
+  assert.deepEqual(restored.props.layer.colors, green);
+  assert.equal(renderFreshLayer(restored).props.style[1].opacity, 1, 'Resume is opaque on the first frame');
+  assert.equal(tree.props.style[1].backgroundColor, green[0], 'An opaque backing color prevents a transparent hole if the gradient redraw is delayed');
+  animationCallbacks[0](true); rnTasks.splice(0).forEach(task => task());
+  tree = render(green);
+  assert.equal(tree.props.children[0].key, restored.key, 'A pre-lock completion cannot remove the restored native layer');
+  assert.equal(tree.props.children[0].props.layer.animate, false);
+  tree = render(red); const complete = tree.props.children.at(-1);
+  complete.props.onComplete(complete.props.layer.id); tree = render(red);
+  assert.equal(renderFreshLayer(tree.props.children[0]).props.style[1].opacity, 1, 'Completed backgrounds remain opaque on native remount');
+  assert.equal(timingCount, 1, 'Restore and completed-layer remounts never restart the fade');
+}
+
 async function check() {
+  checkBackgroundRendering();
   const first = await start('a');
   first.resolve(result('#FF0000')); await flush();
   assert.deepEqual(store.getState().colors, red);
@@ -82,8 +146,9 @@ async function check() {
   assert.equal(stack, pendingStack, 'Old completion cannot remove the newest transition');
   const latest = stack.at(-1);
   stack = layers.backgroundLayers(stack, { type: 'complete', id: latest.id });
-  assert.deepEqual(stack, [latest]);
-  assert.equal(stack[0], latest, 'Pruning retains the already opaque top layer instance');
+  assert.deepEqual(stack, [{ ...latest, animate: false }]);
+  assert.equal(stack[0].id, latest.id, 'Pruning retains the native top layer key');
+  assert.equal(stack[0].animate, false, 'A completed layer stays opaque even if its native animation state is recreated');
   assert.equal(layers.backgroundLayers(stack, { type: 'target', colors: [...green] }), stack, 'Identical palettes do not restart an animation');
 
   const old = await start('old');
@@ -186,6 +251,6 @@ async function check() {
   assert.equal(requests.length, beforeOpen + 2, 'Immediate preparation still respects the background energy guard');
   store.getState().reset();
   changeAppState('active');
-  console.log('PASS: foreground-only palette downloads, latest-track resume, pending-work cancellation, reopen without default fade, retained loading colors, shared requests, cache limits and stale-result guards. Native image extraction and UI-thread animation are mocked.');
+  console.log('PASS: interrupted crossfade/lock recovery, opaque first resume frame and completed-layer remount, stale animation callbacks, foreground-only palette downloads, latest-track resume, cache limits and stale-result guards. Native gradient rendering, image extraction and UI-thread animation are mocked.');
 }
 check().catch((error) => { console.error(error); process.exitCode = 1; });

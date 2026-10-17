@@ -23,6 +23,7 @@ import { useAlbumHeader } from '@/features/library/use-album-header';
 import Animated from 'react-native-reanimated';
 import { StatusBar } from 'expo-status-bar';
 import { playHaptic } from '@/services/haptics';
+import { libraryGrid, workspaceLayout } from '@/theme/layout';
 
 const EMPTY_SONGS: Song[] = [];
 
@@ -31,7 +32,10 @@ export default function AlbumScreen() {
   const colors = useColors();
   const scheme = useAppColorScheme(), focused = useIsFocused(), headerHeight = useHeaderHeight();
   const insets = useSafeAreaInsets();
-  const width = useWindowDimensions().width;
+  const window = useWindowDimensions();
+  const width = workspaceLayout(window.width, window.height, window.fontScale).contentWidth;
+  const columns = libraryGrid(width, false).columns;
+  const wide = width >= 700;
   const detail = useLibraryDetailPreferences(), loadDetail = detail.load;
   useEffect(() => { void loadDetail(); }, [loadDetail]);
   const hideArtwork = useDisplayPreferences(state => state.hideArtwork);
@@ -58,28 +62,30 @@ export default function AlbumScreen() {
       setPlayError(error instanceof Error ? error.message : '앨범을 재생할 수 없습니다.');
     } finally { setStarting(false); }
   }, [songs]);
-  const renderSong = useCallback(({ item, index }: { item: Song; index: number }) => <View style={[styles.song, { backgroundColor: colors.background }]}><SongRow song={item} index={index} favoriteLocation="album" onPress={() => void play(index)} /></View>, [colors.background, play]);
+  const renderSong = useCallback(({ item, index }: { item: Song; index: number }) => <View style={[styles.song, { backgroundColor: colors.background, width: width / columns }]}><SongRow song={item} index={index} favoriteLocation="album" onPress={() => void play(index)} /></View>, [colors.background, play, width, columns]);
   return <View style={[styles.screen, { backgroundColor: colors.background }]}>
     <Stack.Screen options={{ headerTintColor: lightHeader ? '#FFFFFF' : colors.tint, headerTitleStyle: { color: lightHeader ? '#FFFFFF' : colors.text } }} />
     {focused && <StatusBar style={lightHeader || scheme === 'dark' ? 'light' : 'dark'} animated />}
     {appearanceReady && decorated && songs.length > 0 && <LinearGradient pointerEvents="none" accessibilityElementsHidden importantForAccessibility="no-hide-descendants"
       colors={albumColors} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={[styles.backdrop, { height: heroHeight }]} />}
     <AsyncState loading={query.isPending || !appearanceReady} error={query.isError && !query.data ? query.error.message : null} retry={() => void query.refetch()}>
-      <TabScrollEdgeFade topEnabled={false}><FlatList key={album.id} data={songs} keyExtractor={(song) => song.id} contentContainerStyle={styles.list} alwaysBounceVertical
+      <TabScrollEdgeFade topEnabled={false}><FlatList key={`${album.id}-${columns}`} numColumns={columns} data={songs} keyExtractor={(song) => song.id} contentContainerStyle={styles.list} alwaysBounceVertical
         contentInsetAdjustmentBehavior="never" automaticallyAdjustContentInsets={false} scrollIndicatorInsets={{ top: headerHeight }} onScroll={header.onScroll} scrollEventThrottle={16}
         refreshControl={<RefreshControl refreshing={query.isRefetching} onRefresh={() => void query.refetch()} progressViewOffset={headerHeight} colors={[colors.tint]} tintColor={colors.tint} progressBackgroundColor={colors.surface} />}
         ListHeaderComponent={songs.length ? <View>
-          <View onLayout={event => setHeroHeight(event.nativeEvent.layout.height)} style={[styles.hero, { paddingTop: headerHeight + 27 }, !decorated && { backgroundColor: colors.background }]}>
+          <View onLayout={event => setHeroHeight(event.nativeEvent.layout.height)} style={[styles.hero, { paddingTop: headerHeight + 27 }, wide && { flexDirection: 'row', justifyContent: 'center', gap: 36 }, !decorated && { backgroundColor: colors.background }]}>
             <Pressable accessibilityRole="button" accessibilityLabel="앨범 이미지 선택" accessibilityHint="길게 누르면 이미지 파일을 선택하거나 웹에서 앨범아트를 검색할 수 있습니다" delayLongPress={400} onLongPress={() => { playHaptic('longPress'); setEditingArtwork(true); }} style={[styles.artShadow, { width: artworkSize, height: artworkSize }]}>
               <Artwork item={artworkAlbum} size={artworkSize} radius={14} />
             </Pressable>
-            <Text style={[styles.title, { color: decorated ? '#FFFFFF' : colors.text }]}>{album.title}</Text>
-            <Text style={[styles.artist, { color: decorated ? '#FFFFFF' : colors.tint }]}>{album.artist}</Text>
-            <Text style={[styles.count, { color: decorated ? '#E5E5EB' : colors.muted }]}>{query.data?.total ?? 0}곡</Text>
+            <View style={wide ? { maxWidth: 440, flexShrink: 1, alignItems: 'flex-start' } : { alignItems: 'center' }}>
+              <Text style={[styles.title, wide && { textAlign: 'left', marginTop: 0 }, { color: decorated ? '#FFFFFF' : colors.text }]}>{album.title}</Text>
+              <Text style={[styles.artist, wide && { textAlign: 'left' }, { color: decorated ? '#FFFFFF' : colors.tint }]}>{album.artist}</Text>
+              <Text style={[styles.count, { color: decorated ? '#E5E5EB' : colors.muted }]}>{query.data?.total ?? 0}곡</Text>
+            </View>
           </View>
           <View style={[styles.actions, { backgroundColor: colors.background }]}>
             <Pressable accessibilityRole="button" accessibilityLabel={album.title + ' 전체 재생'} disabled={starting || !songs.length} onPress={() => void play()}
-              style={[styles.play, { backgroundColor: colors.tint, opacity: starting || !songs.length ? 0.65 : 1 }]}>
+              style={[styles.play, { width: '100%', maxWidth: 600, alignSelf: 'center', backgroundColor: colors.tint, opacity: starting || !songs.length ? 0.65 : 1 }]}>
               {starting ? <ActivityIndicator color="white" /> : <Ionicons name="play" size={21} color="white" />}<Text style={styles.playText}>전체 재생</Text>
             </Pressable>
             {query.data?.stale && <Text style={[styles.count, { color: colors.muted }]}>오프라인 보관함 · 마지막으로 저장된 목록</Text>}

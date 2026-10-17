@@ -1,0 +1,92 @@
+/* global __dirname */
+const assert = require('node:assert/strict'), fs = require('node:fs'), path = require('node:path'), ts = require('typescript');
+function read(file, modules = {}) {
+  const source = fs.readFileSync(path.join(__dirname, '..', file), 'utf8'), exports = {};
+  const code = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX } }).outputText;
+  new Function('require', 'exports', code)(name => { assert(name in modules, name); return modules[name]; }, exports);
+  return exports;
+}
+const layout = read('src/theme/layout.ts'), safe = { top: 24, bottom: 20, left: 0, right: 0 };
+for (const [width, height, split] of [[390, 844, false], [768, 1024, false], [1024, 768, true], [1280, 894, true], [1366, 1024, true], [540, 900, false], [900, 600, true], [1920, 1080, true]]) {
+  const value = layout.playerLayout(width, height, safe);
+  assert.equal(value.split, split, `${width}x${height}`);
+  assert(value.primaryWidth <= value.contentWidth);
+  assert(value.artworkSize <= value.primaryWidth);
+  assert(value.primaryWidth + value.gap <= value.contentWidth);
+  if (split) assert(value.contentWidth - value.primaryWidth - value.gap >= 300, 'Secondary content retains a usable width');
+}
+const notched = layout.playerLayout(844, 390, { ...safe, left: 44, right: 44 });
+assert.equal(notched.split, true); assert(notched.contentWidth <= 844 - 88 - 58);
+assert(layout.playerLayout(1280, 800, safe, 2).artworkSize < layout.playerLayout(1280, 800, safe).artworkSize);
+for (const width of [320, 390, 540, 768, 1024, 1280, 1920]) {
+  for (const albums of [true, false]) {
+    for (const spacious of [false, true]) {
+    const grid = layout.libraryGrid(width, albums, spacious);
+    assert(Math.abs(grid.itemWidth * grid.columns + grid.gap * (grid.columns - 1) - (width - 44)) < 0.001, 'Cards fit without clipping');
+    assert(grid.itemWidth > 0);
+    }
+  }
+}
+assert.equal(layout.libraryGrid(390, true).columns, 2);
+assert(layout.libraryGrid(1280, true).columns >= 5);
+assert.equal(layout.libraryGrid(390, false).columns, 1);
+assert.equal(layout.libraryGrid(1024, false).columns, 2);
+
+// Render the real player shell with native/audio leaves stubbed. Changing its
+// geometry must not construct another playback engine or replace the queue.
+const source = fs.readFileSync(path.join(__dirname, '../src/app/player.tsx'), 'utf8');
+const ast = ts.createSourceFile('player.tsx', source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+const modules = {};
+for (const statement of ast.statements) if (ts.isImportDeclaration(statement) && statement.importClause) {
+  const clause = statement.importClause, leaf = { __esModule: true };
+  if (clause.name) leaf.default = clause.name.text;
+  if (clause.namedBindings && ts.isNamedImports(clause.namedBindings)) for (const binding of clause.namedBindings.elements) leaf[(binding.propertyName ?? binding.name).text] = binding.name.text;
+  modules[statement.moduleSpecifier.text] = leaf;
+}
+let dimensions = { width: 1280, height: 894, fontScale: 1 }, cursor = 0;
+const slots = [], commands = [], queue = [{ id: 'one', title: 'Song', artist: 'Artist', duration: 180 }];
+const state = { queue, index: 0, playing: true, buffering: false, error: null, sectionRepeat: null };
+Object.assign(modules, {
+  react: { useRef: initial => slots[cursor++] ??= { current: initial }, useCallback: fn => fn, useState: initial => {
+    const index = cursor++; if (!(index in slots)) slots[index] = initial;
+    return [slots[index], value => { slots[index] = typeof value === 'function' ? value(slots[index]) : value; }];
+  } },
+  'react/jsx-runtime': { jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }) },
+  'react-native': { View: 'View', Pressable: 'Button', ScrollView: 'ScrollView', FlatList: 'List', ActivityIndicator: 'Spinner', StyleSheet: { create: value => value }, useWindowDimensions: () => dimensions },
+  'react-native-reanimated': { __esModule: true, default: { View: 'AnimatedView' } },
+  'react-native-gesture-handler': { Gesture: { Race: () => ({}) }, GestureDetector: 'Gesture' },
+  'react-native-safe-area-context': { useSafeAreaInsets: () => safe },
+  'expo-router': { useFocusEffect() {}, router: {} }, '@/theme/layout': layout,
+  '@/features/playback/use-player-dismiss': { usePlayerDismiss: () => ({ ready: {}, closing: { get: () => false }, gesture: {}, animatedStyle: {} }) },
+  '@/features/playback/use-artwork-swipe': { useArtworkSwipe: () => ({ gesture: {}, animatedStyle: {} }) },
+  '@/features/playback/use-artwork-colors': { useArtworkColors: () => ['#111111', '#222222', '#333333'] },
+  '@/features/playback/use-playback-visibility': { usePlaybackVisibility: () => true },
+  '@/features/library/load-song-library': { artistName: name => name },
+  '@/theme/use-player-colors': { usePlayerAccent: () => ({ accent: '#FFFFFF', highlight: '#FF9BAE' }) },
+  '@/stores/playback': { usePlaybackStore: select => select(state) },
+  '@/stores/auth': { useAuthStore: select => select({ mode: 'mock' }) },
+  '@/services/haptics': { playHaptic() {} },
+  '@/services/playback/controller': { playQueue: (...args) => commands.push(args) },
+});
+const Screen = read('src/app/player.tsx', modules).default;
+const nodes = tree => Array.isArray(tree) ? tree.flatMap(nodes) : tree && typeof tree === 'object' ? [tree, ...nodes(tree.props?.children)] : [];
+const render = () => { cursor = 0; return Screen(); };
+let tree = render();
+assert.equal(nodes(tree).filter(node => node.type === 'Artwork').length, 1);
+assert.equal(nodes(tree).filter(node => node.type === 'LyricsPanel').length, 1);
+assert.equal(nodes(tree).filter(node => node.type === 'FavoriteButton').length, 1, 'Only one set of playback controls is mounted');
+nodes(tree).find(node => node.props?.accessibilityLabel === '대기열').props.onPress(); tree = render();
+assert.equal(nodes(tree).filter(node => node.type === 'Artwork').length, 1, 'Album art remains visible beside the queue');
+assert.equal(nodes(tree).filter(node => node.type === 'LyricsPanel').length, 0);
+assert.equal(nodes(tree).filter(node => node.type === 'List').length, 1);
+dimensions = { ...dimensions, width: 540, height: 900 }; tree = render();
+assert.equal(nodes(tree).filter(node => node.type === 'List').length, 1, 'Split-screen resizing retains the chosen panel');
+assert.equal(nodes(tree).filter(node => node.type === 'Artwork').length, 0);
+nodes(tree).find(node => node.props?.accessibilityLabel === '대기열').props.onPress(); tree = render();
+assert.equal(nodes(tree).filter(node => node.type === 'Artwork').length, 1);
+assert.equal(nodes(tree).filter(node => node.type === 'LyricsPanel').length, 0);
+assert.equal(commands.length, 0, 'Rotation and panel switches never reload audio');
+assert.equal(state.queue, queue);
+const config = JSON.parse(fs.readFileSync(path.join(__dirname, '../app.json'), 'utf8')).expo;
+assert.equal(config.orientation, 'default'); assert.equal(config.ios.supportsTablet, true);
+console.log('PASS: tablet/phone/notch/split-screen geometry, responsive grids, simultaneous artwork/lyrics, queue switching and rotation without audio reload. Native rendering is not exercised.');

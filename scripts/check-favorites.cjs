@@ -7,6 +7,7 @@ function load(file, modules = {}, globals = {}) {
   }).outputText, exports = {};
   new Function('require', 'exports', ...Object.keys(globals), code)(name => {
     if (name === 'zustand') return { create };
+    if (name === '@/theme/layout') return load('src/theme/layout.ts');
     if (name in modules) return modules[name];
     throw Error('Unexpected dependency ' + name);
   }, exports, ...Object.values(globals));

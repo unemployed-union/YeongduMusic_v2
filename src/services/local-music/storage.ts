@@ -144,6 +144,7 @@ export function storeDownloadedSong(original: Song, uri: string, extension: stri
         title: original.title, artist: original.artist, album: original.album, albumSource: original.albumSource ?? 'fallback',
         albumArtist: original.albumArtist, discNumber: original.discNumber, year: original.year,
         duration: original.duration, trackNumber: original.trackNumber, palette: original.palette,
+        audioCodec: original.audioCodec, lossless: original.lossless,
         local: { fileName, originalName: original.title + '.' + extension, size: info.size, mimeType, downloadedFrom: original.source === 's3' ? 's3' : original.source === 'drive' ? 'drive' : 'nas' },
       };
       // Cancellation remains available through copy/verification, until publication begins.

@@ -54,6 +54,15 @@ exports.cloudFixtures = (globals = {}, dependencies = {}) => {
   const resultHelpers = read('src/features/library/library-result.ts', globals);
   return {
     '@/features/playback/use-playback-visibility': { usePlaybackVisibility: () => true },
+    '@/theme/layout': read('src/theme/layout.ts', globals),
+    '@/features/library/library-sidebar': { LibrarySidebar: 'LibrarySidebar' },
+    '@/features/settings/settings-workspace': { SettingsWorkspace: 'SettingsWorkspace' },
+    '@/components/tablet-sidebar': { TabletSidebar: 'TabletSidebar', SidebarAppNavigation: 'SidebarAppNavigation' },
+    '@/components/sidebar-header': { SidebarHeader: 'SidebarHeader' },
+    '@/components/content-title-bar': { ContentTitleBar: 'ContentTitleBar' },
+    '@/components/content-transition': { ContentTransition: 'ContentTransition' },
+    '@/features/settings/tablet-tab-navigation': read('src/features/settings/tablet-tab-navigation.ts', globals),
+    'react-native-safe-area-context': { useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }) },
     './use-playback-visibility': { usePlaybackVisibility: () => true },
     '@/stores/appearance-preferences': { useAppearancePreferences }, '@/theme/appearance': appearanceRules, './appearance': appearanceRules,
     '@/theme/use-player-colors': { useMiniPlayerColors: () => dependencies['@/theme/tokens']?.useColors?.() ?? {}, usePlayerAccent: () => appearanceRules.playerAccent(null, ['#111111']) },
@@ -84,6 +93,7 @@ exports.cloudFixtures = (globals = {}, dependencies = {}) => {
     './sleep-timer': read('src/services/playback/sleep-timer.ts', globals),
     './section-repeat': read('src/services/playback/section-repeat.ts', globals),
     './playback-rate': read('src/services/playback/playback-rate.ts', globals),
+    './lossless': read('src/services/playback/lossless.ts', globals),
     ...('expo-file-system/legacy' in dependencies ? { './file-copy': read('src/services/local-music/file-copy.ts', globals, dependencies) } : {}),
     ...('@/services/playback/persistence' in dependencies && 'react' in dependencies ? {
       '@/features/startup/use-app-bootstrap': read('src/features/startup/use-app-bootstrap.ts', globals, shared),

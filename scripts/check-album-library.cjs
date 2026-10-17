@@ -46,7 +46,7 @@ global.fetch = async uri => {
   assert.equal(url.searchParams.get('library'), 'all');
   let data;
   if (api === 'SYNO.AudioStation.Song') {
-    assert.equal(url.searchParams.get('additional'), 'song_tag');
+    assert.equal(url.searchParams.get('additional'), 'song_tag,song_audio');
     assert.equal(url.searchParams.has('album'), false);
     const offset = Number(url.searchParams.get('offset'));
     const limit = Math.min(37, Number(url.searchParams.get('limit')));

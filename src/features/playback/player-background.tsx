@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useReducer } from 'react';
+import { useCallback, useEffect, useReducer, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { cancelAnimation, Easing, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
@@ -10,27 +10,32 @@ function GradientLayer({ layer, onComplete }: { layer: BackgroundLayer; onComple
   const { id, colors, animate } = layer;
   const opacity = useSharedValue(animate ? 0 : 1);
   useEffect(() => {
-    if (!animate) return;
+    if (!animate) { cancelAnimation(opacity); opacity.set(1); return; }
     opacity.set(withTiming(1, { duration: 900, easing: Easing.inOut(Easing.cubic) }, (finished) => {
       if (finished) scheduleOnRN(onComplete, id);
     }));
     return () => cancelAnimation(opacity);
   }, [animate, id, onComplete, opacity]);
-  const fadeStyle = useAnimatedStyle(() => ({ opacity: opacity.get() }));
+  const fadeStyle = useAnimatedStyle(() => ({ opacity: animate ? opacity.get() : 1 }));
   return <Animated.View style={[StyleSheet.absoluteFill, fadeStyle]}>
     <LinearGradient colors={colors} locations={[0, 0.5, 1]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
   </Animated.View>;
 }
 
-export function PlayerBackground({ colors }: { colors: GradientColors }) {
+export function PlayerBackground({ colors, active = true }: { colors: GradientColors; active?: boolean }) {
   const [layers, dispatch] = useReducer(backgroundLayers, colors, initialBackgroundLayers);
-  if (!sameGradient(layers[layers.length - 1].colors, colors)) {
+  const [previousActive, setPreviousActive] = useState(active);
+  if (previousActive !== active) {
+    setPreviousActive(active);
+    // Recover only the background after a suspended native view/animation; playback stays mounted.
+    dispatch({ type: 'restore', colors });
+  } else if (!sameGradient(layers[layers.length - 1].colors, colors)) {
     // Adjust before commit; never reset a visible native layer's opacity from an effect.
-    dispatch({ type: 'target', colors });
+    dispatch({ type: active ? 'target' : 'restore', colors });
   }
   const onComplete = useCallback((id: number) => dispatch({ type: 'complete', id }), []);
 
-  return <View pointerEvents="none" accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={StyleSheet.absoluteFill}>
+  return <View pointerEvents="none" accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={[StyleSheet.absoluteFill, { backgroundColor: layers[0].colors[0] }]}>
     {layers.map((layer) => <GradientLayer key={layer.id} layer={layer} onComplete={onComplete} />)}
   </View>;
 }

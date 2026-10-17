@@ -1,5 +1,5 @@
 import { Children, type ComponentProps, type ReactNode } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { Text } from '@/components/text';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -9,13 +9,20 @@ import { ScrollEdgeFade } from '@/components/scroll-edge-fade';
 import { useColors } from '@/theme/tokens';
 import { settingsMenuStyles } from './settings-menu-layout';
 import { playHaptic } from '@/services/haptics';
+import { workspaceLayout } from '@/theme/layout';
 
-export function SettingsPage({ children, overlay }: { children: ReactNode; overlay?: ReactNode }) {
+export function SettingsPage({ children, overlay, overview = false }: { children: ReactNode; overlay?: ReactNode; overview?: boolean }) {
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const { width, height, fontScale } = useWindowDimensions();
+  const layout = workspaceLayout(width - insets.left - insets.right, height, fontScale);
+  const contentWidth = Math.min(1160, layout.contentWidth);
+  const columns = overview && contentWidth >= 860 * Math.max(1, fontScale) ? 2 : 1;
   return <View style={{ flex: 1, backgroundColor: colors.background }}>
-    <ScrollEdgeFade><KeyboardAwareScrollView style={{ flex: 1 }} bottomOffset={16} contentContainerStyle={[styles.screen, { paddingBottom: 24 + insets.bottom }]} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
-      {children}
+    <ScrollEdgeFade><KeyboardAwareScrollView style={{ flex: 1 }} bottomOffset={16} contentContainerStyle={[styles.screen, { maxWidth: overview ? 1160 : 840, paddingBottom: 24 + insets.bottom }]} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
+      <View style={columns === 2 ? styles.cards : undefined}>
+        {Children.toArray(children).map((child, index) => <View key={index} style={columns === 2 ? { width: (contentWidth - 68) / 2 } : undefined}>{child}</View>)}
+      </View>
     </KeyboardAwareScrollView></ScrollEdgeFade>
     {overlay}
   </View>;
@@ -43,7 +50,8 @@ export function SettingsLink({ title, description, icon, href, disabled = false,
 }
 
 const styles = StyleSheet.create({
-  screen: { paddingHorizontal: 22, paddingTop: 16 },
+  screen: { paddingHorizontal: 22, paddingTop: 16, width: '100%', maxWidth: 840, alignSelf: 'center' },
+  cards: { flexDirection: 'row', flexWrap: 'wrap', gap: 24, alignItems: 'flex-start' },
   section: { marginBottom: 24 },
   heading: { fontSize: 12, fontWeight: '800', letterSpacing: 1.2, marginBottom: 12, marginTop: 0 },
   group: { borderWidth: 1, borderRadius: 15, overflow: 'hidden' },

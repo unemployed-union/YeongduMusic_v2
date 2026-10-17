@@ -8,6 +8,7 @@ function load(file, mocks = {}, globals = {}) {
     compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX },
   }).outputText;
   new Function('require', 'exports', ...Object.keys(globals), code)(name => {
+    if (name === '@/theme/layout') return load('src/theme/layout.ts');
     if (name in mocks) return mocks[name]; throw Error('Unexpected dependency ' + name);
   }, exports, ...Object.values(globals));
   return exports;

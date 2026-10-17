@@ -47,6 +47,7 @@ for (const route of ['settings/cloud', 'settings/cloud/synology', 'settings/clou
 const jsx = (type, props) => ({ type, props });
 function renderModule(file, mocks) {
   mocks = { ...require('./test-cloud-fixtures.cjs').cloudFixtures({}, mocks), ...mocks };
+  mocks['react-native'] = { useWindowDimensions: () => ({ width: 400, height: 800, fontScale: 1 }), ...mocks['react-native'] };
   const code = ts.transpileModule(fs.readFileSync(path.join(root, file), 'utf8'), { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText;
   const exports = {};
   new Function('require', 'exports', code)(name => { if (name in mocks) return mocks[name]; throw new Error('Unexpected module: ' + name); }, exports);

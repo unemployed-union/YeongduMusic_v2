@@ -39,7 +39,7 @@ new Function('require', 'exports', 'setTimeout', 'clearTimeout', code)(name => {
   return modules[name];
 }, moduleExports, setTimeout, clearTimeout);
 
-async function checkRootRemount({ playing = true, cold = false, theme = 'dark' } = {}) {
+async function checkRootRemount({ playing = true, cold = false, theme = 'dark', tablet = false } = {}) {
   const effects = [], navigation = [];
   let privacyLoads = 0, stopped = 0, savedReads = 0, persistenceStarts = 0;
   const saved = { queue: [{ id: 'nas-live', source: 'nas' }], index: 0, playing, position: 37, shuffle: false, repeat: 'off', playbackRate: 1.75, preservePitch: false };
@@ -72,7 +72,7 @@ async function checkRootRemount({ playing = true, cold = false, theme = 'dark' }
     react: { useEffect: effect => effects.push(effect), useMemo: compute => compute(), useRef: value => ({ current: value }) },
     'react/jsx-runtime': { jsx, jsxs: jsx },
     '@/components/text': { Text: 'Text' },
-  'react-native': { View: 'View', ActivityIndicator: 'Spinner', Pressable: 'Button', Text: 'Text', useColorScheme: () => 'dark', AppState: { addEventListener: () => ({ remove() {} }) } },
+  'react-native': { View: 'View', ActivityIndicator: 'Spinner', Pressable: 'Button', Text: 'Text', useColorScheme: () => 'dark', useWindowDimensions: () => ({ width: tablet ? 1280 : 400, height: 800, fontScale: 1 }), AppState: { addEventListener: () => ({ remove() {} }) } },
     'react-native-gesture-handler': { GestureHandlerRootView: 'Root' },
     'expo-router': { router: { navigate: route => navigation.push(route) }, DarkTheme: {}, DefaultTheme: {}, ThemeProvider: 'Theme', Stack: Object.assign('Stack', { Screen: 'Screen' }) },
     '@tanstack/react-query': { QueryClient: class {}, QueryClientProvider: 'QueryProvider' },
@@ -112,6 +112,9 @@ async function checkRootRemount({ playing = true, cold = false, theme = 'dark' }
     let node = rootModule.default();
     while (typeof node.type !== 'function') node = node.props.children;
     const themeTree = node.type();
+    const rootStack = themeTree.props.children[2];
+    assert.equal(rootStack.props.screenOptions.animation, tablet ? 'none' : 'slide_from_right', 'Tablet root navigation excludes sidebars from transitions');
+    if (tablet) assert.equal(rootStack.props.screenOptions.gestureEnabled, false);
     assert.equal(themeTree.props.value, theme === 'dark' ? rootMocks['expo-router'].DarkTheme : rootMocks['expo-router'].DefaultTheme);
     assert.equal(themeTree.props.children[1].props.style, theme === 'dark' ? 'light' : 'dark', 'Status bar follows the app theme rather than the device theme');
     const cleanups = effects.map(effect => effect());
@@ -190,6 +193,7 @@ async function main() {
   assert.equal(values.size, 0, 'Explicitly cleared playback also clears saved playback');
   stop();
   await checkRootRemount();
+  await checkRootRemount({ tablet: true });
   await checkRootRemount({ playing: false });
   await checkRootRemount({ playing: true, cold: true });
   await checkRootRemount({ playing: false, cold: true });

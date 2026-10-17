@@ -2,6 +2,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { Text } from '@/components/text';
 import { ScreenHeader } from '@/components/screen-header';
+import { ContentTitleBar } from '@/components/content-title-bar';
+import { ContentTransition } from '@/components/content-transition';
 import { SettingsButton } from '@/components/settings-button';
 import { LibraryPage, type LibraryTab } from '@/features/library/library-page';
 import { LocalMusicControls } from '@/features/library/local-music-controls';
@@ -16,10 +18,14 @@ import { useMenuPreferences } from '@/stores/menu-preferences';
 import { MENU_LABELS, selectedMenuId, visibleMenuIds } from '@/features/settings/menu-layout';
 import { LibraryPager } from '@/features/library/library-pager';
 import { LikedSongsScreen } from '@/features/favorites/liked-songs-screen';
+import { LibrarySidebar } from '@/features/library/library-sidebar';
+import { workspaceLayout } from '@/theme/layout';
 
 export default function LibraryScreen() {
   const colors = useColors();
-  const width = useWindowDimensions().width;
+  const { width, height, fontScale } = useWindowDimensions();
+  const workspace = workspaceLayout(width, height, fontScale);
+  const pageWidth = workspace.expanded ? Math.min(1160, workspace.contentWidth) - 48 : workspace.contentWidth;
   const library = useMenuPreferences(state => state.layout.library);
   const tabs = useMemo(() => visibleMenuIds(library), [library]);
   const [selected, setTab] = useState<LibraryTab>(tabs[0]);
@@ -52,17 +58,24 @@ export default function LibraryScreen() {
     if (next) selectTab(next);
   }, [tabs, selectTab]);
 
+  const tools = <LocalMusicControls menuLabel={workspace.expanded ? '가져오기·연결' : undefined} sortControl={<LibrarySortControl tab={tab} order={sortOrders[tab]} onChange={(order) => setSortOrders((current) => ({ ...current, [tab]: order }))} />} />;
   return <View style={[styles.screen, { backgroundColor: colors.background }]}>
-    <ScreenHeader title="보관함" action={<SettingsButton />} bottomSpacing={8} />
-    <LocalMusicControls sortControl={<LibrarySortControl tab={tab} order={sortOrders[tab]} onChange={(order) => setSortOrders((current) => ({ ...current, [tab]: order }))} />} />
-    <Animated.View style={[{ overflow: 'hidden', flexShrink: 0 }, controls.frameStyle]} pointerEvents={controls.hidden ? 'none' : 'auto'} accessibilityElementsHidden={controls.hidden} importantForAccessibility={controls.hidden ? 'no-hide-descendants' : 'auto'}>
+    {!workspace.expanded && <ScreenHeader title="보관함" action={<SettingsButton />} bottomSpacing={8} />}
+    <View style={{ flex: 1, flexDirection: 'row' }}>
+    {workspace.expanded && <LibrarySidebar tabs={tabs} selected={tab} width={workspace.sidebarWidth} onSelect={selectTab} />}
+    <ContentTransition enabled={workspace.expanded}>
+    <View style={{ flex: 1, width: pageWidth, alignSelf: 'center' }}>
+    {workspace.expanded && <ContentTitleBar title="보관함" action={<SettingsButton />} />}
+    {tools}
+    {!workspace.expanded && <Animated.View style={[{ overflow: 'hidden', flexShrink: 0 }, controls.frameStyle]} pointerEvents={controls.hidden ? 'none' : 'auto'} accessibilityElementsHidden={controls.hidden} importantForAccessibility={controls.hidden ? 'no-hide-descendants' : 'auto'}>
     <Animated.View collapsable={false} onLayout={controls.onLayout} style={[{ position: 'absolute', top: 0, left: 0, right: 0 }, controls.contentStyle]}>
     <View style={[styles.segments, tabs.length > 3 && styles.compactSegments]}>{tabs.map((option) => <Pressable key={option} accessibilityRole="tab" accessibilityState={{ selected: tab === option }} onPress={() => selectTab(option)} style={[styles.segment, tabs.length > 3 && styles.compactSegment, { backgroundColor: tab === option ? colors.tint : colors.surface, borderColor: tab === option ? colors.tint : colors.separator }]}><Text numberOfLines={1} style={{ color: tab === option ? 'white' : colors.text, fontWeight: '700' }}>{MENU_LABELS[option]}</Text></Pressable>)}</View>
     {(refreshState.refreshing || refreshState.error || refreshState.message) && <Pressable accessibilityRole="button" disabled={!refreshState.error || refreshState.refreshing} onPress={() => void refreshState.refresh()} style={styles.refreshNotice}><Text style={{ color: refreshState.error ? colors.tint : colors.muted }}>{refreshState.refreshing ? '가져오는 중...' : refreshState.error ? refreshState.error + ' · 다시 시도' : refreshState.message}</Text></Pressable>}
     </Animated.View>
-    </Animated.View>
+    </Animated.View>}
+    {workspace.expanded && (refreshState.refreshing || refreshState.error || refreshState.message) && <Pressable accessibilityRole="button" disabled={!refreshState.error || refreshState.refreshing} onPress={() => void refreshState.refresh()} style={styles.refreshNotice}><Text style={{ color: refreshState.error ? colors.tint : colors.muted }}>{refreshState.refreshing ? '가져오는 중...' : refreshState.error ? refreshState.error + ' · 다시 시도' : refreshState.message}</Text></Pressable>}
     <LibraryPager
-      width={width}
+      width={pageWidth}
       pageCount={tabs.length}
       pageIndex={tabs.indexOf(tab)}
       layoutKey={tabs.join(':')}
@@ -72,11 +85,14 @@ export default function LibraryScreen() {
       onTouchMove={controls.onTouchMove}
     >
       {tabs.map((option) => {
-        if (option === 'favorites') return <LikedSongsScreen key={option} width={width} active={option === tab} sortOrder={sortOrders.favorites} onListScroll={controls.onScroll} />;
+        if (option === 'favorites') return <LikedSongsScreen key={option} width={pageWidth} spacious={workspace.expanded} active={option === tab} sortOrder={sortOrders.favorites} onListScroll={workspace.expanded ? undefined : controls.onScroll} />;
         const query = queries[option];
-        return <LibraryPage key={option} tab={option} active={option === tab} sortOrder={sortOrders[option]} data={query.data} isPending={query.isPending} isError={query.isError} error={query.error} isRefetchError={query.isRefetchError} width={width} refreshing={refreshState.refreshing} onRefresh={refreshState.refresh} onListScroll={controls.onScroll} />;
+        return <LibraryPage key={option} tab={option} active={option === tab} sortOrder={sortOrders[option]} data={query.data} isPending={query.isPending} isError={query.isError} error={query.error} isRefetchError={query.isRefetchError} width={pageWidth} spacious={workspace.expanded} refreshing={refreshState.refreshing} onRefresh={refreshState.refresh} onListScroll={workspace.expanded ? undefined : controls.onScroll} />;
       })}
     </LibraryPager>
+    </View>
+    </ContentTransition>
+    </View>
   </View>;
 }
 

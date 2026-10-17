@@ -1,5 +1,5 @@
 import { useRef } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, View, useWindowDimensions } from 'react-native';
 import { Tabs } from 'expo-router';
 import { BlurTargetView, BlurView } from 'expo-blur';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -13,12 +13,20 @@ import { BOTTOM_MENU_ROUTES, MENU_LABELS, visibleMenuIds } from '@/features/sett
 import { TabMenuSelection } from '@/features/settings/tab-menu-selection';
 import { ScreenBlurTargetContext } from '@/components/screen-blur-target';
 import { useBlurIntensity } from '@/stores/blur-preferences';
+import { workspaceLayout } from '@/theme/layout';
+import { TabletSidebar } from '@/components/tablet-sidebar';
+import { ContentTitleBar } from '@/components/content-title-bar';
+import { ContentTransition } from '@/components/content-transition';
+import { tabletTabInfo } from '@/features/settings/tablet-tab-navigation';
 
 export default function TabsLayout() {
   const colors = useColors();
   const isDark = useAppColorScheme() === 'dark';
   const blurIntensity = useBlurIntensity('tabBar'), blurEnabled = blurIntensity > 0;
   const insets = useSafeAreaInsets();
+  const { width, height, fontScale } = useWindowDimensions();
+  const workspace = workspaceLayout(width, height, fontScale);
+  const tablet = workspace.expanded;
   const keyboardVisible = useKeyboardState((state) => state.isVisible);
   const bottom = useMenuPreferences(state => state.layout.bottom);
   const libraryTarget = useRef<View | null>(null);
@@ -31,22 +39,31 @@ export default function TabsLayout() {
     // Capture screen content only; both chrome surfaces share the active target.
     screenLayout={({ children, route }) => <BlurTargetView ref={targetFor(route.name)} style={styles.content}>
       <ScreenBlurTargetContext.Provider value={targetFor(route.name)}>
-      <TabBarInsetContext.Provider value={keyboardVisible ? 0 : TAB_BAR_HEIGHT + insets.bottom}>{children}</TabBarInsetContext.Provider>
+      <TabBarInsetContext.Provider value={keyboardVisible ? 0 : (tablet ? 0 : TAB_BAR_HEIGHT) + insets.bottom}>{children}</TabBarInsetContext.Provider>
       </ScreenBlurTargetContext.Provider>
     </BlurTargetView>}
-    layout={({ children, state, navigation }) => <View style={styles.content}>
-      <TabMenuSelection navigation={navigation} />
-      {children}
-      {!keyboardVisible && <View pointerEvents="box-none" style={[styles.mini, { bottom: TAB_BAR_HEIGHT + insets.bottom + MINI_PLAYER_INSET }]}><MiniPlayer blurTarget={targetFor(state.routes[state.index].name)} /></View>}
-    </View>}
+    layout={({ children, state, navigation }) => {
+      const info = tabletTabInfo(state.routes[state.index]);
+      const sidebar = tablet && !info.libraryHome;
+      const miniWidth = Math.min(760, workspace.contentWidth);
+      return <View style={[styles.content, { flexDirection: 'row' }]}>
+        <TabMenuSelection navigation={navigation} />
+        {sidebar && <TabletSidebar active={info.active} width={workspace.sidebarWidth} />}
+        <ContentTransition enabled={sidebar} transitionKey={info.transitionKey}>
+          {sidebar && <ContentTitleBar title={info.title} />}
+          {children}
+          {!keyboardVisible && <View pointerEvents="box-none" style={[styles.mini, { bottom: (tablet ? 0 : TAB_BAR_HEIGHT) + insets.bottom + MINI_PLAYER_INSET }, tablet && { width: miniWidth, left: (sidebar ? 0 : workspace.sidebarWidth) + (workspace.contentWidth - miniWidth) / 2, alignSelf: 'auto' }]}><MiniPlayer blurTarget={targetFor(state.routes[state.index].name)} /></View>}
+        </ContentTransition>
+      </View>;
+    }}
     screenOptions={({ route }) => ({
       headerShown: false,
       tabBarHideOnKeyboard: true,
       tabBarActiveTintColor: colors.tint,
       tabBarInactiveTintColor: colors.chromeMuted,
       tabBarLabelStyle: { fontSize: 11, fontWeight: '700' },
-      tabBarStyle: keyboardVisible ? { display: 'none' } : { position: 'absolute', height: TAB_BAR_HEIGHT + insets.bottom, paddingTop: 8, paddingBottom: Math.max(insets.bottom, 8), backgroundColor: 'transparent', borderTopColor: colors.chromeBorder },
-      tabBarBackground: () => <View pointerEvents="none" style={StyleSheet.absoluteFill}>
+      tabBarStyle: keyboardVisible || tablet ? { display: 'none' } : { position: 'absolute', height: TAB_BAR_HEIGHT + insets.bottom, paddingTop: 8, paddingBottom: Math.max(insets.bottom, 8), backgroundColor: 'transparent', borderTopColor: colors.chromeBorder },
+      tabBarBackground: () => tablet ? null : <View pointerEvents="none" style={StyleSheet.absoluteFill}>
         {blurEnabled && <BlurView blurTarget={targetFor(route.name)} blurMethod="dimezisBlurView" intensity={blurIntensity} tint={isDark ? 'dark' : 'light'} style={StyleSheet.absoluteFill} />}
         <View style={[StyleSheet.absoluteFill, { backgroundColor: blurEnabled ? colors.tab : colors.surface }]} />
       </View>,
@@ -58,4 +75,4 @@ export default function TabsLayout() {
     }} />)}
   </Tabs>;
 }
-const styles = StyleSheet.create({ content: { flex: 1 }, mini: { position: 'absolute', left: 0, right: 0, height: 64 } });
+const styles = StyleSheet.create({ content: { flex: 1 }, mini: { position: 'absolute', width: '100%', maxWidth: 760, alignSelf: 'center', height: 64 } });

@@ -89,7 +89,7 @@ async function main() {
     const url = new URL(h.requests[0].uri);
     assert.equal(url.pathname, '/webapi/AudioStation/song.cgi');
     assert.equal(url.searchParams.get('offset'), '3'); assert.equal(url.searchParams.get('limit'), '10');
-    assert.equal(url.searchParams.get('additional'), 'song_tag'); assert.equal(url.searchParams.get('library'), 'all');
+    assert.equal(url.searchParams.get('additional'), 'song_tag,song_audio'); assert.equal(url.searchParams.get('library'), 'all');
     assert.equal(url.searchParams.has('signal'), false); h.cleaned();
   });
   for (const afterHeaders of [false, true]) {
