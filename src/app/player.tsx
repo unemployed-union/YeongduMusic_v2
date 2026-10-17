@@ -145,7 +145,7 @@ export default function PlayerScreen() {
   const lyricsPanel = song ? <LyricsPanel largeText={layout.split && layout.contentWidth - layout.primaryWidth - layout.gap >= 480} accentColor={controlColors.accent} highlightColor={controlColors.highlight} key={song.id} song={song} source={lyricsSource} onSourceChange={setLyricsSource} /> : null;
   const queuePanel = <View style={styles.queue}><Text style={styles.queueHeading}>다음 재생 · {queue.length}곡</Text><ScrollEdgeFade tint="dark"><FlatList contentContainerStyle={styles.queueContent} data={queue} keyExtractor={(item, itemIndex) => `${item.id}-${itemIndex}`} renderItem={({ item, index: row }) => <Pressable onPress={() => { playHaptic('playback'); void playQueue(queue, row); }} style={styles.queueRow}><Artwork item={item} size={42} radius={6} /><View style={{ flex: 1 }}><Text numberOfLines={1} style={[styles.queueTitle, row === index && { color: controlColors.selected }]}>{item.title}</Text><Text numberOfLines={1} style={styles.queueArtist}>{item.artist}</Text></View>{row === index && <Ionicons name="volume-high" color={controlColors.accent} size={20} />}</Pressable>} /></ScrollEdgeFade></View>;
   const playbackControls = song ? <View ref={controlsRef} style={[styles.bottom, (layout.split || layout.compact) && styles.compactBottom]} onLayout={(event) => setControlsTop(screenHeight - insets.bottom - 18 - event.nativeEvent.layout.height)}>
-      <View style={{ marginBottom: 19 }}>
+      <View style={{ paddingTop: 14, marginBottom: 5 }}>
         <View style={[styles.identity, { marginBottom: 0 }]}>
           <View style={{ flex: 1 }}>
             <MarqueeText key={song.id + song.title} text={song.title} style={styles.title} fadeEdges />

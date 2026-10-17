@@ -82,15 +82,28 @@ native.Platform.OS = 'android';
   nodes(tree).find(node => node.type === 'MetadataForm').props.onSaved(); assert.equal(closed, 1);
 }
 {
-  const h = hooks(); let selected = null;
+  const h = hooks(); let selected = null, song = { id: 'song', title: 'Song' };
   const Props = load('src/features/library/song-properties.tsx', { ...ui, react: h.react,
     '@/components/action-menu': { ActionMenu: 'Menu', useMenuAction: () => ({ action: selected, visible: !selected, select: value => { selected = value; } }) },
     '@/features/metadata/metadata-editor': { MetadataEditor: 'Editor' }, '@/features/playlists/dialogs': { AddToPlaylistDialog: 'Playlists' },
+    '@/features/offline-music/delete-local-song-dialog': { DeleteLocalSongDialog: 'DeleteDialog' },
     '@/services/playback/controller': {}, '@/stores/hidden-music': { useHiddenMusicStore: () => ({ ready: true, profile: { presets: [] } }) }, '@/features/hidden-music/rules': { hiddenMatcher: () => () => false } }).SongProperties;
-  const render = () => h.render(() => Props({ song: { id: 'song', title: 'Song' }, onClose() {} }));
+  const render = () => h.render(() => Props({ song, onClose() {} }));
   let tree = render(); assert.equal(tree.type, 'Menu'); assert.deepEqual(tree.props.items.map(item => item.id), ['playlist', 'queue', 'metadata', 'artwork']);
   tree.props.onSelect('artwork'); tree = render(); assert.equal(tree.type, 'Editor'); assert.equal(tree.props.initialTab, 'artwork');
   selected = 'playlist'; assert.equal(render().type, 'Playlists', 'Playlist creation/list selection is shown only after selecting that action');
+  selected = null;
+  for (const source of ['nas', 'drive', 's3']) {
+    song = { id: source, title: 'Remote song', source };
+    assert(!render().props.items.some(item => item.id === 'delete-local'), 'Remote originals have no local delete action');
+  }
+  for (const downloadedFrom of ['nas', 'drive', 's3', undefined]) {
+    selected = null; song = { id: 'local:fixture', title: 'Saved song', source: 'local', local: { downloadedFrom } };
+    tree = render(); const option = tree.props.items.find(item => item.id === 'delete-local');
+    assert.equal(option.label, downloadedFrom ? '다운로드 삭제' : '기기 음악 삭제');
+    tree.props.onSelect(option.id); tree = render();
+    assert.equal(tree.type, 'DeleteDialog'); assert.equal(tree.props.song, song, 'Deletion always asks for confirmation for the selected local copy');
+  }
 }
 const themed = load('src/features/playback/menu-styles.ts').themedMenuStyles;
 for (const mode of ['light', 'dark']) {
@@ -124,4 +137,31 @@ for (const mode of ['light', 'dark']) {
     if (mode === 'dark') { blurStrength = 68; assert.equal(nodes(PlayerMenu(props)).find(node => node.type === 'Blur').props.intensity, 68); blurStrength = 32; }
   }
 }
-console.log('PASS: Android/iOS modal handoff and cleanup, song action selection, lazy separate editors, retained drafts/artwork results, busy-write guards, accessible hidden tabs and light/dark menu/input contrast. Native presentation is mocked.');
+async function checkDeletionDialog() {
+  for (const mode of ['light', 'dark']) {
+    scheme = mode;
+    const h = hooks(); let closed = 0, calls = 0, resolve, storing = false, importing = false;
+    const state = { error: 'Delete failed', remove: async () => { calls++; return new Promise(done => { resolve = done; }); } };
+    const offline = Object.assign(select => select({ busy: storing }), { getState: () => state });
+    const Dialog = load('src/features/offline-music/delete-local-song-dialog.tsx', { ...ui, react: h.react,
+      '@/features/playlists/dialogs': { PlaylistSheet: 'Sheet' }, '@/stores/offline-music': { useOfflineMusicStore: offline },
+      '@/stores/local-music': { useLocalMusicStore: select => select({ busy: importing }) } }).DeleteLocalSongDialog;
+    const render = () => h.render(() => Dialog({ song: { id: 'local:fixture', title: 'Saved song', artist: 'Artist', source: 'local', local: { downloadedFrom: 'nas' } }, onClose: () => { closed++; } }));
+    const button = tree => nodes(tree).find(node => node.type === 'Button' && node.props.accessibilityLabel);
+    let tree = render(); assert.equal(calls, 0, 'Opening the confirmation never deletes a file');
+    tree.props.onClose(); assert.equal(closed, 1, 'Cancel closes without deleting'); closed = 0;
+    storing = true; assert.equal(button(render()).props.disabled, true);
+    storing = false; importing = true; assert.equal(button(render()).props.disabled, true); importing = false;
+    tree = render(); const stalePress = button(tree).props.onPress;
+    stalePress(); stalePress(); assert.equal(calls, 1, 'Rapid repeated taps issue one deletion');
+    tree = render(); assert.equal(button(tree).props.disabled, true); tree.props.onClose(); assert.equal(closed, 0, 'Do not close while the file operation is in progress');
+    resolve(false); for (let i = 0; i < 10; i++) await Promise.resolve();
+    tree = render(); assert.equal(closed, 0); assert.equal(button(tree).props.disabled, false);
+    assert(nodes(tree).some(node => node.props?.accessibilityRole === 'alert' && node.props.children === state.error), 'Failure keeps the confirmation open with a retryable error');
+    button(tree).props.onPress(); assert.equal(calls, 2);
+    resolve(true); for (let i = 0; i < 10; i++) await Promise.resolve();
+    assert.equal(closed, 1, 'Successful deletion closes the confirmation');
+    h.unmount();
+  }
+}
+checkDeletionDialog().then(() => console.log('PASS: Android/iOS modal handoff, local-only deletion menu, confirmation/cancel, busy and double-tap guards, failure/retry, editors and light/dark themes. Native presentation is mocked.')).catch(error => { console.error(error); process.exitCode = 1; });

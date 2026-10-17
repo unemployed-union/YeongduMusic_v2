@@ -9,15 +9,15 @@ import { reconcilePlaybackVisibility } from '@/services/playback/controller';
 import type { Song } from '@/types/music';
 
 type State = {
-  busy: boolean; saving: boolean; cancelling: boolean; title: string; progress: DownloadProgress; error: string | null; message: string | null;
+  busy: boolean; saving: boolean; cancelling: boolean; removing: boolean; title: string; progress: DownloadProgress; error: string | null; message: string | null;
   retrySong: Song | null;
-  download: (song: Song) => Promise<void>; remove: (song: Song) => Promise<void>;
+  download: (song: Song) => Promise<void>; remove: (song: Song) => Promise<boolean>;
   cancel: () => void; clearNotice: () => void;
 };
 let request: AbortController | null = null;
 let activeSource: 'nas' | 'drive' | 's3' | null = null;
 export const useOfflineMusicStore = create<State>((set, get) => ({
-  busy: false, saving: false, cancelling: false, title: '', progress: { written: 0, total: 0 }, error: null, message: null, retrySong: null,
+  busy: false, saving: false, cancelling: false, removing: false, title: '', progress: { written: 0, total: 0 }, error: null, message: null, retrySong: null,
   clearNotice: () => set({ error: null, message: null, retrySong: null }),
   cancel: () => {
     if (!request || !get().busy || get().saving || request.signal.aborted) return;
@@ -46,18 +46,23 @@ export const useOfflineMusicStore = create<State>((set, get) => ({
     }
   },
   remove: async (song) => {
-    if (song.source !== 'local' || get().busy || useLocalMusicStore.getState().busy) return;
-    set({ busy: true, saving: true, title: song.title, error: null, message: null, retrySong: null });
+    if (song.source !== 'local') return false;
+    if (get().busy || useLocalMusicStore.getState().busy) { set({ error: '다른 음악 저장 작업이 끝난 뒤 다시 시도해 주세요.' }); return false; }
+    set({ busy: true, saving: true, removing: true, title: song.title, error: null, message: null, retrySong: null });
+    // Finish any in-flight library read before deleting, so it cannot restore a stale row.
+    await useLocalMusicStore.getState().load();
+    if (useLocalMusicStore.getState().busy) { set({ busy: false, saving: false, removing: false, error: '기기 음악 가져오기가 끝난 뒤 다시 삭제해 주세요.' }); return false; }
     useLocalMusicStore.setState({ busy: true });
     try {
       reconcilePlaybackVisibility(track => track.source === 'local' && track.id === song.id);
       await deleteLocalSong(song.id);
-      set({ message: '기기의 음악 복사본을 삭제했습니다. 원본 음악은 유지됩니다.' });
-    } catch { set({ error: '음악 복사본을 삭제하지 못했습니다. 목록을 다시 불러온 뒤 재시도해 주세요.' }); }
+      set({ error: null, message: '기기의 음악 복사본을 삭제했습니다. 원본 음악은 유지됩니다.' });
+      return true;
+    } catch { set({ error: '음악 복사본을 삭제하지 못했습니다. 목록을 다시 불러온 뒤 재시도해 주세요.' }); return false; }
     finally {
       useLocalMusicStore.setState({ busy: false });
       await useLocalMusicStore.getState().load();
-      set({ busy: false, saving: false });
+      set({ busy: false, saving: false, removing: false });
     }
   },
 }));

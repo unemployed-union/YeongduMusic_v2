@@ -17,7 +17,7 @@ function load(file, modules = {}) {
   return mod.exports;
 }
 const files = new Map(), rows = new Map(), requests = [], refreshes = [], removed = [];
-let plan = {}, copyFailure = false, dbFailure = false, deleteFailure = false, heldResolve, cancelled = 0, copyGate, commitGate, cancelGate;
+let plan = {}, copyFailure = false, dbFailure = false, deleteFailure = false, heldResolve, cancelled = 0, copyGate, commitGate, cancelGate, readGate;
 function deferred() { let resolve; const promise = new Promise(done => { resolve = done; }); return { promise, resolve }; }
 const platform = { OS: 'android' };
 const rules = load('src/services/local-music/folders.ts');
@@ -48,7 +48,7 @@ const fileSystem = {
 };
 const database = {
   execAsync: async () => {},
-  getAllAsync: async () => [...rows.values()].map(value => ({ value })),
+  getAllAsync: async () => { const snapshot = [...rows.values()].map(value => ({ value })); if (readGate) await readGate.promise; return snapshot; },
   getFirstAsync: async (_, id) => rows.has(id) ? { value: rows.get(id) } : null,
   runAsync: async (sql, id, value) => { if (dbFailure) throw Error('DB failure'); if (commitGate) await commitGate.promise; if (sql.startsWith('DELETE')) rows.delete(id); else rows.set(id, value); },
 };
@@ -182,6 +182,9 @@ async function main() {
   const requestsBefore = requests.length;
   await offline.getState().download(cloud);
   assert.equal(requests.length, requestsBefore, 'Concurrent downloads are blocked');
+  const deletionCount = removed.length;
+  assert.equal(await offline.getState().remove(local.getState().songs[0]), false);
+  assert.equal(removed.length, deletionCount, 'Deletion cannot interrupt an active download');
   const jsx = (type, props) => ({ type, props });
   const nodes = tree => Array.isArray(tree) ? tree.flatMap(nodes) : tree && typeof tree === 'object' ? [tree, ...nodes(tree.props?.children)] : [];
   const Status = load('src/features/offline-music/download-status.tsx', {
@@ -226,11 +229,30 @@ async function main() {
   plan = { bytes: 'ID3retry success' }; await offline.getState().download(offline.getState().retrySong);
   assert.equal(offline.getState().error, null);
   const song = local.getState().songs[0], source = await storage.localSource(song);
-  deleteFailure = true; await offline.getState().remove(song);
+  const filesBeforeRemoval = [...files.keys()].sort();
+  assert.equal(await offline.getState().remove(nas), false);
+  assert.equal(await offline.getState().remove(cloud), false);
+  assert.equal(await offline.getState().remove(s3Track), false);
+  assert.deepEqual([...files.keys()].sort(), filesBeforeRemoval, 'Remote originals cannot be deleted');
+  local.setState({ busy: true }); assert.equal(await offline.getState().remove(song), false); local.setState({ busy: false });
+  assert.ok(rows.has(song.id)); assert.ok(files.has(source.uri), 'An import in progress blocks deletion');
+  deleteFailure = true; assert.equal(await offline.getState().remove(song), false);
   assert.ok(rows.has(song.id)); assert.ok(files.has(source.uri)); assert.ok(offline.getState().error);
-  deleteFailure = false; await offline.getState().remove(song);
+  deleteFailure = false; readGate = deferred();
+  const loading = local.getState().load(); await flush();
+  const deleting = offline.getState().remove(song); await flush();
+  assert.equal(offline.getState().removing, true);
+  assert(nodes(Status({})).some(node => node.type === 'Text' && node.props.children.includes('삭제 중')), 'The status describes deletion rather than downloading');
+  assert.equal(cancelButton(), undefined, 'File deletion is not presented as a cancellable download');
+  assert.ok(files.has(source.uri), 'Wait for the in-flight library read before deleting');
+  assert.equal(await offline.getState().remove(song), false, 'Concurrent deletions are blocked');
+  readGate.resolve(); readGate = null; await loading; assert.equal(await deleting, true);
   assert.equal(rows.has(song.id), false); assert.equal(files.has(source.uri), false);
+  assert.equal(offline.getState().removing, false); assert.equal(offline.getState().error, null);
+  assert.deepEqual([...files.keys()].sort(), filesBeforeRemoval.filter(uri => uri !== source.uri), 'Only the selected app-owned file is removed');
   assert.ok(!local.getState().songs.some(item => item.id === song.id)); assert.equal(pruned(song), true);
+  assert.ok(!local.getState().allSongs.some(item => item.id === song.id));
+  assert.ok(!(await restarted.readLocalSongs()).some(item => item.id === song.id), 'Deletion persists across app restart');
   assert.equal(pruned(nas), false, 'Deletion cannot prune or delete a remote original');
   console.log('PASS: download/store/library integration, single job, cancel, NAS/Drive account change cancellation, retry, offline copy deletion and delete failure. Only mocked accounts/files were used; actual devices/format decoding remain unverified.');
 }
