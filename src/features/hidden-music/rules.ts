@@ -40,7 +40,7 @@ export function foldersForSongs(songs: readonly Song[]): { path: string; count: 
 }
 
 export function emptyProfile(): HiddenMusicProfile {
-  return { version: 1, biometricLock: false, presets: [], hiddenPlaylistIds: [] };
+  return { version: 1, biometricLock: false, presets: [], hiddenPlaylistIds: [], quickHidePlaylistIds: [] };
 }
 
 // A damaged or incompatible profile must not silently reveal previously hidden songs.
@@ -62,7 +62,9 @@ export function parseProfile(json: string): HiddenMusicProfile {
   });
   const hiddenPlaylistIds = profile.hiddenPlaylistIds === undefined ? [] : profile.hiddenPlaylistIds;
   if (!Array.isArray(hiddenPlaylistIds) || !hiddenPlaylistIds.every((id) => typeof id === 'string' && !!id)) throw new Error('숨긴 플레이리스트 설정을 읽을 수 없습니다.');
+  const quickHidePlaylistIds = profile.quickHidePlaylistIds === undefined ? [] : profile.quickHidePlaylistIds;
+  if (!Array.isArray(quickHidePlaylistIds) || !quickHidePlaylistIds.every((id) => typeof id === 'string' && !!id)) throw new Error('빠른 숨기기 플레이리스트 설정을 읽을 수 없습니다.');
   if (profile.quickHidePresetId !== undefined && (typeof profile.quickHidePresetId !== 'string' || !profile.quickHidePresetId)) throw new Error('빠른 숨기기 프리셋 설정을 읽을 수 없습니다.');
-  return { version: 1, biometricLock: profile.biometricLock, presets, hiddenPlaylistIds: [...new Set(hiddenPlaylistIds)],
+  return { version: 1, biometricLock: profile.biometricLock, presets, hiddenPlaylistIds: [...new Set(hiddenPlaylistIds)], quickHidePlaylistIds: [...new Set(quickHidePlaylistIds)],
     ...(profile.quickHidePresetId && ids.has(profile.quickHidePresetId) ? { quickHidePresetId: profile.quickHidePresetId } : {}) };
 }

@@ -37,13 +37,16 @@ export function SettingsSection({ title, children }: { title: string; children: 
   </View>;
 }
 
-export function SettingsLink({ title, description, icon, href, disabled = false, busy = false }: {
-  title: string; description?: string; icon: ComponentProps<typeof Ionicons>['name']; href: Href; disabled?: boolean; busy?: boolean;
+export function SettingsLink({ title, description, icon, href, badge, disabled = false, busy = false }: {
+  title: string; description?: string; icon: ComponentProps<typeof Ionicons>['name']; href: Href; badge?: string; disabled?: boolean; busy?: boolean;
 }) {
   const colors = useColors();
   return <Pressable accessibilityRole="button" accessibilityState={{ disabled: disabled || busy, ...(busy && { busy: true }) }} disabled={disabled || busy} onPress={() => { if (!disabled && !busy) { playHaptic('menu'); router.push(href); } }} style={({ pressed }) => [styles.row, { opacity: pressed ? 0.55 : 1 }]}>
     <View style={styles.icon}><Ionicons name={icon} size={23} color={disabled ? colors.muted : colors.tint} /></View>
-    <View style={styles.copy}><Text style={[styles.title, { color: disabled ? colors.muted : colors.text }]}>{title}</Text>
+    <View style={styles.copy}><View style={styles.titleRow}>
+      <Text style={[styles.title, { color: disabled ? colors.muted : colors.text }]}>{title}</Text>
+      {!!badge && <View style={[styles.badge, { backgroundColor: colors.tint + '18' }]}><Text style={[styles.badgeText, { color: colors.tint }]}>{badge}</Text></View>}
+    </View>
       {!!description && <Text numberOfLines={2} style={[styles.description, { color: colors.muted }]}>{description}</Text>}
     </View><Ionicons name="chevron-forward" size={19} color={colors.muted} />
   </Pressable>;
@@ -58,5 +61,8 @@ const styles = StyleSheet.create({
   row: settingsMenuStyles.row,
   icon: settingsMenuStyles.icon,
   copy: { flex: 1 }, title: { fontSize: 16, fontWeight: '600' },
+  titleRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', columnGap: 8, rowGap: 4 },
+  badge: { paddingHorizontal: 7, paddingVertical: 3, borderRadius: 6 },
+  badgeText: { fontSize: 11, fontWeight: '700' },
   description: { fontSize: 12, lineHeight: 18, marginTop: 5 },
 });

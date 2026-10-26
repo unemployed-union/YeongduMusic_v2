@@ -220,6 +220,7 @@ async function main() {
   await access.getState().restoreEnabled(true);
   await privacy.getState().savePreset({ id: 'private', name: 'private', enabled: true, songIds: ['secret'], folders: ['/music/private'] });
   await privacy.getState().setQuickHidePreset('private');
+  await privacy.getState().setQuickHidePlaylist('list', true);
   await privacy.getState().setPlaylistHidden('list', true);
   await privacy.getState().setBiometricLock(true);
   await playlists.getState().createPreset('Saved list', ['secret']);
@@ -229,6 +230,7 @@ async function main() {
   assert.equal(authCalls, authBefore + 1, 'Export of a locked profile requires authentication');
   assert.equal(privacy.getState().unlocked, false, 'Export relocks after taking its snapshot');
   assert.equal(privateBackup.account.hidden.quickHidePresetId, 'private');
+  assert.deepEqual(privateBackup.account.hidden.quickHidePlaylistIds, ['list']);
   assert.equal(privateBackup.account.access.quickHideMode, 'preset');
   failAuth = true;
   await assert.rejects(service.createSettingsBackup(true), /인증 취소|먼저 열어/);
@@ -246,6 +248,7 @@ async function main() {
   assert.equal(privacy.getState().profile.presets.length, 1); assert.equal(playlists.getState().profile.presets.length, 1);
   assert.equal(access.getState().quickHideMode, 'preset'); assert.equal(access.getState().quickHideEnabled, true);
   assert.deepEqual(privacy.getState().profile.hiddenPlaylistIds, ['list']);
+  assert.deepEqual(privacy.getState().profile.quickHidePlaylistIds, ['list'], 'Quick-hide playlist selections survive authenticated backup and restore');
   const restartPrivacy = load('src/stores/hidden-music.ts', hiddenMocks).useHiddenMusicStore;
   await restartPrivacy.getState().load('demo'); assert.deepEqual(restartPrivacy.getState().profile, privateBackup.account.hidden);
   await privacy.getState().load('different'); await playlists.getState().load('different');

@@ -6,7 +6,7 @@ import { useLocalMusicStore } from '@/stores/local-music';
 import { usePlaybackStore } from '@/stores/playback';
 import { localSource, replaceLocalMetadataFile } from '@/services/local-music/storage';
 import { fingerprintFile } from '@/services/local-music/file-copy';
-import { DRIVE_FILE_READ_ONLY_MESSAGE, fileTagFormat, fileWriteUnavailable } from '@/features/metadata/file-options';
+import { DRIVE_FILE_WRITE_BLOCKED_MESSAGE, fileTagFormat, fileWriteUnavailable } from '@/features/metadata/file-options';
 import { parseMetadata } from '@/features/metadata/rules';
 import { prepareS3File } from './cloud-file';
 import { prepareNasFile } from './nas-file';
@@ -16,7 +16,7 @@ import type { Song, SongMetadata } from '@/types/music';
 
 let writing = false;
 export async function writeSongFile(song: Song, metadata: SongMetadata, progress: FileProgress): Promise<{ song: Song; message: string }> {
-  if (song.source === 'drive') throw new Error(DRIVE_FILE_READ_ONLY_MESSAGE);
+  if (song.source === 'drive') throw new Error(DRIVE_FILE_WRITE_BLOCKED_MESSAGE);
   return writeFile(song, parseMetadata(metadata), progress);
 }
 export async function writeSongArtworkFile(song: Song, image: string, progress: FileProgress, signal?: AbortSignal,
@@ -29,7 +29,7 @@ async function writeFile(inputSong: Song, fields: SongMetadata | undefined, prog
   // stored size after an earlier file write without changing the stable song ID.
   const song = inputSong.source === 'local' ? useLocalMusicStore.getState().songs.find(item => item.id === inputSong.id) ?? inputSong
     : inputSong.source === 's3' ? useS3Store.getState().songs.find(item => item.id === inputSong.id) ?? inputSong : inputSong;
-  if (song.source === 'drive') throw new Error(DRIVE_FILE_READ_ONLY_MESSAGE);
+  if (song.source === 'drive') throw new Error(DRIVE_FILE_WRITE_BLOCKED_MESSAGE);
   if (writing) throw new Error('다른 음악 파일을 저장하고 있습니다. 완료 후 다시 시도해 주세요.');
   const auth = useAuthStore.getState(), s3 = useS3Store.getState();
   const unavailable = fileWriteUnavailable(song, auth.mode, Platform.OS);

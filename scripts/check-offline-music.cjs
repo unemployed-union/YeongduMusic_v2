@@ -77,11 +77,16 @@ const driveModule = {
 };
 const s3 = create(() => ({ generation: 1, connection: { id: 's3-fixture' } }));
 const s3Module = { useS3Store: s3, s3Source: async () => ({ uri: 'https://s3.example.invalid/music/song.mp3?X-Amz-Signature=fixture' }) };
+const mybox = create(() => ({ generation: 1, connection: { id: 'mbx-fixture' },
+  source: async () => ({ uri: 'https://mybox-storage.example.invalid/download?atoken=private-fixture-mybox' }),
+  playbackSource: async () => { throw Error('Offline downloads must use a fresh remote URL, not the playback cache'); } }));
+const myboxModule = { useMyboxStore: mybox };
 const formats = load('src/services/offline-music/formats.ts');
 const downloader = load('src/services/offline-music/download.ts', {
   'react-native': { Platform: platform }, 'expo-file-system/legacy': fileSystem,
   './formats': formats, '@/services/local-music/storage': storage,
   '@/services/synology/api': realApi, '@/stores/auth': { useAuthStore: auth }, '@/stores/google-drive': driveModule, '@/stores/s3': s3Module,
+  '@/stores/mybox': myboxModule,
 });
 const nas = { id: 'nas-song', source: 'nas', title: 'Offline song', artist: 'Artist', album: 'Album', albumSource: 'tag', albumArtist: 'Album Artist', duration: 180, trackNumber: 2, path: '/private/music/song.flac', artworkUrl: 'https://nas.example.invalid/cover?_sid=private-fixture-sid' };
 const cloud = { id: 'drive:fixture:file', source: 'drive', title: 'Cloud song', artist: 'Cloud artist', album: 'Google Drive', duration: 0, drive: { accountId: 'drive-account', fileId: 'file', mimeType: 'audio/mpeg' } };
@@ -124,6 +129,14 @@ async function main() {
   const s3Copy = await run(s3Track);
   assert.equal(s3Copy.song.local.downloadedFrom, 's3');
   assert.ok(!rows.get(s3Copy.song.id).includes('X-Amz')); assert.ok(!rows.get(s3Copy.song.id).includes('s3-fixture'));
+  plan = { bytes: 'ID3mybox unique fixture' };
+  const myboxTrack = { id: 'mybox:mbx-fixture:file-a', source: 'mybox', title: 'MYBOX track', artist: 'Artist', album: 'Album', duration: 0, path: '/Music/song.mp3',
+    mybox: { connectionId: 'mbx-fixture', fileId: 'file-a', fileName: 'song.mp3', size: Buffer.byteLength(plan.bytes) } };
+  const myboxCopy = await run(myboxTrack);
+  assert.equal(myboxCopy.song.local.downloadedFrom, 'mybox');
+  assert.equal(requests.at(-1).options.headers, undefined, 'MYBOX storage does not receive account credentials');
+  assert.ok(!rows.get(myboxCopy.song.id).includes('atoken')); assert.ok(!rows.get(myboxCopy.song.id).includes('mbx-fixture'));
+  plan = { bytes: 'ID3mybox truncated' }; await assert.rejects(run(myboxTrack));
   assertNoParts();
   plan = [{ status: 401 }, { bytes: 'ID3new-token retry' }];
   await run(cloud); assert.deepEqual(refreshes.slice(-2), [false, true]);
@@ -170,6 +183,7 @@ async function main() {
   const offline = load('src/stores/offline-music.ts', {
     '@/services/offline-music/download': downloader, '@/services/local-music/storage': storage,
     './local-music': localModule, './auth': { useAuthStore: auth }, './google-drive': driveModule,
+    './mybox': myboxModule,
     '@/services/playback/controller': { reconcilePlaybackVisibility: match => { pruned = match; } },
   }).useOfflineMusicStore;
   plan = { bytes: 'ID3store success' }; await offline.getState().download(nas);
@@ -223,6 +237,10 @@ async function main() {
   const olderDrive = offline.getState().download(cloud); await flush();
   drive.setState({ generation: 2, account: null });
   await olderDrive; assertNoParts();
+  plan = { bytes: 'ID3obsolete MYBOX', hold: true };
+  const olderMybox = offline.getState().download(myboxTrack); await flush();
+  mybox.setState({ generation: 2, connection: null }); await olderMybox; assertNoParts();
+  assert.match(offline.getState().message, /취소/);
   plan = { bytes: 'ID3failure for retry', fail: true };
   await offline.getState().download(nas);
   assert.ok(offline.getState().error); assert.equal(offline.getState().retrySong.id, nas.id);

@@ -11,7 +11,7 @@ import { useHiddenMusicStore } from '@/stores/hidden-music';
 import { useSongs } from '@/features/library/queries';
 import { useQueryClient } from '@tanstack/react-query';
 import { ToastNotice } from '@/components/toast-notice';
-import { DRIVE_FILE_READ_ONLY_MESSAGE, fileWriteDescription, fileWriteUnavailable } from '@/features/metadata/file-options';
+import { fileWriteDescription, fileWriteUnavailable } from '@/features/metadata/file-options';
 import { hiddenMatcher, privacyScope } from '@/features/hidden-music/rules';
 import { metadataKey } from '@/features/metadata/rules';
 import { searchArtwork, type ArtworkCandidate } from '@/services/artwork/search';
@@ -47,9 +47,9 @@ export function ArtworkEditor({ song, album, artist, disabled, onBusyChange, alb
   const albumKeys = useMemo(() => albumSongs ? albumArtworkTargets(currentSong, albumSongs, scope) : artworkTargets(currentSong, data?.items ?? [], scope, true), [currentSong, data?.items, scope, albumSongs]);
   const keys = albumSongs || wholeAlbum ? albumKeys : key ? [key] : [];
   const targetSongs = [currentSong, ...(visible ?? []).filter(item => metadataKey(item, scope) !== key && keys.includes(metadataKey(item, scope) ?? ''))];
-  const fileTargets = targetSongs.filter(item => item.source !== 'drive');
-  const driveReadOnly = song.source === 'drive';
-  const fileUnavailable = driveReadOnly ? DRIVE_FILE_READ_ONLY_MESSAGE : fileTargets.map(item => fileWriteUnavailable(item, auth.mode, Platform.OS)).find(Boolean) ?? null;
+  const fileTargets = targetSongs.filter(item => item.source !== 'drive' && item.source !== 'mybox');
+  const cloudFileWriteBlocked = song.source === 'drive' || song.source === 'mybox';
+  const fileUnavailable = cloudFileWriteBlocked ? fileWriteDescription(song) : fileTargets.map(item => fileWriteUnavailable(item, auth.mode, Platform.OS)).find(Boolean) ?? null;
   function targetsVisible() {
     const hidden = useHiddenMusicStore.getState();
     if (!hidden.ready || hidden.scope !== scope) return false;
@@ -122,8 +122,8 @@ export function ArtworkEditor({ song, album, artist, disabled, onBusyChange, alb
         <AnimatedSwitch accessibilityLabel="같은 앨범의 곡에도 앨범아트 적용" value={wholeAlbum} disabled={busy || isPending || isFetching || albumKeys.length < 2} onValueChange={setWholeAlbum} />
       </View>}
       <View style={styles.row}><View style={{ flex: 1, gap: 5 }}><Text style={{ color: colors.text }}>파일에도 앨범아트 저장</Text>
-        <Text style={[styles.note, { color: colors.muted }]}>{fileUnavailable ?? `선택한 표지를 MP3·FLAC 파일에 넣습니다. ${fileWriteDescription(currentSong)}${targetSongs.length !== fileTargets.length ? ` Google Drive ${targetSongs.length - fileTargets.length}곡은 앱 표시용으로만 적용합니다.` : ''}`}</Text></View>
-        {driveReadOnly ? <Pressable accessibilityRole="button" accessibilityLabel="Google Drive 앨범아트 파일 직접 수정 안내" style={styles.button} disabled={busy} onPress={() => setToast({ message: DRIVE_FILE_READ_ONLY_MESSAGE })}>
+        <Text style={[styles.note, { color: colors.muted }]}>{fileUnavailable ?? `선택한 표지를 MP3·FLAC 파일에 넣습니다. ${fileWriteDescription(currentSong)}${targetSongs.length !== fileTargets.length ? ` 클라우드 ${targetSongs.length - fileTargets.length}곡은 원본을 유지하고 앱 표시용으로만 적용합니다.` : ''}`}</Text></View>
+        {cloudFileWriteBlocked ? <Pressable accessibilityRole="button" accessibilityLabel={`${song.source === 'mybox' ? 'MYBOX' : 'Google Drive'} 앨범아트 파일 직접 수정 안내`} style={styles.button} disabled={busy} onPress={() => setToast({ message: fileWriteDescription(song) })}>
           <View pointerEvents="none"><AnimatedSwitch accessibilityLabel="파일에도 앨범아트 저장" value={false} disabled onValueChange={() => {}} /></View>
         </Pressable> : <AnimatedSwitch accessibilityLabel="파일에도 앨범아트 저장" value={writeFile} disabled={busy || !writeFile && !!fileUnavailable}
           onValueChange={setWriteFile} />}
@@ -137,7 +137,7 @@ export function ArtworkEditor({ song, album, artist, disabled, onBusyChange, alb
         if (!image || !allowed()) return;
         let written = 0;
         const applied = new Set<string>();
-        if (writeFile && !driveReadOnly) {
+        if (writeFile && !cloudFileWriteBlocked) {
           if (fileUnavailable) throw new Error(fileUnavailable);
           const { writeSongArtworkFile } = await import('@/services/metadata/write-song-file');
           const { libraryIdentity } = await import('@/features/library/repository');

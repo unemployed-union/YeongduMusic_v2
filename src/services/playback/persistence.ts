@@ -1,8 +1,10 @@
 import { useS3Store } from '@/stores/s3';
+import { useMyboxStore } from '@/stores/mybox';
 import { AppState, Platform } from 'react-native';
 import { privacyScope, hiddenMatcher } from '@/features/hidden-music/rules';
 import { useAuthStore } from '@/stores/auth';
 import { useGoogleDriveStore } from '@/stores/google-drive';
+import { useDriveDocumentsStore } from '@/stores/drive-documents';
 import { useHiddenMusicStore } from '@/stores/hidden-music';
 import { useLocalMusicStore } from '@/stores/local-music';
 import { usePlaybackStore, type RepeatMode } from '@/stores/playback';
@@ -29,6 +31,7 @@ type Snapshot = {
   nasScope: string | null;
   driveAccountId: string | null;
   s3ConnectionId?: string | null;
+  myboxConnectionId?: string | null;
   savedAt: number;
 };
 
@@ -61,7 +64,8 @@ function validSong(value: unknown): value is Song {
     (song.source === 'nas' || song.source === undefined ||
       (song.source === 'local' && !!song.local && typeof song.local.fileName === 'string') ||
       (song.source === 'drive' && !!song.drive && typeof song.drive.fileId === 'string' && typeof song.drive.accountId === 'string') ||
-      (song.source === 's3' && !!song.s3 && typeof song.s3.key === 'string' && typeof song.s3.connectionId === 'string' && Number.isSafeInteger(song.s3.size) && song.s3.size > 0));
+      (song.source === 's3' && !!song.s3 && typeof song.s3.key === 'string' && typeof song.s3.connectionId === 'string' && Number.isSafeInteger(song.s3.size) && song.s3.size > 0) ||
+      (song.source === 'mybox' && !!song.mybox && typeof song.mybox.fileId === 'string' && typeof song.mybox.fileName === 'string' && typeof song.mybox.connectionId === 'string' && typeof song.path === 'string' && Number.isSafeInteger(song.mybox.size) && song.mybox.size > 0));
 }
 
 function parse(raw: string | null): Snapshot | null {
@@ -76,6 +80,7 @@ function parse(raw: string | null): Snapshot | null {
       !(value.nasScope === null || typeof value.nasScope === 'string') ||
       !(value.driveAccountId === null || typeof value.driveAccountId === 'string') ||
       !(value.s3ConnectionId === undefined || value.s3ConnectionId === null || typeof value.s3ConnectionId === 'string') ||
+      !(value.myboxConnectionId === undefined || value.myboxConnectionId === null || typeof value.myboxConnectionId === 'string') ||
       typeof value.savedAt !== 'number' || Date.now() - value.savedAt > MAX_AGE_MS || value.savedAt > Date.now() + 60_000) return null;
     return value as Snapshot;
   } catch { return null; }
@@ -88,10 +93,13 @@ export async function readRestoredPlayback(): Promise<RestoredPlayback | null> {
   const privacy = useHiddenMusicStore.getState();
   const local = useLocalMusicStore.getState();
   const driveAccountId = useGoogleDriveStore.getState().account?.id ?? null;
+  const driveFiles = new Set(useGoogleDriveStore.getState().files.map(file => file.id));
   const scope = privacyScope(auth.mode, auth.session);
   const currentLocal = new Map(local.songs.map((song) => [song.id, song]));
   const currentDrive = new Map(useGoogleDriveStore.getState().songs.map(song => [song.id, song]));
+  const currentDocuments = new Map(useDriveDocumentsStore.getState().songs.map(song => [song.id, song]));
   const currentS3 = new Map(useS3Store.getState().songs.map(song => [song.id, song]));
+  const currentMybox = new Map(useMyboxStore.getState().songs.map(song => [song.id, song]));
   const hidden = hiddenMatcher(privacy.profile.presets);
   const nasClient = auth.mode === 'nas' && auth.session ? new SynologyClient(auth.session) : null;
   const selectedId = saved.queue[saved.index].id;
@@ -102,13 +110,24 @@ export async function readRestoredPlayback(): Promise<RestoredPlayback | null> {
     let restored: Song | null = null;
     if (song.source === 'local') restored = currentLocal.get(song.id) ?? null;
     else if (song.source === 'drive') {
-      const current = currentDrive.get(song.id);
-      restored = song.drive.accountId === driveAccountId && saved.driveAccountId === driveAccountId ? { ...song, artworkUrl: current?.artworkUrl, palette: current?.palette ?? song.palette } : null;
+      if (song.drive.documentUri) {
+        const current = currentDocuments.get(song.id);
+        restored = current?.source === 'drive' && current.drive.documentUri === song.drive.documentUri
+          ? { ...song, drive: current.drive, artworkUrl: current.artworkUrl, palette: current.palette ?? song.palette } : null;
+      } else {
+        const current = currentDrive.get(song.id);
+        restored = song.drive.accountId === driveAccountId && saved.driveAccountId === driveAccountId && driveFiles.has(song.drive.fileId) ? { ...song, artworkUrl: current?.artworkUrl, palette: current?.palette ?? song.palette } : null;
+      }
     }
     else if (song.source === 's3') {
       const connection = useS3Store.getState().connection;
       const current = currentS3.get(song.id);
       restored = connection && saved.s3ConnectionId === connection.id && song.s3.connectionId === connection.id && song.s3.key.startsWith(connection.prefix) ? { ...song, artworkUrl: current?.artworkUrl, palette: current?.palette ?? song.palette } : null;
+    }
+    else if (song.source === 'mybox') {
+      const connection = useMyboxStore.getState().connection, current = currentMybox.get(song.id);
+      restored = connection && saved.myboxConnectionId === connection.id && song.mybox.connectionId === connection.id && song.path?.startsWith(connection.folder)
+        ? { ...song, ...(current?.source === 'mybox' ? { mybox: current.mybox, path: current.path } : {}), artworkUrl: current?.artworkUrl, palette: current?.palette ?? song.palette } : null;
     }
     else if (saved.nasScope === scope && privacy.ready && privacy.scope === scope && !hidden(song)) {
       restored = nasClient ? { ...song, artworkUrl: nasClient.coverUrl(song.nasId ?? song.id) } : auth.mode === 'mock' ? song : null;
@@ -143,6 +162,7 @@ function snapshot(): string | null {
     nasScope: privacyScope(auth.mode, auth.session),
     driveAccountId: useGoogleDriveStore.getState().account?.id ?? null,
     s3ConnectionId: useS3Store.getState().connection?.id ?? null,
+    myboxConnectionId: useMyboxStore.getState().connection?.id ?? null,
     savedAt: Date.now(),
   };
   return JSON.stringify(current);

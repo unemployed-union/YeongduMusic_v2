@@ -60,6 +60,10 @@ async function checkController() {
     setPreservePitch() {}
   }
   const controller = load('src/services/playback/controller.ts', {
+    '@/stores/mybox': { useMyboxStore: { getState: () => ({ playbackSource: async (_, signal) => {
+      if (signal) { await new Promise(resolve => { signal.addEventListener('abort', resolve, { once: true }); }); throw Error('MYBOX canceled'); }
+      return { uri: 'file:///cache/track.flac' };
+    } }) } },
     './audio-engine': { ExpoAudioEngine: Engine }, '@/stores/playback': { usePlaybackStore: playback },
     '@/stores/hidden-music': { useHiddenMusicStore: create(() => ({ ready: true, scope: 'demo', profile: { presets: [] } })) },
     '@/stores/auth': { useAuthStore: { getState: () => ({ mode: 'mock', session: null }) } },
@@ -82,6 +86,13 @@ async function checkController() {
   await controller.playQueue([song]); controller.stopPlayback(); assert.equal(playback.getState().lossless, false);
   await controller.restorePlayback([song], 0, 12, false, false, 'off');
   assert.equal(playback.getState().lossless, false, 'An unloaded restored queue has no known stream quality');
+  controller.stopPlayback();
+  const myboxTrack = { ...song, source: 'mybox', id: 'mybox:fixture:file-a', mybox: { connectionId: 'fixture', fileId: 'file-a', fileName: 'song.flac', size: 321 } };
+  const preparing = controller.playQueue([myboxTrack]);
+  for (let i = 0; i < 15; i++) await Promise.resolve();
+  assert.equal(playback.getState().buffering, true);
+  await controller.playQueue([lossy]); await preparing;
+  assert.equal(playback.getState().queue[0].id, lossy.id); assert.equal(playback.getState().error, null, 'Changing tracks cancels a MYBOX transfer without publishing its error');
   controller.stopPlayback();
 }
 function checkBadge() {

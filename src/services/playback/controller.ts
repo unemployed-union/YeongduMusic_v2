@@ -23,6 +23,7 @@ export function getPlaybackAudioSessionId(): number | null {
   return engine?.getAudioSessionId() ?? null;
 }
 let generation = 0;
+let sourceRequest: AbortController | null = null;
 let loadedSongId: string | null = null;
 let pendingSavedPosition = 0;
 let finishing = false;
@@ -147,6 +148,7 @@ export function checkSleepTimer(fromEnd = false, changingTrack = false): boolean
   if (decision.kind === 'keep') return false;
   if (decision.kind === 'arm') { state.setSleepTimer(decision.timer); return false; }
   generation++;
+  sourceRequest?.abort();
   state.setSleepTimer(null);
   engine?.pause();
   state.setStatus({ playing: false, buffering: false });
@@ -200,7 +202,7 @@ async function checkPlaybackSession(): Promise<void> {
     const requestGeneration = generation;
     recoveredCloudGeneration = requestGeneration;
     try {
-      const source = await cloudStreamSource(song, true);
+      const source = await cloudStreamSource(song, true, { signal: sourceRequest?.signal });
       if (requestGeneration !== generation) return;
       usePlaybackStore.getState().setStatus({ lossless: isLosslessPlayback(song, source) });
       await activeEngine().load(source, song);
@@ -230,7 +232,7 @@ function activeEngine(): ExpoAudioEngine {
         usePlaybackStore.setState((state) => ({ queue: state.queue.map((song, index) => index === state.index ? { ...song, duration: status.duration } : song) }));
         void import('@/stores/local-music').then(({ useLocalMusicStore }) => useLocalMusicStore.getState().recordDuration(current.id, status.duration)).catch(() => {});
       }
-      if (current?.source === 's3' && loadedSongId === current.id && status.duration > 0 && Math.abs(current.duration - status.duration) > 0.5) {
+      if ((current?.source === 's3' || current?.source === 'mybox') && loadedSongId === current.id && status.duration > 0 && Math.abs(current.duration - status.duration) > 0.5) {
         usePlaybackStore.setState(state => ({ queue: state.queue.map((song, index) => index === state.index ? { ...song, duration: status.duration } : song) }));
       }
       if (checkSleepTimer()) return;
@@ -258,6 +260,8 @@ async function loadIndex(index: number, initialPosition = 0): Promise<void> {
   if (!song || hiddenMatcher(useHiddenMusicStore.getState().profile.presets)(song)) { reconcilePlaybackVisibility(); return; }
   if (state.sleepTimer?.mode === 'track' && !state.sleepTimer.afterDeadline) cancelSleepTimer();
   const currentGeneration = ++generation;
+  sourceRequest?.abort();
+  sourceRequest = new AbortController();
   sectionJump = null;
   pendingSavedPosition = 0;
   state.setQueue(state.queue, index);
@@ -269,7 +273,7 @@ async function loadIndex(index: number, initialPosition = 0): Promise<void> {
     state.setStatus({ buffering: true, playing: false });
     const source = song.source === 'local'
       ? await (await import('@/services/local-music/storage')).localSource(song)
-      : isCloudSong(song) ? await cloudStreamSource(song)
+      : isCloudSong(song) ? await cloudStreamSource(song, false, { signal: sourceRequest.signal })
       : await musicRepository().streamSource(song);
     if (currentGeneration !== generation) return;
     loadedSongId = song.id;
@@ -332,7 +336,7 @@ export function togglePlayback(): void {
   reconcilePlaybackVisibility();
   const state = usePlaybackStore.getState();
   if (state.index < 0) return;
-  if (state.queue[state.index]?.id !== loadedSongId || ((state.queue[state.index]?.source === 'local' || state.queue[state.index]?.source === 'drive' || state.queue[state.index]?.source === 's3') && state.error)) { void loadIndex(state.index, pendingSavedPosition); return; }
+  if (state.queue[state.index]?.id !== loadedSongId || ((state.queue[state.index]?.source === 'local' || isCloudSong(state.queue[state.index])) && state.error)) { void loadIndex(state.index, pendingSavedPosition); return; }
   if (state.playing) activeEngine().pause(); else activeEngine().play();
 }
 export function getPlaybackPosition(): number {
@@ -380,6 +384,7 @@ export function stopNasPlayback(): void {
 }
 export function stopPlayback(): void {
   generation++;
+  sourceRequest?.abort();
   sectionJump = null;
   loadedSongId = null;
   pendingSavedPosition = 0;

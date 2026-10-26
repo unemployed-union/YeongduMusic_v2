@@ -11,7 +11,7 @@ import type { LibraryTab } from './library-page';
 import { TabletSidebar } from '@/components/tablet-sidebar';
 
 const icons = { albums: 'albums-outline', songs: 'musical-notes-outline', artists: 'person-outline', favorites: 'heart-outline' } as const;
-const sourceIcons = { all: 'musical-notes-outline', nas: 'server-outline', local: 'phone-portrait-outline', drive: 'logo-google', s3: 'file-tray-stacked-outline' } as const;
+const sourceIcons = { all: 'musical-notes-outline', nas: 'server-outline', local: 'phone-portrait-outline', drive: 'logo-google', s3: 'file-tray-stacked-outline', mybox: 'cloud-outline' } as const;
 
 export function LibrarySidebar({ tabs, selected, width, onSelect }: { tabs: readonly LibraryTab[]; selected: LibraryTab; width: number; onSelect: (tab: LibraryTab) => void }) {
   const colors = useColors();

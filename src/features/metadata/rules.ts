@@ -14,13 +14,14 @@ export function metadataKey(song: Song, nasScope: string | null): string | null 
   if (song.source === 'local') return JSON.stringify(['local', song.id]);
   if (song.source === 'drive') return JSON.stringify(['drive', song.drive.accountId, song.drive.fileId]);
   if (song.source === 's3') return JSON.stringify(['s3', song.s3.connectionId, song.s3.key]);
+  if (song.source === 'mybox') return JSON.stringify(['mybox', song.mybox.connectionId, song.mybox.fileId]);
   return nasScope ? JSON.stringify(['nas', nasScope, song.nasId ?? song.id]) : null;
 }
 
 export function validateMetadataKey(key: string): void {
   let value: unknown;
   try { value = JSON.parse(key); } catch { throw new Error('곡의 저장소 정보를 확인할 수 없습니다.'); }
-  if (!Array.isArray(value) || !['nas', 'drive', 's3', 'local'].includes(value[0]) || value.length !== (value[0] === 'local' ? 2 : 3)
+  if (!Array.isArray(value) || !['nas', 'drive', 's3', 'mybox', 'local'].includes(value[0]) || value.length !== (value[0] === 'local' ? 2 : 3)
     || value.some(part => typeof part !== 'string' || !part || part.length > 32768)) throw new Error('곡의 저장소 정보를 확인할 수 없습니다.');
 }
 

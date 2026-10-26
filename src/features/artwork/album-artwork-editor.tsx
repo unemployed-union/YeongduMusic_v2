@@ -12,8 +12,8 @@ export function AlbumArtworkEditor({ album, songs, onClose, title = '앨범 이�
   album: Album; songs: readonly Song[]; onClose: () => void; title?: string; loading?: boolean; error?: string | null; onRetry?: () => void;
 }) {
   const colors = useColors(), working = useRef(false), [busy, setBusy] = useState(false);
-  // A mixed album can write supported sources while leaving Drive originals read-only.
-  const song = songs.find(item => item.source !== 'drive') ?? songs[0];
+  // A mixed album can write supported sources while leaving read-only originals intact.
+  const song = songs.find(item => item.source !== 'drive' && item.source !== 'mybox') ?? songs[0];
   const close = () => { if (!working.current) onClose(); };
   return <PlaylistSheet title={title} onClose={close}>
     <ScrollEdgeFade fill={false} backgroundColor={colors.surface}><ScrollView keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" contentContainerStyle={styles.body}>

@@ -16,14 +16,18 @@ function harness(source = 'all') {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: Infinity } } });
   const auth = create(() => ({ mode: 'nas', generation: 1, session: { sid: 'fixture', baseUrl: 'https://example.invalid' } }));
   const local = create(() => ({ source, load: async () => {} }));
-  const drive = create(() => ({ generation: 1, account: { id: 'drive-a' }, folders: [{ id: 'folder-a' }], refresh: async () => {} }));
+  const drive = create(() => ({ generation: 1, account: { id: 'drive-a' }, files: [{ id: 'file-a' }], refresh: async () => {} }));
+  const documents = create(() => ({ revision: 0, documents: [], songs: [], error: null, load: async () => {} }));
   const s3 = create(() => ({ generation: 1, connection: { id: 's3-a' }, refresh: async () => {} }));
+  const mybox = create(() => ({ generation: 1, connection: { id: 'mybox-a', folder: '/' }, refresh: async () => {} }));
   let nasCalls = 0, nasGate = null;
   const page = { items: [], total: 0 };
   const repository = { songs: async () => { nasCalls++; return nasGate ? nasGate.promise : page; }, albums: async () => page, artists: async () => page };
   const modules = {
     '@/stores/auth': { useAuthStore: auth }, '@/stores/local-music': { useLocalMusicStore: local },
     '@/stores/google-drive': { useGoogleDriveStore: drive }, '@/stores/s3': { useS3Store: s3 },
+    '@/stores/drive-documents': { useDriveDocumentsStore: documents },
+    '@/stores/mybox': { useMyboxStore: mybox },
     './repository': { libraryIdentity: () => 'nas-fixture', musicRepository: () => repository },
     './refresh-library': load('src/features/library/refresh-library.ts'),
   };
@@ -40,19 +44,28 @@ function harness(source = 'all') {
   const hooks = load('src/features/library/use-refresh-library.ts', { ...modules, react, '@tanstack/react-query': { useQueryClient: () => client }, './refresh-music-library': service });
   const render = () => { refIndex = 0; stateIndex = 0; const result = hooks.useRefreshLibrary(); initialized = true; return result; };
   render();
-  return { client, auth, local, drive, s3, service, render, get nasCalls() { return nasCalls; }, setNasGate: gate => { nasGate = gate; },
+  return { client, auth, local, drive, documents, s3, mybox, service, render, get nasCalls() { return nasCalls; }, setNasGate: gate => { nasGate = gate; },
     unmount() { cleanups.forEach(cleanup => cleanup?.()); mounted = false; }, get postUnmountWrites() { return postUnmountWrites; } };
 }
 
 async function main() {
-  for (const change of ['source', 'source-and-back', 'drive-account', 'drive-folders', 'nas-generation']) {
+  {
+    const h = harness('mybox'); await h.render().refresh();
+    assert.match(h.render().message, /MYBOX/); assert.equal(h.nasCalls, 0);
+    const gate = deferred(); h.mybox.setState({ refresh: () => gate.promise });
+    const pending = h.render().refresh(); await tick(); h.mybox.setState({ generation: 2, connection: null });
+    gate.resolve(); await pending; assert.equal(h.render().message, null, 'A disconnected MYBOX cannot publish a stale success notice');
+    h.unmount(); h.client.clear();
+  }
+  for (const change of ['source', 'source-and-back', 'drive-account', 'drive-folders', 'drive-documents', 'nas-generation']) {
     const h = harness('drive'), gate = deferred();
     h.drive.setState({ refresh: () => gate.promise });
     const pending = h.render().refresh(); await tick();
     if (change === 'source' || change === 'source-and-back') h.local.setState({ source: 'local' });
     if (change === 'source-and-back') h.local.setState({ source: 'drive' });
     if (change === 'drive-account') h.drive.setState({ generation: 2, account: { id: 'drive-b' } });
-    if (change === 'drive-folders') h.drive.setState({ folders: [{ id: 'folder-b' }] });
+    if (change === 'drive-folders') h.drive.setState({ files: [{ id: 'file-b' }] });
+    if (change === 'drive-documents') h.documents.setState({ revision: 1 });
     if (change === 'nas-generation') h.auth.setState({ generation: 2 });
     gate.resolve(); await pending;
     assert.equal(h.render().message, null, 'Old completion is ignored: ' + change);

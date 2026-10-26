@@ -99,7 +99,7 @@ async function main() {
   assert.equal(options.fileTagFormat('track.MP3'), 'mp3'); assert.equal(options.fileTagFormat('track.m4a'), null);
   assert(options.fileWriteUnavailable({ ...fields, path: '/music/song.mp3' }, 'mock', 'android'));
   await checkNativeIO(); await checkCloudTargets(); await checkNasTarget(); await checkLocalTransaction(); await checkSavePipeline();
-  console.log('PASS: independent jsmediatags reads of ID3v2.3/2.4 and FLAC text/artwork writes; front-cover replacement, back-cover/text/ID3v1/lyrics/ReplayGain/STREAMINFO/audio preservation; malformed rejection, chunked I/O, NAS/S3/local writing/conflict/cancellation, Drive read-only and local crash recovery. Network/native files are mocked.');
+  console.log('PASS: independent jsmediatags reads of ID3v2.3/2.4 and FLAC text/artwork writes; front-cover replacement, back-cover/text/ID3v1/lyrics/ReplayGain/STREAMINFO/audio preservation; malformed rejection, chunked I/O, NAS/S3/local writing/conflict/cancellation, Drive file write blocking and local crash recovery. Network/native files are mocked.');
 }
 async function checkNativeIO() {
   let failTransfer = false, uploadStatus = 412;
@@ -318,9 +318,9 @@ async function checkSavePipeline() {
     '@/services/artwork/files': { readArtworkForTags: async () => cover, artworkBaseUri: () => 'file:///documents/album-art/' },
   });
   const driveSong = { ...fields, id: 'drive:A:file', source: 'drive', drive: { accountId: 'A', fileId: 'file' } };
-  assert.equal(options.fileWriteUnavailable(driveSong, 'nas', 'android'), options.DRIVE_FILE_READ_ONLY_MESSAGE);
-  await assert.rejects(service.writeSongFile(driveSong, fields, () => {}), error => error.message === options.DRIVE_FILE_READ_ONLY_MESSAGE);
-  await assert.rejects(service.writeSongArtworkFile(driveSong, '../invalid-image', () => {}), error => error.message === options.DRIVE_FILE_READ_ONLY_MESSAGE);
+  assert.equal(options.fileWriteUnavailable(driveSong, 'nas', 'android'), options.DRIVE_FILE_WRITE_BLOCKED_MESSAGE);
+  await assert.rejects(service.writeSongFile(driveSong, fields, () => {}), error => error.message === options.DRIVE_FILE_WRITE_BLOCKED_MESSAGE);
+  await assert.rejects(service.writeSongArtworkFile(driveSong, '../invalid-image', () => {}), error => error.message === options.DRIVE_FILE_WRITE_BLOCKED_MESSAGE);
   assert.equal(uploads.length, 0); assert.equal(contents.size, 0, 'Drive writes are blocked before download or file I/O');
   for (const kind of ['nas', 's3']) {
     const song = { ...fields, title: 'Before', id: kind + ':A:file', source: kind, path: '/music/original.mp3', duration: 180,

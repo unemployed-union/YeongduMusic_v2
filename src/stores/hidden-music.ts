@@ -17,6 +17,7 @@ type HiddenState = {
   hideAll: () => Promise<void>;
   hideSelectedPreset: () => Promise<void>;
   setQuickHidePreset: (id: string) => Promise<void>;
+  setQuickHidePlaylist: (id: string, selected: boolean) => Promise<void>;
   restoreProfile: (profile: HiddenMusicProfile, scope: string) => Promise<void>;
   setBiometricLock: (enabled: boolean) => Promise<void>;
   savePreset: (preset: HiddenPreset) => Promise<void>;
@@ -73,14 +74,16 @@ export const useHiddenMusicStore = create<HiddenState>((set, get) => {
       // There is no account-specific hidden profile in local-only mode.
       if (state.ready && !state.scope) { get().lock(); return; }
       // This can only tighten visibility. Editing/revealing still requires authentication.
-      await persist(profile => ({ ...profile, presets: profile.presets.map(preset => ({ ...preset, enabled: true })) }), false, true);
+      await persist(profile => ({ ...profile, presets: profile.presets.map(preset => ({ ...preset, enabled: true })),
+        hiddenPlaylistIds: [...new Set([...(profile.hiddenPlaylistIds ?? []), ...(profile.quickHidePlaylistIds ?? [])])] }), false, true);
       get().lock();
     },
     hideSelectedPreset: async () => {
       await persist(profile => {
         const id = profile.quickHidePresetId;
         if (!id || !profile.presets.some(preset => preset.id === id)) throw new Error('기타 설정에서 빠른 숨기기에 사용할 프리셋을 먼저 선택해 주세요.');
-        return { ...profile, presets: profile.presets.map(preset => preset.id === id ? { ...preset, enabled: true } : preset) };
+        return { ...profile, presets: profile.presets.map(preset => preset.id === id ? { ...preset, enabled: true } : preset),
+          hiddenPlaylistIds: [...new Set([...(profile.hiddenPlaylistIds ?? []), ...(profile.quickHidePlaylistIds ?? [])])] };
       }, false, true);
       get().lock();
     },
@@ -88,6 +91,12 @@ export const useHiddenMusicStore = create<HiddenState>((set, get) => {
       if (!profile.presets.some(preset => preset.id === id)) throw new Error('선택한 프리셋을 찾을 수 없습니다. 다시 선택해 주세요.');
       return { ...profile, quickHidePresetId: id };
     }),
+    setQuickHidePlaylist: (id, selected) => {
+      if (!id) return Promise.reject(new Error('플레이리스트를 확인해 주세요.'));
+      return persist(profile => ({ ...profile, quickHidePlaylistIds: selected
+        ? [...new Set([...(profile.quickHidePlaylistIds ?? []), id])]
+        : (profile.quickHidePlaylistIds ?? []).filter(value => value !== id) }));
+    },
     restoreProfile: async (profile, scope) => {
       const clean = parseProfile(JSON.stringify(profile));
       if (get().scope !== scope) throw new Error('계정이 변경되었습니다. 현재 계정의 백업을 선택해 주세요.');

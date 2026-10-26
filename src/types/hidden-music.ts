@@ -12,4 +12,5 @@ export type HiddenMusicProfile = {
   presets: HiddenPreset[];
   hiddenPlaylistIds?: string[];
   quickHidePresetId?: string;
+  quickHidePlaylistIds?: string[];
 };

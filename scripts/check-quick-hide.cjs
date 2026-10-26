@@ -77,7 +77,7 @@ async function enable() { access.getState().resetTaps(); for (let i = 0; i < 15;
 async function main() {
   profiles.set('demo', JSON.stringify({ version: 1, biometricLock: true, presets: [
     { id: 'private-music', name: 'Private music', enabled: false, songIds: ['secret'], folders: [] },
-  ], hiddenPlaylistIds: ['private-list'] }));
+  ], hiddenPlaylistIds: ['private-list'], quickHidePlaylistIds: ['quick-list'] }));
   await access.getState().load(); await privacy.getState().load('demo');
   assert.equal(access.getState().quickHideEnabled, true);
   const inactive = render(); inactive.props.onPress();
@@ -96,12 +96,14 @@ async function main() {
   assert.equal(privacy.getState().unlocked, false);
   assert.equal(authCalls, 0, 'Concealing does not require biometric authentication');
   assert.equal(rules.visibleSongs({ items: [{ id: 'secret' }, { id: 'public' }], total: 2 }, privacy.getState().profile.presets).total, 1);
-  assert.deepEqual(playlists.visiblePlaylists([{ id: 'private-list' }, { id: 'public-list' }], privacy.getState().profile.hiddenPlaylistIds).map(item => item.id), ['public-list']);
+  assert.deepEqual(playlists.visiblePlaylists([{ id: 'private-list' }, { id: 'quick-list' }, { id: 'public-list' }], privacy.getState().profile.hiddenPlaylistIds).map(item => item.id), ['public-list']);
+  assert.deepEqual(privacy.getState().profile.hiddenPlaylistIds, ['private-list', 'quick-list'], 'Five taps hide selected playlists together with music');
   const restartedAccess = newAccess(), restartedPrivacy = newPrivacy();
   await restartedAccess.getState().load(); await restartedPrivacy.getState().load('demo');
   assert.equal(restartedAccess.getState().enabled, false);
   assert.equal(restartedPrivacy.getState().profile.presets[0].enabled, true);
-  assert.deepEqual(restartedPrivacy.getState().profile.hiddenPlaylistIds, ['private-list']);
+  assert.deepEqual(restartedPrivacy.getState().profile.hiddenPlaylistIds, ['private-list', 'quick-list']);
+  assert.deepEqual(restartedPrivacy.getState().profile.quickHidePlaylistIds, ['quick-list']);
   await assert.rejects(privacy.getState().togglePreset('private-music'), /생체 인증/, 'Quick conceal must not weaken editing protection');
   await enable(); await access.getState().setQuickHideEnabled(false);
   button = render(); button.props.onPress();
@@ -149,9 +151,14 @@ async function main() {
   await privacy.getState().savePreset({ id: 'already-hidden', name: 'Already hidden', enabled: true, songIds: ['hidden'], folders: [] });
   await privacy.getState().togglePreset('private-music');
   await privacy.getState().setQuickHidePreset('private-music');
+  await privacy.getState().setQuickHidePlaylist('preset-list', true);
+  await privacy.getState().setQuickHidePlaylist('preset-list', true);
+  assert.deepEqual(privacy.getState().profile.quickHidePlaylistIds, ['quick-list', 'preset-list']);
+  assert(!privacy.getState().profile.hiddenPlaylistIds.includes('preset-list'), 'Selecting a playlist never hides it immediately');
   assert.equal(privacy.getState().profile.presets[0].enabled, false, 'Selecting a target does not hide music');
   privacy.getState().lock();
   await assert.rejects(privacy.getState().setQuickHidePreset('public-music'), /생체 인증/, 'Changing the target respects biometric protection');
+  await assert.rejects(privacy.getState().setQuickHidePlaylist('other-list', true), /생체 인증/);
   const selectedRestart = newPrivacy(); await selectedRestart.getState().load('demo');
   assert.equal(selectedRestart.getState().profile.quickHidePresetId, 'private-music');
   await enable();
@@ -162,7 +169,7 @@ async function main() {
   assert.deepEqual(privacy.getState().profile.presets.map(p => [p.id, p.enabled]), [
     ['private-music', true], ['public-music', false], ['already-hidden', true],
   ], 'Only the selected preset becomes active; other states are preserved');
-  assert.deepEqual(privacy.getState().profile.hiddenPlaylistIds, ['private-list']);
+  assert.deepEqual(privacy.getState().profile.hiddenPlaylistIds, ['private-list', 'quick-list', 'preset-list'], 'Selected-preset mode conceals the selected playlists in the same profile write');
   assert.equal(privacy.getState().unlocked, false);
   await enable(); await privacy.getState().unlock();
   await privacy.getState().removePreset('private-music');
@@ -174,6 +181,7 @@ async function main() {
   assert.throws(() => rules.parseProfile(JSON.stringify({ version: 1, biometricLock: false, presets: [], quickHidePresetId: 42 })), /프리셋 설정/);
   await privacy.getState().load('another-account');
   assert.equal(privacy.getState().profile.quickHidePresetId, undefined, 'The target is account-specific');
+  assert.deepEqual(privacy.getState().profile.quickHidePlaylistIds, [], 'Playlist targets are account-specific');
   await assert.rejects(quickHide(), /프리셋을 먼저 선택/);
   await privacy.getState().load('demo');
   await privacy.getState().unlock(); await privacy.getState().setQuickHidePreset('public-music'); privacy.getState().lock();
@@ -227,21 +235,37 @@ async function main() {
   tree.props.children[1].props.children[2].props.onValueChange(true); await flush();
   assert.equal(access.getState().quickHideMode, 'all');
   await privacy.getState().unlock();
+  const playlistState = { ready: true, busy: false, scope: 'demo', profile: { presets: [{ id: 'ui-list', name: 'UI playlist', songIds: ['public'] }] } };
+  const selectPrivacy = Object.assign(() => privacy.getState(), { getState: privacy.getState });
+  const selectPlaylists = Object.assign(() => playlistState, { getState: () => playlistState });
   const QuickHidePresetSettings = load('src/features/settings/quick-hide-preset-settings.tsx', {
-    ...ui, '@/components/text': { Text: 'Text' },
+    ...ui, react: { ...ui.react, useMemo: fn => fn() }, '@/components/text': { Text: 'Text' },
   'react-native': { ...ui['react-native'], FlatList: 'FlatList' },
-    '@/stores/hidden-music': { useHiddenMusicStore: () => privacy.getState() },
+    '@/stores/hidden-music': { useHiddenMusicStore: selectPrivacy }, '@/stores/playlists': { usePlaylistStore: selectPlaylists },
     '@/components/scroll-edge-fade': { ScrollEdgeFade: 'ScrollEdgeFade' },
     './settings-menu-layout': { settingsMenuStyles: { row: {}, icon: {} } },
   }).QuickHidePresetSettings;
   const list = QuickHidePresetSettings().props.children;
   const other = privacy.getState().profile.presets.find(p => p.id === 'already-hidden');
-  const row = list.props.renderItem({ item: other });
+  const row = list.props.renderItem({ item: list.props.data.find(item => item.kind === 'preset' && item.preset.id === other.id) });
   assert.equal(row.props.accessibilityRole, 'radio');
   assert.equal(row.props.accessibilityState.checked, false);
   row.props.onPress(); await flush();
   assert.equal(privacy.getState().profile.quickHidePresetId, other.id, 'The picker saves its target without changing mode');
   assert.equal(access.getState().quickHideMode, 'all');
+  const playlistChoice = list.props.data.find(item => item.kind === 'playlist');
+  const playlistRow = list.props.renderItem({ item: playlistChoice });
+  assert.equal(playlistRow.props.accessibilityRole, 'checkbox');
+  assert.equal(playlistRow.props.accessibilityState.checked, false);
+  playlistRow.props.onPress(); await flush();
+  assert(privacy.getState().profile.quickHidePlaylistIds.includes('ui-list'));
+  assert(!privacy.getState().profile.hiddenPlaylistIds.includes('ui-list'), 'The picker only stores the quick-hide selection');
+  const updatedList = QuickHidePresetSettings().props.children;
+  const selectedRow = updatedList.props.renderItem({ item: playlistChoice });
+  assert.equal(selectedRow.props.accessibilityState.checked, true);
+  selectedRow.props.onPress(); await flush(); assert(!privacy.getState().profile.quickHidePlaylistIds.includes('ui-list'));
+  playlistState.scope = 'another-account';
+  assert(!QuickHidePresetSettings().props.children.props.data.some(item => item.kind === 'playlist'), 'A different account cannot expose playlist names');
   await access.getState().setQuickHideMode('off');
   await privacy.getState().load('another-account');
   tree = QuickHideSettings();
@@ -251,6 +275,15 @@ async function main() {
   assert.equal(access.getState().quickHideMode, 'off');
   await privacy.getState().load(null);
   assert.equal(QuickHideSettings().props.children[2].props.children.props.disabled, true, 'The target picker requires a NAS account');
+  for (const value of [null, 3, [''], [42]]) assert.throws(() => rules.parseProfile(JSON.stringify({ ...rules.emptyProfile(), quickHidePlaylistIds: value })), /플레이리스트 설정/);
+  assert.deepEqual(rules.parseProfile(JSON.stringify({ ...rules.emptyProfile(), quickHidePlaylistIds: ['one', 'one'] })).quickHidePlaylistIds, ['one']);
+  const atomic = newPrivacy();
+  await atomic.getState().load('atomic-account');
+  await atomic.getState().savePreset({ id: 'music', name: 'Music', enabled: false, songIds: ['secret'], folders: [] });
+  await atomic.getState().setQuickHidePlaylist('list', true);
+  failProfile = true; await assert.rejects(atomic.getState().hideAll(), /disk failure/); failProfile = false;
+  assert.equal(atomic.getState().profile.presets[0].enabled, false);
+  assert.deepEqual(atomic.getState().profile.hiddenPlaylistIds, [], 'A failed conceal cannot publish only the playlist or only the music');
   let palette;
   const { AnimatedSwitch } = load('src/components/animated-switch.tsx', {
     react: { useEffect: effect => effect() },

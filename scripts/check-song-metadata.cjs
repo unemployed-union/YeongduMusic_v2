@@ -181,7 +181,7 @@ async function checkEditor(store) {
   tree = render(driveSong); const fileSwitch = tree.find(node => node.type === 'Switch');
   assert.equal(fileSwitch.props.value, false); assert.equal(fileSwitch.props.disabled, true);
   tree.find(node => node.type === 'Button' && node.props.accessibilityLabel === 'Google Drive 파일 직접 수정 안내').props.onPress();
-  tree = render(driveSong); assert.equal(tree.find(node => node.type === 'Toast').props.message, load('src/features/metadata/file-options.ts').DRIVE_FILE_READ_ONLY_MESSAGE);
+  tree = render(driveSong); assert.equal(tree.find(node => node.type === 'Toast').props.message, load('src/features/metadata/file-options.ts').DRIVE_FILE_WRITE_BLOCKED_MESSAGE);
   assert.equal(tree.find(node => node.type === 'Switch').props.value, false, 'Attempting Drive file editing leaves the toggle off');
   const fileCallsBeforeDrive = fileCalls;
   tree.find(node => node.type === 'Input' && node.props.accessibilityLabel === '제목').props.onChangeText('Drive display edit');

@@ -1,0 +1,7 @@
+{
+  "name": "yeongdu-drive-picker",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Native Google Drive per-file authorization and selection",
+  "license": "MIT"
+}

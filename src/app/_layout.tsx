@@ -71,6 +71,7 @@ function Navigation() {
       <Stack.Screen name="settings/cloud/synology" options={{ headerShown: !tablet, title: 'Synology', headerBackTitle: '클라우드 연결', headerTintColor: colors.tint, headerStyle: { backgroundColor: colors.background } }} />
       <Stack.Screen name="settings/cloud/google-drive" options={{ headerShown: !tablet, title: 'Google Drive', headerBackTitle: '클라우드 연결', headerTintColor: colors.tint, headerStyle: { backgroundColor: colors.background } }} />
       <Stack.Screen name="settings/cloud/s3" options={{ headerShown: !tablet, title: 'S3 호환 저장소', headerBackTitle: '클라우드 연결', headerTintColor: colors.tint, headerStyle: { backgroundColor: colors.background } }} />
+      <Stack.Screen name="settings/cloud/mybox" options={{ headerShown: !tablet, title: '네이버 MYBOX', headerBackTitle: '클라우드 연결', headerTintColor: colors.tint, headerStyle: { backgroundColor: colors.background } }} />
       <Stack.Screen name="settings/playback" options={{ headerShown: !tablet, title: '재생 및 화면', headerBackTitle: '설정', headerTintColor: colors.tint, headerStyle: { backgroundColor: colors.background } }} />
       <Stack.Screen name="settings/colors" options={{ headerShown: !tablet, title: '색상 설정', headerBackTitle: '재생 및 화면', headerTintColor: colors.tint, headerStyle: { backgroundColor: colors.background } }} />
       <Stack.Screen name="settings/haptics" options={{ headerShown: !tablet, title: '햅틱 피드백', headerBackTitle: '설정', headerTintColor: colors.tint, headerStyle: { backgroundColor: colors.background } }} />
@@ -81,7 +82,7 @@ function Navigation() {
       <Stack.Screen name="settings/playlist-backup" options={{ headerShown: !tablet, title: '플레이리스트 백업 및 복구', headerBackTitle: '뒤로', headerTintColor: colors.tint, headerStyle: { backgroundColor: colors.background } }} />
       <Stack.Screen name="settings/licenses" options={{ headerShown: !tablet, title: '오픈소스 라이선스', headerBackTitle: '설정', headerTintColor: colors.tint, headerStyle: { backgroundColor: colors.background } }} />
       <Stack.Screen name="settings/other" options={{ headerShown: !tablet, title: '기타', headerBackTitle: '설정', headerTintColor: colors.tint, headerStyle: { backgroundColor: colors.background } }} />
-      <Stack.Screen name="settings/quick-hide-preset" options={{ headerShown: !tablet, title: '빠른 숨기기 프리셋', headerBackTitle: '기타', headerTintColor: colors.tint, headerStyle: { backgroundColor: colors.background } }} />
+      <Stack.Screen name="settings/quick-hide-preset" options={{ headerShown: !tablet, title: '빠른 숨기기 대상', headerBackTitle: '기타', headerTintColor: colors.tint, headerStyle: { backgroundColor: colors.background } }} />
       <Stack.Screen name="hidden-music" options={{ headerShown: !tablet, title: '음악 숨기기', headerBackTitle: '기타', headerTintColor: colors.tint, headerStyle: { backgroundColor: colors.background } }} />
       <Stack.Screen name="hidden-playlists" options={{ headerShown: !tablet, title: '플레이리스트 숨기기', headerBackTitle: '기타', headerTintColor: colors.tint, headerStyle: { backgroundColor: colors.background } }} />
       <Stack.Screen name="player" options={{ presentation: 'transparentModal', animation: 'none', gestureEnabled: false, contentStyle: { backgroundColor: 'transparent' } }} />

@@ -5,8 +5,10 @@ import { router } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { PlaylistSheet } from '@/features/playlists/dialogs';
 import { useS3Store } from '@/stores/s3';
+import { useMyboxStore } from '@/stores/mybox';
 import { musicSourceLabels } from '@/services/music-source';
 import { useGoogleDriveStore } from '@/stores/google-drive';
+import { useDriveDocumentsStore } from '@/stores/drive-documents';
 import { useLocalMusicStore } from '@/stores/local-music';
 import { useAuthStore } from '@/stores/auth';
 import { useColors } from '@/theme/tokens';
@@ -19,7 +21,9 @@ export function LocalMusicControls({ sortControl, menuLabel }: { sortControl?: R
   const colors = useColors();
   const local = useLocalMusicStore();
   const drive = useGoogleDriveStore();
+  const documents = useDriveDocumentsStore();
   const s3 = useS3Store();
+  const mybox = useMyboxStore();
   const storing = useOfflineMusicStore(state => state.busy);
   const mode = useAuthStore((state) => state.mode);
   const notice = useAuthStore((state) => state.notice);
@@ -30,7 +34,7 @@ export function LocalMusicControls({ sortControl, menuLabel }: { sortControl?: R
   return <View style={styles.container}>
     <View style={styles.controlsRow}>
     <Pressable accessibilityRole="button" accessibilityLabel="음악 소스 및 가져오기 메뉴" onPress={() => setOpen(true)} style={styles.trigger}>
-      <Ionicons name={local.source === 'drive' ? 'logo-google' : local.source === 's3' ? 'file-tray-stacked-outline' : local.source === 'local' ? 'phone-portrait-outline' : local.source === 'nas' ? 'server-outline' : 'musical-notes-outline'} size={18} color={colors.tint} />
+      <Ionicons name={local.source === 'drive' ? 'logo-google' : local.source === 'mybox' ? 'cloud-outline' : local.source === 's3' ? 'file-tray-stacked-outline' : local.source === 'local' ? 'phone-portrait-outline' : local.source === 'nas' ? 'server-outline' : 'musical-notes-outline'} size={18} color={colors.tint} />
       <Text style={{ color: colors.tint, fontWeight: '700' }}>{menuLabel ?? labels[local.source]}</Text><Ionicons name="chevron-down" size={16} color={colors.tint} />
       {local.busy && <ActivityIndicator color={colors.tint} />}
     </Pressable>
@@ -38,18 +42,20 @@ export function LocalMusicControls({ sortControl, menuLabel }: { sortControl?: R
     </View>
     {local.busy && !storing && <Text accessibilityLiveRegion="polite" style={{ color: colors.muted, fontSize: 12 }}>음악 가져오는 중 · {local.processed}개 확인</Text>}
     {(local.source === 'local' || local.source === 'all') && !local.songs.length && !local.busy && <Pressable onPress={() => setOpen(true)}><Text style={{ color: colors.muted, fontSize: 12 }}>음악 소스 메뉴에서 기기 음악을 가져오세요.</Text></Pressable>}
-    {local.source === 'drive' && <View style={{ gap: 8 }}>{drive.loading && <ActivityIndicator color={colors.tint} />}{(!drive.account || !drive.folders.length) && <Pressable accessibilityRole="button" onPress={() => router.push('/settings/cloud/google-drive')}><Text style={{ color: colors.tint }}>{drive.account ? 'Google Drive 음악 폴더 선택하기' : 'Google Drive 연결하기'}</Text></Pressable>}{drive.error && <Text style={{ color: colors.tint, fontSize: 12 }}>{drive.error}</Text>}</View>}
+    {local.source === 'drive' && <View style={{ gap: 8 }}>{drive.loading && <ActivityIndicator color={colors.tint} />}<Pressable accessibilityRole="button" onPress={() => router.push('/settings/cloud/google-drive')}><Text style={{ color: colors.tint }}>Google Drive 음원 선택·관리</Text></Pressable>{documents.error && <Text style={{ color: colors.tint, fontSize: 12 }}>{documents.error}</Text>}{drive.error && <Text style={{ color: colors.tint, fontSize: 12 }}>{drive.error}</Text>}</View>}
     {local.source === 's3' && <View style={{ gap: 8 }}>{s3.loading && <ActivityIndicator color={colors.tint} />}{!s3.connection && <Pressable accessibilityRole="button" onPress={() => router.push('/settings/cloud/s3')}><Text style={{ color: colors.tint }}>S3 연결하기</Text></Pressable>}{s3.error && <Pressable accessibilityRole="button" onPress={() => void s3.refresh().catch(() => {})}><Text style={{ color: colors.tint, fontSize: 12 }}>{s3.error} · 다시 시도</Text></Pressable>}</View>}
     <DownloadStatus />
+    {local.source === 'mybox' && <View style={{ gap: 8 }}>{(mybox.busy || mybox.loading) && <ActivityIndicator color={colors.tint} />}{!mybox.connection && <Pressable accessibilityRole="button" onPress={() => router.push('/settings/cloud/mybox')}><Text style={{ color: colors.tint }}>MYBOX 연결하기</Text></Pressable>}{mybox.error && <Text accessibilityRole="alert" style={{ color: colors.tint, fontSize: 12 }}>{mybox.error}</Text>}</View>}
     {notice && <Text style={{ color: colors.tint, fontSize: 12 }}>{notice}</Text>}
     {local.message && <Text style={{ color: colors.muted, fontSize: 12 }}>{local.message}</Text>}
     {local.error && <Pressable accessibilityRole="button" onPress={() => setOpen(true)}><Text numberOfLines={3} style={{ color: colors.tint, fontSize: 12 }}>{local.error} · 메뉴에서 다시 가져오기</Text></Pressable>}
     <PlaylistSheet title="음악 소스" visible={open} onClose={() => setOpen(false)} onDismiss={() => { if (pendingImport) { const kind = pendingImport; setPendingImport(null); void local.importFiles(kind); } }}>
       <ScrollView contentContainerStyle={styles.body}>
-        {(['all', 'nas', 'local', 'drive', 's3'] as const).map((source) => <Pressable key={source} accessibilityRole="button" accessibilityState={{ selected: local.source === source }} onPress={() => { local.setSource(source); setOpen(false); }} style={styles.option}><Text style={{ flex: 1, color: colors.text, fontWeight: '600' }}>{labels[source]}</Text>{local.source === source && <Ionicons name="checkmark" size={22} color={colors.tint} />}</Pressable>)}
+        {(['all', 'nas', 'local', 'drive', 's3', 'mybox'] as const).map((source) => <Pressable key={source} accessibilityRole="button" accessibilityState={{ selected: local.source === source }} onPress={() => { local.setSource(source); setOpen(false); }} style={styles.option}><Text style={{ flex: 1, color: colors.text, fontWeight: '600' }}>{labels[source]}</Text>{local.source === source && <Ionicons name="checkmark" size={22} color={colors.tint} />}</Pressable>)}
         <View style={{ height: StyleSheet.hairlineWidth, backgroundColor: colors.separator }} />
         <Pressable accessibilityRole="button" onPress={() => { setOpen(false); router.push('/settings/cloud/google-drive'); }} style={styles.option}><Ionicons name="logo-google" size={22} color={colors.tint} /><Text style={{ color: colors.text }}>Google Drive 연결 관리</Text></Pressable>
         <Pressable accessibilityRole="button" onPress={() => { setOpen(false); router.push('/settings/cloud/s3'); }} style={styles.option}><Ionicons name="file-tray-stacked-outline" size={22} color={colors.tint} /><Text style={{ color: colors.text }}>S3 연결 관리</Text></Pressable>
+        <Pressable accessibilityRole="button" onPress={() => { setOpen(false); router.push('/settings/cloud/mybox'); }} style={styles.option}><Ionicons name="cloud-outline" size={22} color={colors.tint} /><Text style={{ color: colors.text }}>네이버 MYBOX 연결 관리</Text></Pressable>
         <Text style={{ color: colors.muted }}>기기 음악 가져오기</Text>
         {Platform.OS === 'android' && <Pressable accessibilityRole="button" disabled={local.busy} onPress={() => startImport('device')} style={styles.option}><Ionicons name="phone-portrait-outline" size={22} color={colors.tint} /><Text style={{ color: colors.text }}>기기의 음악 전체 가져오기</Text></Pressable>}
         {Platform.OS !== 'web' && <Pressable accessibilityRole="button" disabled={local.busy} onPress={() => startImport('folder')} style={styles.option}><Ionicons name="folder-outline" size={22} color={colors.tint} /><Text style={{ color: colors.text }}>폴더 선택 · 하위 폴더 포함</Text></Pressable>}

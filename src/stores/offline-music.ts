@@ -4,6 +4,7 @@ import { deleteLocalSong } from '@/services/local-music/storage';
 import { useLocalMusicStore } from './local-music';
 import { useAuthStore } from './auth';
 import { useS3Store } from './s3';
+import { useMyboxStore } from './mybox';
 import { useGoogleDriveStore } from './google-drive';
 import { reconcilePlaybackVisibility } from '@/services/playback/controller';
 import type { Song } from '@/types/music';
@@ -15,7 +16,7 @@ type State = {
   cancel: () => void; clearNotice: () => void;
 };
 let request: AbortController | null = null;
-let activeSource: 'nas' | 'drive' | 's3' | null = null;
+let activeSource: 'nas' | 'drive' | 's3' | 'mybox' | null = null;
 export const useOfflineMusicStore = create<State>((set, get) => ({
   busy: false, saving: false, cancelling: false, removing: false, title: '', progress: { written: 0, total: 0 }, error: null, message: null, retrySong: null,
   clearNotice: () => set({ error: null, message: null, retrySong: null }),
@@ -26,7 +27,7 @@ export const useOfflineMusicStore = create<State>((set, get) => ({
   },
   download: async (song) => {
     if (get().busy || useLocalMusicStore.getState().busy) { set({ error: '다른 음악 저장 작업이 끝난 뒤 다시 시도해 주세요.' }); return; }
-    const controller = new AbortController(); request = controller; activeSource = song.source === 's3' ? 's3' : song.source === 'drive' ? 'drive' : 'nas';
+    const controller = new AbortController(); request = controller; activeSource = song.source === 'mybox' ? 'mybox' : song.source === 's3' ? 's3' : song.source === 'drive' ? 'drive' : 'nas';
     set({ busy: true, saving: false, cancelling: false, title: song.title, progress: { written: 0, total: 0 }, error: null, message: null, retrySong: song });
     // Keep import/load from publishing an earlier local-library snapshot during the write.
     await useLocalMusicStore.getState().load();
@@ -69,3 +70,4 @@ export const useOfflineMusicStore = create<State>((set, get) => ({
 useAuthStore.subscribe((state, previous) => { if (activeSource === 'nas' && state.generation !== previous.generation) request?.abort(); });
 useGoogleDriveStore.subscribe((state, previous) => { if (activeSource === 'drive' && state.generation !== previous.generation) request?.abort(); });
 useS3Store.subscribe((state, previous) => { if (activeSource === 's3' && state.generation !== previous.generation) request?.abort(); });
+useMyboxStore.subscribe((state, previous) => { if (activeSource === 'mybox' && state.generation !== previous.generation) request?.abort(); });

@@ -188,7 +188,7 @@ const CloudSettings = renderModule('src/app/settings/cloud.tsx', { ...settingsMo
   '@/stores/auth': { useAuthStore: select => select({ mode: 'setup', session: null }) },
   '@/stores/google-drive': { useGoogleDriveStore: select => select({ account: null }) },
 }).default;
-assert.deepEqual(links(CloudSettings()), [['Synology', '/settings/cloud/synology'], ['Google Drive', '/settings/cloud/google-drive'], ['S3 호환 저장소', '/settings/cloud/s3']]);
+assert.deepEqual(links(CloudSettings()), [['Synology', '/settings/cloud/synology'], ['Google Drive', '/settings/cloud/google-drive'], ['S3 호환 저장소', '/settings/cloud/s3'], ['네이버 MYBOX', '/settings/cloud/mybox']]);
 const serviceIcons = nodes(CloudSettings()).filter(node => node.type === 'SettingsLink').map(node => node.props.icon);
 assert.equal(new Set(serviceIcons).size, serviceIcons.length, 'Different cloud services have distinguishable icons');
 const openedSettings = [];

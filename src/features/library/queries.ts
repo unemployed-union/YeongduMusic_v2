@@ -1,6 +1,8 @@
 import { useCallback, useMemo } from 'react';
 import { useS3Store } from '@/stores/s3';
+import { useMyboxStore } from '@/stores/mybox';
 import { useGoogleDriveStore } from '@/stores/google-drive';
+import { useDriveDocumentsStore } from '@/stores/drive-documents';
 import { useLocalMusicStore } from '@/stores/local-music';
 import { useQuery } from '@tanstack/react-query';
 import { albumId, albumsFromSongs, songsForAlbum } from './album-library';
@@ -31,36 +33,41 @@ function useSongLibrary<T>(select: (library: Page<Song>) => T, enabled = true, n
   const source = sourceOverride ?? preferredSource;
   const localSongs = useLocalMusicStore((state) => state.songs);
   const localReady = useLocalMusicStore((state) => state.ready);
-  const driveSongs = useGoogleDriveStore((state) => state.songs);
+  const apiDriveSongs = useGoogleDriveStore((state) => state.songs);
+  const documentSongs = useDriveDocumentsStore(state => state.songs), documentsReady = useDriveDocumentsStore(state => state.ready);
+  const documentError = useDriveDocumentsStore(state => state.error);
+  const driveSongs = useMemo(() => [...apiDriveSongs, ...documentSongs], [apiDriveSongs, documentSongs]);
   const driveLoading = useGoogleDriveStore((state) => state.loading);
   const driveError = useGoogleDriveStore((state) => state.error);
   const s3Songs = useS3Store(state => state.songs);
   const s3Loading = useS3Store(state => state.loading);
   const s3Error = useS3Store(state => state.error);
   const includeS3 = !nasOnly && (source === 'all' || source === 's3');
+  const myboxSongs = useMyboxStore(state => state.songs), myboxLoading = useMyboxStore(state => state.loading || state.busy), myboxError = useMyboxStore(state => state.error);
+  const includeMybox = !nasOnly && (source === 'all' || source === 'mybox');
   const includeDrive = !nasOnly && (source === 'all' || source === 'drive');
   const identity = libraryIdentity(mode, session);
   const includeNas = nasOnly || ((source === 'nas' || source === 'all') && mode !== 'setup');
   const combined = useCallback((library: Page<Song>) => {
     if (nasOnly || source === 'nas') return select(applyArtworkLibrary(applyMetadataLibrary(library, patches, metadataScope), artworkPatches, metadataScope, artworkBaseUri));
-    const items = [...(includeNas ? library.items : []), ...(source === 'all' || source === 'local' ? localSongs : []), ...(includeDrive ? driveSongs : []), ...(includeS3 ? s3Songs : [])];
+    const items = [...(includeNas ? library.items : []), ...(source === 'all' || source === 'local' ? localSongs : []), ...(includeDrive ? driveSongs : []), ...(includeS3 ? s3Songs : []), ...(includeMybox ? myboxSongs : [])];
     return select(applyArtworkLibrary(applyMetadataLibrary({ ...library, items, total: items.length }, patches, metadataScope), artworkPatches, metadataScope, artworkBaseUri));
-  }, [select, nasOnly, source, includeNas, localSongs, includeDrive, driveSongs, includeS3, s3Songs, patches, metadataScope, artworkPatches, artworkBaseUri]);
+  }, [select, nasOnly, source, includeNas, localSongs, includeDrive, driveSongs, includeS3, s3Songs, includeMybox, myboxSongs, patches, metadataScope, artworkPatches, artworkBaseUri]);
   const query = useQuery({
-    queryKey: includeNas ? ['song-library', identity] : ['local-library'], enabled: ready && metadataReady && artworkReady && (nasOnly || localReady) && enabled,
+    queryKey: includeNas ? ['song-library', identity] : ['local-library'], enabled: ready && metadataReady && artworkReady && (nasOnly || localReady && documentsReady) && enabled,
     queryFn: ({ signal }) => includeNas && mode !== 'setup' ? loadSongLibrary(musicRepository(), signal) : Promise.resolve({ items: [] as Song[], total: 0 }),
     select: combined, retry: 2,
   });
   // Keep local files usable when NAS is unreachable, without publishing a
   // partial library as a successful NAS query or suppressing its retry notice.
-  const fallback = useMemo(() => !nasOnly && source === 'all' && query.isError && !query.data && (localSongs.length || driveSongs.length || s3Songs.length)
-    ? select(applyArtworkLibrary(applyMetadataLibrary({ items: [...localSongs, ...driveSongs, ...s3Songs], total: localSongs.length + driveSongs.length + s3Songs.length }, patches, metadataScope), artworkPatches, metadataScope, artworkBaseUri)) : undefined,
-  [nasOnly, source, query.isError, query.data, localSongs, driveSongs, s3Songs, select, patches, metadataScope, artworkPatches, artworkBaseUri]);
-  const cloudError = [includeDrive && driveError, includeS3 && s3Error].filter(Boolean).join('\n');
+  const fallback = useMemo(() => !nasOnly && source === 'all' && query.isError && !query.data && (localSongs.length || driveSongs.length || s3Songs.length || myboxSongs.length)
+    ? select(applyArtworkLibrary(applyMetadataLibrary({ items: [...localSongs, ...driveSongs, ...s3Songs, ...myboxSongs], total: localSongs.length + driveSongs.length + s3Songs.length + myboxSongs.length }, patches, metadataScope), artworkPatches, metadataScope, artworkBaseUri)) : undefined,
+  [nasOnly, source, query.isError, query.data, localSongs, driveSongs, s3Songs, myboxSongs, select, patches, metadataScope, artworkPatches, artworkBaseUri]);
+  const cloudError = [includeDrive && driveError, includeDrive && documentError, includeS3 && s3Error, includeMybox && myboxError].filter(Boolean).join('\n');
   return libraryResult(query, {
     fallback, cloudError,
-    cloudLoading: (includeDrive && driveLoading) || (includeS3 && s3Loading),
-    cloudPending: !nasOnly && ((source === 's3' && s3Loading && !s3Songs.length) || (source === 'drive' && driveLoading && !driveSongs.length)),
+    cloudLoading: (includeDrive && driveLoading) || (includeS3 && s3Loading) || (includeMybox && myboxLoading),
+    cloudPending: !nasOnly && ((source === 's3' && s3Loading && !s3Songs.length) || (source === 'drive' && driveLoading && !driveSongs.length) || (source === 'mybox' && myboxLoading && !myboxSongs.length)),
   });
 }
 

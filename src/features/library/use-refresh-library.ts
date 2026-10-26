@@ -2,7 +2,9 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '@/stores/auth';
 import { useS3Store } from '@/stores/s3';
+import { useMyboxStore } from '@/stores/mybox';
 import { useGoogleDriveStore } from '@/stores/google-drive';
+import { useDriveDocumentsStore } from '@/stores/drive-documents';
 import { useLocalMusicStore } from '@/stores/local-music';
 import { captureRefreshContext, refreshMusicLibrary } from './refresh-music-library';
 
@@ -21,8 +23,10 @@ export function useRefreshLibrary() {
     const stops = [
       useLocalMusicStore.subscribe((state, previous) => { if (state.source !== previous.source) changed(); }),
       useAuthStore.subscribe((state, previous) => { if (state.generation !== previous.generation) changed(); }),
-      useGoogleDriveStore.subscribe((state, previous) => { if (state.generation !== previous.generation || state.account?.id !== previous.account?.id || state.folders !== previous.folders) changed(); }),
+      useGoogleDriveStore.subscribe((state, previous) => { if (state.generation !== previous.generation || state.account?.id !== previous.account?.id || state.files !== previous.files) changed(); }),
+      useDriveDocumentsStore.subscribe((state, previous) => { if (state.revision !== previous.revision) changed(); }),
       useS3Store.subscribe((state, previous) => { if (state.generation !== previous.generation || state.connection !== previous.connection) changed(); }),
+      useMyboxStore.subscribe((state, previous) => { if (state.generation !== previous.generation || state.connection !== previous.connection) changed(); }),
     ];
     return () => { mounted.current = false; stops.forEach(stop => stop()); };
   }, []);

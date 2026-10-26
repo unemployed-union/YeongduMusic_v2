@@ -13,10 +13,16 @@ exports.cloudFixtures = (globals = {}, dependencies = {}) => {
     bootstrap: async () => {}, refresh: async () => {}, cancel: () => {} };
   const useS3Store = select => select ? select(state) : state;
   useS3Store.getState = () => state; useS3Store.subscribe = () => () => {};
+  const mybox = { ...state };
+  const documents = { ready: true, busy: false, revision: 0, documents: [], songs: [], error: null, message: null, load: async () => {}, add: async () => {}, remove: async () => {} };
+  const useDriveDocumentsStore = select => select ? select(documents) : documents;
+  useDriveDocumentsStore.getState = () => documents; useDriveDocumentsStore.subscribe = () => () => {};
+  const useMyboxStore = select => select ? select(mybox) : mybox;
+  useMyboxStore.getState = () => mybox; useMyboxStore.subscribe = () => () => {};
   const metadata = { ready: true, patches: {}, load: async () => {} };
   const useSongMetadataStore = select => select ? select(metadata) : metadata;
   useSongMetadataStore.getState = () => metadata; useSongMetadataStore.subscribe = () => () => {};
-  const shared = { '@/stores/s3': { useS3Store }, ...dependencies };
+  const shared = { '@/stores/s3': { useS3Store }, '@/stores/mybox': { useMyboxStore }, '@/stores/drive-documents': { useDriveDocumentsStore }, ...dependencies };
   const appearanceRules = read('src/theme/appearance.ts', globals);
   const appearance = { preferences: { ...appearanceRules.DEFAULT_APPEARANCE }, ready: true, loading: false, saving: false, loadError: false, error: null,
     load: async () => {}, restore: async preferences => { appearance.preferences = appearanceRules.parseAppearance(preferences); } };
@@ -53,6 +59,7 @@ exports.cloudFixtures = (globals = {}, dependencies = {}) => {
   });
   const resultHelpers = read('src/features/library/library-result.ts', globals);
   return {
+    '@/stores/drive-documents': { useDriveDocumentsStore },
     '@/features/playback/use-playback-visibility': { usePlaybackVisibility: () => true },
     '@/theme/layout': read('src/theme/layout.ts', globals),
     '@/features/library/library-sidebar': { LibrarySidebar: 'LibrarySidebar' },
@@ -104,5 +111,6 @@ exports.cloudFixtures = (globals = {}, dependencies = {}) => {
     '@/services/cloud-music/request': read('src/services/cloud-music/request.ts', globals),
     '@/stores/s3': { useS3Store, s3Source: async () => { throw Error('No S3 fixture connected'); } },
     './s3': { useS3Store },
+    '@/stores/mybox': { useMyboxStore }, './mybox': { useMyboxStore },
   };
 };

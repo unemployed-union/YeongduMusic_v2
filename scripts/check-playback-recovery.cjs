@@ -14,7 +14,8 @@ const storage = { getItem: async key => values.get(key) ?? null, setItem: async 
 const auth = create(() => ({ mode: 'nas', session: { baseUrl: 'https://example.invalid', account: 'tester' } }));
 const privacy = create(() => ({ ready: true, scope: 'https://example.invalid:tester', profile: { presets: [] } }));
 const local = create(() => ({ songs: [] }));
-const drive = create(() => ({ account: { id: 'drive-account' }, songs: [] }));
+const drive = create(() => ({ account: { id: 'drive-account' }, files: [{ id: 'file-id' }], songs: [] }));
+const mybox = create(() => ({ connection: { id: 'mbx-fixture', folder: '/Music/' }, songs: [] }));
 const playback = create(() => ({ queue: [], index: -1, position: 0, playing: false, shuffle: false, repeat: 'off' }));
 let appStateListener;
 const modules = {
@@ -26,6 +27,7 @@ const modules = {
   },
   '@/stores/auth': { useAuthStore: auth },
   '@/stores/google-drive': { useGoogleDriveStore: drive },
+  '@/stores/mybox': { useMyboxStore: mybox },
   '@/stores/hidden-music': { useHiddenMusicStore: privacy },
   '@/stores/local-music': { useLocalMusicStore: local },
   '@/stores/playback': { usePlaybackStore: playback },
@@ -123,11 +125,11 @@ async function checkRootRemount({ playing = true, cold = false, theme = 'dark', 
     assert.equal(stopped, 0, 'Remount and local-library refresh must retain the live NAS player');
     assert.equal(savedReads, cold ? 1 : 0, 'A live queue takes precedence over the persisted snapshot');
     assert.equal(restores, cold ? 1 : 0);
-    assert.equal(live.playing, playing);
+    assert.equal(live.playing, cold ? false : playing, 'Cold launches restore paused while live playback remains unchanged');
     assert.equal(live.playbackRate, saved.playbackRate, 'Cold restore forwards saved speed and remount preserves live speed');
     assert.equal(live.preservePitch, false, 'Cold restore and remount retain the pitch preference');
     assert.equal(live.queue[0].id, 'nas-live', 'Paused queue remains available to the mini player');
-    assert.equal(navigation.at(-1), playing ? '/player' : '/(tabs)/(library)', 'Only active playback opens the player at startup');
+    assert.equal(navigation.at(-1), !cold && playing ? '/player' : '/(tabs)/(library)', 'Only a currently live player opens at startup');
     cleanups.forEach(cleanup => { if (typeof cleanup === 'function') cleanup(); });
   }
   assert.equal(persistenceStarts, 2, 'Each mounted root resumes snapshot updates');
@@ -185,6 +187,17 @@ async function main() {
   saved = await moduleExports.readRestoredPlayback();
   assert.equal(saved.index, 1);
   assert.equal(saved.position, 37);
+  const myboxSong = { id: 'mybox:mbx-fixture:file-a', source: 'mybox', title: 'MYBOX track', artist: 'Artist', album: 'Album', duration: 100, path: '/Music/track.flac',
+    mybox: { connectionId: 'mbx-fixture', fileId: 'file-a', fileName: 'track.flac', size: 321 } };
+  const myboxSnapshot = { ...JSON.parse(raw), queue: [myboxSong], index: 0, myboxConnectionId: 'mbx-fixture' };
+  values.set('yeongdumusic-playback-v1', JSON.stringify(myboxSnapshot));
+  assert.equal((await moduleExports.readRestoredPlayback()).queue[0].source, 'mybox');
+  mybox.setState({ connection: { id: 'mbx-another-account', folder: '/Music/' } });
+  assert.equal(await moduleExports.readRestoredPlayback(), null, 'MYBOX queues are isolated across connections');
+  mybox.setState({ connection: { id: 'mbx-fixture', folder: '/Other/' } });
+  assert.equal(await moduleExports.readRestoredPlayback(), null, 'Restored MYBOX songs remain within the selected folder');
+  mybox.setState({ connection: null });
+  assert.equal(await moduleExports.readRestoredPlayback(), null, 'Disconnected MYBOX queues cannot restore');
 
   appStateListener('active');
   playback.setState({ queue: [], index: -1 });

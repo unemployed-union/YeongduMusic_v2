@@ -20,8 +20,17 @@ export async function downloadSong(song: Song, signal: AbortSignal, onProgress: 
   try {
     for (let attempt = 0; attempt < 2; attempt++) {
       check();
-      const source: { uri: string; headers?: Record<string, string> } = isCloudSong(song) ? await cloudStreamSource(song, attempt > 0) : new SynologyClient(auth.session!).streamSource(song, 'original');
+      const source: { uri: string; headers?: Record<string, string> } = isCloudSong(song) ? await cloudStreamSource(song, attempt > 0, { signal, download: true }) : new SynologyClient(auth.session!).streamSource(song, 'original');
       check();
+      if (song.source === 'drive' && song.drive.documentUri) {
+        // Only an explicit "기기에 보관" action copies a provider document.
+        await FileSystem.copyAsync({ from: source.uri, to: uri });
+        check();
+        const info = await FileSystem.getInfoAsync(uri);
+        if (!info.exists || info.isDirectory || !info.size || (song.drive.size && info.size !== song.drive.size)) throw new Error('Drive 음악 파일을 완전히 보관하지 못했습니다.');
+        onProgress({ written: info.size, total: info.size });
+        return await storeDownloadedSong(song, uri, audioExtension(song, song.drive.mimeType), song.drive.mimeType, signal, onSaving);
+      }
       let lastProgress = 0;
       const task = FileSystem.createDownloadResumable(source.uri, uri, { headers: source.headers, cache: false }, ({ totalBytesWritten, totalBytesExpectedToWrite }) => {
         const now = Date.now();
@@ -53,7 +62,7 @@ export async function downloadSong(song: Song, signal: AbortSignal, onProgress: 
       const info = await FileSystem.getInfoAsync(uri);
       const expected = Number(header('content-length'));
       if (!info.exists || info.isDirectory || !info.size || (Number.isFinite(expected) && expected > 0 && info.size !== expected)
-        || (song.source === 'drive' && song.drive.size && info.size !== song.drive.size) || (song.source === 's3' && info.size !== song.s3.size)) {
+        || (song.source === 'drive' && song.drive.size && info.size !== song.drive.size) || (song.source === 's3' && info.size !== song.s3.size) || (song.source === 'mybox' && info.size !== song.mybox.size)) {
         throw new Error('내려받은 음악이 비어 있거나 불완전합니다. 다시 보관해 주세요.');
       }
       check();

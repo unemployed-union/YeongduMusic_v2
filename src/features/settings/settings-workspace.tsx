@@ -23,7 +23,7 @@ export function SettingsWorkspace({ routeName, children }: { routeName: string; 
   const selected = selectedSettingsPath(routeName);
   const isSettings = routeName === 'settings' || routeName.startsWith('settings/') || routeName === 'hidden-music' || routeName === 'hidden-playlists';
   const expanded = isSettings && layout.expanded;
-  const titles: Record<string, string> = { settings: '설정', 'settings/colors': '색상 설정', 'settings/player-menu': '재생 화면 메뉴', 'settings/cloud/synology': 'Synology', 'settings/cloud/google-drive': 'Google Drive', 'settings/cloud/s3': 'S3 호환 저장소', 'settings/quick-hide-preset': '빠른 숨기기 프리셋', 'hidden-music': '음악 숨기기', 'hidden-playlists': '플레이리스트 숨기기' };
+  const titles: Record<string, string> = { settings: '설정', 'settings/colors': '색상 설정', 'settings/player-menu': '재생 화면 메뉴', 'settings/cloud/synology': 'Synology', 'settings/cloud/google-drive': 'Google Drive', 'settings/cloud/s3': 'S3 호환 저장소', 'settings/cloud/mybox': '네이버 MYBOX', 'settings/quick-hide-preset': '빠른 숨기기 대상', 'hidden-music': '음악 숨기기', 'hidden-playlists': '플레이리스트 숨기기' };
   const title = titles[routeName] ?? SETTINGS_NAVIGATION.find(item => item.path === selected)?.title ?? '설정';
   const fullWidth = routeName === 'settings/licenses' || routeName === 'settings/quick-hide-preset' || routeName === 'hidden-music' || routeName === 'hidden-playlists';
   const titleMaxWidth = routeName === 'settings' ? 1160 : fullWidth ? undefined : 840;
