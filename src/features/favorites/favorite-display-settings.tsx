@@ -3,7 +3,7 @@ import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { AnimatedSwitch } from '@/components/animated-switch';
 import { Text } from '@/components/text';
-import { settingsMenuStyles } from '@/features/settings/settings-menu-layout';
+import { settingsMenuStyles, useSettingsMenuIconStyle } from '@/features/settings/settings-menu-layout';
 import { useFavoriteDisplayPreferences } from '@/stores/favorite-display-preferences';
 import { useColors } from '@/theme/tokens';
 import type { FavoriteDisplayPreferences } from './display-preferences';
@@ -17,11 +17,12 @@ const options = [
 
 export function FavoriteDisplaySettings() {
   const colors = useColors(), state = useFavoriteDisplayPreferences(), load = state.load;
+  const iconStyle = useSettingsMenuIconStyle(colors.tint);
   useEffect(() => { void load(); }, [load]);
   const disabled = !state.ready || state.loading || state.loadError;
   return <View>
     {options.map(option => <View key={option.key} style={[settingsMenuStyles.row, option.key !== 'enabled' && { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.separator }]}>
-      <View style={settingsMenuStyles.icon}><Ionicons name={option.icon} size={23} color={colors.tint} /></View>
+      <View style={iconStyle}><Ionicons name={option.icon} size={23} color={colors.tint} /></View>
       <View style={styles.copy}><Text style={[styles.title, { color: colors.text }]}>{option.title}</Text><Text style={[styles.hint, { color: colors.muted }]}>{option.hint}</Text></View>
       <AnimatedSwitch accessibilityLabel={option.key === 'enabled' ? option.title : `${option.title} 좋아요 버튼 표시`} value={state.preferences[option.key]}
         disabled={disabled} busy={state.saving} trackColor={{ false: colors.separator, true: colors.tint }}

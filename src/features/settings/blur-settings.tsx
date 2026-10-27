@@ -6,11 +6,13 @@ import { AnimatedSwitch } from '@/components/animated-switch';
 import { Text } from '@/components/text';
 import { useBlurPreferences } from '@/stores/blur-preferences';
 import { useColors } from '@/theme/tokens';
-import { settingsMenuStyles } from './settings-menu-layout';
+import { settingsMenuStyles, useSettingsMenuIconStyle } from './settings-menu-layout';
 import { BLUR_AREAS, BLUR_LABELS, type BlurArea } from './blur-preferences';
+import { useLiquidGlass } from '@/theme/liquid-glass';
 
 function BlurAreaSettings({ area }: { area: BlurArea }) {
   const colors = useColors(), state = useBlurPreferences(), option = state.areas[area];
+  const glass = useLiquidGlass(area);
   const [draft, setDraft] = useState<number | null>(null);
   const disabled = !state.ready || state.loading || state.loadError;
   const value = draft ?? option.intensity;
@@ -19,7 +21,9 @@ function BlurAreaSettings({ area }: { area: BlurArea }) {
       <AnimatedSwitch accessibilityLabel={`${BLUR_LABELS[area]} 블러`} value={option.enabled} disabled={disabled} busy={state.saving}
         onValueChange={enabled => { void state.setAreaEnabled(area, enabled).catch(() => {}); }} trackColor={{ false: colors.separator, true: colors.tint }} />
     </View>
-    {area === 'playerMenu' && <Text style={[styles.hint, { color: colors.muted }]}>다크 모드의 재생 화면 메뉴에 적용됩니다.</Text>}
+    {area === 'playerMenu' && !glass.supported && <Text style={[styles.hint, { color: colors.muted }]}>다크 모드의 재생 화면 메뉴에 적용됩니다.</Text>}
+    {glass.supported && <Text style={[styles.hint, { color: colors.muted }]}>{glass.reduceTransparency ? 'iOS의 투명도 줄이기가 켜져 있어 단색 배경을 사용합니다.' : '켜면 Liquid Glass를 사용합니다. 유리 효과의 강도는 iOS가 자동으로 조절합니다.'}</Text>}
+    {!glass.supported && <>
     <View style={styles.strengthLabel}><Text style={[styles.hint, { color: colors.muted }]}>블러 강도</Text><Text style={[styles.value, { color: colors.text }]}>{value}</Text></View>
     <View pointerEvents={state.saving ? 'none' : 'auto'}>
       <Slider accessibilityLabel={`${BLUR_LABELS[area]} 블러 강도`} accessibilityValue={{ min: 1, max: 100, now: value }}
@@ -32,15 +36,17 @@ function BlurAreaSettings({ area }: { area: BlurArea }) {
         }} />
     </View>
     <View style={styles.strengthLabel}><Text style={[styles.hint, { color: colors.muted }]}>약하게</Text><Text style={[styles.hint, { color: colors.muted }]}>강하게</Text></View>
+    </>}
   </View>;
 }
 
 export function BlurSettings() {
   const colors = useColors(), state = useBlurPreferences(), load = state.load;
+  const iconStyle = useSettingsMenuIconStyle(colors.tint);
   useEffect(() => { void load(); }, [load]);
   return <View>
     <View style={settingsMenuStyles.row}>
-      <View style={settingsMenuStyles.icon}><Ionicons name="water-outline" size={23} color={colors.tint} /></View>
+      <View style={iconStyle}><Ionicons name="water-outline" size={23} color={colors.tint} /></View>
       <View style={styles.copy}><Text style={[styles.title, { color: colors.text }]}>블러 효과 전체</Text>
         <Text style={[styles.hint, { color: colors.muted }]}>전체를 꺼도 영역별 선택과 강도를 기억합니다. 꺼진 영역은 단색 배경을 사용합니다.</Text></View>
       <AnimatedSwitch accessibilityLabel="블러 효과 전체" value={state.enabled} disabled={!state.ready || state.loading || state.loadError} busy={state.saving}

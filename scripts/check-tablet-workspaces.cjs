@@ -2,6 +2,7 @@
 const assert = require('node:assert/strict'), fs = require('node:fs'), path = require('node:path'), ts = require('typescript');
 const root = path.join(__dirname, '..');
 function read(file, modules = {}) {
+  modules = { './ios-system-settings': { isIosSystemSettingsAvailable: false }, ...modules };
   const exports = {}, code = ts.transpileModule(fs.readFileSync(path.join(root, file), 'utf8'), {
     compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX },
   }).outputText;
@@ -15,12 +16,17 @@ const geometry = read('src/theme/layout.ts'), navigation = read('src/features/se
 let dimensions = { width: 1280, height: 800, fontScale: 1 }, extras = false;
 const calls = [], colors = { background: '#111111', surface: '#222222', text: '#FFFFFF', muted: '#999999', tint: '#FF5C80', separator: '#333333', rowPressed: '#FFFFFF0A', rowSelected: '#FFFFFF14' };
 const base = {
+  './settings-menu-layout': { settingsMenuStyles: { row: {}, icon: {} }, useSettingsMenuIconStyle: () => ({}) },
+  '@/theme/liquid-glass': { useLiquidGlass: () => ({ supported: false, enabled: false, reduceTransparency: false }) },
+  '@/components/glass-controls': { glassControlStyles: { button: {}, segments: {}, segment: {} } },
+  '@/features/library/library-segments': { LibrarySegments: 'LibrarySegments' },
+  '@/components/glass-backdrop': { GlassBackdrop: 'GlassBackdrop' },
   'react/jsx-runtime': { jsx, jsxs: jsx }, '@/theme/layout': geometry,
   'react-native': { View: 'View', Pressable: 'Button', ScrollView: 'Scroll', StyleSheet: { create: value => value, hairlineWidth: 1 }, useWindowDimensions: () => dimensions },
   '@expo/vector-icons/Ionicons': { __esModule: true, default: 'Icon' }, '@/components/text': { Text: 'Text' },
   '@/theme/tokens': { useColors: () => colors }, '@/services/haptics': { playHaptic() {} },
   'react-native-safe-area-context': { useSafeAreaInsets: () => ({ left: 0, right: 0, bottom: 20, top: 24 }) },
-  'expo-router': { router: { navigate: href => calls.push(href) } },
+  'expo-router': { router: { navigate: href => calls.push(href) }, useIsFocused: () => true },
   '@/components/sidebar-header': { SidebarHeader: 'SidebarHeader' },
   '@/components/content-title-bar': { ContentTitleBar: 'ContentTitleBar' },
   '@/components/content-transition': { ContentTransition: 'ContentTransition' },
@@ -69,7 +75,7 @@ assert.equal(tree.props.children[1].props.enabled, false, 'Phone screens retain 
 
 const childrenApi = { toArray: value => [value].flat(Infinity).filter(Boolean) };
 const { SettingsPage } = read('src/features/settings/settings-ui.tsx', { ...base, react: { Children: childrenApi },
-  './settings-menu-layout': { settingsMenuStyles: {} }, 'react-native-keyboard-controller': { KeyboardAwareScrollView: 'KeyboardScroll' }, '@/components/scroll-edge-fade': { ScrollEdgeFade: 'Fade' },
+  './settings-menu-layout': { useSettingsMenuIconStyle: () => ({}), settingsMenuStyles: {} }, 'react-native-keyboard-controller': { KeyboardAwareScrollView: 'KeyboardScroll' }, '@/components/scroll-edge-fade': { ScrollEdgeFade: 'Fade' },
 });
 const sections = [1, 2, 3, 4].map(id => ({ type: 'Section', props: { id } }));
 dimensions = { ...dimensions, width: 1280 };

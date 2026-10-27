@@ -7,18 +7,20 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { router, type Href } from 'expo-router';
 import { ScrollEdgeFade } from '@/components/scroll-edge-fade';
 import { useColors } from '@/theme/tokens';
-import { settingsMenuStyles } from './settings-menu-layout';
+import { settingsMenuStyles, useSettingsMenuIconStyle } from './settings-menu-layout';
 import { playHaptic } from '@/services/haptics';
 import { workspaceLayout } from '@/theme/layout';
+import { useLiquidGlass } from '@/theme/liquid-glass';
 
 export function SettingsPage({ children, overlay, overview = false }: { children: ReactNode; overlay?: ReactNode; overview?: boolean }) {
   const colors = useColors();
+  const glass = useLiquidGlass();
   const insets = useSafeAreaInsets();
   const { width, height, fontScale } = useWindowDimensions();
   const layout = workspaceLayout(width - insets.left - insets.right, height, fontScale);
   const contentWidth = Math.min(1160, layout.contentWidth);
   const columns = overview && contentWidth >= 860 * Math.max(1, fontScale) ? 2 : 1;
-  return <View style={{ flex: 1, backgroundColor: colors.background }}>
+  return <View style={{ flex: 1, backgroundColor: colors.background, ...(glass.supported && { paddingLeft: insets.left, paddingRight: insets.right }) }}>
     <ScrollEdgeFade><KeyboardAwareScrollView style={{ flex: 1 }} bottomOffset={16} contentContainerStyle={[styles.screen, { maxWidth: overview ? 1160 : 840, paddingBottom: 24 + insets.bottom }]} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
       <View style={columns === 2 ? styles.cards : undefined}>
         {Children.toArray(children).map((child, index) => <View key={index} style={columns === 2 ? { width: (contentWidth - 68) / 2 } : undefined}>{child}</View>)}
@@ -30,9 +32,13 @@ export function SettingsPage({ children, overlay, overview = false }: { children
 
 export function SettingsSection({ title, children }: { title: string; children: ReactNode }) {
   const colors = useColors();
-  return <View style={styles.section}><Text style={[styles.heading, { color: colors.muted }]}>{title}</Text>
-    <View style={[styles.group, { backgroundColor: colors.surface, borderColor: colors.separator }]}>
-      {Children.toArray(children).map((child, index) => <View key={index} style={index > 0 ? { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.separator } : undefined}>{child}</View>)}
+  const glass = useLiquidGlass();
+  return <View style={[styles.section, glass.supported && { marginBottom: 28 }]}><Text style={[styles.heading, { color: colors.muted }, glass.supported && { fontSize: 13, fontWeight: '600', letterSpacing: 0, paddingHorizontal: 16 }]}>{title}</Text>
+    <View style={[styles.group, { backgroundColor: colors.surface, borderColor: colors.separator }, glass.supported && { borderRadius: 24, borderWidth: 0 }]}>
+      {Children.toArray(children).map((child, index) => <View key={index}>
+        {glass.supported && index > 0 && <View style={{ height: StyleSheet.hairlineWidth, marginLeft: 64, backgroundColor: colors.separator }} />}
+        <View style={!glass.supported && index > 0 ? { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.separator } : undefined}>{child}</View>
+      </View>)}
     </View>
   </View>;
 }
@@ -41,8 +47,9 @@ export function SettingsLink({ title, description, icon, href, badge, disabled =
   title: string; description?: string; icon: ComponentProps<typeof Ionicons>['name']; href: Href; badge?: string; disabled?: boolean; busy?: boolean;
 }) {
   const colors = useColors();
+  const iconStyle = useSettingsMenuIconStyle(colors.tint);
   return <Pressable accessibilityRole="button" accessibilityState={{ disabled: disabled || busy, ...(busy && { busy: true }) }} disabled={disabled || busy} onPress={() => { if (!disabled && !busy) { playHaptic('menu'); router.push(href); } }} style={({ pressed }) => [styles.row, { opacity: pressed ? 0.55 : 1 }]}>
-    <View style={styles.icon}><Ionicons name={icon} size={23} color={disabled ? colors.muted : colors.tint} /></View>
+    <View style={iconStyle}><Ionicons name={icon} size={23} color={disabled ? colors.muted : colors.tint} /></View>
     <View style={styles.copy}><View style={styles.titleRow}>
       <Text style={[styles.title, { color: disabled ? colors.muted : colors.text }]}>{title}</Text>
       {!!badge && <View style={[styles.badge, { backgroundColor: colors.tint + '18' }]}><Text style={[styles.badgeText, { color: colors.tint }]}>{badge}</Text></View>}
@@ -59,7 +66,6 @@ const styles = StyleSheet.create({
   heading: { fontSize: 12, fontWeight: '800', letterSpacing: 1.2, marginBottom: 12, marginTop: 0 },
   group: { borderWidth: 1, borderRadius: 15, overflow: 'hidden' },
   row: settingsMenuStyles.row,
-  icon: settingsMenuStyles.icon,
   copy: { flex: 1 }, title: { fontSize: 16, fontWeight: '600' },
   titleRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', columnGap: 8, rowGap: 4 },
   badge: { paddingHorizontal: 7, paddingVertical: 3, borderRadius: 6 },

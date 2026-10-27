@@ -68,7 +68,21 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\verify-nas.ps1 -Ba
 | `src/stores` | Zustand 인증·재생 상태 |
 | `src/components`, `src/theme`, `src/types` | 공통 UI, 디자인 토큰, 도메인 모델 |
 
-## 하단 메뉴와 미니 플레이어 블러
+## iOS 26 Liquid Glass와 하단 블러
+
+iOS 26 이상에서는 [Expo SDK 57의 `expo-glass-effect`](https://docs.expo.dev/versions/v57.0.0/sdk/glass-effect/)로 하단 탭, 미니 플레이어, 설정 버튼, 재생 화면의 닫기·대기열·재생 버튼, 보관함·재생 팝업 메뉴에 네이티브 Liquid Glass를 적용합니다. 하단 탭은 홈 인디케이터 위에 떠 있는 둥근 형태이며 목록과 미니 플레이어의 여백도 함께 조절합니다. 앨범 표지와 설정 카드의 모서리, 화면 제목도 이 형태에 맞춥니다. Android와 이전 iOS는 기존 레이아웃과 블러를 유지합니다. 네이티브 유리 뷰를 가져오는 코드는 `.ios.tsx`로 분리했습니다.
+
+하단 메뉴는 [Expo Router SDK 57의 `NativeTabs`](https://docs.expo.dev/versions/v57.0.0/sdk/router/native-tabs/)를 사용합니다. 색상만 바꾸는 React Native 버튼과 직접 그린 선택 배경은 제거했습니다. 선택 렌즈가 떠오르고 늘어나며 손가락을 따라 움직이는 효과와 탭 간 슬라이딩은 UIKit이 직접 처리합니다. 아이콘은 SF Symbols를 사용하고, 탭바 크기·모서리·선택 표시·동작은 시스템 기본값을 유지합니다. 메뉴 순서와 숨김 설정은 유지하며, 선택 중인 탭을 숨기면 첫 번째 표시 메뉴로 이동합니다. iPad 확장 화면에서는 기존 사이드바를 사용합니다. Android와 iOS 18 이하·지원하지 않는 빌드는 기존 JavaScript 탭바를 사용합니다.
+
+`NativeTabFrame`은 각 네이티브 탭의 실제 UIKit 안전 여백에 맞춰 미니 플레이어와 스크롤 표시기를 배치하고, 보관함·검색·플레이리스트 메뉴의 블러 대상을 분리합니다. 키보드가 열리면 탭바와 미니 플레이어를 숨깁니다. NativeTabs는 화면을 미리 마운트하므로, 보관함 조회는 해당 화면에 포커스가 있을 때만 활성화합니다. 2026-10-27 iOS 27.0 시뮬레이터에서 현재 JS와 에셋을 넣은 기존 Release 네이티브 앱의 임시 복사본으로 보관함 → 검색, 검색 → 보관함, 보관함 → 플레이리스트 → 검색의 실제 드래그 이동을 확인하고 화면 기록을 남겼습니다. 새 IPA 컴파일이나 실제 iPhone 설치는 하지 않았습니다.
+
+보관함의 앨범·노래·아티스트·좋아요 선택은 [Expo UI SDK 57의 SwiftUI Picker](https://docs.expo.dev/versions/v57.0.0/sdk/ui/swift-ui/picker/)를 `segmented` 스타일로 사용합니다. 시스템이 선택 렌즈의 드래그를 처리하며, 페이지 스와이프·메뉴 순서·숨김 설정과 선택 상태를 함께 유지합니다. 컨트롤을 접었다 펼칠 때 네이티브 유리가 사라지지 않도록 투명도 대신 높이와 위치로 숨깁니다. 음악 소스 시트는 실제 `GlassView` 배경 하나 위에 소스·연결 관리·가져오기 그룹을 배치하며, 기존 iOS 파일 선택기는 시트의 `onDismiss` 이후에 엽니다. iOS 27.0 시뮬레이터에서 세로·가로 선택 탭의 드래그, 소스 시트 스크롤, 파일 선택기 진입·취소를 확인했습니다. Android 빌드에서는 SwiftUI 선택 컨트롤이 포함되지 않는 것도 확인했습니다. Android·구형 iOS와 블러 비활성화·투명도 줄이기 상태에서는 기존 선택 버튼 및 단색 배경을 사용합니다.
+
+실행 중인 iOS 버전, Glass API, 앱 빌드의 지원 여부를 모두 확인합니다. **설정 → 재생 및 화면**의 기존 블러 전체·영역별 켜기/끄기는 유리 효과에도 적용되며, 끄면 단색 배경을 사용합니다. Liquid Glass의 강도는 iOS가 조절하므로 지원 기기에서는 기존 강도 슬라이더 대신 안내를 표시합니다. 저장된 강도는 유지합니다. iOS **손쉬운 사용 → 디스플레이 및 텍스트 크기 → 투명도 줄이기**를 켜면 즉시 단색으로 전환합니다. 앱의 다크·화이트 테마를 따르며 재생 화면의 버튼은 어두운 배경에 맞춥니다.
+
+네이티브 효과를 사용하려면 Xcode 26 이상의 iOS SDK로 앱을 다시 빌드해야 합니다. EAS에서는 `npx eas-cli@latest build --platform ios --profile development`를 사용합니다. 지원하지 않는 빌드에서는 기존 UI로 돌아갑니다. `node scripts/check-liquid-glass.cjs`, `node scripts/check-native-tabs.cjs`, `node scripts/check-tablet-navigation.cjs`로 버전·API·빌드 조건, 영역 설정, 접근성 변경, 네이티브 탭 사용·숨긴 경로 복구, UIKit 안전 여백과 기존 태블릿 탐색을 검사합니다. 실제 iOS 26 기기에서의 유리 렌더링과 터치 반응도 별도로 확인해야 합니다.
+
+### Android와 이전 iOS의 블러
 
 기존 iOS 전용 블러 조건을 제거하고 두 영역에 `expo-blur`를 적용했습니다. [SDK 57 공식 사용법](https://docs.expo.dev/versions/v57.0.0/sdk/blur-view/)에 따라 각 탭의 화면 콘텐츠를 `BlurTargetView`로 감싸고, 현재 탭의 대상 ref를 하단 메뉴와 미니 플레이어가 공유합니다. 블러 뷰와 컨트롤은 대상 바깥에 두어 자기 자신을 캡처하지 않으며, 탭의 실제 선택 상태를 사용해 전체 재생 화면을 여닫아도 같은 대상이 유지됩니다.
 
@@ -176,6 +190,10 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\verify-nas.ps1 -Ba
 - 실제 기기에서 새 곡 추가 후 새로고침, 빈 목록, 네트워크 오류·재시도, 작은 화면에서 짧은/긴 아트 스와이프와 재생 지속을 확인해야 합니다.
 
 DS audio에는 새 곡이 보이지만 앱에는 보이지 않으면 같은 NAS 주소·계정인지 확인하고, 새로고침 완료 안내의 총 곡 수와 노래 목록의 추가 페이지를 확인하세요. 실제 추가 곡 반영은 NAS 인증과 앱 조작이 필요하므로 정적 검사만으로 검증했다고 표시하지 않습니다. DS audio에도 보이지 않는 경우에는 [Synology의 새 파일 색인 안내](https://kb.synology.com/en-global/DSM/tutorial/Why_can_t_I_see_the_files_I_just_added_on_Photo_Station_Audio_Station_or_iTunes_Server)를 참고하세요.
+
+## iOS 잠금 화면과 미니 플레이어
+
+iOS에서는 파일을 로드하기 전부터 `isLiveStream: false`를 명시합니다. NAS 파일은 준비되는 동안 길이가 일시적으로 미정일 수 있는데, 기본 자동 판별은 이 값을 실시간 방송으로 기억해 제어 센터와 잠금 화면의 탐색을 비활성화할 수 있습니다. 실제 곡 길이와 재생 위치는 준비된 AVPlayer의 값으로 갱신합니다. iOS 26 이상 iPhone의 미니 플레이어는 `NativeTabs.BottomAccessory`로 배치하여 재실행 후 대기열 복원과 탭 안전 영역 측정 순서에 영향을 받지 않도록 했습니다. Android·이전 iOS·iPad 사이드바 배치는 기존 방식을 유지합니다. iOS NAS 실기기에서 곡 로딩 후 제어 센터·잠금 화면 탐색은 별도 확인이 필요합니다.
 
 ## Android 잠금 화면·알림창 곡 이동
 
@@ -345,6 +363,10 @@ Expo 라우트 타입은 오프라인 개발 서버로 다시 생성했습니다
 - 요청 근거: [Synology 공식 Audio Station 6.5.7-3384 배포본](https://archive.synology.com/download/Package/AudioStation/6.5.7-3384)의 app/audio-core.js에서 Stream v2의 method=transcode, format=mp3, position=0, /0.mp3 경로를 확인했습니다. 실제 경로와 호환 버전은 기존 API discovery를 사용합니다. 사용자가 실행한 실제 NAS 진단에서 MP3 원본과 MP3 변환 모두 HTTP 206, Content-Type audio/mpeg, Content-Range 응답을 확인했습니다. 출력 비트레이트는 아직 검증하지 않아 128/192/320 kbps 프리셋을 추가하지 않았습니다.
 - Mock 회귀 테스트는 요청 구성·설정 저장/복원·원본 기본값·데모 및 세션 보호를 검사합니다. 실제 NAS 변환 성공을 대신하지 않습니다.
 - 실제 NAS 결과(사용자 제공): 샘플의 losslessExtension=False, 원본 전체 길이 5,260,441 bytes, 변환 전체 길이 3,280,000 bytes. 부분 응답으로 일부 데이터만 읽었으며 전체 파일 다운로드·디코딩은 검사하지 않았습니다. 이 결과는 MP3 입력의 변환 경로와 Range 응답 확인이며, FLAC·ALAC 입력의 변환, 출력 비트레이트, 실제 재생·탐색·백그라운드 동작을 검증한 것으로 취급하지 않습니다.
+
+iOS 17 이상에서 NAS 원본 FLAC을 재생할 때는 `audio/flac` 형식 정보를 AVPlayer에 전달합니다. Audio Station의 확장자 없는 CGI 응답이 `audio/x-flac` 또는 `application/octet-stream`이면 iOS가 정상 FLAC도 `-11828 / -12847` 오류로 거부하는 경우를 방지합니다. 원본 바이트·인증 URL·헤더·Range 요청을 유지하며 MP3 변환이나 전체 파일 캐시를 추가하지 않습니다. MP3 변환 요청·다른 코덱·클라우드·로컬·Android·웹에는 적용하지 않습니다. 형식 판별은 NAS의 코덱 정보, 코덱이 없으면 파일 확장자를 사용합니다. iOS 16에서는 기존 경로를 유지합니다.
+
+이 처리는 기존 `patches/expo-audio@57.0.5.patch`에 iOS `AudioSource.mimeType` 필드와 공개 API `AVURLAssetOverrideMIMETypeKey` 지원을 추가한 것입니다. **새 iOS 네이티브 빌드가 필요하며 Metro 새로고침이나 OTA만으로는 반영되지 않습니다.** 기존 Android 재생 패치 13개 파일을 그대로 보존했고, 별도 폴더의 잠금파일 새 설치에서도 총 17개 패치 파일이 동일함을 확인했습니다. 2026-10-27 iOS 27 시뮬레이터의 AVPlayer와 합성 FLAC·localhost Range 서버로 잘못된 MIME 응답의 실패를 재현했고, 패치의 실제 AVPlayerItem 생성 코드로 재생 및 6초 위치 탐색이 성공하는 것을 확인했습니다. 사용자 NAS의 실제 파일·네트워크·백그라운드 재생은 새 빌드에서 별도 확인해야 합니다. 회귀 검사는 `node scripts/check-playback-buffer.cjs`, `node scripts/check-streaming-quality.cjs`, `node scripts/check-lossless-playback.cjs`로 실행합니다.
 
 NAS 검증(주소·계정·토큰·곡명 없이 응답 상태만 출력, 최대 1 KiB 읽기):
 
@@ -775,3 +797,21 @@ Expo SDK 57용 `expo-haptics` 57.0.3을 추가했으므로 **새 네이티브 �
 MyMemory의 [무료 익명 사용 한도](https://mymemory.translated.net/doc/usagelimits.php)는 하루 5,000자입니다. 한도·연결 오류·잘못된 응답·요청 시간 초과를 화면에 표시하며 원문은 계속 볼 수 있습니다. 요청은 순차 처리하며 구절당 15초, 전체 작업 120초의 제한을 둡니다. 곡·가사 소스·가사 내용·언어가 바뀌거나 가사 화면을 닫으면 진행 중 요청을 취소하고 늦은 결과는 반영하지 않습니다. 언어 설정은 설정 백업 파일에 포함하지 않습니다.
 
 검사: `node scripts/check-lyrics-translation.cjs`는 실제 번역 서비스·언어 저장소·훅·가사 행에 모의 네트워크/SQLite/화면을 연결하여 Unicode 분할·후렴 재사용·간주·시간 유지, 응답 검증·한도·취소·시간 초과, 재시작·저장 실패, 명시적 요청·곡/언어 변경·화면 닫기와 늦은 결과 차단, 원문/번역 동시 표시 및 같은 시간으로 이동을 확인합니다. 공식 문서의 API/사용 한도를 확인하고 짧은 예제 문장으로 실제 API 연결과 JSON 응답을 확인했습니다. 실기기의 번역 품질·언어별 응답·가사 스크롤은 별도 검증이 필요합니다.
+
+## iOS 시스템 앱 설정
+
+새 iOS 빌드에서는 **설정 앱 → 앱 → YeongduMusic**에서 화면 모드, 앨범아트 숨기기, NAS 스트리밍 음질, 햅틱의 동작별 사용 여부·강도, 영역별 화면 효과·블러 강도를 변경합니다. 앱 안의 설정 화면에도 이 위치를 여는 `iOS 앱 설정` 항목이 있습니다. 계정 연결, 색상·메뉴·보관함 구성, 가사 번역, 백업과 숨김 음악 관리는 앱에서 계속 설정합니다. Android의 설정 위치는 그대로입니다.
+
+`plugins/with-ios-system-settings.js`가 Expo prebuild 중 Settings.bundle과 앱 시작 시 지원 여부 표시를 생성합니다. 생성된 iOS 파일을 직접 수정할 필요가 없습니다. **Settings.bundle은 네이티브 리소스이므로 새 iOS 앱 빌드를 설치해야 합니다.** 기존 EAS 환경에서 `npx eas-cli@latest build --profile development --platform ios`로 빌드할 수 있습니다. Metro 재시작이나 OTA 업데이트만으로는 시스템 설정 메뉴가 추가되지 않으며, 지원 리소스가 없는 이전 빌드와 Expo Go에서는 기존 앱 내 설정을 유지합니다.
+
+첫 실행 때 기존 앱 설정을 보존해 시스템 설정으로 옮깁니다. 이미 설정 앱에서 변경한 항목은 우선하며, 앱을 다시 활성화하면 변경값이 반영됩니다. 앱의 설정 백업을 복원한 경우에도 시스템 설정값을 함께 갱신합니다. 음질은 다음 곡 로딩부터 적용되고, OS의 투명도 줄이기 설정은 화면 효과보다 우선합니다. 오류가 생기면 앱 설정 화면에서 다시 반영할 수 있습니다.
+
+`node scripts/check-ios-system-settings.cjs`는 실제 설정 저장소와 동기화 코드를 사용해 이전 설정 이전, 설정 앱에서 먼저 변경한 값, 재시작, 백업 복원, 잘못된 값, 변경 경합과 실패·재시도를 검사합니다. 설정 번들 생성과 Xcode 리소스 연결은 임시 프로젝트에서 Expo prebuild로 검증했습니다. 새 빌드의 실제 iOS 설정 앱 표시 및 앱 복귀 동작은 기기에서 확인해야 합니다.
+
+## iOS 잠금 화면·제어 센터 앨범아트 초기화
+
+앨범아트가 있는 곡에서 없는 곡으로 전환할 때 시스템 재생 위젯에 이전 아트가 남지 않도록 `expo-audio`의 iOS Now Playing 처리에 패치를 추가했습니다. NAS는 실제 이미지가 없는 곡에도 커버 URL을 제공할 수 있으므로, 새 이미지를 요청하는 순간 이전 아트를 제거합니다. 이미지가 없거나 로딩이 실패하면 제거한 상태를 유지하고, 이전 곡의 늦은 이미지 응답은 현재 곡의 이미지로 적용하지 않습니다. 곡 제목·재생 위치·길이와 기존 FLAC 및 Android 패치는 유지합니다.
+
+**네이티브 수정이므로 새 iOS 빌드를 설치해야 합니다.** Metro 새로고침·OTA 업데이트로는 기존 앱 바이너리의 이 오류가 수정되지 않습니다. `patches/expo-audio@57.0.5.patch`, `pnpm-workspace.yaml`, `pnpm-lock.yaml`을 함께 빌드에 포함하세요.
+
+`node scripts/check-ios-lockscreen-artwork.cjs`는 설치된 실제 `MediaController.swift` 전체를 Swift로 컴파일하고, 시스템 경계를 모의 구현해 커버가 있는 곡 → 커버 URL은 있지만 이미지가 없는 곡, URL 자체가 없는 곡, 로딩 실패, 늦은 응답, 항목·메타데이터·플레이어 교체, 재생 세션 종료를 검사합니다. 이 검사로 기존 코드의 오류를 재현하고 수정 후 통과를 확인했습니다. UIKit의 실제 잠금 화면·제어 센터 렌더링과 NAS 실기기 재생은 별도 확인이 필요합니다.

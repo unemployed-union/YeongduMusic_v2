@@ -7,11 +7,12 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { useHiddenFeatureAccess } from '@/stores/hidden-feature-access';
 import { useHiddenMusicStore } from '@/stores/hidden-music';
 import { useColors } from '@/theme/tokens';
-import { SETTINGS_MENU_ICON_INSET, settingsMenuStyles } from './settings-menu-layout';
+import { SETTINGS_MENU_ICON_INSET, settingsMenuStyles, useSettingsMenuIconStyle } from './settings-menu-layout';
 import { CreatorDialog } from './creator-dialog';
 
 export function VersionSettings({ onToast }: { onToast: (message: string) => void }) {
   const colors = useColors();
+  const iconStyle = useSettingsMenuIconStyle(colors.tint);
   const { ready, busy, error, load, tapVersion, resetTaps } = useHiddenFeatureAccess();
   const [creatorOpen, setCreatorOpen] = useState(false);
   const creatorTaps = useRef({ count: 0, lastTap: 0 });
@@ -36,7 +37,7 @@ export function VersionSettings({ onToast }: { onToast: (message: string) => voi
   return <View>
     <Pressable accessible={false} onPress={tapCreator} style={styles.row}>
       {/* Keep the icon's responder active while busy so its taps cannot reach the creator area. */}
-      <Pressable accessibilityRole="button" accessibilityLabel={`버전 ${version} 아이콘`} accessibilityState={{ disabled: !ready || busy }} onPress={event => { event.stopPropagation(); if (ready && !busy) void onPress(); }} style={styles.icon}>
+      <Pressable accessibilityRole="button" accessibilityLabel={`버전 ${version} 아이콘`} accessibilityState={{ disabled: !ready || busy }} onPress={event => { event.stopPropagation(); if (ready && !busy) void onPress(); }} style={iconStyle}>
         <Ionicons name="information-circle-outline" size={23} color={!ready || busy ? colors.muted : colors.tint} />
       </Pressable>
       <Pressable accessibilityRole="button" accessibilityLabel={`버전 ${version}`} onPress={event => { event.stopPropagation(); tapCreator(); }} style={styles.copy}>
@@ -49,9 +50,8 @@ export function VersionSettings({ onToast }: { onToast: (message: string) => voi
   </View>;
 }
 const styles = StyleSheet.create({
-  // Match the visible icon's inset (a 23px glyph centered in a 28px slot).
+  // Preserve the legacy version value inset independently of the icon tile size.
   row: { ...settingsMenuStyles.row, paddingRight: SETTINGS_MENU_ICON_INSET },
-  icon: settingsMenuStyles.icon,
   copy: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 18, minHeight: 38 },
   label: { flex: 1, fontSize: 16, fontWeight: '600' }, version: { fontSize: 14, flexShrink: 1 }, error: { fontSize: 12, lineHeight: 18, paddingHorizontal: 15, paddingBottom: 15 },
 });

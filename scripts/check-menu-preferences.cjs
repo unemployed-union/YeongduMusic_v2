@@ -4,6 +4,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const ts = require('typescript');
 function load(file, modules) {
+  modules = { '@/features/settings/ios-system-settings': { isIosSystemSettingsAvailable: false }, '@/features/settings/ios-system-settings-link': { IosSystemSettingsLink: 'IosSystemSettingsLink' }, ...modules };
   const code = ts.transpileModule(fs.readFileSync(path.join(__dirname, '..', file), 'utf8'), {
     compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX },
   }).outputText;
@@ -141,7 +142,8 @@ function checkSettingsUI(store) {
 
 function checkLibraryPager() {
   const slots = [], effects = [], selections = [];
-  let slot = 0, layout = rules.defaultMenuLayout(), width = 400;
+  let slot = 0, layout = rules.defaultMenuLayout(), width = 400, focused = true;
+  const queryActive = {};
   const react = {
     useCallback: fn => fn,
     useState: initial => { const i = slot++; slots[i] ??= initial; return [slots[i], value => { slots[i] = typeof value === 'function' ? value(slots[i]) : value; }]; },
@@ -152,13 +154,21 @@ function checkLibraryPager() {
   const controls = { selectPage: id => selections.push(id), show: () => {} };
   const query = { data: { items: [] } };
   const screen = load('src/app/(tabs)/(library)/index.tsx', {
+    'expo-router': { useIsFocused: () => focused },
+    '@/theme/liquid-glass': { useLiquidGlass: () => ({ supported: false, enabled: false, reduceTransparency: false }) },
+    '@/components/glass-controls': { glassControlStyles: { segments: {}, segment: {} } },
     react, 'react/jsx-runtime': { jsx, jsxs: jsx }, 'react-native': { ...native, useWindowDimensions: () => ({ width }) },
     'react-native-reanimated': { __esModule: true, default: { View: 'AnimatedView' } },
     '@/components/text': { Text: 'Text' }, '@/components/screen-header': { ScreenHeader: 'Header' }, '@/components/settings-button': { SettingsButton: 'Settings' },
     '@/features/favorites/liked-songs-screen': { LikedSongsScreen: 'LikedSongsScreen' },
     '@/features/library/library-page': { LibraryPage: 'LibraryPage' }, '@/features/library/local-music-controls': { LocalMusicControls: 'Controls' },
     '@/features/library/library-pager': { LibraryPager: 'LibraryPager' },
-    '@/features/library/library-sort-control': { LibrarySortControl: 'Sort' }, '@/features/library/queries': { useAlbums: () => query, useSongs: () => query, useArtists: () => query },
+    '@/features/library/library-segments': { LibrarySegments: 'LibrarySegments' },
+    '@/features/library/library-sort-control': { LibrarySortControl: 'Sort' }, '@/features/library/queries': {
+      useAlbums: enabled => { queryActive.albums = enabled; return query; },
+      useSongs: enabled => { queryActive.songs = enabled; return query; },
+      useArtists: enabled => { queryActive.artists = enabled; return query; },
+    },
     '@/features/library/use-refresh-library': { useRefreshLibrary: () => ({}) }, '@/theme/tokens': { useColors: () => ({}) },
     '@/features/library/use-library-controls': { useLibraryControls: () => controls }, '@/stores/menu-preferences': { useMenuPreferences: selector => selector({ layout }) },
     '@/features/settings/menu-layout': rules,
@@ -168,13 +178,24 @@ function checkLibraryPager() {
   const pages = tree => nodes(tree).filter(node => ['LibraryPage', 'LikedSongsScreen'].includes(node.type)).map(node => node.type === 'LikedSongsScreen' ? 'favorites' : node.props.tab);
   let tree = render();
   assert.deepEqual(pages(tree), ['albums', 'songs', 'artists', 'favorites']); assert.equal(pager(tree).props.pageCount, 4);
+  const segments = tree => nodes(tree).find(node => node.type === 'LibrarySegments');
+  assert.deepEqual(segments(tree).props.tabs, ['albums', 'songs', 'artists', 'favorites']);
+  segments(tree).props.onSelect('songs'); tree = render();
+  assert.equal(pager(tree).props.pageIndex, 1, 'Native segment selection moves the pager');
+  assert.equal(segments(tree).props.selected, 'songs');
+  segments(tree).props.onSelect('albums'); tree = render();
   assert.equal(nodes(tree).find(node => node.type === 'Header').props.action.type, 'Settings', 'Header only has the settings action');
+  focused = false; render();
+  assert.deepEqual(queryActive, { albums: false, songs: false, artists: false }, 'Eager native-tab mounting must not fetch an unfocused library');
+  focused = true; render(); assert.equal(queryActive.albums, true);
   pager(tree).props.onPageChange(3); tree = render();
+  assert.equal(segments(tree).props.selected, 'favorites', 'Pager swipes update the native selected tag');
   assert.equal(nodes(tree).find(node => node.type === 'LikedSongsScreen').props.active, true);
   assert.equal(nodes(tree).find(node => node.type === 'Controls').props.sortControl.props.tab, 'favorites');
   layout = { ...layout, library: [{ id: 'artists', visible: true }, { id: 'songs', visible: true }, { id: 'albums', visible: false }, { id: 'favorites', visible: false }] };
   tree = render();
   assert.deepEqual(pages(tree), ['artists', 'songs']); assert.equal(selections.at(-1), 'artists'); assert.equal(pager(tree).props.pageIndex, 0);
+  assert.deepEqual(segments(tree).props.tabs, ['artists', 'songs'], 'Native segments follow menu order and visibility');
   pager(tree).props.onPageChange(1); tree = render();
   assert.equal(nodes(tree).find(node => node.type === 'Controls').props.sortControl.props.tab, 'songs');
   layout = { ...layout, library: [...layout.library].reverse() }; tree = render();

@@ -4,7 +4,7 @@ import { cancelAnimation, useAnimatedStyle, useSharedValue, withTiming } from 'r
 import type { LibraryTab } from './library-page';
 
 /** Keep per-page offsets so a restored page does not immediately hide its controls. */
-export function useLibraryControls() {
+export function useLibraryControls(preserveGlass = false) {
   const active = useRef<LibraryTab>('albums');
   const offsets = useRef<Record<LibraryTab, number>>({ albums: 0, songs: 0, artists: 0, favorites: 0 });
   const viewports = useRef<Record<LibraryTab, number>>({ albums: 0, songs: 0, artists: 0, favorites: 0 });
@@ -74,7 +74,8 @@ export function useLibraryControls() {
     height: height.get() * (1 - progress.get()),
   }));
   const contentStyle = useAnimatedStyle(() => ({
-    opacity: 1 - progress.get(),
+    // A zero-opacity UIKit ancestor can leave native glass invisible after reveal.
+    opacity: preserveGlass ? 1 : 1 - progress.get(),
     transform: [{ translateY: -height.get() * progress.get() }],
   }));
   return { hidden, show: showForGesture, selectPage, onTouchStart, onTouchMove, onScroll, onLayout, frameStyle, contentStyle };

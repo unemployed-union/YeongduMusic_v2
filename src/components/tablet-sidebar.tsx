@@ -9,14 +9,16 @@ import { useColors } from '@/theme/tokens';
 import { useMenuPreferences } from '@/stores/menu-preferences';
 import { BOTTOM_MENU_HREFS, MENU_LABELS, visibleMenuIds, type BottomMenuId } from '@/features/settings/menu-layout';
 import { playHaptic } from '@/services/haptics';
+import { useLiquidGlass } from '@/theme/liquid-glass';
 
 const icons = { library: 'library-outline', playlists: 'musical-notes-outline', search: 'search-outline' } as const;
 export function SidebarAppNavigation({ active, showSettings = true }: { active: BottomMenuId | 'settings'; showSettings?: boolean }) {
   const colors = useColors(), menu = useMenuPreferences(state => state.layout.bottom);
+  const glass = useLiquidGlass();
   return <View style={styles.navigation}>
     {visibleMenuIds(menu).map(id => <Pressable key={id} accessibilityRole="tab" accessibilityState={{ selected: active === id }} onPress={() => {
       playHaptic('selection'); router.navigate(BOTTOM_MENU_HREFS[id]);
-    }} style={({ pressed }) => [styles.item, { backgroundColor: active === id ? colors.tint + '18' : pressed ? colors.rowPressed : 'transparent' }]}>
+    }} style={({ pressed }) => [styles.item, glass.supported && { borderRadius: 24 }, { backgroundColor: active === id ? colors.tint + '18' : pressed ? colors.rowPressed : 'transparent' }]}>
       <Ionicons name={icons[id]} size={22} color={active === id ? colors.tint : colors.muted} /><Text style={[styles.label, { color: active === id ? colors.tint : colors.text }]}>{MENU_LABELS[id]}</Text>
     </Pressable>)}
     {showSettings && <SettingsButton label onOpen={() => router.navigate('/settings')} />}

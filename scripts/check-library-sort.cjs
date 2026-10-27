@@ -29,7 +29,7 @@ const modules = {
   '@/components/text': { Text: 'Text' },
   '@/components/text': { Text: 'Text' },
   'react-native': { FlatList: 'FlatList', View: 'View', Text: 'Text', Pressable: 'Pressable', RefreshControl: 'RefreshControl', StyleSheet: { create: value => value, hairlineWidth: 1 } },
-  'expo-router': { router: { push() {} } }, '@expo/vector-icons/Ionicons': 'Ionicons',
+  'expo-router': { router: { push() {} }, useIsFocused: () => true }, '@expo/vector-icons/Ionicons': 'Ionicons',
   '@/components/tab-scroll-edge-fade': { TabScrollEdgeFade: 'ScrollEdgeFade' }, '@/components/artwork': { Artwork: 'Artwork' },
   '@/components/async-state': { AsyncState: 'AsyncState' }, '@/components/song-row': { SongRow: 'SongRow' },
   '@/components/list-loading': { ListLoading: 'ListLoading' },

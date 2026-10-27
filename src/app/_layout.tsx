@@ -22,10 +22,13 @@ import { useAppearancePreferences } from '@/stores/appearance-preferences';
 import { SettingsWorkspace } from '@/features/settings/settings-workspace';
 import { workspaceLayout } from '@/theme/layout';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useIosSystemSettingsReady } from '@/features/settings/ios-system-settings';
+import { LiquidGlassProvider } from '@/theme/liquid-glass';
 
 const queryClient = new QueryClient({ defaultOptions: { queries: { staleTime: 30000, retry: 2 } } });
 
 function Navigation() {
+  const systemSettingsReady = useIosSystemSettingsReady();
   const { width, height, fontScale } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const tablet = workspaceLayout(width - insets.left - insets.right, height, fontScale).expanded;
@@ -56,8 +59,8 @@ function Navigation() {
   useEffect(() => { void loadMetadata(); }, [loadMetadata]);
   const artworkReady = useSongArtworkStore(state => state.ready), loadArtwork = useSongArtworkStore(state => state.load);
   useEffect(() => { void loadArtwork(); }, [loadArtwork]);
-  usePlaybackRecovery({ ready: ready && metadataReady && artworkReady && themeReady, privacyReady: privacy.ready, privacyScope: privacy.scope, scope, ...recovery });
-  if (!ready || !displayReady || !menuReady || !metadataReady || !artworkReady || !themeReady || !blurReady || !appearanceReady) return <View style={{ flex: 1, justifyContent: 'center', backgroundColor: colors.background }}><ActivityIndicator color={colors.tint} /></View>;
+  usePlaybackRecovery({ ready: ready && metadataReady && artworkReady && themeReady && systemSettingsReady, privacyReady: privacy.ready, privacyScope: privacy.scope, scope, ...recovery });
+  if (!systemSettingsReady || !ready || !displayReady || !menuReady || !metadataReady || !artworkReady || !themeReady || !blurReady || !appearanceReady) return <View style={{ flex: 1, justifyContent: 'center', backgroundColor: colors.background }}><ActivityIndicator color={colors.tint} /></View>;
   if (!privacy.ready || privacy.scope !== scope) return <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 28, backgroundColor: colors.background }}>{privacy.error ? <><Text style={{ color: colors.text, textAlign: 'center', marginBottom: 16 }}>{privacy.error}</Text><Pressable onPress={() => void privacy.load(scope)}><Text style={{ color: colors.tint }}>숨김 설정 다시 불러오기</Text></Pressable></> : <ActivityIndicator color={colors.tint} />}</View>;
   return <ThemeProvider value={navigationTheme}>
     <AutomaticMetadata />
@@ -91,5 +94,5 @@ function Navigation() {
 }
 
 export default function RootLayout() {
-  return <GestureHandlerRootView style={{ flex: 1 }}><KeyboardProvider><QueryClientProvider client={queryClient}><Navigation /></QueryClientProvider></KeyboardProvider></GestureHandlerRootView>;
+  return <GestureHandlerRootView style={{ flex: 1 }}><KeyboardProvider><QueryClientProvider client={queryClient}><LiquidGlassProvider><Navigation /></LiquidGlassProvider></QueryClientProvider></KeyboardProvider></GestureHandlerRootView>;
 }

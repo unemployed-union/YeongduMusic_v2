@@ -620,6 +620,22 @@ index 0000000000000000000000000000000000000000..bb955cc2e982b4146ebb5bfee8e3a376
 +    super.removeListener(listeners.remove(listener) ?: listener)
 +  }
 +}
+diff --git a/build/Audio.types.d.ts b/build/Audio.types.d.ts
+index 25604783649fe9b64f6655172f08471a5efcbf45..757a0589016b01b86ec1ac0d23902ffc2b915ef3 100644
+--- a/build/Audio.types.d.ts
++++ b/build/Audio.types.d.ts
+@@ -29,6 +29,11 @@ export type AudioSource = string | number | null | {
+      * On web requires the `Access-Control-Allow-Origin` header returned by the server to include the current domain.
+      */
+     headers?: Record<string, string>;
++    /**
++     * Media format hint for iOS 17+ AVURLAsset. Preserves the remote stream and HTTP headers.
++     * Provided by YeongduMusic's pinned expo-audio patch.
++     */
++    mimeType?: string;
+     /**
+      * An optional display name for the audio source.
+      * Useful for showing track names in a queue or playlist UI.
 diff --git a/build/AudioConstants.d.ts b/build/AudioConstants.d.ts
 index cfd92ad0ff5765254c4e6db974fe44bce34aad06..cb7efe8477a203e631b174975b1fcb35556368c8 100644
 --- a/build/AudioConstants.d.ts
@@ -636,7 +652,7 @@ index cfd92ad0ff5765254c4e6db974fe44bce34aad06..cb7efe8477a203e631b174975b1fcb35
       * Whether the seek backward button should be displayed on the lock screen.
       */
 diff --git a/build/AudioModule.types.d.ts b/build/AudioModule.types.d.ts
-index f3ae4ee4044d86032cd5c6dbcfee6f905d1ce99f..17f4ffb69d460a14e6fed07055fa3786e806a50d 100644
+index f3ae4ee4044d86032cd5c6dbcfee6f905d1ce99f..4820bad4826de1cd9e3075cbddf4e8ff231ce5b1 100644
 --- a/build/AudioModule.types.d.ts
 +++ b/build/AudioModule.types.d.ts
 @@ -22,6 +22,8 @@ export declare class NativeAudioModule extends NativeModule {
@@ -667,6 +683,86 @@ index f3ae4ee4044d86032cd5c6dbcfee6f905d1ce99f..17f4ffb69d460a14e6fed07055fa3786
      /** Fired when the player's status changes (play/pause/seek/load and so on.). */
      playbackStatusUpdate(status: AudioStatus): void;
      /** Fired when audio sampling is enabled and new sample data is available. */
+diff --git a/ios/AudioSource.swift b/ios/AudioSource.swift
+index 0c8c2fede4b079f6d71217bafe07b5de55438821..a3634749f4167ec35ddf0d357bde6c1bf36ca37f 100644
+--- a/ios/AudioSource.swift
++++ b/ios/AudioSource.swift
+@@ -8,6 +8,9 @@ struct AudioSource: Record {
+   @Field
+   var headers: [String: String]?
+ 
++  @Field
++  var mimeType: String?
++
+   @Field
+   var name: String?
+ }
+diff --git a/ios/AudioUtils.swift b/ios/AudioUtils.swift
+index 79c7c0b256581a768c42a0291bf84bdff4c4b142..1559818bb74825cac62d3e55694d74577d0cc7c2 100644
+--- a/ios/AudioUtils.swift
++++ b/ios/AudioUtils.swift
+@@ -84,9 +84,14 @@ struct AudioUtils {
+       url
+     }
+ 
+-    var options: [String: Any]?
++    var options: [String: Any] = [:]
+     if let headers = source.headers {
+-      options = ["AVURLAssetHTTPHeaderFieldsKey": headers]
++      options["AVURLAssetHTTPHeaderFieldsKey"] = headers
++    }
++    // Some NAS servers label FLAC as audio/x-flac or application/octet-stream.
++    // AVPlayer rejects those responses even though the FLAC decoder supports the bytes.
++    if #available(iOS 17.0, tvOS 17.0, *), let mimeType = source.mimeType {
++      options[AVURLAssetOverrideMIMETypeKey] = mimeType
+     }
+ 
+     let asset = AVURLAsset(url: finalUrl, options: options)
+diff --git a/ios/MediaController.swift b/ios/MediaController.swift
+index e977f577cd2e16b194b56537ad76b423f40d2496..5eb25d6eba65db3435678768d0d5b9a5e7d1e5d2 100644
+--- a/ios/MediaController.swift
++++ b/ios/MediaController.swift
+@@ -136,9 +136,12 @@ class MediaController {
+     for player: AudioPlayer,
+     currentItemIdentifier: ObjectIdentifier?
+   ) {
++    // The dictionary starts with the previous Now Playing info. A NAS cover URL
++    // can exist even when the song has no image, so clear it while loading too.
++    info.removeValue(forKey: MPMediaItemPropertyArtwork)
++
+     guard let artworkUrl = metadata.artworkUrl else {
+       resetArtworkState()
+-      info.removeValue(forKey: MPMediaItemPropertyArtwork)
+       return
+     }
+ 
+@@ -169,7 +172,9 @@ class MediaController {
+ 
+       guard self.activePlayer?.id == player.id,
+             self.currentArtworkUrl == artworkUrl,
+-            self.currentArtworkItemIdentifier == currentItemIdentifier else {
++            self.currentArtworkItemIdentifier == currentItemIdentifier,
++            player.ref.currentItem.map({ ObjectIdentifier($0) }) == currentItemIdentifier,
++            player.metadata?.artworkUrl == artworkUrl else {
+         return
+       }
+ 
+diff --git a/src/Audio.types.ts b/src/Audio.types.ts
+index 906753fa4fcab4323c391bc71c77e7c9f39b7379..8725ca3c3f718084925cfe67497bb9c590875d3f 100644
+--- a/src/Audio.types.ts
++++ b/src/Audio.types.ts
+@@ -36,6 +36,11 @@ export type AudioSource =
+        * On web requires the `Access-Control-Allow-Origin` header returned by the server to include the current domain.
+        */
+       headers?: Record<string, string>;
++      /**
++       * Media format hint for iOS 17+ AVURLAsset. Preserves the remote stream and HTTP headers.
++       * Provided by YeongduMusic's pinned expo-audio patch.
++       */
++      mimeType?: string;
+       /**
+        * An optional display name for the audio source.
+        * Useful for showing track names in a queue or playlist UI.
 diff --git a/src/AudioConstants.ts b/src/AudioConstants.ts
 index dcc0452f7cae66b1bfaf77ed211416b092965bd9..2eab12a1a7027ee36dd99bbfd9f15e8810622bf7 100644
 --- a/src/AudioConstants.ts

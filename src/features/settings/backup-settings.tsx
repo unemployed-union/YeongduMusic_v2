@@ -8,7 +8,7 @@ import { useColors } from '@/theme/tokens';
 import { createSettingsBackup, restoreSettingsBackup } from '@/services/settings-backup';
 import { pickSettingsBackup, saveSettingsBackup } from './backup-files';
 import type { SettingsBackup } from './backup-format';
-import { settingsMenuStyles } from './settings-menu-layout';
+import { settingsMenuStyles, useSettingsMenuIconStyle } from './settings-menu-layout';
 import { SettingsPage, SettingsSection } from './settings-ui';
 import { MENU_LABELS, visibleMenuIds } from './menu-layout';
 import { BLUR_AREAS, BLUR_LABELS } from './blur-preferences';
@@ -16,6 +16,7 @@ import { APPEARANCE_FIELDS, APPEARANCE_LABELS } from '@/theme/appearance';
 
 export function BackupSettings() {
   const colors = useColors();
+  const iconStyle = useSettingsMenuIconStyle(colors.tint);
   const access = useHiddenFeatureAccess(), loadAccess = access.load;
   useEffect(() => { void loadAccess(); }, [loadAccess]);
   const [includeAccount, setIncludeAccount] = useState(false);
@@ -58,12 +59,12 @@ export function BackupSettings() {
     <Text style={[styles.note, { color: colors.muted }]}>화면 모드·보관함 상세 화면·앨범 표시·앨범아트·스트리밍 음질·가져오기 제외 폴더를 파일로 백업합니다. 로그인 암호와 인증 정보, 음악 파일, 재생 중인 목록, 시스템 이퀄라이저 설정은 포함하지 않습니다.</Text>
     <SettingsSection title="백업">
       {access.ready && access.enabled && Platform.OS !== 'web' && <View style={settingsMenuStyles.row}>
-        <View style={settingsMenuStyles.icon}><Ionicons name="options-outline" size={23} color={busy ? colors.muted : colors.tint} /></View>
+        <View style={iconStyle}><Ionicons name="options-outline" size={23} color={busy ? colors.muted : colors.tint} /></View>
         <View style={styles.copy}><Text style={[styles.title, { color: busy ? colors.muted : colors.text }]}>프리셋과 숨김 설정 포함</Text><Text style={[styles.detail, { color: colors.muted }]}>현재 NAS 계정의 음악·플레이리스트 프리셋, 잠금, 기타 메뉴와 빠른 숨기기 설정을 함께 저장합니다. 잠겨 있으면 기기 인증이 필요합니다.</Text></View>
         <AnimatedSwitch accessibilityLabel="백업에 프리셋과 숨김 설정 포함" value={includeAccount} disabled={busy} onValueChange={setIncludeAccount} trackColor={{ false: colors.separator, true: colors.tint }} />
       </View>}
       <Pressable accessibilityRole="button" disabled={busy} onPress={backup} style={settingsMenuStyles.row}>
-        <View style={settingsMenuStyles.icon}><Ionicons name="download-outline" size={23} color={busy ? colors.muted : colors.tint} /></View>
+        <View style={iconStyle}><Ionicons name="download-outline" size={23} color={busy ? colors.muted : colors.tint} /></View>
         <View style={styles.copy}><Text style={[styles.title, { color: busy ? colors.muted : colors.text }]}>설정 백업하기</Text><Text style={[styles.detail, { color: colors.muted }]}>{Platform.OS === 'web' ? '설정 백업 파일 다운로드' : '저장할 폴더 선택'}</Text></View>
         <Ionicons name="chevron-forward" size={19} color={colors.muted} />
       </Pressable>
@@ -71,7 +72,7 @@ export function BackupSettings() {
     <Text style={[styles.note, { color: colors.muted }]}>백업은 내용을 읽을 수 있는 JSON 파일입니다. 제외 폴더 경로와 포함한 프리셋 이름·숨김 목록이 저장되므로 개인적으로 보관해 주세요.</Text>
     <SettingsSection title="복구">
       <Pressable accessibilityRole="button" disabled={busy} onPress={choose} style={settingsMenuStyles.row}>
-        <View style={settingsMenuStyles.icon}><Ionicons name="folder-open-outline" size={23} color={busy ? colors.muted : colors.tint} /></View>
+        <View style={iconStyle}><Ionicons name="folder-open-outline" size={23} color={busy ? colors.muted : colors.tint} /></View>
         <View style={styles.copy}><Text style={[styles.title, { color: busy ? colors.muted : colors.text }]}>백업 파일 선택</Text><Text style={[styles.detail, { color: colors.muted }]}>파일을 검사한 뒤 복구할 내용을 확인합니다.</Text></View>
         <Ionicons name="chevron-forward" size={19} color={colors.muted} />
       </Pressable>

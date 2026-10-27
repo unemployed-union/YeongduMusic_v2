@@ -6,11 +6,14 @@ import { useColors } from '@/theme/tokens';
 import { useHiddenFeatureAccess } from '@/stores/hidden-feature-access';
 import { quickHide } from '@/features/hidden-music/quick-hide';
 import { Text } from '@/components/text';
+import { useLiquidGlass } from '@/theme/liquid-glass';
+import { GlassBackdrop } from './glass-backdrop';
 
 export const SETTINGS_TAP_GAP_MS = 400;
 
 export function SettingsButton({ label = false, onOpen }: { label?: boolean; onOpen?: () => void } = {}) {
   const colors = useColors();
+  const glass = useLiquidGlass();
   const access = useHiddenFeatureAccess();
   const load = access.load;
   const sequence = useRef({ taps: 0, timer: null as ReturnType<typeof setTimeout> | null, hiding: false });
@@ -39,8 +42,9 @@ export function SettingsButton({ label = false, onOpen }: { label?: boolean; onO
       sequence.current.timer = setTimeout(() => { reset(); openSettings(); }, SETTINGS_TAP_GAP_MS);
     }
   }
-  return <Pressable accessibilityRole="button" accessibilityLabel="설정 열기" onPress={onPress} style={({ pressed }) => [styles.button, label && { width: '100%', height: undefined, minHeight: 48, marginRight: 0, flexDirection: 'row', gap: 12, paddingHorizontal: 12, justifyContent: 'flex-start' }, { opacity: pressed ? 0.55 : 1 }]}>
-    <Ionicons name="settings-outline" size={25} color={colors.tint} />
+  return <Pressable accessibilityRole="button" accessibilityLabel="설정 열기" onPress={onPress} style={({ pressed }) => [styles.button, glass.supported && !label && { borderRadius: 22, marginRight: 0, backgroundColor: glass.enabled ? 'transparent' : colors.surface }, label && { width: '100%', height: undefined, minHeight: 48, marginRight: 0, flexDirection: 'row', gap: 12, paddingHorizontal: 12, justifyContent: 'flex-start' }, { opacity: pressed && !glass.enabled ? 0.55 : 1 }, pressed && glass.enabled && { transform: [{ scale: 0.95 }] }]}>
+    {glass.enabled && !label && <GlassBackdrop style={{ borderRadius: 22 }} interactive />}
+    <Ionicons name="settings-outline" size={glass.supported && !label ? 22 : 25} color={colors.tint} />
     {label && <Text style={{ color: colors.text, fontSize: 15, fontWeight: '700' }}>설정</Text>}
   </Pressable>;
 }

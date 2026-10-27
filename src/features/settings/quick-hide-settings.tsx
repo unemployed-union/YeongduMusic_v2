@@ -5,11 +5,12 @@ import { AnimatedSwitch } from '@/components/animated-switch';
 import { useHiddenFeatureAccess } from '@/stores/hidden-feature-access';
 import { useHiddenMusicStore } from '@/stores/hidden-music';
 import { useColors } from '@/theme/tokens';
-import { settingsMenuStyles } from './settings-menu-layout';
+import { settingsMenuStyles, useSettingsMenuIconStyle } from './settings-menu-layout';
 import { SettingsLink } from './settings-ui';
 
 export function QuickHideSettings() {
   const colors = useColors();
+  const iconStyle = useSettingsMenuIconStyle(colors.tint);
   const access = useHiddenFeatureAccess();
   const privacy = useHiddenMusicStore();
   const selected = privacy.profile.presets.find(preset => preset.id === privacy.profile.quickHidePresetId);
@@ -18,7 +19,7 @@ export function QuickHideSettings() {
   const presetDisabled = !access.ready || !privacy.ready || access.quickHideMode === 'all' || (!selected && access.quickHideMode !== 'preset');
   return <View>
     <View style={settingsMenuStyles.row}>
-      <View style={settingsMenuStyles.icon}><Ionicons name="eye-off-outline" size={23} color={allDisabled ? colors.muted : colors.tint} /></View>
+      <View style={iconStyle}><Ionicons name="eye-off-outline" size={23} color={allDisabled ? colors.muted : colors.tint} /></View>
       <View style={styles.copy}>
         <Text style={[styles.title, { color: allDisabled ? colors.muted : colors.text }]}>5번 눌러 전체 프리셋 숨기기</Text>
         <Text style={[styles.hint, { color: colors.muted }]}>{access.quickHideMode === 'preset' ? '특정 프리셋 숨기기를 먼저 끄면 켤 수 있습니다.' : '메인 화면의 설정 버튼을 빠르게 5번 누르면 모든 음악 숨김 프리셋과 선택한 플레이리스트를 숨기고 기타 메뉴를 숨깁니다.'}</Text>
@@ -27,7 +28,7 @@ export function QuickHideSettings() {
         onValueChange={enabled => { if (!allDisabled && !access.busy) void access.setQuickHideEnabled(enabled); }} trackColor={{ false: colors.separator, true: colors.tint }} />
     </View>
     <View style={[settingsMenuStyles.row, separator]}>
-      <View style={settingsMenuStyles.icon}><Ionicons name="eye-off-outline" size={23} color={presetDisabled ? colors.muted : colors.tint} /></View>
+      <View style={iconStyle}><Ionicons name="eye-off-outline" size={23} color={presetDisabled ? colors.muted : colors.tint} /></View>
       <View style={styles.copy}>
         <Text style={[styles.title, { color: presetDisabled ? colors.muted : colors.text }]}>5번 눌러 특정 프리셋 숨기기</Text>
         <Text style={[styles.hint, { color: colors.muted }]}>{access.quickHideMode === 'all' ? '전체 프리셋 숨기기를 먼저 끄면 켤 수 있습니다.' : !selected ? '빠른 숨기기에 사용할 프리셋을 먼저 선택해 주세요.' : '선택한 음악 숨김 프리셋과 플레이리스트를 함께 숨기고 기타 메뉴를 숨깁니다. 선택하지 않은 항목의 숨김 상태는 유지합니다.'}</Text>

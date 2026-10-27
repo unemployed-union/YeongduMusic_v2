@@ -26,6 +26,20 @@ const STALL_TIMEOUT_MS = 20_000;
 const RETRY_DELAYS_MS = [1_000, 3_000, 6_000];
 const RECOVERY_ERROR = '음악 연결이 끊겼습니다. 네트워크를 확인한 뒤 다시 재생해 주세요.';
 
+/** Override unreliable NAS response MIME types without transcoding or downloading the track. */
+function withIosFlacType(source: AudioSource, song: Song): AudioSource {
+  if (Platform.OS !== 'ios' || (song.source !== undefined && song.source !== 'nas')) return source;
+  const codec = song.audioCodec?.trim().toLowerCase();
+  if (codec ? codec !== 'flac' : !/\.flac$/i.test(song.path ?? song.title)) return source;
+  const uri = typeof source === 'string' ? source : source && typeof source === 'object' && source.assetId === undefined ? source.uri : undefined;
+  if (!uri) return source;
+  try {
+    const url = new URL(uri);
+    if (!['http:', 'https:'].includes(url.protocol) || url.searchParams.get('api') !== 'SYNO.AudioStation.Stream' || url.searchParams.get('method') !== 'stream') return source;
+  } catch { return source; }
+  return { ...(typeof source === 'object' ? source : { uri }), mimeType: 'audio/flac' };
+}
+
 export class ExpoAudioEngine implements AudioEngine {
   // Expo Go cannot apply this app's expo-audio config plugin to its native binary.
   // executionEnvironment cannot distinguish Expo Go from an expo-dev-client build.
@@ -283,12 +297,12 @@ export class ExpoAudioEngine implements AudioEngine {
     this.duration = song.duration;
     const player = await this.setup();
     if (lifecycle !== this.lifecycle || operation !== this.operation) return;
-    this.source = source;
+    this.source = withIosFlacType(source, song);
     this.localSource = song.source === 'local';
     this.resetBufferingObservation();
     this.watchStall();
     if (this.position > 0) this.resume = { operation, position: this.position, seeking: false };
-    player.replace(source);
+    player.replace(this.source);
     this.applyPlaybackRate(player);
     if (this.backgroundPlaybackAvailable) {
       // showSkip* and remoteTrackChange are provided by our pinned expo-audio pnpm patch.
@@ -299,7 +313,9 @@ export class ExpoAudioEngine implements AudioEngine {
           { title: song.title, artist: song.artist, albumTitle: song.album, artworkUrl: song.artworkUrl },
           Platform.OS === 'android'
             ? { isLiveStream: false, showSkipPrevious: true, showSkipNext: true, showSeekBackward: false, showSeekForward: false }
-            : undefined
+            // AVPlayer can report an indefinite duration while a NAS file is loading.
+            // Do not let that initial value permanently disable the system scrub bar.
+            : Platform.OS === 'ios' ? { isLiveStream: false, showSeekBackward: false, showSeekForward: false } : undefined
         );
         this.lockScreenActive = true;
       }

@@ -12,22 +12,26 @@ import { visiblePlaylists } from '@/features/playlists/rules';
 import { usePlaylistStore } from '@/stores/playlists';
 import { useHiddenMusicStore } from '@/stores/hidden-music';
 import { useColors } from '@/theme/tokens';
+import { useLiquidGlass } from '@/theme/liquid-glass';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const description = '기분과 상황에 맞는 목록을 여러 개 저장해 보세요. 이 기기에 저장되며 NAS 없이도 사용할 수 있습니다. NAS 연결 중에는 해당 계정의 목록을 사용합니다.';
 
 export default function PlaylistsScreen() {
+  const glass = useLiquidGlass();
+  const insets = useSafeAreaInsets();
   const colors = useColors(), store = usePlaylistStore();
   const privacy = useHiddenMusicStore();
   const scope = privacy.scope;
   const [creating, setCreating] = useState(false);
   const loading = !privacy.ready || !store.ready || store.scope !== scope;
   const loadingContent = store.error ? <View style={styles.center}><Text style={{ color: colors.text }}>{store.error}</Text><Pressable style={styles.button} onPress={() => void store.load(scope)}><Text style={{ color: colors.tint }}>다시 불러오기</Text></Pressable></View> : <ListLoading />;
-  return <View style={[styles.fill, { backgroundColor: colors.background }]}>
+  return <View style={[styles.fill, { backgroundColor: colors.background }, glass.supported && { paddingLeft: insets.left, paddingRight: insets.right }]}>
     <ScreenHeader title="플레이리스트" action={<SettingsButton />} />
     {loading ? loadingContent : <><TabScrollEdgeFade><FlatList data={visiblePlaylists(store.profile.presets, privacy.profile.hiddenPlaylistIds)} keyExtractor={(item) => item.id} contentContainerStyle={styles.list}
-      ListHeaderComponent={<View><Pressable accessibilityRole="button" disabled={store.busy} onPress={() => setCreating(true)} style={[styles.create, { backgroundColor: colors.tint }]}><Ionicons name="add" size={22} color="white" /><Text style={styles.createText}>플레이리스트 만들기</Text></Pressable><Text accessibilityLabel={description} style={[styles.note, { color: colors.muted }]}>{description}</Text></View>}
+      ListHeaderComponent={<View><Pressable accessibilityRole="button" disabled={store.busy} onPress={() => setCreating(true)} style={[styles.create, { backgroundColor: colors.tint }, glass.supported && { borderRadius: 26, minHeight: 52 }]}><Ionicons name="add" size={22} color="white" /><Text style={styles.createText}>플레이리스트 만들기</Text></Pressable><Text accessibilityLabel={description} style={[styles.note, { color: colors.muted }]}>{description}</Text></View>}
       ListEmptyComponent={<View style={styles.emptyContainer}><Text style={[styles.empty, { color: colors.muted }]}>표시할 플레이리스트가 없습니다.{'\n'}새 목록을 만들거나 곡의 메뉴에서 추가해 보세요.</Text></View>}
-      renderItem={({ item }) => <Pressable accessibilityRole="button" onPress={() => router.push({ pathname: '/playlists/[id]', params: { id: item.id } })} style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.separator }]}><View style={[styles.cover, { backgroundColor: colors.background }]}><Ionicons name="musical-notes" size={28} color={colors.tint} /></View><Text numberOfLines={2} style={[styles.name, { color: colors.text }]}>{item.name}</Text><Ionicons name="chevron-forward" size={20} color={colors.muted} /></Pressable>} /></TabScrollEdgeFade>
+      renderItem={({ item }) => <Pressable accessibilityRole="button" onPress={() => router.push({ pathname: '/playlists/[id]', params: { id: item.id } })} style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.separator }, glass.supported && { borderRadius: 24, borderWidth: 0, padding: 16 }]}><View style={[styles.cover, { backgroundColor: colors.background }, glass.supported && { borderRadius: 16, backgroundColor: colors.tint + '14' }]}><Ionicons name="musical-notes" size={28} color={colors.tint} /></View><Text numberOfLines={2} style={[styles.name, { color: colors.text }]}>{item.name}</Text><Ionicons name="chevron-forward" size={20} color={colors.muted} /></Pressable>} /></TabScrollEdgeFade>
     {creating && <PlaylistNameDialog title="플레이리스트 만들기" onClose={() => setCreating(false)} onSave={(name) => store.createPreset(name)} />}</>}
   </View>;
 }

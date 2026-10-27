@@ -13,9 +13,15 @@ import { SongRow } from '@/components/song-row';
 import { useSearch } from '@/features/library/queries';
 import { playAndOpenPlayer } from '@/features/playback/play-and-open-player';
 import { useColors } from '@/theme/tokens';
+import { useLiquidGlass } from '@/theme/liquid-glass';
+import { GlassBackdrop } from '@/components/glass-backdrop';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { NativeTabFrame } from '@/components/native-tab-frame';
 
 export default function SearchScreen() {
   const colors = useColors();
+  const glass = useLiquidGlass();
+  const insets = useSafeAreaInsets();
   const keyboardVisible = useKeyboardState((state) => state.isVisible);
   const [input, setInput] = useState('');
   const [term, setTerm] = useState('');
@@ -25,9 +31,10 @@ export default function SearchScreen() {
   const debouncing = input.trim() !== term.trim();
   const loading = !!input.trim() && (debouncing || query.isPending);
   const refresh = () => { void query.refetch(); };
-  return <View style={[styles.screen, { backgroundColor: colors.background }]}>
+  return <NativeTabFrame active="search"><View style={[styles.screen, { backgroundColor: colors.background }, glass.supported && { paddingLeft: insets.left, paddingRight: insets.right }]}>
     <ScreenHeader title="검색" action={<SettingsButton />} />
-    <View style={[styles.search, { backgroundColor: colors.surface, borderColor: colors.separator }]}>
+    <View style={[styles.search, { backgroundColor: colors.surface, borderColor: colors.separator }, glass.supported && { height: 52, borderRadius: 26, borderWidth: 0, paddingHorizontal: 16 }, glass.enabled && { backgroundColor: 'transparent' }]}>
+      {glass.enabled && <GlassBackdrop style={{ borderRadius: 26 }} />}
       <Ionicons name="search" color={colors.muted} size={20} />
       <TextInput style={[styles.input, { color: colors.text }]} value={input} onChangeText={(text) => { setInput(text); if (!text.trim()) setTerm(''); }} placeholder="노래, 아티스트, 앨범" placeholderTextColor={colors.muted} returnKeyType="search" onSubmitEditing={({ nativeEvent }) => { setTerm(nativeEvent.text); Keyboard.dismiss(); }} autoCorrect={false} autoCapitalize="none" />
     </View>
@@ -41,6 +48,6 @@ export default function SearchScreen() {
         ListEmptyComponent={<Text style={[styles.empty, { color: colors.muted }]}>“{term.trim()}”에 대한 검색 결과가 없습니다.</Text>}
         renderItem={({ item, index }) => <SongRow song={item} onPress={() => { Keyboard.dismiss(); void playAndOpenPlayer(songs, index); }} />} /></TabScrollEdgeFade>
     </AsyncState>}
-  </View>;
+  </View></NativeTabFrame>;
 }
 const styles = StyleSheet.create({ screen: { flex: 1 }, fill: { flex: 1 }, search: { marginHorizontal: 22, borderWidth: 1, borderRadius: 12, height: 48, flexDirection: 'row', alignItems: 'center', gap: 9, paddingHorizontal: 13 }, input: { flex: 1, fontSize: 16 }, prompt: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 16, paddingBottom: 130 }, promptText: { fontSize: 15 }, list: { flexGrow: 1, paddingHorizontal: 22, paddingBottom: 180 }, listWithKeyboard: { paddingBottom: 24 }, results: { fontSize: 13, fontWeight: '700', paddingTop: 28, paddingBottom: 9 }, notice: { marginBottom: 14, gap: 6, fontSize: 12 }, empty: { textAlign: 'center', paddingVertical: 40 } });

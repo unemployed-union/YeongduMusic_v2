@@ -12,15 +12,36 @@ import { useHiddenMusicStore } from '@/stores/hidden-music';
 import { hiddenMatcher } from '@/features/hidden-music/rules';
 import { useColors } from '@/theme/tokens';
 import type { Song } from '@/types/music';
+import { useLiquidGlass } from '@/theme/liquid-glass';
+import { GlassBackdrop } from '@/components/glass-backdrop';
+import MaskedView from '@react-native-masked-view/masked-view';
+import { LinearGradient } from 'expo-linear-gradient';
 
-export function PlaylistSheet({ title, onClose, children, visible = true, onDismiss }: { title: string; onClose: () => void; children: ReactNode; visible?: boolean; onDismiss?: () => void }) {
+export function PlaylistSheet({ title, onClose, children, visible = true, onDismiss, glassSurface = false }: { title: string; onClose: () => void; children: ReactNode; visible?: boolean; onDismiss?: () => void; glassSurface?: boolean }) {
   const colors = useColors(), insets = useSafeAreaInsets();
+  const glass = useLiquidGlass();
+  const separateBody = glassSurface && glass.supported;
   return <Modal transparent visible={visible} animationType="slide" onRequestClose={onClose} onDismiss={onDismiss}>
     <KeyboardAvoidingView style={styles.overlay} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <Pressable style={StyleSheet.absoluteFill} accessibilityLabel="닫기" onPress={onClose} />
-      <View accessibilityViewIsModal style={[styles.sheet, { backgroundColor: colors.surface, paddingBottom: Math.max(insets.bottom, 16), maxHeight: '85%' }]}>
-        <View style={styles.header}><Text style={[styles.heading, { color: colors.text }]}>{title}</Text><Pressable accessibilityRole="button" accessibilityLabel="닫기" onPress={onClose} style={styles.icon}><Ionicons name="close" size={24} color={colors.muted} /></Pressable></View>
-        {children}
+      <View accessibilityViewIsModal style={[styles.sheet, { backgroundColor: glassSurface && glass.enabled ? 'transparent' : colors.surface, paddingBottom: Math.max(insets.bottom, 16), maxHeight: '85%' }, glass.supported && { borderRadius: 30, marginHorizontal: insets.left + 12, marginRight: insets.right + 12, marginBottom: Math.max(insets.bottom, 12), paddingBottom: 16 }]}>
+        {glassSurface && glass.enabled && <GlassBackdrop style={{ borderRadius: 30 }} />}
+        {glass.supported && <View accessible={false} style={{ alignSelf: 'center', width: 36, height: 5, borderRadius: 3, backgroundColor: colors.separator, marginBottom: 12 }} />}
+        <View style={[styles.header, separateBody && [styles.sourceHeader, { borderBottomColor: colors.separator }]]}>
+          <Text style={[styles.heading, { color: colors.text }, glass.supported && { fontWeight: '700' }]}>{title}</Text>
+          <Pressable accessibilityRole="button" accessibilityLabel="닫기" onPress={onClose}
+            style={[styles.icon, glass.supported && { width: 44, height: 44, borderRadius: 22, marginRight: 0, alignItems: 'center', justifyContent: 'center', backgroundColor: separateBody ? colors.surface : glass.enabled ? 'transparent' : colors.background }, separateBody && { marginLeft: 12, flexShrink: 0 }]}>
+            {glass.enabled && !glassSurface && <GlassBackdrop style={{ borderRadius: 22 }} />}
+            <Ionicons name="close" size={glass.supported ? 20 : 24} color={separateBody ? colors.text : colors.muted} />
+          </Pressable>
+        </View>
+        {separateBody ? <MaskedView style={styles.sourceViewport} maskElement={
+          <View pointerEvents="none" accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={{ flex: 1 }}>
+            <LinearGradient colors={['#FFFFFF00', '#FFFFFF']} dither={false} style={{ height: 12, maxHeight: '33%' }} />
+            <View style={{ flex: 1, backgroundColor: '#FFFFFF' }} />
+            <LinearGradient colors={['#FFFFFF', '#FFFFFF00']} dither={false} style={{ height: 16, maxHeight: '33%' }} />
+          </View>
+        }>{children}</MaskedView> : children}
       </View>
     </KeyboardAvoidingView>
   </Modal>;
@@ -77,4 +98,4 @@ export function AddToPlaylistDialog({ songs, onClose, allowEnqueue = false, titl
     {(error || message) && <Text accessibilityRole={error ? 'alert' : undefined} accessibilityLiveRegion="polite" style={{ color: colors.tint }}>{error ?? message}</Text>}
   </ScrollView></ScrollEdgeFade></PlaylistSheet>;
 }
-const styles = StyleSheet.create({ overlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: '#00000066' }, sheet: { borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingTop: 12 }, header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 22 }, heading: { flex: 1, fontSize: 20, fontWeight: '800' }, icon: { padding: 10, marginRight: -10 }, body: { padding: 22, gap: 16 }, scrollBody: { paddingVertical: 28 }, input: { minHeight: 48, borderWidth: 1, borderRadius: 12, paddingHorizontal: 14, fontSize: 16 }, primary: { minHeight: 48, alignItems: 'center', justifyContent: 'center', borderRadius: 12 }, primaryText: { color: 'white', fontWeight: '700', fontSize: 15 }, option: { minHeight: 52, flexDirection: 'row', alignItems: 'center', gap: 12 } });
+const styles = StyleSheet.create({ overlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: '#00000066' }, sheet: { borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingTop: 12 }, header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 22 }, sourceHeader: { flexShrink: 0, paddingBottom: 12, borderBottomWidth: StyleSheet.hairlineWidth }, sourceViewport: { flexShrink: 1, minHeight: 0, overflow: 'hidden' }, heading: { flex: 1, fontSize: 20, fontWeight: '800' }, icon: { padding: 10, marginRight: -10 }, body: { padding: 22, gap: 16 }, scrollBody: { paddingVertical: 28 }, input: { minHeight: 48, borderWidth: 1, borderRadius: 12, paddingHorizontal: 14, fontSize: 16 }, primary: { minHeight: 48, alignItems: 'center', justifyContent: 'center', borderRadius: 12 }, primaryText: { color: 'white', fontWeight: '700', fontSize: 15 }, option: { minHeight: 52, flexDirection: 'row', alignItems: 'center', gap: 12 } });

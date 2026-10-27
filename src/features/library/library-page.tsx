@@ -18,6 +18,7 @@ import { playHaptic } from '@/services/haptics';
 import type { ActionMenuAnchor } from '@/components/action-menu-position';
 import { prepareAlbumColors } from './prepare-album-colors';
 import { libraryGrid } from '@/theme/layout';
+import { useLiquidGlass } from '@/theme/liquid-glass';
 
 export const LIBRARY_TABS = ['albums', 'songs', 'artists', 'favorites'] as const;
 export type LibraryTab = typeof LIBRARY_TABS[number];
@@ -38,6 +39,7 @@ interface Props extends Pick<LibraryQuery, 'data' | 'isPending' | 'isError' | 'e
 
 export const LibraryPage = memo(function LibraryPage({ tab, sortOrder, data, isPending, isError, error, isRefetchError, width, refreshing, onRefresh, onListScroll, active = true, keyExtractor, spacious = false }: Props) {
   const colors = useColors();
+  const glass = useLiquidGlass();
   const [selectedAlbum, setSelectedAlbum] = useState<{ album: Album; anchor: ActionMenuAnchor } | null>(null);
   const [playError, setPlayError] = useState<string | null>(null);
   const sourceItems = data?.items ?? EMPTY_ITEMS;
@@ -53,7 +55,7 @@ export const LibraryPage = memo(function LibraryPage({ tab, sortOrder, data, isP
   const renderItem = useCallback(({ item, index }: { item: Album | Song | Artist; index: number }) => {
     if (tab === 'albums') {
       const album = item as Album;
-      return <Pressable onPressIn={() => { void prepareAlbumColors(album.artworkUrl); }} accessibilityRole="button" accessibilityLabel={album.title + ' 앨범 보기'} accessibilityHint="길게 누르면 앨범 속성이 열립니다" delayLongPress={400} onLongPress={event => { playHaptic('longPress'); setSelectedAlbum({ album, anchor: { x: event.nativeEvent.pageX, y: event.nativeEvent.pageY } }); }} onPress={() => router.push({ pathname: '/album/[id]', params: { id: album.id, title: album.title, artist: album.artist, artworkUrl: album.artworkUrl ?? '' } })} style={[styles.album, spacious && styles.spaciousAlbum, { width: cardWidth }]}><Artwork item={album} size={cardWidth} radius={11} /><Text numberOfLines={1} style={[styles.albumTitle, spacious && styles.spaciousAlbumTitle, { color: colors.text }]}>{album.title}</Text><Text numberOfLines={1} style={[styles.albumArtist, { color: colors.muted }]}>{album.artist}</Text></Pressable>;
+      return <Pressable onPressIn={() => { void prepareAlbumColors(album.artworkUrl); }} accessibilityRole="button" accessibilityLabel={album.title + ' 앨범 보기'} accessibilityHint="길게 누르면 앨범 속성이 열립니다" delayLongPress={400} onLongPress={event => { playHaptic('longPress'); setSelectedAlbum({ album, anchor: { x: event.nativeEvent.pageX, y: event.nativeEvent.pageY } }); }} onPress={() => router.push({ pathname: '/album/[id]', params: { id: album.id, title: album.title, artist: album.artist, artworkUrl: album.artworkUrl ?? '' } })} style={[styles.album, spacious && styles.spaciousAlbum, { width: cardWidth }]}><Artwork item={album} size={cardWidth} radius={glass.supported ? 18 : 11} /><Text numberOfLines={1} style={[styles.albumTitle, spacious && styles.spaciousAlbumTitle, { color: colors.text }]}>{album.title}</Text><Text numberOfLines={1} style={[styles.albumArtist, { color: colors.muted }]}>{album.artist}</Text></Pressable>;
     }
     if (tab === 'songs' || tab === 'favorites') {
       const row = <SongRow song={item as Song} onPress={() => void play(index)} />;
@@ -61,7 +63,7 @@ export const LibraryPage = memo(function LibraryPage({ tab, sortOrder, data, isP
     }
     const artist = item as Artist;
     return <Pressable accessibilityRole="button" accessibilityLabel={artist.name + ' 노래 보기'} onPress={() => router.push({ pathname: '/artist/[id]', params: { id: artist.id, name: artist.name } })} style={[styles.artist, { borderBottomColor: colors.separator }, grid.columns > 1 && { width: cardWidth }, spacious && styles.spaciousArtist]}><View style={[styles.artistIcon, { backgroundColor: colors.surface }]}><Ionicons name="person" size={22} color={colors.tint} /></View><Text numberOfLines={1} style={[styles.artistName, { color: colors.text }]}>{artist.name}</Text><Text style={{ color: colors.muted }}>{artist.albumCount ? `${artist.albumCount}개 앨범` : ''}</Text><Ionicons name="chevron-forward" size={18} color={colors.muted} /></Pressable>;
-  }, [tab, cardWidth, colors, play, grid.columns, spacious]);
+  }, [tab, cardWidth, colors, play, grid.columns, spacious, glass.supported]);
   const frame = [width === undefined && styles.fill, { width }];
   if (isPending) return <View style={frame} accessibilityElementsHidden={!active} importantForAccessibility={active ? 'auto' : 'no-hide-descendants'}><ListLoading /></View>;
   return <View style={frame} accessibilityElementsHidden={!active} importantForAccessibility={active ? 'auto' : 'no-hide-descendants'}>

@@ -23,7 +23,7 @@ const modules = {
 const code = ts.transpileModule(fs.readFileSync(path.join(root, 'src/features/library/use-library-controls.ts'), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
 const hooks = {};
 new Function('require', 'exports', code)(name => { if (!(name in modules)) throw Error('Unexpected import ' + name); return modules[name]; }, hooks);
-const render = () => { refSlot = 0; valueSlot = 0; const result = hooks.useLibraryControls(); initialized = true; return result; };
+const render = (preserveGlass = false) => { refSlot = 0; valueSlot = 0; const result = hooks.useLibraryControls(preserveGlass); initialized = true; return result; };
 const scroll = (controls, page, y, content = 2000, viewport = 600) => controls.onScroll(page, { nativeEvent: {
   contentOffset: { x: 0, y }, contentSize: { width: 400, height: content }, layoutMeasurement: { width: 400, height: viewport }, contentInset: { top: 0, bottom: 0 },
 } });
@@ -36,6 +36,9 @@ assert.equal(stateWrites, 0, 'Small scrolls do not toggle controls');
 scroll(controls, 'albums', 25); controls = render();
 assert.equal(controls.hidden, true); assert.equal(controls.frameStyle().height, 0);
 assert.equal(controls.contentStyle().opacity, 0); assert.equal(controls.contentStyle().transform[0].translateY, -60);
+const glassControls = render(true);
+assert.equal(glassControls.contentStyle().opacity, 1, 'Native glass ancestors stay opaque during collapse');
+assert.equal(glassControls.frameStyle().height, 0, 'Native controls are still clipped when hidden');
 controls.onLayout({ nativeEvent: { layout: { height: 0 } } });
 assert.equal(controls.contentStyle().transform[0].translateY, -60, 'Collapsed native layout must preserve the natural expansion height');
 for (let y = 26; y < 500; y++) scroll(controls, 'albums', y);

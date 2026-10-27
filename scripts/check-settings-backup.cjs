@@ -347,7 +347,7 @@ async function checkUI(privateBackup) {
       restoreSettingsBackup: async (backup, value) => { restoreCount++; imported.push([backup, value]); },
     },
     './backup-files': { saveSettingsBackup: async () => 'saved.json', pickSettingsBackup: async () => { if (readFailure) throw new Error('corrupt'); return nextFile; } },
-    './settings-menu-layout': { settingsMenuStyles: { row: {}, icon: {} } },
+    './settings-menu-layout': { useSettingsMenuIconStyle: () => ({}), settingsMenuStyles: { row: {}, icon: {} } },
     './settings-ui': { SettingsPage: 'Page', SettingsSection: 'Section' },
   }).BackupSettings;
   function render() { stateIndex = 0; refIndex = 0; return BackupSettings(); }

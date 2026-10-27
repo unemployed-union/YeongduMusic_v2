@@ -7,8 +7,10 @@ import { useColors } from '@/theme/tokens';
 import { DriveFilePicker } from './file-picker';
 import { DriveDocumentSettings } from './document-settings';
 import { useDriveDocumentsStore } from '@/stores/drive-documents';
+import { useSettingsMenuIconStyle } from '@/features/settings/settings-menu-layout';
 export function GoogleDriveSettings() {
   const drive = useGoogleDriveStore(), colors = useColors(), documentsBusy = useDriveDocumentsStore(state => state.busy), apiBusy = drive.busy || drive.loading || drive.fileSaving, busy = apiBusy || documentsBusy;
+  const iconStyle = useSettingsMenuIconStyle(colors.tint, null);
   const [filePicker, setFilePicker] = useState(false);
   function connect() {
     Alert.alert('Google Drive 연결', 'Google에서 직접 선택해 허용한 음악 파일만 불러옵니다. 선택한 파일 관리 권한(drive.file)을 요청하며, 앱은 음악과 태그를 읽어 재생하고 기기에 보관합니다. Drive 원본 파일은 수정하거나 삭제하지 않습니다.', [
@@ -17,7 +19,7 @@ export function GoogleDriveSettings() {
   }
   return <View style={{ marginTop: 0, gap: 12 }}>
     <DriveDocumentSettings blocked={drive.busy || drive.fileSaving} />
-    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}><Ionicons name="logo-google" size={24} color={colors.tint} /><Text style={{ flex: 1, color: colors.text, fontSize: 17, fontWeight: '700' }}>Google API로 연결</Text>{drive.busy && <ActivityIndicator color={colors.tint} />}</View>
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}><View style={iconStyle}><Ionicons name="logo-google" size={24} color={colors.tint} /></View><Text style={{ flex: 1, color: colors.text, fontSize: 17, fontWeight: '700' }}>Google API로 연결</Text>{drive.busy && <ActivityIndicator color={colors.tint} />}</View>
     <Text style={{ color: colors.muted, fontSize: 12, lineHeight: 18 }}>{drive.account ? drive.account.email : 'Google 계정으로 연결하면 Drive의 음악을 직접 스트리밍합니다.'} NAS 로그인과 독립적으로 사용합니다.</Text>
     {apiBusy && <View style={{ gap: 8 }}><Text accessibilityLiveRegion="polite" style={{ color: colors.muted, fontSize: 13 }}>{drive.progress ?? (drive.loading ? '음악 목록 불러오는 중' : drive.fileSaving ? '음악 선택 목록 저장 중' : 'Google 연결 준비 중')}</Text><Pressable accessibilityRole="button" onPress={drive.cancelConnection} style={{ paddingVertical: 10 }}><Text style={{ color: colors.tint }}>요청 취소</Text></Pressable></View>}
     {drive.error && <Text accessibilityLiveRegion="polite" style={{ color: colors.tint, fontSize: 13 }}>{drive.error}</Text>}

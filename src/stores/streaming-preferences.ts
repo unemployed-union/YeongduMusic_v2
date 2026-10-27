@@ -11,7 +11,7 @@ type StreamingPreferences = {
   loading: boolean;
   saving: boolean;
   error: string | null;
-  load: () => Promise<void>;
+  load: (force?: boolean) => Promise<void>;
   setQuality: (quality: StreamingQuality) => Promise<void>;
 };
 async function readQuality(): Promise<string | null> {
@@ -28,9 +28,9 @@ export const useStreamingPreferences = create<StreamingPreferences>((set, get) =
   let pendingWrites = 0;
   return {
     quality: 'original', ready: false, loading: false, saving: false, error: null,
-    load: () => {
+    load: (force = false) => {
       if (loading) return loading;
-      if (get().ready && !get().error) return Promise.resolve();
+      if (get().ready && !get().error && !force) return Promise.resolve();
       set({ loading: true, error: null });
       loading = writeTail.then(readQuality).then((value) => {
         set({ quality: value === 'mp3' ? 'mp3' : 'original', ready: true });

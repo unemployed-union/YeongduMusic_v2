@@ -70,7 +70,7 @@ async function checkUI() {
   const ui = { react: { useEffect: fn => fn(), useState: initial => { const i = cursor++; if (!(i in slots)) slots[i] = initial; return [slots[i], value => { slots[i] = value; }]; } }, 'react/jsx-runtime': { jsx, jsxs: jsx },
     'react-native': { View: 'View', Pressable: 'Button', ActivityIndicator: 'Spinner', StyleSheet: { create: value => value, absoluteFill: {} } },
     '@expo/vector-icons/Ionicons': { __esModule: true, default: 'Icon' }, '@/components/text': { Text: 'Text' },
-    '@/components/animated-switch': { AnimatedSwitch: 'Switch' }, './settings-menu-layout': { settingsMenuStyles: { row: {}, icon: {} } },
+    '@/components/animated-switch': { AnimatedSwitch: 'Switch' }, './settings-menu-layout': { useSettingsMenuIconStyle: () => ({}), settingsMenuStyles: { row: {}, icon: {} } },
     '@react-native-community/slider': { __esModule: true, default: 'Slider' }, './blur-preferences': blurRules,
     '@/theme/tokens': { useColors: () => palette[scheme], useAppColorScheme: () => scheme },
     '@/stores/blur-preferences': { useBlurPreferences, useBlurIntensity: area => state().ready && !state().loadError ? blurRules.blurIntensity(state(), area) : 0 },
@@ -106,7 +106,7 @@ async function checkUI() {
     'expo-blur': { BlurView: 'Blur' }, 'expo-router': { router: { push: route => opening.push(['navigate', route]) } },
     'react-native-reanimated': { __esModule: true, default: { View: 'AnimatedView' }, FadeInDown: { duration: () => ({}) } },
     'react-native-gesture-handler': { Gesture: { Pan: () => gesture }, GestureDetector: 'Gesture' },
-    './artwork': { Artwork: 'Artwork' }, './marquee-text': { MarqueeText: 'Marquee' }, '@/services/haptics': { playHaptic() {} },
+    './artwork': { Artwork: 'Artwork' }, './playback-glyph': { PlaybackGlyph: 'PlaybackGlyph' }, './marquee-text': { MarqueeText: 'Marquee' }, '@/services/haptics': { playHaptic() {} },
     '@/services/playback/controller': {}, '@/stores/playback': { usePlaybackStore },
     '@/stores/player-background': { usePlayerBackgroundStore: { getState: () => ({ selectArtwork: (song, options) => opening.push(['prepare', song.id, options]) }) } },
   }).MiniPlayer;

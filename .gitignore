@@ -45,3 +45,4 @@ example
 /modules/*/android/.gradle/
 /modules/*/android/.cxx/
 /modules/*/ios/build/
+/build

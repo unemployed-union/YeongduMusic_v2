@@ -68,6 +68,7 @@ function checkSongMenu() {
 function checkAlbumMenu() {
   const h = hooks(); let navigated = 0, prepared;
   const Page = load('src/features/library/library-page.tsx', { ...ui, react: h.react,
+    '@/theme/liquid-glass': { useLiquidGlass: () => ({ supported: false, enabled: false, reduceTransparency: false }) },
     'expo-router': { router: { push: () => { navigated++; } } }, '@/components/tab-scroll-edge-fade': { TabScrollEdgeFade: 'Fade' }, '@/components/artwork': { Artwork: 'Artwork' },
     '@/components/async-state': { AsyncState: 'Async' }, '@/components/list-loading': { ListLoading: 'Loading' }, '@/components/song-row': { SongRow: 'Song' },
     '@/features/playback/play-and-open-player': {}, './sort-library': { sortLibraryItems: values => values }, './album-properties': { AlbumProperties: 'Properties' },

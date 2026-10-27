@@ -1,3 +1,4 @@
+import { isIosSystemSettingsAvailable } from './ios-system-settings';
 import type { ReactNode } from 'react';
 import { Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { router, type Href } from 'expo-router';
@@ -13,11 +14,13 @@ import { SidebarHeader } from '@/components/sidebar-header';
 import { ContentTitleBar } from '@/components/content-title-bar';
 import { ContentTransition } from '@/components/content-transition';
 import { SidebarAppNavigation } from '@/components/tablet-sidebar';
+import { useSettingsMenuIconStyle } from './settings-menu-layout';
 
 /** Keep the routed screen in the same child slot when the sidebar appears. */
 export function SettingsWorkspace({ routeName, children }: { routeName: string; children: ReactNode }) {
   const { width, height, fontScale } = useWindowDimensions();
   const insets = useSafeAreaInsets(), colors = useColors();
+  const iconStyle = useSettingsMenuIconStyle(colors.tint, null);
   const layout = workspaceLayout(width - insets.left - insets.right, height, fontScale);
   const enabled = useHiddenFeatureAccess(state => state.ready && state.enabled);
   const selected = selectedSettingsPath(routeName);
@@ -32,11 +35,11 @@ export function SettingsWorkspace({ routeName, children }: { routeName: string; 
       <SidebarHeader />
       <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: insets.bottom + 24 }} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
       <SidebarAppNavigation active="settings" showSettings={false} />
-      {SETTINGS_NAVIGATION.filter(item => !item.hidden || enabled).map(item => <Pressable key={item.path} accessibilityRole="button" accessibilityState={{ selected: selected === item.path }} onPress={() => {
+      {SETTINGS_NAVIGATION.filter(item => (!item.hidden || enabled) && (!isIosSystemSettingsAvailable || item.path !== 'settings/haptics')).map(item => <Pressable key={item.path} accessibilityRole="button" accessibilityState={{ selected: selected === item.path }} onPress={() => {
         if (routeName === item.path) return;
         playHaptic('menu'); router.navigate(('/' + item.path) as Href);
       }} style={({ pressed }) => [styles.item, { backgroundColor: selected === item.path ? colors.tint + '18' : pressed ? colors.rowPressed : 'transparent' }]}>
-        <Ionicons name={item.icon} size={21} color={selected === item.path ? colors.tint : colors.muted} />
+        <View style={iconStyle}><Ionicons name={item.icon} size={21} color={selected === item.path ? colors.tint : colors.muted} /></View>
         <Text style={[styles.label, { color: selected === item.path ? colors.tint : colors.text }]}>{item.title}</Text>
       </Pressable>)}
       </ScrollView>

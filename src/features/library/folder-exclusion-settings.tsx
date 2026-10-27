@@ -11,10 +11,11 @@ import { availableLocalFolders, localFolderKey } from '@/services/local-music/fo
 import { useFolderExclusionStore } from '@/stores/folder-exclusions';
 import { useLocalMusicStore } from '@/stores/local-music';
 import { useColors } from '@/theme/tokens';
-import { settingsMenuStyles } from '@/features/settings/settings-menu-layout';
+import { settingsMenuStyles, useSettingsMenuIconStyle } from '@/features/settings/settings-menu-layout';
 
 export function FolderExclusionSettings() {
   const colors = useColors();
+  const iconStyle = useSettingsMenuIconStyle(colors.tint);
   const exclusions = useFolderExclusionStore();
   const local = useLocalMusicStore();
   const [open, setOpen] = useState(false), [picking, setPicking] = useState(false), [pendingPick, setPendingPick] = useState(false);
@@ -49,7 +50,7 @@ export function FolderExclusionSettings() {
   }
   return <>
     <Pressable accessibilityRole="button" onPress={() => { setOpen(true); void exclusions.load(); }} style={settingsMenuStyles.row}>
-      <View style={settingsMenuStyles.icon}><Ionicons name="folder-open-outline" size={23} color={colors.tint} /></View>
+      <View style={iconStyle}><Ionicons name="folder-open-outline" size={23} color={colors.tint} /></View>
       <View style={styles.settingsCopy}><Text style={[styles.settingsTitle, { color: colors.text }]}>기기 음악 제외 폴더</Text>
         <Text style={[styles.note, { color: colors.muted, marginTop: 5 }]}>통화녹음 등 가져오지 않을 폴더를 지정합니다. 하위 폴더도 제외합니다.</Text>
       </View><Text style={{ color: colors.muted, fontSize: 12 }}>{exclusions.folders.length}개</Text><Ionicons name="chevron-forward" size={19} color={colors.muted} />

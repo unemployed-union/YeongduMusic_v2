@@ -20,11 +20,19 @@ import { LibraryPager } from '@/features/library/library-pager';
 import { LikedSongsScreen } from '@/features/favorites/liked-songs-screen';
 import { LibrarySidebar } from '@/features/library/library-sidebar';
 import { workspaceLayout } from '@/theme/layout';
+import { useLiquidGlass } from '@/theme/liquid-glass';
+import { glassControlStyles } from '@/components/glass-controls';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useIsFocused } from 'expo-router';
+import { LibrarySegments } from '@/features/library/library-segments';
 
 export default function LibraryScreen() {
   const colors = useColors();
+  const glass = useLiquidGlass();
+  const focused = useIsFocused();
+  const insets = useSafeAreaInsets();
   const { width, height, fontScale } = useWindowDimensions();
-  const workspace = workspaceLayout(width, height, fontScale);
+  const workspace = workspaceLayout(glass.supported ? width - insets.left - insets.right : width, height, fontScale);
   const pageWidth = workspace.expanded ? Math.min(1160, workspace.contentWidth) - 48 : workspace.contentWidth;
   const library = useMenuPreferences(state => state.layout.library);
   const tabs = useMemo(() => visibleMenuIds(library), [library]);
@@ -32,13 +40,13 @@ export default function LibraryScreen() {
   const tab = selectedMenuId(library, selected);
   const [sortOrders, setSortOrders] = useState<Record<LibraryTab, LibrarySortOrder>>({ albums: 'default', songs: 'default', artists: 'default', favorites: 'default' });
   const selectedTab = useRef<LibraryTab>(tab);
-  const controls = useLibraryControls();
+  const controls = useLibraryControls(glass.supported);
   const selectPage = controls.selectPage;
   const refreshState = useRefreshLibrary();
   const queries = {
-    albums: useAlbums(tab === 'albums' && !refreshState.refreshing),
-    songs: useSongs(tab === 'songs' && !refreshState.refreshing),
-    artists: useArtists(tab === 'artists' && !refreshState.refreshing),
+    albums: useAlbums(focused && tab === 'albums' && !refreshState.refreshing),
+    songs: useSongs(focused && tab === 'songs' && !refreshState.refreshing),
+    artists: useArtists(focused && tab === 'artists' && !refreshState.refreshing),
   };
 
   useEffect(() => {
@@ -59,7 +67,7 @@ export default function LibraryScreen() {
   }, [tabs, selectTab]);
 
   const tools = <LocalMusicControls menuLabel={workspace.expanded ? '가져오기·연결' : undefined} sortControl={<LibrarySortControl tab={tab} order={sortOrders[tab]} onChange={(order) => setSortOrders((current) => ({ ...current, [tab]: order }))} />} />;
-  return <View style={[styles.screen, { backgroundColor: colors.background }]}>
+  return <View style={[styles.screen, { backgroundColor: colors.background }, glass.supported && { paddingLeft: insets.left, paddingRight: insets.right }]}>
     {!workspace.expanded && <ScreenHeader title="보관함" action={<SettingsButton />} bottomSpacing={8} />}
     <View style={{ flex: 1, flexDirection: 'row' }}>
     {workspace.expanded && <LibrarySidebar tabs={tabs} selected={tab} width={workspace.sidebarWidth} onSelect={selectTab} />}
@@ -69,7 +77,9 @@ export default function LibraryScreen() {
     {tools}
     {!workspace.expanded && <Animated.View style={[{ overflow: 'hidden', flexShrink: 0 }, controls.frameStyle]} pointerEvents={controls.hidden ? 'none' : 'auto'} accessibilityElementsHidden={controls.hidden} importantForAccessibility={controls.hidden ? 'no-hide-descendants' : 'auto'}>
     <Animated.View collapsable={false} onLayout={controls.onLayout} style={[{ position: 'absolute', top: 0, left: 0, right: 0 }, controls.contentStyle]}>
-    <View style={[styles.segments, tabs.length > 3 && styles.compactSegments]}>{tabs.map((option) => <Pressable key={option} accessibilityRole="tab" accessibilityState={{ selected: tab === option }} onPress={() => selectTab(option)} style={[styles.segment, tabs.length > 3 && styles.compactSegment, { backgroundColor: tab === option ? colors.tint : colors.surface, borderColor: tab === option ? colors.tint : colors.separator }]}><Text numberOfLines={1} style={{ color: tab === option ? 'white' : colors.text, fontWeight: '700' }}>{MENU_LABELS[option]}</Text></Pressable>)}</View>
+    <LibrarySegments tabs={tabs} selected={tab} onSelect={selectTab} fallback={
+      <View style={[styles.segments, tabs.length > 3 && styles.compactSegments, glass.supported && [glassControlStyles.segments, { backgroundColor: colors.surface }]]}>{tabs.map((option) => <Pressable key={option} accessibilityRole="tab" accessibilityState={{ selected: tab === option }} onPress={() => selectTab(option)} style={[styles.segment, tabs.length > 3 && styles.compactSegment, { backgroundColor: tab === option ? colors.tint : colors.surface, borderColor: tab === option ? colors.tint : colors.separator }, glass.supported && [glassControlStyles.segment, { backgroundColor: tab === option ? colors.tint + '22' : 'transparent' }]]}><Text numberOfLines={1} style={{ color: tab === option ? glass.supported ? colors.tint : 'white' : colors.text, fontWeight: '700' }}>{MENU_LABELS[option]}</Text></Pressable>)}</View>
+    } />
     {(refreshState.refreshing || refreshState.error || refreshState.message) && <Pressable accessibilityRole="button" disabled={!refreshState.error || refreshState.refreshing} onPress={() => void refreshState.refresh()} style={styles.refreshNotice}><Text style={{ color: refreshState.error ? colors.tint : colors.muted }}>{refreshState.refreshing ? '가져오는 중...' : refreshState.error ? refreshState.error + ' · 다시 시도' : refreshState.message}</Text></Pressable>}
     </Animated.View>
     </Animated.View>}

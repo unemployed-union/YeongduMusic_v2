@@ -81,7 +81,8 @@ async function main() {
       '@/stores/hidden-feature-access': { useHiddenFeatureAccess: hook },
       '@/stores/hidden-music': { useHiddenMusicStore: { getState: () => ({ lock: () => { locked++; } }) } },
       '@/theme/tokens': { useColors: () => ({ text: '#fff', muted: '#aaa', separator: '#333', tint: '#f48' }) },
-      './settings-menu-layout': { settingsMenuStyles: { row: {}, icon: {} }, SETTINGS_MENU_ICON_INSET: 17.5 },
+      '@/theme/liquid-glass': { useLiquidGlass: () => ({ supported: false }) },
+      './settings-menu-layout': { useSettingsMenuIconStyle: () => ({}), settingsMenuStyles: { row: {}, icon: {} }, SETTINGS_MENU_ICON_INSET: 17.5 },
       './creator-dialog': { CreatorDialog: 'CreatorDialog' },
     }).VersionSettings;
     const Component = () => VersionComponent({ onToast: message => toasts.push(message) });

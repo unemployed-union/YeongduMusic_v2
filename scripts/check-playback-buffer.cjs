@@ -73,6 +73,43 @@ function harness({ os = 'android', dev = true, ownership = 'standalone', mode = 
 const song = { id: 'mock-id', title: 'Private title', artist: 'Private artist', album: 'Private album', duration: 180 };
 const source = { uri: 'https://example.invalid/webapi/stream.cgi?_sid=secret', headers: { Authorization: 'secret-header' } };
 async function main() {
+  const nasFlac = { ...song, source: 'nas', path: '/music/fixture.FLAC' };
+  const nasSource = { uri: 'https://example.invalid/webapi/AudioStation/stream.cgi?api=SYNO.AudioStation.Stream&method=stream&_sid=secret', headers: { Authorization: 'private-header' }, name: 'fixture' };
+  const replacements = h => h.events.filter(event => event[0] === 'replace').map(event => event[1]);
+  const flac = harness({ os: 'ios' });
+  await flac.engine.load(nasSource, nasFlac);
+  assert.deepEqual(replacements(flac)[0], { ...nasSource, mimeType: 'audio/flac' }, 'iOS tells AVURLAsset the actual FLAC format while preserving URL, headers and name');
+  const resolver = {}, resolverCode = ts.transpileModule(fs.readFileSync(path.join(root, 'node_modules/expo-audio/src/utils/resolveSource.ts'), 'utf8'), { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS } }).outputText;
+  new Function('require', 'exports', resolverCode)(name => { assert.equal(name, 'expo-asset'); return { Asset: class Asset {} }; }, resolver);
+  assert.equal(resolver.resolveSource(replacements(flac)[0]), replacements(flac)[0], 'The actual Expo source resolver forwards the hint and headers to native unchanged');
+  assert.equal(nasSource.mimeType, undefined, 'Do not mutate repository sources');
+  flac.emit({ error: 'format', currentTime: 0 }); flac.advance(1000);
+  assert.equal(replacements(flac).at(-1).mimeType, 'audio/flac', 'A reconnect keeps the format hint');
+  flac.engine.release();
+  for (const os of ['android', 'web']) {
+    const other = harness({ os }); await other.engine.load(nasSource, nasFlac);
+    assert.equal(replacements(other)[0], nasSource, 'Other platforms retain their original source'); other.engine.release();
+  }
+  for (const [track, input, expected] of [
+    [{ ...song, audioCodec: ' FLAC ', path: undefined }, nasSource, true],
+    [{ ...nasFlac, audioCodec: 'mp3' }, nasSource, false],
+    [{ ...nasFlac, path: '/music/fixture.m4a' }, nasSource, false],
+    [{ ...nasFlac, source: 'local' }, nasSource, false],
+    [{ ...nasFlac, source: 'drive' }, nasSource, false],
+    [{ ...nasFlac, source: 's3' }, nasSource, false],
+    [{ ...nasFlac, source: 'mybox' }, nasSource, false],
+    [nasFlac, { uri: nasSource.uri.replace('method=stream', 'method=transcode') }, false],
+    [nasFlac, { uri: 'file:///cache/fixture.flac' }, false],
+    [nasFlac, { assetId: 1 }, false],
+    [nasFlac, { uri: 'https://example.invalid/music.flac' }, false],
+    [nasFlac, nasSource.uri, true],
+  ]) {
+    const h = harness({ os: 'ios' }); await h.engine.load(input, track);
+    if (expected) assert.equal(replacements(h)[0].mimeType, 'audio/flac');
+    else assert.equal(replacements(h)[0], input, 'Do not hint MP3 transcodes, other codecs, local/cloud sources or unrelated URLs');
+    h.engine.release();
+  }
+  console.log('PASS: iOS NAS original FLAC MIME hint, unchanged authenticated URL/headers, reconnect retention, codec/extension detection, MP3/local/cloud/Android/web isolation. Native MIME handling needs the matching patched build.');
   for (const os of ['android', 'ios', 'web']) {
     const speed = harness({ os, playbackRate: 1.5 });
     await speed.engine.load(source, song);
@@ -201,7 +238,14 @@ async function main() {
 
   // iOS retains the system default, rather than claiming replace() honors the option.
   const ios = harness({ os: 'ios' });
+  await ios.engine.load(source, { ...song, duration: 0 });
+  assert.deepEqual(ios.events.find(event => event[0] === 'lockscreen')[3], { isLiveStream: false, showSeekBackward: false, showSeekForward: false }, 'Even before NAS duration loads, iOS gets an on-demand session with position seeking enabled');
+  ios.emit({ duration: 180, currentTime: 12 });
+  assert.equal(ios.states.at(-1).duration, 180, 'Native duration becomes available after loading');
+  await ios.engine.seek(65);
+  assert(ios.events.some(event => event[0] === 'seek' && event[1] === 65));
   await ios.engine.load(source, song);
+  assert.equal(ios.events.filter(event => event[0] === 'lockscreen').length, 1, 'Subsequent files retain the same non-live media session');
   assert.equal(ios.events.find(event => event[0] === 'create')[2].preferredForwardBufferDuration, 0);
   assert.equal(ios.subscriptions.has('remoteTrackChange'), false);
   ios.engine.release();

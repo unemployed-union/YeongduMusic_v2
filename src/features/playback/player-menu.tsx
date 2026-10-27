@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode, type RefObject } from 'react';
 import { usePlaybackVisibility } from './use-playback-visibility';
 import { BlurView } from 'expo-blur';
-import Animated, { Easing, FadeIn, FadeInDown, FadeOut, FadeOutDown } from 'react-native-reanimated';
+import Animated, { Easing, FadeIn, FadeInDown, FadeOut, FadeOutDown, LinearTransition } from 'react-native-reanimated';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
 import { Text } from '@/components/text';
@@ -17,6 +17,8 @@ import { PlaybackSpeedOptions } from './playback-speed-options';
 import { useAppColorScheme, useColors } from '@/theme/tokens';
 import { playHaptic } from '@/services/haptics';
 import { useBlurIntensity } from '@/stores/blur-preferences';
+import { useLiquidGlass } from '@/theme/liquid-glass';
+import { GlassBackdrop } from '@/components/glass-backdrop';
 
 export type PlayerMenuAction = 'lyrics' | 'add-song' | 'save-queue' | 'equalizer' | 'album' | 'artist' | 'download' | 'delete-local' | 'edit-metadata';
 interface Props {
@@ -47,7 +49,8 @@ export function PlayerMenuLayer({ active, children }: { active: boolean; childre
 /** An inline popover lets playlist dialogs open without stacking native modals. */
 export function PlayerMenu({ kind = 'playback', canDownload = false, localSong = false, blurTarget, panel, bottom, maxHeight, left, onClose, onSelect }: Props) {
   const colors = useColors(), light = useAppColorScheme() === 'light';
-  const blurIntensity = useBlurIntensity('playerMenu'), opaque = light || blurIntensity === 0;
+  const glass = useLiquidGlass('playerMenu');
+  const blurIntensity = useBlurIntensity('playerMenu'), opaque = !glass.enabled && (light || blurIntensity === 0 || glass.reduceTransparency);
   const [options, setOptions] = useState<'sleep-timer' | 'section-repeat' | 'playback-speed' | null>(null);
   const preferences = useMenuPreferences(state => state.layout.player);
   const storageBusy = useOfflineMusicStore(state => state.busy);
@@ -82,11 +85,13 @@ export function PlayerMenu({ kind = 'playback', canDownload = false, localSong =
   if (kind === 'playback' && localSong) items.push({ action: 'delete-local', label: '기기의 음악 복사본 삭제', icon: 'trash-outline' });
   const visibleItems = kind === 'details' ? items : visibleMenuIds(preferences).flatMap(action => items.filter(item => item.action === action));
   const activeOptions = options && preferences.some(item => item.id === options && item.visible) ? options : null;
-  return <Animated.View collapsable={false} entering={ENTER_OVERLAY} exiting={EXIT_OVERLAY} style={StyleSheet.absoluteFill} pointerEvents="box-none" accessibilityViewIsModal>
+  return <Animated.View collapsable={false} entering={glass.enabled ? undefined : ENTER_OVERLAY} exiting={glass.enabled ? undefined : EXIT_OVERLAY} style={StyleSheet.absoluteFill} pointerEvents="box-none" accessibilityViewIsModal>
     <Pressable style={[StyleSheet.absoluteFill, styles.backdrop]} accessibilityRole="button" accessibilityLabel={kind === 'details' ? '가수 메뉴 닫기' : '재생 메뉴 닫기'} onPress={onClose} />
-    <Animated.View collapsable={false} entering={ENTER_CARD} exiting={EXIT_CARD} style={[styles.card, { bottom, maxHeight, borderColor: colors.separator }, opaque && { backgroundColor: colors.surface }, kind === 'details' && { left: 29, right: undefined }, left !== undefined && { left, right: undefined }]}><View style={[styles.surface, opaque && { backgroundColor: colors.surface }]}>
-      {!opaque && <BlurView pointerEvents="none" blurTarget={blurTarget} blurMethod="dimezisBlurView" intensity={blurIntensity} tint="dark" style={StyleSheet.absoluteFill} />}
-      {!opaque && <View pointerEvents="none" style={[StyleSheet.absoluteFill, styles.tint]} />}
+    <Animated.View collapsable={false} entering={glass.enabled ? undefined : ENTER_CARD} exiting={glass.enabled ? undefined : EXIT_CARD} layout={glass.enabled ? LinearTransition.duration(180) : undefined} style={[styles.card, { bottom, maxHeight, borderColor: colors.separator }, opaque && { backgroundColor: colors.surface }, glass.supported && { borderRadius: 26 }, glass.enabled && { backgroundColor: 'transparent', borderWidth: 0 }, kind === 'details' && { left: 29, right: undefined }, left !== undefined && { left, right: undefined }]}><View style={[styles.surface, opaque && { backgroundColor: colors.surface }, glass.supported && { borderRadius: 26 }, glass.enabled && { backgroundColor: 'transparent' }]}>
+      {glass.enabled ? <GlassBackdrop style={{ borderRadius: 26 }} /> : <>
+        {!opaque && <BlurView pointerEvents="none" blurTarget={blurTarget} blurMethod="dimezisBlurView" intensity={blurIntensity} tint="dark" style={StyleSheet.absoluteFill} />}
+        {!opaque && <View pointerEvents="none" style={[StyleSheet.absoluteFill, styles.tint]} />}
+      </>}
       <ScrollView bounces={false} keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content}>
         {kind === 'playback' && activeOptions === 'sleep-timer' ? <SleepTimerOptions onBack={() => setOptions(null)} onClose={onClose} /> : kind === 'playback' && activeOptions === 'section-repeat' ? <SectionRepeatOptions onBack={() => setOptions(null)} /> : kind === 'playback' && activeOptions === 'playback-speed' ? <PlaybackSpeedOptions onBack={() => setOptions(null)} /> : visibleItems.map(({ action, label, icon, selected }) => <Pressable key={action} disabled={action === 'download' ? !!cancellingDownload || storageBusy && !canCancelDownload : storageBusy && action === 'delete-local'} accessibilityRole="button" accessibilityState={{ selected: !!selected }} onPress={() => {
           playHaptic('selection');

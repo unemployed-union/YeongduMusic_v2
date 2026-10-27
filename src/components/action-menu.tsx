@@ -9,6 +9,8 @@ import { playHaptic } from '@/services/haptics';
 import { getActionMenuPosition, type ActionMenuAnchor } from './action-menu-position';
 import { ScreenBlurTargetContext } from './screen-blur-target';
 import { useBlurIntensity } from '@/stores/blur-preferences';
+import { useLiquidGlass } from '@/theme/liquid-glass';
+import { GlassBackdrop } from './glass-backdrop';
 
 export type ActionMenuItem<T extends string> = { id: T; label: string; icon: keyof typeof Ionicons.glyphMap; disabled?: boolean };
 
@@ -28,17 +30,20 @@ export function ActionMenu<T extends string>({ title, items, anchor, visible, on
 }) {
   const colors = useColors(), insets = useSafeAreaInsets(), viewport = useWindowDimensions();
   const light = useAppColorScheme() === 'light';
-  const blurIntensity = useBlurIntensity('libraryMenu'), blurEnabled = blurIntensity > 0;
+  const glass = useLiquidGlass('libraryMenu');
+  const blurIntensity = useBlurIntensity('libraryMenu'), blurEnabled = blurIntensity > 0 && !glass.reduceTransparency;
   const blurTarget = useContext(ScreenBlurTargetContext);
   const [cardHeight, setCardHeight] = useState(0);
   const position = getActionMenuPosition(anchor, viewport, insets, cardHeight);
-  return <Modal transparent statusBarTranslucent navigationBarTranslucent visible={visible} animationType="fade" onRequestClose={onClose} onDismiss={onDismiss}>
+  return <Modal transparent statusBarTranslucent navigationBarTranslucent visible={visible} animationType={glass.enabled ? 'none' : 'fade'} onRequestClose={onClose} onDismiss={onDismiss}>
     <View style={StyleSheet.absoluteFill} accessibilityViewIsModal>
       <Pressable accessibilityRole="button" accessibilityLabel="작업 메뉴 닫기" style={[StyleSheet.absoluteFill, styles.backdrop]} onPress={onClose} />
       <View onLayout={event => setCardHeight(event.nativeEvent.layout.height)} pointerEvents={cardHeight ? 'auto' : 'none'}
-        style={[styles.card, position, { backgroundColor: blurEnabled ? light ? '#FFFFFF40' : '#00000040' : colors.surface, borderColor: colors.separator, opacity: cardHeight ? 1 : 0 }]}>
-        {blurEnabled && <BlurView pointerEvents="none" blurTarget={blurTarget} blurMethod={blurTarget ? 'dimezisBlurView' : 'none'} intensity={blurIntensity} tint={light ? 'light' : 'dark'} style={StyleSheet.absoluteFill} />}
-        {blurEnabled && <View pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: light ? '#FFFFFFA6' : '#000000A6' }]} />}
+        style={[styles.card, position, { backgroundColor: glass.enabled ? 'transparent' : blurEnabled ? light ? '#FFFFFF40' : '#00000040' : colors.surface, borderColor: colors.separator }, glass.supported && { borderRadius: 26, borderWidth: 0 }, glass.enabled ? !cardHeight && { transform: [{ translateX: viewport.width * 2 }] } : { opacity: cardHeight ? 1 : 0 }]}>
+        {glass.enabled ? <GlassBackdrop style={{ borderRadius: 26 }} /> : <>
+          {blurEnabled && <BlurView pointerEvents="none" blurTarget={blurTarget} blurMethod={blurTarget ? 'dimezisBlurView' : 'none'} intensity={blurIntensity} tint={light ? 'light' : 'dark'} style={StyleSheet.absoluteFill} />}
+          {blurEnabled && <View pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: light ? '#FFFFFFA6' : '#000000A6' }]} />}
+        </>}
         <ScrollView bounces={false} contentContainerStyle={styles.content}>
           <Text numberOfLines={2} style={[styles.title, { color: colors.muted }]}>{title}</Text>
           {items.map(item => <Pressable key={item.id} accessibilityRole="button" accessibilityState={{ disabled: !!item.disabled }} disabled={item.disabled}

@@ -10,9 +10,14 @@ const jsx = (type, props) => ({ type, props });
 const nodes = tree => Array.isArray(tree) ? tree.flatMap(nodes) : tree && typeof tree === 'object' ? [tree, ...nodes(tree.props?.children)] : [];
 const flatten = style => Object.assign({}, ...[style].flat(Infinity).filter(Boolean));
 let dimensions = { width: 1280, height: 800, fontScale: 1 }, keyboard = false, canGoBack = true;
+let glass = { supported: false, enabled: false, reduceTransparency: false };
 const geometry = read('src/theme/layout.ts'), rules = read('src/features/settings/menu-layout.ts'), info = read('src/features/settings/tablet-tab-navigation.ts');
 const preferences = rules.defaultMenuLayout(), calls = [];
 const base = {
+  '@/theme/liquid-glass': { useLiquidGlass: () => glass },
+  '@/components/glass-backdrop': { GlassBackdrop: 'GlassBackdrop' },
+  './glass-backdrop': { GlassBackdrop: 'GlassBackdrop' },
+  '@/components/native-tab-frame': { NativeTabFrame: 'NativeTabFrame' },
   'react/jsx-runtime': { jsx, jsxs: jsx }, react: { useRef: initial => ({ current: initial }) },
   'react-native': { View: 'View', ScrollView: 'Scroll', Pressable: 'Button', StyleSheet: { create: value => value, hairlineWidth: 1, absoluteFill: {} }, useWindowDimensions: () => dimensions },
   '@expo/vector-icons/Ionicons': { __esModule: true, default: 'Icon' }, './text': { Text: 'Text' }, '@/components/text': { Text: 'Text' },
@@ -40,7 +45,7 @@ assert(nodes(tree).some(node => node.type === 'SettingsButton' && node.props.lab
 tree = sidebarModule.SidebarAppNavigation({ active: 'library', showSettings: false });
 assert(!nodes(tree).some(node => node.type === 'SettingsButton'), 'The library sidebar does not duplicate the title bar action');
 preferences.bottom = rules.defaultMenuLayout().bottom;
-const { default: TabsLayout } = read('src/app/(tabs)/_layout.tsx', { ...base,
+const { default: TabsLayout } = read('src/components/legacy-tabs.tsx', { ...base,
   'expo-blur': { BlurTargetView: 'BlurTarget', BlurView: 'Blur' },
   'react-native-keyboard-controller': { useKeyboardState: select => select({ isVisible: keyboard }) },
   '@/components/mini-player': { MiniPlayer: 'MiniPlayer', MINI_PLAYER_INSET: 8 },
@@ -76,6 +81,7 @@ keyboard = false; dimensions = { width: 390, height: 844, fontScale: 1 }; tabs =
 assert.notEqual(tabs.props.screenOptions({ route: { name: 'search' } }).tabBarStyle.display, 'none');
 assert(!nodes(layout({ name: 'search' })).some(node => node.type === 'TabletSidebar'));
 assert(!nodes(layout({ name: 'search' })).some(node => node.type === 'ContentTitleBar'), 'Phone headers are unchanged');
+assert.equal(tabs.props.tabBar, undefined, 'The legacy layout retains the platform default tab bar');
 for (const file of ['src/app/(tabs)/(library)/_layout.tsx', 'src/app/(tabs)/(playlists)/_layout.tsx']) {
   const Screen = read(file, base).default;
   assert.equal(Screen().props.screenOptions.headerShown, true);
@@ -114,4 +120,9 @@ focused = true; transition(); assert.equal(animations.length, 3, 'Returning to t
 transition(false); assert.equal(animations.length, 3, 'Phone screens use only the native transition');
 reducedMotion = true; transition(); assert.equal(animations.length, 3, 'Reduced motion skips the content transition');
 assert.equal(opacity.get(), 1); assert(cancellations.length > 0);
+glass = { supported: true, enabled: true, reduceTransparency: false };
+reducedMotion = false; transition(true, 'glass'); opacity.value = 0;
+const glassPaneStyle = flatten(transition(true, 'glass').props.style);
+assert.equal(glassPaneStyle.opacity, undefined, 'Modern iPad panes must never fade a native glass ancestor to zero');
+assert.equal(glassPaneStyle.transform[0].translateY, 8, 'Glass panes use a small movement transition instead');
 console.log('PASS: content-only tablet transitions, cancellation on route/focus changes, reduced motion, retained children, hidden horizontal bars, sidebar back/fallback, custom menus, detail navigation, mini-player insets and phone restoration. Native rendering is mocked.');

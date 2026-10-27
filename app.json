@@ -17,7 +17,8 @@
         "NSAppTransportSecurity": {
           "NSAllowsArbitraryLoads": true
         }
-      }
+      },
+      "bundleIdentifier": "xyz.yeongdu.yeongdumusic"
     },
     "android": {
       "softwareKeyboardLayoutMode": "resize",
@@ -85,7 +86,16 @@
           "savePhotosPermission": false,
           "isAccessMediaLocationEnabled": false
         }
-      ]
+      ],
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "enableSceneSupport": true
+          }
+        }
+      ],
+      "./plugins/with-ios-system-settings"
     ],
     "experiments": {
       "typedRoutes": true,

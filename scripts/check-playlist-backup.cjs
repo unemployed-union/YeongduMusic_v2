@@ -244,7 +244,7 @@ async function checkUI(backup, privateBackup) {
     '@/services/playlists/backup': { createPlaylistBackup: async () => { exportCount++; return 'backup'; }, restorePlaylistBackup: async () => { restoreCount++; return 2; } },
     './rules': rules,
     './backup-files': { savePlaylistBackup: async () => 'backup.json', pickPlaylistBackup: async () => { if (readFailure) throw Error('bad file'); return nextFile; } },
-    '@/features/settings/settings-menu-layout': { settingsMenuStyles: { row: {}, icon: {} } }, '@/features/settings/settings-ui': { SettingsPage: 'Page', SettingsSection: 'Section' },
+    '@/features/settings/settings-menu-layout': { useSettingsMenuIconStyle: () => ({}), settingsMenuStyles: { row: {}, icon: {} } }, '@/features/settings/settings-ui': { SettingsPage: 'Page', SettingsSection: 'Section' },
   }).PlaylistBackupSettings;
   function render() { stateIndex = 0; refIndex = 0; return screen(); }
   function nodes(node) { if (Array.isArray(node)) return node.flatMap(nodes); return node && typeof node === 'object' ? [node, ...nodes(node.props?.children)] : []; }

@@ -123,6 +123,7 @@ async function checkUI() {
   const useFavoritesStore = select => select ? select(r.store.getState()) : r.store.getState(); useFavoritesStore.getState = r.store.getState;
   const calls = [], alerts = [], h = hooks(), colors = { text: '#fff', muted: '#888', tint: '#f58' };
   const ui = { react: h.react, 'react/jsx-runtime': { jsx, jsxs: jsx },
+    '@/theme/liquid-glass': { useLiquidGlass: () => ({ supported: false, enabled: false }) },
     'react-native': { View: 'View', Pressable: 'Button', FlatList: 'List', RefreshControl: 'Refresh', ActivityIndicator: 'Spinner', Alert: { alert: (...args) => alerts.push(args) }, StyleSheet: { create: value => value } },
     '@expo/vector-icons/Ionicons': 'Icon', '@/components/text': { Text: 'Text' }, '@/theme/tokens': { useColors: () => colors },
     '@/stores/favorites': { useFavoritesStore }, '@/stores/auth': { useAuthStore: select => select({ mode: 'mock', session: null }) },
@@ -141,7 +142,7 @@ async function checkUI() {
   d.store.setState({ ready: true, loadError: true }); assert.equal(render(), null, 'Unreadable display settings cannot reveal a saved-off button');
   d.store.setState({ ready: true, loadError: false, preferences: { ...displayRules.DEFAULT_FAVORITE_DISPLAY } });
   const Settings = load('src/features/favorites/favorite-display-settings.tsx', { ...ui,
-    '@/components/animated-switch': { AnimatedSwitch: 'Switch' }, '@/features/settings/settings-menu-layout': { settingsMenuStyles: { row: {}, icon: {} } },
+    '@/components/animated-switch': { AnimatedSwitch: 'Switch' }, '@/features/settings/settings-menu-layout': { useSettingsMenuIconStyle: () => ({}), settingsMenuStyles: { row: {}, icon: {} } },
   }).FavoriteDisplaySettings;
   const switches = () => nodes(Settings()).filter(node => node.type === 'Switch');
   assert.equal(switches().length, 4);

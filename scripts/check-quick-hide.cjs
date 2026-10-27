@@ -200,7 +200,7 @@ async function main() {
     ...ui, '@/components/animated-switch': { AnimatedSwitch: 'Switch' },
     '@/stores/hidden-music': { useHiddenMusicStore: () => privacy.getState() },
     './settings-ui': { SettingsLink: 'SettingsLink' },
-    './settings-menu-layout': { settingsMenuStyles: { row: {}, icon: {} } },
+    './settings-menu-layout': { useSettingsMenuIconStyle: () => ({}), settingsMenuStyles: { row: {}, icon: {} } },
   }).QuickHideSettings;
   const toggle = QuickHideSettings().props.children[0].props.children[2];
   assert.equal(toggle.props.value, true); toggle.props.onValueChange(false); await flush();
@@ -243,7 +243,7 @@ async function main() {
   'react-native': { ...ui['react-native'], FlatList: 'FlatList' },
     '@/stores/hidden-music': { useHiddenMusicStore: selectPrivacy }, '@/stores/playlists': { usePlaylistStore: selectPlaylists },
     '@/components/scroll-edge-fade': { ScrollEdgeFade: 'ScrollEdgeFade' },
-    './settings-menu-layout': { settingsMenuStyles: { row: {}, icon: {} } },
+    './settings-menu-layout': { useSettingsMenuIconStyle: () => ({}), settingsMenuStyles: { row: {}, icon: {} } },
   }).QuickHidePresetSettings;
   const list = QuickHidePresetSettings().props.children;
   const other = privacy.getState().profile.presets.find(p => p.id === 'already-hidden');

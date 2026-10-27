@@ -9,7 +9,7 @@ import { usePlaylistStore } from '@/stores/playlists';
 import { useColors } from '@/theme/tokens';
 import type { HiddenPreset } from '@/types/hidden-music';
 import type { PlaylistPreset } from '@/types/playlists';
-import { settingsMenuStyles } from './settings-menu-layout';
+import { settingsMenuStyles, useSettingsMenuIconStyle } from './settings-menu-layout';
 
 type Choice = { kind: 'preset'; id: string; preset: HiddenPreset }
   | { kind: 'playlist'; id: string; playlist: PlaylistPreset }
@@ -18,6 +18,7 @@ type Choice = { kind: 'preset'; id: string; preset: HiddenPreset }
 
 export function QuickHidePresetSettings() {
   const colors = useColors(), privacy = useHiddenMusicStore(), playlists = usePlaylistStore();
+  const iconStyle = useSettingsMenuIconStyle(colors.tint);
   const playlistsReady = playlists.ready && playlists.scope === privacy.scope;
   const choices = useMemo<Choice[]>(() => [
     { kind: 'heading', id: 'music-heading', title: '음악 숨김 프리셋', detail: '‘특정 프리셋 숨기기’에서 적용할 프리셋을 하나 선택하세요.' },
@@ -60,7 +61,7 @@ export function QuickHidePresetSettings() {
       const disabled = privacy.busy || !!playlist && playlists.busy;
       return <Pressable accessibilityRole={preset ? 'radio' : 'checkbox'} accessibilityLabel={preset ? preset.name : playlist!.name + ' 빠른 숨기기에 포함'} accessibilityState={{ checked: selected, disabled }} disabled={disabled}
         onPress={() => { if (preset) void select(preset.id); else void selectPlaylist(playlist!.id); }} style={[settingsMenuStyles.row, styles.card, { backgroundColor: colors.surface, borderColor: selected && !disabled ? colors.tint : colors.separator }]}>
-        <View style={settingsMenuStyles.icon}><Ionicons name={preset ? selected ? 'radio-button-on' : 'radio-button-off' : selected ? 'checkbox' : 'square-outline'} size={23} color={selected && !disabled ? colors.tint : colors.muted} /></View>
+        <View style={iconStyle}><Ionicons name={preset ? selected ? 'radio-button-on' : 'radio-button-off' : selected ? 'checkbox' : 'square-outline'} size={23} color={selected && !disabled ? colors.tint : colors.muted} /></View>
         <View style={styles.fill}><Text style={[styles.title, { color: disabled ? colors.muted : colors.text }]}>{preset?.name ?? playlist!.name}</Text>
           <Text style={[styles.detail, { color: colors.muted }]}>{preset ? '폴더 ' + preset.folders.length + '개 · 곡 ' + preset.songIds.length + '개' : '곡 ' + playlist!.songIds.length + '개 · ' + (privacy.profile.hiddenPlaylistIds?.includes(playlist!.id) ? '현재 숨김' : '현재 표시')}</Text>
         </View>

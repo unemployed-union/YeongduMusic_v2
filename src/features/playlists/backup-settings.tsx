@@ -4,7 +4,7 @@ import { Text } from '@/components/text';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { AnimatedSwitch } from '@/components/animated-switch';
 import { SettingsPage, SettingsSection } from '@/features/settings/settings-ui';
-import { settingsMenuStyles } from '@/features/settings/settings-menu-layout';
+import { settingsMenuStyles, useSettingsMenuIconStyle } from '@/features/settings/settings-menu-layout';
 import { useHiddenFeatureAccess } from '@/stores/hidden-feature-access';
 import { useHiddenMusicStore } from '@/stores/hidden-music';
 import { usePlaylistStore } from '@/stores/playlists';
@@ -16,6 +16,7 @@ import type { PlaylistBackup } from './backup-format';
 
 export function PlaylistBackupSettings() {
   const colors = useColors(), playlists = usePlaylistStore(), privacy = useHiddenMusicStore(), access = useHiddenFeatureAccess();
+  const iconStyle = useSettingsMenuIconStyle(colors.tint);
   const loadAccess = access.load;
   useEffect(() => { void loadAccess(); }, [loadAccess]);
   const [includeHidden, setIncludeHidden] = useState(false);
@@ -62,12 +63,12 @@ export function PlaylistBackupSettings() {
     </View>}
     <SettingsSection title="백업">
       {!!playlists.scope && access.ready && access.enabled && Platform.OS !== 'web' && <View style={settingsMenuStyles.row}>
-        <View style={settingsMenuStyles.icon}><Ionicons name="eye-off-outline" size={23} color={disabled ? colors.muted : colors.tint} /></View>
+        <View style={iconStyle}><Ionicons name="eye-off-outline" size={23} color={disabled ? colors.muted : colors.tint} /></View>
         <View style={styles.copy}><Text style={[styles.title, { color: disabled ? colors.muted : colors.text }]}>숨긴 플레이리스트 포함</Text><Text style={[styles.detail, { color: colors.muted }]}>숨김 목록과 숨김 상태도 저장합니다. 잠겨 있으면 기기 인증이 필요합니다.</Text></View>
         <AnimatedSwitch accessibilityLabel="백업에 숨긴 플레이리스트 포함" value={includeHidden} disabled={disabled || access.busy} onValueChange={setIncludeHidden} trackColor={{ false: colors.separator, true: colors.tint }} />
       </View>}
       <Pressable accessibilityRole="button" accessibilityState={{ disabled }} disabled={disabled} onPress={backup} style={settingsMenuStyles.row}>
-        <View style={settingsMenuStyles.icon}><Ionicons name="download-outline" size={23} color={disabled ? colors.muted : colors.tint} /></View>
+        <View style={iconStyle}><Ionicons name="download-outline" size={23} color={disabled ? colors.muted : colors.tint} /></View>
         <View style={styles.copy}><Text style={[styles.title, { color: disabled ? colors.muted : colors.text }]}>플레이리스트 백업하기</Text><Text style={[styles.detail, { color: colors.muted }]}>{Platform.OS === 'web' ? '백업 파일 다운로드' : '저장할 폴더 선택'}</Text></View>
         <Ionicons name="chevron-forward" size={19} color={colors.muted} />
       </Pressable>
@@ -75,7 +76,7 @@ export function PlaylistBackupSettings() {
     <Text style={[styles.note, { color: colors.muted }]}>백업은 내용을 읽을 수 있는 JSON 파일입니다. 기본으로 표시 중인 플레이리스트만 저장합니다.</Text>
     <SettingsSection title="복구">
       <Pressable accessibilityRole="button" accessibilityState={{ disabled: busy }} disabled={busy} onPress={choose} style={settingsMenuStyles.row}>
-        <View style={settingsMenuStyles.icon}><Ionicons name="folder-open-outline" size={23} color={busy ? colors.muted : colors.tint} /></View>
+        <View style={iconStyle}><Ionicons name="folder-open-outline" size={23} color={busy ? colors.muted : colors.tint} /></View>
         <View style={styles.copy}><Text style={[styles.title, { color: busy ? colors.muted : colors.text }]}>플레이리스트 백업 파일 선택</Text><Text style={[styles.detail, { color: colors.muted }]}>파일을 검사한 뒤 복구할 내용을 확인합니다.</Text></View>
         <Ionicons name="chevron-forward" size={19} color={colors.muted} />
       </Pressable>

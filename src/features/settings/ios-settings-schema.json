@@ -1,0 +1,360 @@
+{
+  "version": 1,
+  "groups": [
+    {
+      "title": "화면",
+      "items": [
+        {
+          "key": "ym_theme",
+          "title": "화면 모드",
+          "path": [
+            "theme"
+          ],
+          "type": "choice",
+          "values": [
+            "auto",
+            "light",
+            "dark"
+          ],
+          "titles": [
+            "시스템 설정에 맞춤",
+            "라이트",
+            "다크"
+          ],
+          "default": "auto"
+        },
+        {
+          "key": "ym_hideArtwork",
+          "title": "앨범아트 숨기기",
+          "path": [
+            "hideArtwork"
+          ],
+          "type": "toggle",
+          "default": false
+        }
+      ]
+    },
+    {
+      "title": "음악 재생",
+      "footer": "스트리밍 음질은 Synology NAS 음악에 적용되며, 다음 곡을 불러올 때 반영됩니다. MP3 변환에는 NAS의 변환 지원이 필요합니다.",
+      "items": [
+        {
+          "key": "ym_quality",
+          "title": "NAS 스트리밍 음질",
+          "path": [
+            "quality"
+          ],
+          "type": "choice",
+          "values": [
+            "original",
+            "mp3"
+          ],
+          "titles": [
+            "원본 · 무손실 유지",
+            "MP3 변환"
+          ],
+          "default": "original"
+        }
+      ]
+    },
+    {
+      "title": "햅틱 피드백",
+      "page": "Haptics",
+      "items": [
+        {
+          "key": "ym_haptics_enabled",
+          "title": "햅틱 피드백",
+          "path": [
+            "haptics",
+            "enabled"
+          ],
+          "type": "toggle",
+          "default": true
+        },
+        {
+          "key": "ym_haptics_longPress",
+          "title": "길게 누르기",
+          "path": [
+            "haptics",
+            "events",
+            "longPress",
+            "enabled"
+          ],
+          "type": "toggle",
+          "default": true
+        },
+        {
+          "key": "ym_haptics_longPress_strength",
+          "title": "길게 누르기 강도",
+          "path": [
+            "haptics",
+            "events",
+            "longPress",
+            "strength"
+          ],
+          "type": "choice",
+          "values": [
+            "light",
+            "medium",
+            "heavy"
+          ],
+          "titles": [
+            "약",
+            "중",
+            "강"
+          ],
+          "default": "medium"
+        },
+        {
+          "key": "ym_haptics_menu",
+          "title": "메뉴 열기",
+          "path": [
+            "haptics",
+            "events",
+            "menu",
+            "enabled"
+          ],
+          "type": "toggle",
+          "default": true
+        },
+        {
+          "key": "ym_haptics_menu_strength",
+          "title": "메뉴 열기 강도",
+          "path": [
+            "haptics",
+            "events",
+            "menu",
+            "strength"
+          ],
+          "type": "choice",
+          "values": [
+            "light",
+            "medium",
+            "heavy"
+          ],
+          "titles": [
+            "약",
+            "중",
+            "강"
+          ],
+          "default": "light"
+        },
+        {
+          "key": "ym_haptics_playback",
+          "title": "재생 조작",
+          "path": [
+            "haptics",
+            "events",
+            "playback",
+            "enabled"
+          ],
+          "type": "toggle",
+          "default": true
+        },
+        {
+          "key": "ym_haptics_playback_strength",
+          "title": "재생 조작 강도",
+          "path": [
+            "haptics",
+            "events",
+            "playback",
+            "strength"
+          ],
+          "type": "choice",
+          "values": [
+            "light",
+            "medium",
+            "heavy"
+          ],
+          "titles": [
+            "약",
+            "중",
+            "강"
+          ],
+          "default": "light"
+        },
+        {
+          "key": "ym_haptics_selection",
+          "title": "선택 변경",
+          "path": [
+            "haptics",
+            "events",
+            "selection",
+            "enabled"
+          ],
+          "type": "toggle",
+          "default": true
+        },
+        {
+          "key": "ym_haptics_selection_strength",
+          "title": "선택 변경 강도",
+          "path": [
+            "haptics",
+            "events",
+            "selection",
+            "strength"
+          ],
+          "type": "choice",
+          "values": [
+            "light",
+            "medium",
+            "heavy"
+          ],
+          "titles": [
+            "약",
+            "중",
+            "강"
+          ],
+          "default": "light"
+        },
+        {
+          "key": "ym_haptics_seek",
+          "title": "재생 위치 이동",
+          "path": [
+            "haptics",
+            "events",
+            "seek",
+            "enabled"
+          ],
+          "type": "toggle",
+          "default": true
+        },
+        {
+          "key": "ym_haptics_seek_strength",
+          "title": "재생 위치 이동 강도",
+          "path": [
+            "haptics",
+            "events",
+            "seek",
+            "strength"
+          ],
+          "type": "choice",
+          "values": [
+            "light",
+            "medium",
+            "heavy"
+          ],
+          "titles": [
+            "약",
+            "중",
+            "강"
+          ],
+          "default": "light"
+        }
+      ]
+    },
+    {
+      "title": "화면 효과",
+      "page": "Effects",
+      "footer": "블러와 Liquid Glass 효과를 조절합니다. 투명도 줄이기 등 iOS 손쉬운 사용 설정을 우선합니다.",
+      "items": [
+        {
+          "key": "ym_blur_enabled",
+          "title": "화면 효과 사용",
+          "path": [
+            "blur",
+            "enabled"
+          ],
+          "type": "toggle",
+          "default": true
+        },
+        {
+          "key": "ym_blur_libraryMenu",
+          "title": "보관함 메뉴",
+          "path": [
+            "blur",
+            "areas",
+            "libraryMenu",
+            "enabled"
+          ],
+          "type": "toggle",
+          "default": true
+        },
+        {
+          "key": "ym_blur_libraryMenu_intensity",
+          "title": "보관함 메뉴 블러 강도",
+          "path": [
+            "blur",
+            "areas",
+            "libraryMenu",
+            "intensity"
+          ],
+          "type": "slider",
+          "default": 32
+        },
+        {
+          "key": "ym_blur_playerMenu",
+          "title": "재생 화면 메뉴",
+          "path": [
+            "blur",
+            "areas",
+            "playerMenu",
+            "enabled"
+          ],
+          "type": "toggle",
+          "default": true
+        },
+        {
+          "key": "ym_blur_playerMenu_intensity",
+          "title": "재생 화면 메뉴 블러 강도",
+          "path": [
+            "blur",
+            "areas",
+            "playerMenu",
+            "intensity"
+          ],
+          "type": "slider",
+          "default": 32
+        },
+        {
+          "key": "ym_blur_miniPlayer",
+          "title": "미니 플레이어",
+          "path": [
+            "blur",
+            "areas",
+            "miniPlayer",
+            "enabled"
+          ],
+          "type": "toggle",
+          "default": true
+        },
+        {
+          "key": "ym_blur_miniPlayer_intensity",
+          "title": "미니 플레이어 블러 강도",
+          "path": [
+            "blur",
+            "areas",
+            "miniPlayer",
+            "intensity"
+          ],
+          "type": "slider",
+          "default": 75
+        },
+        {
+          "key": "ym_blur_tabBar",
+          "title": "하단 메뉴",
+          "path": [
+            "blur",
+            "areas",
+            "tabBar",
+            "enabled"
+          ],
+          "type": "toggle",
+          "default": true
+        },
+        {
+          "key": "ym_blur_tabBar_intensity",
+          "title": "하단 메뉴 블러 강도",
+          "path": [
+            "blur",
+            "areas",
+            "tabBar",
+            "intensity"
+          ],
+          "type": "slider",
+          "default": 75
+        }
+      ]
+    }
+  ]
+}

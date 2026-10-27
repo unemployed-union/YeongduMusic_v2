@@ -93,7 +93,7 @@ ui['@/features/settings/menu-layout'] = menuRules;
 ui['@/stores/menu-preferences'] = { useMenuPreferences: selector => selector({ layout: menuLayout }) };
 ui.react.useEffect = effect => effect();
 ui['@/features/settings/tab-menu-selection'] = renderModule('src/features/settings/tab-menu-selection.tsx', { ...ui, './menu-layout': menuRules });
-const TabsLayout = renderModule('src/app/(tabs)/_layout.tsx', ui).default;
+const TabsLayout = renderModule('src/components/legacy-tabs.tsx', ui).default;
 const tabs = TabsLayout();
 assert.deepEqual(nodes(tabs).filter(node => node.type === 'TabScreen').map(node => [node.props.name, node.props.options.title]), [['(library)', '보관함'], ['(playlists)', '플레이리스트'], ['search', '검색']]);
 const refs = new Set();
@@ -131,7 +131,7 @@ tabNavigation.getState = () => ({ index: 0, routes: [{ name: '(playlists)' }] })
 nodes(customizedLayout).find(node => typeof node.type === 'function').type({ navigation: tabNavigation });
 assert.equal(tabMoves.length, 1, 'Visible selection survives reordering');
 menuLayout = menuRules.defaultMenuLayout();
-const keyboardTabs = renderModule('src/app/(tabs)/_layout.tsx', { ...ui,
+const keyboardTabs = renderModule('src/components/legacy-tabs.tsx', { ...ui,
   'react-native-keyboard-controller': { useKeyboardState: selector => selector({ isVisible: true }) },
 }).default();
 assert.equal(nodes(keyboardTabs.props.screenLayout({ children: jsx('Screen', {}), route: { name: 'search' } })).find(node => node.type === 'TabBarInsetProvider').props.value, 0, 'Hidden tabs do not shorten the search indicator');
@@ -193,7 +193,7 @@ const serviceIcons = nodes(CloudSettings()).filter(node => node.type === 'Settin
 assert.equal(new Set(serviceIcons).size, serviceIcons.length, 'Different cloud services have distinguishable icons');
 const openedSettings = [];
 const SettingsLink = renderModule('src/features/settings/settings-ui.tsx', { ...ui,
-  './settings-menu-layout': { settingsMenuStyles: { row: {}, icon: {} } },
+  './settings-menu-layout': { useSettingsMenuIconStyle: () => ({}), settingsMenuStyles: { row: {}, icon: {} } },
   'expo-router': { router: { push: href => openedSettings.push(href) } },
   'react-native-keyboard-controller': { KeyboardAwareScrollView: 'Scroll' },
   '@/components/scroll-edge-fade': { ScrollEdgeFade: 'Fade' },

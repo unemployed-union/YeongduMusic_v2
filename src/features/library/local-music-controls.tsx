@@ -15,10 +15,52 @@ import { useColors } from '@/theme/tokens';
 import { DownloadStatus } from '@/features/offline-music/download-status';
 import { useOfflineMusicStore } from '@/stores/offline-music';
 import type { ImportKind } from '@/services/local-music/storage';
+import { useLiquidGlass } from '@/theme/liquid-glass';
+import { GlassBackdrop } from '@/components/glass-backdrop';
+import { glassControlStyles } from '@/components/glass-controls';
 
 const labels = musicSourceLabels;
+const sourceIcons = { all: 'musical-notes-outline', nas: 'server-outline', local: 'phone-portrait-outline', drive: 'logo-google', s3: 'file-tray-stacked-outline', mybox: 'cloud-outline' } as const;
+
+function SourceSection({ title, children }: { title: string; children: ReactNode }) {
+  const glass = useLiquidGlass();
+  const colors = useColors();
+  if (!glass.supported) return <>{children}</>;
+  return <View style={{ gap: 8 }}>
+    <Text accessibilityRole="header" style={{ color: colors.muted, fontSize: 12, fontWeight: '600', paddingHorizontal: 12 }}>{title}</Text>
+    <View style={[styles.group, { backgroundColor: colors.rowSelected }]}>{children}</View>
+  </View>;
+}
+
+function SourceOption({ icon, label, onPress, selected, disabled, legacyIcon = true }: {
+  icon: keyof typeof Ionicons.glyphMap;
+  label: string;
+  onPress: () => void;
+  selected?: boolean;
+  disabled?: boolean;
+  legacyIcon?: boolean;
+}) {
+  const glass = useLiquidGlass();
+  const colors = useColors();
+  const selectable = selected !== undefined;
+  return <Pressable accessibilityRole="button" accessibilityState={selectable ? { selected } : undefined}
+    disabled={disabled} onPress={onPress}
+    style={({ pressed }) => [styles.option, glass.supported && [styles.sourceOption, {
+      backgroundColor: selected ? colors.tint + '22' : pressed ? colors.rowPressed : 'transparent',
+      opacity: disabled ? 0.5 : 1,
+    }]]}>
+    {(glass.supported || legacyIcon) && <Ionicons accessible={false} name={icon}
+      size={glass.supported ? 21 : 22} color={glass.supported && !selected ? colors.muted : colors.tint}
+      style={glass.supported && styles.sourceIcon} />}
+    <Text style={{ flex: glass.supported || selectable ? 1 : undefined, color: glass.supported && selected ? colors.tint : colors.text,
+      fontWeight: glass.supported || selectable ? '600' : undefined }}>{label}</Text>
+    {selected && <Ionicons accessible={false} name="checkmark" size={22} color={colors.tint} />}
+  </Pressable>;
+}
+
 export function LocalMusicControls({ sortControl, menuLabel }: { sortControl?: ReactNode; menuLabel?: string }) {
   const colors = useColors();
+  const glass = useLiquidGlass();
   const local = useLocalMusicStore();
   const drive = useGoogleDriveStore();
   const documents = useDriveDocumentsStore();
@@ -33,9 +75,10 @@ export function LocalMusicControls({ sortControl, menuLabel }: { sortControl?: R
   function startImport(kind: ImportKind) { setPendingImport(kind); setOpen(false); if (Platform.OS !== 'ios') { setPendingImport(null); void local.importFiles(kind); } }
   return <View style={styles.container}>
     <View style={styles.controlsRow}>
-    <Pressable accessibilityRole="button" accessibilityLabel="음악 소스 및 가져오기 메뉴" onPress={() => setOpen(true)} style={styles.trigger}>
+    <Pressable accessibilityRole="button" accessibilityLabel="음악 소스 및 가져오기 메뉴" onPress={() => setOpen(true)} style={[styles.trigger, glass.supported && [glassControlStyles.button, { backgroundColor: glass.enabled ? 'transparent' : colors.surface, flexShrink: 1 }]]}>
+      {glass.enabled && <GlassBackdrop style={{ borderRadius: 22 }} />}
       <Ionicons name={local.source === 'drive' ? 'logo-google' : local.source === 'mybox' ? 'cloud-outline' : local.source === 's3' ? 'file-tray-stacked-outline' : local.source === 'local' ? 'phone-portrait-outline' : local.source === 'nas' ? 'server-outline' : 'musical-notes-outline'} size={18} color={colors.tint} />
-      <Text style={{ color: colors.tint, fontWeight: '700' }}>{menuLabel ?? labels[local.source]}</Text><Ionicons name="chevron-down" size={16} color={colors.tint} />
+      <Text numberOfLines={glass.supported ? 1 : undefined} style={{ color: colors.tint, fontWeight: '700', ...(glass.supported && { flexShrink: 1 }) }}>{menuLabel ?? labels[local.source]}</Text><Ionicons name="chevron-down" size={16} color={colors.tint} />
       {local.busy && <ActivityIndicator color={colors.tint} />}
     </Pressable>
     {sortControl}
@@ -49,17 +92,25 @@ export function LocalMusicControls({ sortControl, menuLabel }: { sortControl?: R
     {notice && <Text style={{ color: colors.tint, fontSize: 12 }}>{notice}</Text>}
     {local.message && <Text style={{ color: colors.muted, fontSize: 12 }}>{local.message}</Text>}
     {local.error && <Pressable accessibilityRole="button" onPress={() => setOpen(true)}><Text numberOfLines={3} style={{ color: colors.tint, fontSize: 12 }}>{local.error} · 메뉴에서 다시 가져오기</Text></Pressable>}
-    <PlaylistSheet title="음악 소스" visible={open} onClose={() => setOpen(false)} onDismiss={() => { if (pendingImport) { const kind = pendingImport; setPendingImport(null); void local.importFiles(kind); } }}>
-      <ScrollView contentContainerStyle={styles.body}>
-        {(['all', 'nas', 'local', 'drive', 's3', 'mybox'] as const).map((source) => <Pressable key={source} accessibilityRole="button" accessibilityState={{ selected: local.source === source }} onPress={() => { local.setSource(source); setOpen(false); }} style={styles.option}><Text style={{ flex: 1, color: colors.text, fontWeight: '600' }}>{labels[source]}</Text>{local.source === source && <Ionicons name="checkmark" size={22} color={colors.tint} />}</Pressable>)}
-        <View style={{ height: StyleSheet.hairlineWidth, backgroundColor: colors.separator }} />
-        <Pressable accessibilityRole="button" onPress={() => { setOpen(false); router.push('/settings/cloud/google-drive'); }} style={styles.option}><Ionicons name="logo-google" size={22} color={colors.tint} /><Text style={{ color: colors.text }}>Google Drive 연결 관리</Text></Pressable>
-        <Pressable accessibilityRole="button" onPress={() => { setOpen(false); router.push('/settings/cloud/s3'); }} style={styles.option}><Ionicons name="file-tray-stacked-outline" size={22} color={colors.tint} /><Text style={{ color: colors.text }}>S3 연결 관리</Text></Pressable>
-        <Pressable accessibilityRole="button" onPress={() => { setOpen(false); router.push('/settings/cloud/mybox'); }} style={styles.option}><Ionicons name="cloud-outline" size={22} color={colors.tint} /><Text style={{ color: colors.text }}>네이버 MYBOX 연결 관리</Text></Pressable>
-        <Text style={{ color: colors.muted }}>기기 음악 가져오기</Text>
-        {Platform.OS === 'android' && <Pressable accessibilityRole="button" disabled={local.busy} onPress={() => startImport('device')} style={styles.option}><Ionicons name="phone-portrait-outline" size={22} color={colors.tint} /><Text style={{ color: colors.text }}>기기의 음악 전체 가져오기</Text></Pressable>}
-        {Platform.OS !== 'web' && <Pressable accessibilityRole="button" disabled={local.busy} onPress={() => startImport('folder')} style={styles.option}><Ionicons name="folder-outline" size={22} color={colors.tint} /><Text style={{ color: colors.text }}>폴더 선택 · 하위 폴더 포함</Text></Pressable>}
-        <Pressable accessibilityRole="button" disabled={local.busy} onPress={() => startImport('files')} style={styles.option}><Ionicons name="document-outline" size={22} color={colors.tint} /><Text style={{ color: colors.text }}>파일 선택</Text></Pressable>
+    <PlaylistSheet title="음악 소스" glassSurface visible={open} onClose={() => setOpen(false)} onDismiss={() => { if (pendingImport) { const kind = pendingImport; setPendingImport(null); void local.importFiles(kind); } }}>
+      <ScrollView style={glass.supported && styles.scrollBody} contentInsetAdjustmentBehavior={glass.supported ? 'never' : undefined}
+        contentContainerStyle={[styles.body, glass.supported && { padding: 16, gap: 20 }]}>
+        <SourceSection title="음악 보관함">
+        {(['all', 'nas', 'local', 'drive', 's3', 'mybox'] as const).map((source) => <SourceOption key={source} icon={sourceIcons[source]} label={labels[source]} legacyIcon={false}
+          selected={local.source === source} onPress={() => { local.setSource(source); setOpen(false); }} />)}
+        </SourceSection>
+        {!glass.supported && <View style={{ height: StyleSheet.hairlineWidth, backgroundColor: colors.separator }} />}
+        <SourceSection title="연결 관리">
+        <SourceOption icon="logo-google" label="Google Drive 연결 관리" onPress={() => { setOpen(false); router.push('/settings/cloud/google-drive'); }} />
+        <SourceOption icon="file-tray-stacked-outline" label="S3 연결 관리" onPress={() => { setOpen(false); router.push('/settings/cloud/s3'); }} />
+        <SourceOption icon="cloud-outline" label="네이버 MYBOX 연결 관리" onPress={() => { setOpen(false); router.push('/settings/cloud/mybox'); }} />
+        </SourceSection>
+        {!glass.supported && <Text style={{ color: colors.muted }}>기기 음악 가져오기</Text>}
+        <SourceSection title="기기 음악 가져오기">
+        {Platform.OS === 'android' && <SourceOption icon="phone-portrait-outline" label="기기의 음악 전체 가져오기" disabled={local.busy} onPress={() => startImport('device')} />}
+        {Platform.OS !== 'web' && <SourceOption icon="folder-outline" label="폴더 선택 · 하위 폴더 포함" disabled={local.busy} onPress={() => startImport('folder')} />}
+        <SourceOption icon="document-outline" label="파일 선택" disabled={local.busy} onPress={() => startImport('files')} />
+        </SourceSection>
         <Text style={{ color: colors.muted, fontSize: 12 }}>{Platform.OS === 'ios' ? 'iOS는 전체 음악 자동 조회를 지원하지 않습니다. 파일 앱의 폴더를 선택해 주세요.' : '전체 가져오기는 Android에 등록된 오디오를 조회합니다. 누락된 파일은 폴더 선택으로 가져올 수 있습니다.'} 원본은 유지하며 앱 저장 공간에 복사합니다.</Text>
         {local.error && <Text selectable style={{ color: colors.tint }}>{local.error}</Text>}
         <Pressable accessibilityRole="button" disabled={local.busy} onPress={() => { setOpen(false); void local.load(); }} style={styles.option}><Text style={{ color: colors.tint }}>저장된 음악 목록 다시 불러오기</Text></Pressable>
@@ -68,4 +119,4 @@ export function LocalMusicControls({ sortControl, menuLabel }: { sortControl?: R
     </PlaylistSheet>
   </View>;
 }
-const styles = StyleSheet.create({ controlsRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 }, container: { paddingHorizontal: 22, gap: 8, marginBottom: 8 }, trigger: { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', gap: 6, minHeight: 40 }, body: { padding: 22, gap: 10 }, option: { minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: 12 } });
+const styles = StyleSheet.create({ controlsRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 }, container: { paddingHorizontal: 22, gap: 8, marginBottom: 8 }, trigger: { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', gap: 6, minHeight: 40 }, body: { padding: 22, gap: 10 }, option: { minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: 12 }, group: { borderRadius: 22, padding: 8, gap: 2 }, sourceOption: { borderRadius: 16, paddingHorizontal: 12, paddingVertical: 10 }, sourceIcon: { width: 24, textAlign: 'center', flexShrink: 0 }, scrollBody: { flexShrink: 1, minHeight: 0 } });

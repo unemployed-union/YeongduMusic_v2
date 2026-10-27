@@ -59,10 +59,23 @@ exports.cloudFixtures = (globals = {}, dependencies = {}) => {
   });
   const resultHelpers = read('src/features/library/library-result.ts', globals);
   return {
+    '@/features/settings/ios-system-settings': { isIosSystemSettingsAvailable: false, useIosSystemSettingsReady: () => true },
+    './ios-system-settings': { isIosSystemSettingsAvailable: false },
+    '@/features/settings/ios-system-settings-link': { IosSystemSettingsLink: 'IosSystemSettingsLink' },
+    '@react-native-masked-view/masked-view': { __esModule: true, default: 'MaskedView' },
+    'expo-linear-gradient': { LinearGradient: 'LinearGradient' },
+    '@/components/playback-glyph': { PlaybackGlyph: 'PlaybackGlyph' },
+    '@/features/settings/settings-menu-layout': { settingsMenuStyles: { row: {}, icon: {} }, useSettingsMenuIconStyle: () => ({}) },
+    './settings-menu-layout': { settingsMenuStyles: { row: {}, icon: {} }, useSettingsMenuIconStyle: () => ({}) },
+    '@/theme/liquid-glass': { useLiquidGlass: () => ({ supported: false, enabled: false, reduceTransparency: false }), LiquidGlassProvider: 'LiquidGlassProvider' },
+    '@/components/glass-backdrop': { GlassBackdrop: 'GlassBackdrop' }, './glass-backdrop': { GlassBackdrop: 'GlassBackdrop' },
+    '@/components/native-tab-frame': { NativeTabFrame: 'NativeTabFrame' },
+    '@/components/glass-controls': { glassControlStyles: { button: {}, segments: {}, segment: {} } },
     '@/stores/drive-documents': { useDriveDocumentsStore },
     '@/features/playback/use-playback-visibility': { usePlaybackVisibility: () => true },
     '@/theme/layout': read('src/theme/layout.ts', globals),
     '@/features/library/library-sidebar': { LibrarySidebar: 'LibrarySidebar' },
+    '@/features/library/library-segments': { LibrarySegments: 'LibrarySegments' },
     '@/features/settings/settings-workspace': { SettingsWorkspace: 'SettingsWorkspace' },
     '@/components/tablet-sidebar': { TabletSidebar: 'TabletSidebar', SidebarAppNavigation: 'SidebarAppNavigation' },
     '@/components/sidebar-header': { SidebarHeader: 'SidebarHeader' },

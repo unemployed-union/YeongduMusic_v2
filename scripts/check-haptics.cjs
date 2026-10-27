@@ -71,6 +71,8 @@ const native = { View: 'View', Pressable: 'Button', ScrollView: 'Scroll', Modal:
 function checkUI() {
   const calls = [], colors = { text: '#111111', muted: '#555555', tint: '#CC3355', separator: '#E5E5E5', surface: '#FFFFFF' };
   const ui = { 'react/jsx-runtime': { jsx, jsxs: jsx }, 'react-native': native, '@/components/text': { Text: 'Text' }, './text': { Text: 'Text' },
+    '@/theme/liquid-glass': { useLiquidGlass: () => ({ supported: false, enabled: false }) },
+    './glass-backdrop': { GlassBackdrop: 'GlassBackdrop' },
     '@/theme/tokens': { useColors: () => colors, useAppColorScheme: () => 'light' }, '@/services/haptics': { playHaptic: kind => calls.push(kind) }, '@expo/vector-icons/Ionicons': 'Icon',
     'expo-blur': { BlurView: 'BlurView' }, './screen-blur-target': { ScreenBlurTargetContext: {} },
     '@/stores/blur-preferences': { useBlurIntensity: () => 32 },
