@@ -42,7 +42,7 @@ export function SystemTabs() {
   const hasSong = usePlaybackStore(state => !!state.queue[state.index]);
   const accessoryTarget = useRef<View | null>(null);
   const visible = visibleMenuIds(bottom);
-  const current = segments[1];
+  const current = segments.at(1);
   // Hidden native tabs cannot be selected, including after changing the menu in Settings.
   if (current && bottom.some(item => BOTTOM_MENU_ROUTES[item.id] === current && !item.visible)) {
     return <Redirect href={BOTTOM_MENU_HREFS[visible[0]]} />;

@@ -4,7 +4,7 @@ const root = path.resolve(__dirname, '..');
 function read(file, mocks = {}) {
   const exports = {}, source = fs.readFileSync(path.join(root, file), 'utf8');
   const code = ts.transpileModule(source, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX, esModuleInterop: true } }).outputText;
-  new Function('require', 'exports', code)(name => { assert(name in mocks, name); return mocks[name]; }, exports);
+  new Function('require', 'exports', code)(name => { if (['@/services/preferences/persistence', '@/services/preferences/storage', '@/services/async/serial-queue'].includes(name)) return require('./test-source-loader.cjs').loadSource('src/' + name.slice(2) + '.ts', mocks); assert(name in mocks, name); return mocks[name]; }, exports);
   return exports;
 }
 const schema = require('../src/features/settings/ios-settings-schema.json');

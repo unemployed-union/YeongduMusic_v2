@@ -177,7 +177,7 @@ async function checkLibraryAndRecovery(s3) {
     'react-native': { Platform: { OS: 'android' }, AppState: { addEventListener: () => ({ remove: () => {} }) } },
     '@/stores/s3': { useS3Store: s3 }, '@/stores/playback': { usePlaybackStore: playback },
     '@/stores/auth': { useAuthStore: { getState: () => auth } },
-    '@/stores/google-drive': { useGoogleDriveStore: { getState: () => ({ account: null, songs: [] }) } },
+    '@/stores/google-drive': { useGoogleDriveStore: { getState: () => ({ account: null, songs: [], files: [] }) } },
     '@/stores/local-music': { useLocalMusicStore: { getState: () => ({ songs: [] }) } },
     '@/stores/hidden-music': { useHiddenMusicStore: { getState: () => ({ ready: true, scope: null, profile: { presets: [] } }) } },
     '@/features/hidden-music/rules': rules,

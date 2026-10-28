@@ -40,7 +40,7 @@ run(resolveLocal('typescript/bin/tsc'), ['--noEmit']);
 const metadata = JSON.parse(fs.readFileSync(path.join(project, 'dist/metadata.json'), 'utf8'));
 for (const platform of ['android', 'ios']) {
   const map = JSON.parse(fs.readFileSync(path.join(project, 'dist', metadata.fileMetadata[platform].bundle + '.map'), 'utf8'));
-  for (const file of ['src/app/_layout.tsx', 'src/app/player.tsx', 'src/components/text.tsx']) {
+  for (const file of ['src/app/_layout.tsx', 'src/app/player.tsx', 'src/features/playback/player-screen.tsx', 'src/components/text.tsx']) {
     const index = map.sources.findIndex(source => source.replaceAll('\\', '/').endsWith(file));
     assert(index >= 0, platform + ' bundle must include the actual app screen: ' + file);
     const original = fs.readFileSync(path.join(project, file), 'utf8');

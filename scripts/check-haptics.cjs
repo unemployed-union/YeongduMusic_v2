@@ -6,6 +6,7 @@ function load(file, mocks = {}, globals = {}) {
   new Function('require', 'exports', ...Object.keys(globals), code)(name => {
     if (name === 'zustand') return { create };
     if (name in mocks) return mocks[name];
+    if (name === '@/services/preferences/persistence') return require('./test-source-loader.cjs').loadSource('src/services/preferences/persistence.ts', mocks, globals);
     throw Error('Unexpected dependency ' + name);
   }, exports, ...Object.values(globals));
   return exports;

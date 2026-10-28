@@ -16,6 +16,7 @@ function load(file, modules) {
     if (name === '@/components/content-transition') return { ContentTransition: 'ContentTransition' };
     if (name === 'react-native-safe-area-context') return { useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }) };
     if (name in modules) return modules[name];
+    if (['@/services/async/serial-queue', '@/services/preferences/storage', '@/services/preferences/persistence'].includes(name)) return require('./test-source-loader.cjs').loadSource('src/' + name.slice(2) + '.ts', modules, {});
     throw Error('Unexpected import: ' + name);
   }, exports);
   return exports;

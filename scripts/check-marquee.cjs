@@ -46,5 +46,5 @@ assert.match(node.props.children[1].props.style.maskImage, /linear-gradient/);
 modules['react-native'].Platform.OS = 'android';
 node = render({ fadeEdges: true, active: false }); assert.equal(shared.value, 0); assert.equal(node.props.children[1].type, 'AnimatedView');
 reduced = true; node = render({ fadeEdges: true }); assert.equal(node.props.children[1].type, 'AnimatedView', 'Reduced motion does not fade the stationary title');
-for (const file of ['src/app/player.tsx', 'src/components/mini-player.tsx']) assert.match(fs.readFileSync(path.join(root, file), 'utf8'), /<MarqueeText key={song.id \+ song.title} text={song.title}/);
+for (const file of ['src/features/playback/player-song-details.tsx', 'src/components/mini-player.tsx']) assert.match(fs.readFileSync(path.join(root, file), 'utf8'), /<MarqueeText\s+key={song.id \+ song.title}\s+text={song.title}/);
 console.log('PASS: full/mini marquee, seamless leftward loop, optional hardware alpha/CSS edge masks, accessible title and short/reduced-motion/background guards. Native masking and UI-thread rendering are mocked.');

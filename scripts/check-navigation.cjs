@@ -225,14 +225,19 @@ const actions = {};
 new Function('require', 'exports', code)(name => modules[name], actions);
 async function main() {
   // Run the real dismissal callback in isolation from native player rendering.
-  const playerSource = ts.createSourceFile('player.tsx', fs.readFileSync(path.join(root, 'src/app/player.tsx'), 'utf8'), ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+  const playerSource = ts.createSourceFile('player.tsx', fs.readFileSync(path.join(root, 'src/features/playback/player-screen.tsx'), 'utf8'), ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
   let dismissCallback, favoriteLocation;
+  const detailSource = ts.createSourceFile('player-song-details.tsx', fs.readFileSync(path.join(root, 'src/features/playback/player-song-details.tsx'), 'utf8'), ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
   function findDismiss(node) {
     if (ts.isVariableDeclaration(node) && node.name.getText(playerSource) === 'dismissPlayer') dismissCallback = node.initializer.arguments[0].getText(playerSource);
-    if (ts.isJsxSelfClosingElement(node) && node.tagName.getText(playerSource) === 'FavoriteButton') favoriteLocation = node.attributes.properties.find(attribute => attribute.name?.text === 'location')?.initializer?.text;
+
     ts.forEachChild(node, findDismiss);
   }
   findDismiss(playerSource);
+  (function findFavorite(node) {
+    if (ts.isJsxSelfClosingElement(node) && node.tagName.getText(detailSource) === 'FavoriteButton') favoriteLocation = node.attributes.properties.find(attribute => attribute.name?.text === 'location')?.initializer?.text;
+    ts.forEachChild(node, findFavorite);
+  })(detailSource);
   assert.equal(favoriteLocation, 'player', 'The player uses its own favorite display setting');
   assert.ok(dismissCallback, 'Player provides an animated dismissal callback');
   const detailTarget = { current: null }, dismissCalls = [];

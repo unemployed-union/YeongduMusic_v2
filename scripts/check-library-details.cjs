@@ -9,7 +9,8 @@ function load(file, mocks = {}, globals = {}) {
   }).outputText;
   new Function('require', 'exports', ...Object.keys(globals), code)(name => {
     if (name === '@/theme/layout') return load('src/theme/layout.ts');
-    if (name in mocks) return mocks[name]; throw Error('Unexpected dependency ' + name);
+    if (name in mocks) return mocks[name];
+    if (name === '@/services/preferences/persistence') return require('./test-source-loader.cjs').loadSource('src/services/preferences/persistence.ts', mocks, globals); throw Error('Unexpected dependency ' + name);
   }, exports, ...Object.values(globals));
   return exports;
 }

@@ -4,7 +4,7 @@ const root = path.resolve(__dirname, '..'), ts = require(path.join(root, 'node_m
 function load(modules) {
   const code = ts.transpileModule(fs.readFileSync(path.join(root, 'src/stores/library-preferences.ts'), 'utf8'), { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS } }).outputText;
   const mod = { exports: {} };
-  new Function('require', 'module', 'exports', code)(name => modules[name], mod, mod.exports);
+  new Function('require', 'module', 'exports', code)(name => name === '@/services/async/serial-queue' ? require('./test-source-loader.cjs').loadSource('src/services/async/serial-queue.ts') : modules[name], mod, mod.exports);
   return mod.exports.useLibraryPreferences;
 }
 async function main() {

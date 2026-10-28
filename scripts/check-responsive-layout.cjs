@@ -34,7 +34,7 @@ assert.equal(layout.libraryGrid(1024, false).columns, 2);
 
 // Render the real player shell with native/audio leaves stubbed. Changing its
 // geometry must not construct another playback engine or replace the queue.
-const source = fs.readFileSync(path.join(__dirname, '../src/app/player.tsx'), 'utf8');
+const source = fs.readFileSync(path.join(__dirname, '../src/features/playback/player-screen.tsx'), 'utf8');
 const ast = ts.createSourceFile('player.tsx', source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
 const modules = {};
 for (const statement of ast.statements) if (ts.isImportDeclaration(statement) && statement.importClause) {
@@ -72,8 +72,25 @@ Object.assign(modules, {
   '@/services/haptics': { playHaptic() {} },
   '@/services/playback/controller': { playQueue: (...args) => commands.push(args), seek: value => new Promise(resolve => { seekRequests.push({ value, resolve }); }) },
 });
-const Screen = read('src/app/player.tsx', modules).default;
-const nodes = tree => Array.isArray(tree) ? tree.flatMap(nodes) : tree && typeof tree === 'object' ? [tree, ...nodes(tree.props?.children)] : [];
+modules['./player-screen-styles'] = read('src/features/playback/player-screen-styles.ts', modules);
+modules['./player-progress'] = read('src/features/playback/player-progress.tsx', { ...modules,
+  '@react-native-community/slider': { __esModule: true, default: 'Slider' },
+  '@react-native-masked-view/masked-view': { __esModule: true, default: 'MaskedView' },
+});
+Object.assign(modules, {
+  '@expo/vector-icons/Ionicons': { __esModule: true, default: 'Ionicons' },
+  '@/components/glass-backdrop': { GlassBackdrop: 'GlassBackdrop' },
+  '@/components/scroll-edge-fade': { ScrollEdgeFade: 'ScrollEdgeFade' },
+  '@/components/marquee-text': { MarqueeText: 'MarqueeText' },
+  '@/components/favorite-button': { FavoriteButton: 'FavoriteButton' },
+  './lossless-badge': { LosslessBadge: 'LosslessBadge' },
+});
+modules['./player-queue'] = read('src/features/playback/player-queue.tsx', modules);
+modules['./player-song-details'] = read('src/features/playback/player-song-details.tsx', modules);
+modules['./player-header'] = read('src/features/playback/player-header.tsx', modules);
+const presentational = new Set([modules['./player-header'].PlayerHeader, modules['./player-queue'].PlayerQueue, modules['./player-song-details'].PlayerSongDetails]);
+const Screen = read('src/features/playback/player-screen.tsx', modules).PlayerScreen;
+const nodes = tree => Array.isArray(tree) ? tree.flatMap(nodes) : tree && typeof tree === 'object' ? [tree, ...nodes(presentational.has(tree.type) ? tree.type(tree.props) : tree.props?.children)] : [];
 const render = () => { cursor = 0; return Screen(); };
 let tree = render();
 assert.equal(nodes(tree).filter(node => node.type === 'Artwork').length, 1);
@@ -109,10 +126,12 @@ assert.equal(flatten(bar.props.style).width, 482); assert.equal(flatten(bar.prop
 assert.equal(flatten(bar.props.style).height, 44); assert.equal(bar.props.tapToSeek, true);
 assert.equal(bar.props.thumbTintColor, 'transparent', 'The idle iOS thumb is invisible');
 assert.equal(flatten(mask(progressView()).props.maskElement.props.style).backgroundColor, 'transparent', 'Mask the entire native rendering so UIKit cannot leave a thumb outline or shadow');
-bar.props.onTouchStart(); bar = slider(progressView()); assert.equal(bar.props.thumbTintColor, '#FFFFFF');
-assert.equal(flatten(mask(progressView()).props.maskElement.props.style).backgroundColor, '#FFFFFF', 'Touching reveals the native slider without replacing the touch target');
-bar.props.onSlidingStart(30); bar.props.onValueChange(65);
+bar.props.onSlidingStart(30); bar = slider(progressView());
+assert.equal(bar.props.thumbTintColor, 'transparent', 'Picking up the slider never reveals its thumb');
+assert.equal(flatten(mask(progressView()).props.maskElement.props.style).backgroundColor, 'transparent', 'UIKit remains fully masked while scrubbing');
+bar.props.onValueChange(65);
 assert.equal(slider(progressView()).props.value, 65, 'Dragging previews the selected position');
+assert(nodes(progressView()).some(node => flatten(node.props?.style).width === `${65 / 180 * 100}%`), 'The visible track follows the drag preview while the native thumb stays masked');
 bar.props.onSlidingComplete(65); bar = slider(progressView());
 assert.equal(bar.props.thumbTintColor, 'transparent'); assert.equal(bar.props.value, 65, 'Keep the preview until the engine completes seeking');
 assert.equal(flatten(mask(progressView()).props.maskElement.props.style).backgroundColor, 'transparent', 'Releasing hides the native thumb before the seek completes');
@@ -120,7 +139,7 @@ assert.equal(seekRequests.at(-1).value, 65);
 bar.props.onSlidingStart(70); bar.props.onValueChange(80); bar.props.onTouchCancel();
 assert.equal(slider(progressView()).props.value, 30); assert.equal(slider(progressView()).props.thumbTintColor, 'transparent');
 assert.equal(flatten(mask(progressView()).props.maskElement.props.style).backgroundColor, 'transparent', 'Canceled touches restore the fully masked idle state');
-bar.props.onTouchStart(); progressView(false); assert.equal(slider(progressView(false)).props.thumbTintColor, 'transparent', 'Losing focus hides the thumb');
+bar.props.onSlidingStart(30); progressView(false); assert.equal(slider(progressView(false)).props.thumbTintColor, 'transparent', 'Losing focus hides the thumb');
 assert.equal(flatten(mask(progressView(false)).props.maskElement.props.style).backgroundColor, 'transparent');
 platform = 'android'; bar = slider(progressView());
 assert.equal(flatten(bar.props.style).width, 510); assert.equal(flatten(bar.props.style).marginLeft, -14);
@@ -131,7 +150,7 @@ assert(nodes(tree).some(node => node.type === 'ScrollView'), 'Small windows and 
 assert.equal(flatten(bottom(tree).props.style).paddingBottom, 8);
 const config = JSON.parse(fs.readFileSync(path.join(__dirname, '../app.json'), 'utf8')).expo;
 assert.equal(config.orientation, 'default'); assert.equal(config.ios.supportsTablet, true);
-console.log('PASS: tablet/phone/notch/split-screen geometry, responsive grids, queue switching, iOS seek-bar alignment, touch-only thumb, drag preview/cancel/focus reset, balanced footer and unchanged Android layout. Native rendering is not exercised.');
+console.log('PASS: tablet/phone/notch/split-screen geometry, responsive grids, queue switching, iOS seek-bar alignment, always-hidden iOS thumb, drag preview/cancel/focus reset, balanced footer and unchanged Android layout. Native rendering is not exercised.');
 (async () => {
   let bar = slider(progressView());
   bar.props.onSlidingStart(10); bar.props.onSlidingComplete(40);

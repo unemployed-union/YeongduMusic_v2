@@ -63,10 +63,16 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\verify-nas.ps1 -Ba
 | --- | --- |
 | `src/app` | Expo Router 화면과 레이아웃 |
 | `src/features/library` | 라이브러리 쿼리, Mock 및 실제 Repository 선택 |
+| `src/features/playback` | 플레이어 화면 조립, 상단 버튼·곡 정보·대기열·진행 막대·재생 제어와 제스처 |
 | `src/services/synology` | DSM API 발견·인증·응답 변환·SQLite 캐시 |
-| `src/services/playback` | `AudioEngine` 인터페이스와 전역 `expo-audio` 구현, 대기열 제어 |
+| `src/services/playback` | 오디오 엔진·세션·곡 전환 제어, 구간 반복 스케줄러, 대기열 필터 |
+| `src/services/google-drive` | Drive API, 인증 SDK 설정·오류 변환, 인증 작업의 취소·시간 제한 |
+| `src/services/preferences` | 비밀 정보가 아닌 설정의 저장 I/O와 공통 불러오기·저장 수명 주기 |
+| `src/services/async` | 실패한 작업 다음에도 계속 실행되는 직렬 작업 큐 |
 | `src/stores` | Zustand 인증·재생 상태 |
 | `src/components`, `src/theme`, `src/types` | 공통 UI, 디자인 토큰, 도메인 모델 |
+
+리팩토링 후 책임 경계와 검증 방법은 [코드 구조 안내](docs/code-structure.md)에 정리했습니다.
 
 ## iOS 26 Liquid Glass와 하단 블러
 

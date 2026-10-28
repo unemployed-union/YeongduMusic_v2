@@ -9,6 +9,7 @@ function load(file, modules = {}, globals = {}) {
     if (name === 'zustand') return { create };
     if (name === '@/theme/layout') return load('src/theme/layout.ts');
     if (name in modules) return modules[name];
+    if (['@/services/async/serial-queue', '@/services/preferences/storage', '@/services/preferences/persistence'].includes(name)) return require('./test-source-loader.cjs').loadSource('src/' + name.slice(2) + '.ts', modules, globals);
     throw Error('Unexpected dependency ' + name);
   }, exports, ...Object.values(globals));
   return exports;

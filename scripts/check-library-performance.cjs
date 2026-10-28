@@ -26,6 +26,14 @@ let hookSlot = 0;
 let selections = 0;
 // Model React's dependency comparison; QueryObserver itself is the installed implementation.
 const callbacks = new Map();
+function memoized(factory, dependencies) {
+  const key = activeHook + ':' + hookSlot++;
+  const previous = callbacks.get(key);
+  if (previous && previous.dependencies.length === dependencies.length && dependencies.every((value, index) => Object.is(value, previous.dependencies[index]))) return previous.value;
+  const value = factory();
+  callbacks.set(key, { value, dependencies });
+  return value;
+}
 const EMPTY_DRIVE_SONGS = [];
 const localFixture = { songs: [], ready: true, source: 'nas' };
 const displayMetadata = { ready: true, patches: {} };
@@ -33,12 +41,7 @@ const editRules = load(path.join(root, 'src/features/metadata/rules.ts'));
 const queries = load(process.argv[2] || path.join(root, 'src/features/library/queries.ts'), {
   '@/stores/song-metadata': { useSongMetadataStore: selector => selector(displayMetadata) },
   '@/stores/library-preferences': { useLibraryPreferences: selector => selector({ ready: true, includeFolderAlbums: true }) },
-  react: { useMemo: factory => factory(), useCallback: (callback, dependencies) => {
-    const previous = callbacks.get(activeHook + ':' + hookSlot++);
-    if (previous && previous.dependencies.length === dependencies.length && dependencies.every((value, index) => Object.is(value, previous.dependencies[index]))) return previous.callback;
-    callbacks.set(activeHook + ':' + (hookSlot - 1), { callback, dependencies });
-    return callback;
-  } },
+  react: { useMemo: memoized, useCallback: (callback, dependencies) => memoized(() => callback, dependencies) },
   '@/stores/google-drive': { useGoogleDriveStore: selector => selector({ songs: EMPTY_DRIVE_SONGS, loading: false, error: null }) },
   '@/stores/local-music': { useLocalMusicStore: selector => selector(localFixture) },
   '@tanstack/react-query': { useQuery: options => options },
