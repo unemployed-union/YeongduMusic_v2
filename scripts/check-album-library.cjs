@@ -71,7 +71,7 @@ const repoModule = load('src/features/library/repository.ts', {
   '@/stores/auth': { useAuthStore: { getState: () => state } },
 });
 const localFixture = { songs: [], ready: true, source: 'nas' };
-const libraryPreferences = { ready: true, includeFolderAlbums: true };
+const libraryPreferences = { ready: true, includeFolderAlbums: true, groupAlbumsByTitle: false };
 const queries = load('src/features/library/queries.ts', {
   '@/stores/library-preferences': { useLibraryPreferences: selector => selector(libraryPreferences) },
   react: { useMemo: factory => factory(), useCallback: callback => callback },
@@ -123,6 +123,17 @@ async function main() {
   const allSongs = client.getQueryData(['song-library', identity]);
   assert.equal(albumHelpers.songsForAlbum(allSongs, backCatalog).total, 205);
   assert.equal(albumHelpers.songsForAlbum(allSongs, sameTitle.find(item => item.artist === 'Artist A')).items[0].id, 'same-a');
+  libraryPreferences.groupAlbumsByTitle = true;
+  albums.setOptions(queries.useAlbums());
+  const merged = albums.getCurrentResult().data.items.find(item => item.title === '동일 제목');
+  assert.equal(albums.getCurrentResult().data.total, 3); assert.equal(merged.songCount, 2); assert.equal(merged.artist, '여러 아티스트');
+  const mergedSongs = queries.useAlbumSongs(merged).select(allSongs);
+  assert.deepEqual(mergedSongs.items.map(song => song.id), ['same-a', 'same-b']);
+  await playAlbum(mergedSongs.items); assert.equal(queued.songs.length, 2, 'Play the complete merged album');
+  libraryPreferences.groupAlbumsByTitle = false; albums.setOptions(queries.useAlbums());
+  assert.equal(albums.getCurrentResult().data.total, 4, 'Turning off restores the original grouping without changing songs');
+  assert.equal(queries.useAlbumSongs(merged).select(allSongs).total, 2, 'An existing album route retains its grouping');
+  assert.equal(requests.length, 6, 'Grouping reuses the shared library without network rescans');
   const artist = new tanstack.QueryObserver(client, queries.useArtistSongs({ id: 'fixture', name: 'Artist A' }));
   const searchObserver = new tanstack.QueryObserver(client, queries.useSearch('동일 제목'));
   assert.equal(artist.getCurrentResult().data.total, 1);
@@ -168,6 +179,26 @@ async function main() {
   assert.equal(albumHelpers.songsForAlbum(folderLibrary, taggedAlbums.items[0]).items.length, 1);
   libraryPreferences.includeFolderAlbums = true;
   assert.equal(queries.useAlbums().select(folderLibrary).total, 3);
+  libraryPreferences.groupAlbumsByTitle = true;
+  const folderMerged = queries.useAlbums().select(folderLibrary).items.find(item => item.title === 'Folder Name');
+  assert.equal(folderMerged.songCount, 2);
+  libraryPreferences.includeFolderAlbums = false;
+  assert.equal(queries.useAlbums().select(folderLibrary).items[0].songCount, 1);
+  assert.equal(queries.useAlbumSongs(folderMerged).select(folderLibrary).total, 1, 'Excluded folder songs never reappear in merged details');
+  assert.equal(queries.useSongs().select(folderLibrary).items.length, 3);
+  libraryPreferences.groupAlbumsByTitle = false; libraryPreferences.includeFolderAlbums = true;
+  const crossSources = { items: [
+    { ...allSongs.items[0], id: 'nas-tag', album: '합본 & / "제목"', albumId: 'nas-explicit', albumSource: 'tag', artist: 'One', albumArtist: undefined },
+    { ...allSongs.items[0], id: 'local-tag', source: 'local', album: '합본 & / "제목"', albumId: 'local-explicit', albumSource: 'tag', artist: 'Two', albumArtist: undefined, trackNumber: 1, discNumber: 1 },
+    { ...allSongs.items[0], id: 'drive-tag', source: 'drive', album: '합본 & / "제목"', albumId: 'drive-explicit', albumSource: 'tag', artist: 'Three', albumArtist: undefined, trackNumber: 2, discNumber: 1 },
+  ], total: 3, stale: true };
+  const crossAlbum = albumHelpers.albumsFromSongs(crossSources, true, true).items[0];
+  assert.equal(crossAlbum.songCount, 3); assert.equal(albumHelpers.albumTitleFromId(crossAlbum.id), crossSources.items[0].album);
+  assert.deepEqual(albumHelpers.songsForAlbum(crossSources, crossAlbum).items.map(song => song.id), ['local-tag', 'drive-tag', 'nas-tag']);
+  assert.equal(albumHelpers.songsForAlbum(crossSources, crossAlbum).stale, true);
+  assert.equal(albumHelpers.albumArtistLabel(crossSources.items), '여러 아티스트');
+  const legacyMarker = { ...crossSources.items[0], album: 'album-title', albumId: undefined, artist: 'Legacy Artist' };
+  assert.equal(albumHelpers.songsForAlbum({ items: [legacyMarker], total: 1 }, { id: albumHelpers.albumId(legacyMarker) }).total, 1, 'Grouping IDs cannot collide with an ordinary album title');
   libraryPreferences.ready = false;
   assert.equal(queries.useAlbums().enabled, false);
   libraryPreferences.ready = true;

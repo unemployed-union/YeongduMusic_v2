@@ -43,6 +43,7 @@ assert.equal(read('src/features/library/library-segments.tsx', {}).LibrarySegmen
 
 let slot = 0; const slots = [], imports = [], sources = [];
 const local = { source: 'all', songs: [], importFiles: kind => imports.push(kind), setSource: source => sources.push(source), load() {} };
+let visibleSources = ['all', 'local'];
 const controls = read('src/features/library/local-music-controls.tsx', {
   ...shared,
   react: { useState: initial => { const i = slot++; if (!(i in slots)) slots[i] = initial; return [slots[i], value => { slots[i] = value; }]; } },
@@ -56,6 +57,7 @@ const controls = read('src/features/library/local-music-controls.tsx', {
   '@/services/music-source': { musicSourceLabels: { all: '전체 음악', nas: 'NAS', local: '기기', drive: 'Drive', s3: 'S3', mybox: 'MYBOX' } },
   '@/features/offline-music/download-status': { DownloadStatus: 'DownloadStatus' },
   '@/components/glass-controls': { glassControlStyles: { button: {} } },
+  './use-music-sources': { useMusicSources: () => visibleSources },
 }).LocalMusicControls;
 const render = () => { slot = 0; return controls({}); };
 const button = (tree, label) => nodes(tree).find(n => n.type === 'Pressable' && nodes(n).some(c => c.type === 'Text' && c.props.children === label));
@@ -63,6 +65,10 @@ glass = { supported: true, enabled: true };
 tree = render(); nodes(tree).find(n => n.props?.accessibilityLabel === '음악 소스 및 가져오기 메뉴').props.onPress(); tree = render();
 assert(nodes(tree).find(n => n.type === 'Sheet').props.glassSurface);
 assert(nodes(tree).find(n => n.type === 'Sheet').props.visible);
+assert(!button(tree, 'NAS') && !button(tree, 'Drive') && !button(tree, 'S3') && !button(tree, 'MYBOX'), 'Unconnected source filters are hidden');
+assert(button(tree, 'Google Drive 연결 관리'), 'Connection management remains available');
+visibleSources = ['all', 'nas', 'local', 'drive', 's3', 'mybox']; tree = render();
+assert(button(tree, 'NAS') && button(tree, 'Drive') && button(tree, 'S3') && button(tree, 'MYBOX'), 'Connected source filters appear');
 button(tree, '기기').props.onPress(); tree = render();
 assert.deepEqual(sources, ['local']); assert.equal(nodes(tree).find(n => n.type === 'Sheet').props.visible, false);
 button(tree, '파일 선택').props.onPress(); tree = render();

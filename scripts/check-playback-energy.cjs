@@ -49,24 +49,25 @@ async function main() {
   }
   const stop = persistence.startPlaybackPersistence();
   playback.setState({ position: 1 });
-  assert.equal(allocations, 1, 'A position sample cannot replace the pending track save');
-  await advance(250); assert.equal(writes, 1); assert.equal(saved.position, 1);
+  assert.equal(allocations, 0, 'Recording must not create a periodic save timer');
+  await advance(250); assert.equal(writes, 1); assert.equal(saved.position, 0);
   const foregroundWrites = writes;
   await playFor(60);
-  assert.equal(writes - foregroundWrites, 4, 'Continuous foreground playback checkpoints once per 15 seconds');
+  assert.equal(writes, foregroundWrites, 'Continuous foreground progress does not write checkpoints');
   change('inactive'); await flush();
   const backgroundWrites = writes;
   change('background'); await flush();
   assert.equal(writes, backgroundWrites, 'Inactive-to-background does not save twice');
   const beforeAllocations = allocations;
   await playFor(60);
-  assert.equal(writes - backgroundWrites, 2, 'Screen-off playback checkpoints once per 30 seconds');
-  assert.equal(allocations - beforeAllocations, 2, 'One pending timer serves all progress samples');
+  assert.equal(writes, backgroundWrites, 'Continuous background progress does not write checkpoints');
+  assert.equal(allocations, beforeAllocations, 'Progress samples allocate no save timers');
   playback.setState({ playing: false }); await advance(249);
-  assert.equal(writes, backgroundWrites + 2);
-  await advance(1); assert.equal(saved.playing, false, 'Pause state still saves within 250 ms');
+  assert.equal(writes, backgroundWrites + 1);
+  await advance(1); assert.equal(saved.playing, false, 'Pause metadata saves without a timer');
+  assert.equal(saved.position, 0);
   change('active'); playback.setState({ queue: [song, { ...song, id: 'two' }], index: 1 });
-  await advance(250); assert.equal(saved.index, 1, 'Queue/track changes remain prompt');
+  await advance(250); assert.equal(saved.index, 1, 'Queue/track changes remain prompt'); assert.equal(saved.position, 0);
   stop(); assert.equal(timers.size, 0); assert.equal(listeners.size, 0);
 
   let focused = true, unsubscribe, observed;
@@ -79,6 +80,6 @@ async function main() {
   change('active'); assert.equal(visibility.usePlaybackVisibility(), true);
   focused = false; assert.equal(visibility.usePlaybackVisibility(), false, 'Covered routes disable visual playback work');
   unsubscribe(); assert.equal(listeners.size, 0);
-  console.log('PASS: deterministic 15s foreground/30s background checkpoints, no per-sample timer churn, immediate lifecycle save, prompt pause/queue persistence, cleanup and route/AppState visibility. Battery consumption and device rendering are not measured.');
+  console.log('PASS: no foreground/background progress writes or save timers, zero-position records, prompt pause/queue metadata persistence, cleanup and route/AppState visibility. Battery consumption and device rendering are not measured.');
 }
 main().catch(error => { console.error(error); process.exitCode = 1; });

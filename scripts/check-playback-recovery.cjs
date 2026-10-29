@@ -142,15 +142,17 @@ async function main() {
   const cloud = { id: 'drive-1', source: 'drive', title: 'Drive track', artist: 'Artist', album: 'Album', duration: 80, drive: { fileId: 'file-id', accountId: 'drive-account', mimeType: 'audio/mpeg' } };
   local.setState({ songs: [device] });
   drive.setState({ songs: [{ ...cloud, artworkUrl: 'file:///cache/drive-current.jpg' }] });
-  playback.setState({ queue: [nas, device, cloud], index: 0, position: 37, playing: true, shuffle: true, repeat: 'all', playbackRate: 1.75, preservePitch: false });
+  playback.setState({ queue: [{ ...nas, duration: 0 }, device, cloud], index: 0, position: 37, duration: 180, playing: true, shuffle: true, repeat: 'all', playbackRate: 1.75, preservePitch: false });
   const stop = moduleExports.startPlaybackPersistence();
-  appStateListener('background');
+  appStateListener?.('background');
   await new Promise(resolve => setTimeout(resolve, 20));
   const raw = [...values.values()][0];
   assert.ok(raw && !raw.includes('_sid=private'), 'Session-bearing artwork URL is not persisted');
   assert.equal(JSON.parse(raw).queue[0].artworkOriginal, undefined, 'Artwork overrides are reapplied from their own store after restoring fresh source images');
   assert.deepEqual(JSON.parse(raw).queue[0].palette, nas.artworkOriginal.palette);
-  assert.equal(JSON.parse(raw).position, 37);
+  assert.equal(JSON.parse(raw).position, 0, 'Cold playback records always start at zero');
+  assert.equal(JSON.parse(raw).queue[0].duration, 180, 'Persist the engine duration even when NAS metadata has no length');
+  assert.equal(playback.getState().queue[0].duration, 0, 'Saving does not mutate the live queue');
   assert.equal(JSON.parse(raw).playbackRate, 1.75);
   assert.equal(JSON.parse(raw).preservePitch, false);
   let saved = await moduleExports.readRestoredPlayback();
@@ -161,9 +163,19 @@ async function main() {
   assert.equal(saved.repeat, 'all');
   assert.equal(saved.playbackRate, 1.75);
   assert.equal(saved.preservePitch, false);
-  const legacyRate = JSON.parse(raw); delete legacyRate.playbackRate; delete legacyRate.preservePitch;
+  assert.equal(saved.queue[saved.index].duration, 180, 'The restored position has its matching total length');
+  appStateListener?.('active');
+  playback.setState({ queue: saved.queue, index: saved.index, position: 64, duration: 180, playing: false });
+  appStateListener?.('background');
+  await new Promise(resolve => setTimeout(resolve, 20));
+  const secondRestore = await moduleExports.readRestoredPlayback();
+  assert.equal(secondRestore.position, 0, 'A new runtime starts at zero even after a paused seek');
+  assert.equal(secondRestore.queue[secondRestore.index].duration, 180, 'The total length survives a second save');
+  assert.equal(secondRestore.playing, false);
+  const legacyRate = JSON.parse(raw); legacyRate.position = 137; delete legacyRate.playbackRate; delete legacyRate.preservePitch;
   values.set('yeongdumusic-playback-v1', JSON.stringify(legacyRate));
   assert.equal((await moduleExports.readRestoredPlayback()).playbackRate, 1, 'Old playback snapshots use the normal rate');
+  assert.equal((await moduleExports.readRestoredPlayback()).position, 0, 'Legacy nonzero progress is ignored on cold restoration');
   assert.equal((await moduleExports.readRestoredPlayback()).preservePitch, true, 'Old snapshots keep the existing pitch-preserving behavior');
   legacyRate.playbackRate = 99; values.set('yeongdumusic-playback-v1', JSON.stringify(legacyRate));
   assert.equal((await moduleExports.readRestoredPlayback()).playbackRate, 1, 'Invalid saved rates cannot reach the native player');
@@ -186,7 +198,10 @@ async function main() {
   local.setState({ songs: [device] });
   saved = await moduleExports.readRestoredPlayback();
   assert.equal(saved.index, 1);
-  assert.equal(saved.position, 37);
+  assert.equal(saved.position, 0);
+  const localDuration = JSON.parse(raw); localDuration.index = 1; localDuration.queue[1].duration = 123;
+  values.set('yeongdumusic-playback-v1', JSON.stringify(localDuration));
+  assert.equal((await moduleExports.readRestoredPlayback()).queue[1].duration, 123, 'Current local metadata must not overwrite the saved playback length');
   const myboxSong = { id: 'mybox:mbx-fixture:file-a', source: 'mybox', title: 'MYBOX track', artist: 'Artist', album: 'Album', duration: 100, path: '/Music/track.flac',
     mybox: { connectionId: 'mbx-fixture', fileId: 'file-a', fileName: 'track.flac', size: 321 } };
   const myboxSnapshot = { ...JSON.parse(raw), queue: [myboxSong], index: 0, myboxConnectionId: 'mbx-fixture' };
@@ -199,9 +214,9 @@ async function main() {
   mybox.setState({ connection: null });
   assert.equal(await moduleExports.readRestoredPlayback(), null, 'Disconnected MYBOX queues cannot restore');
 
-  appStateListener('active');
+  appStateListener?.('active');
   playback.setState({ queue: [], index: -1 });
-  appStateListener('background');
+  appStateListener?.('background');
   await new Promise(resolve => setTimeout(resolve, 20));
   assert.equal(values.size, 0, 'Explicitly cleared playback also clears saved playback');
   stop();

@@ -1,5 +1,5 @@
 import { metadataKey, validateMetadataKey } from '@/features/metadata/rules';
-import { albumId, hasAlbumTag } from '@/features/library/album-library';
+import { albumId, hasAlbumTag, songsForAlbum } from '@/features/library/album-library';
 import type { Page, Song } from '@/types/music';
 
 export type ArtworkPatches = Record<string, string>;
@@ -40,6 +40,7 @@ export function artworkTargets(song: Song, visible: readonly Song[], scope: stri
   return [...new Set([song, ...same].map(item => metadataKey(item, scope)).filter((key): key is string => !!key))];
 }
 /** An explicit album-screen selection may include folder albums, but never another album. */
-export function albumArtworkTargets(song: Song, visible: readonly Song[], scope: string | null): string[] {
-  return [...new Set(visible.filter(item => albumId(item) === albumId(song)).map(item => metadataKey(item, scope)).filter((key): key is string => !!key))];
+export function albumArtworkTargets(song: Song, visible: readonly Song[], scope: string | null, groupId = albumId(song)): string[] {
+  const targets = songsForAlbum({ items: [...visible], total: visible.length }, { id: groupId }).items;
+  return [...new Set(targets.map(item => metadataKey(item, scope)).filter((key): key is string => !!key))];
 }

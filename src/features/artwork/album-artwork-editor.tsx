@@ -19,7 +19,7 @@ export function AlbumArtworkEditor({ album, songs, onClose, title = '앨범 이�
     <ScrollEdgeFade fill={false} backgroundColor={colors.surface}><ScrollView keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" contentContainerStyle={styles.body}>
       <Text style={[styles.title, { color: colors.text }]}>{album.title}</Text>
       <AsyncState loading={loading} error={error} retry={onRetry}>
-        {song ? <ArtworkEditor song={song} album={album.title} artist={album.artist} albumSongs={songs} disabled={false}
+        {song ? <ArtworkEditor song={song} album={album.title} artist={album.artist} albumSongs={songs} albumGroupId={album.id} disabled={false}
           onBusyChange={value => { working.current = value; setBusy(value); }} /> : <Text style={{ color: colors.muted }}>현재 보관함에 표시할 앨범 곡이 없습니다.</Text>}
       </AsyncState>
       <Pressable accessibilityRole="button" disabled={busy} onPress={close} style={styles.close}><Text style={{ color: colors.muted }}>닫기</Text></Pressable>

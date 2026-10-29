@@ -7,6 +7,7 @@ import { useGoogleDriveStore } from '@/stores/google-drive';
 import { useDriveDocumentsStore } from '@/stores/drive-documents';
 import { useLocalMusicStore } from '@/stores/local-music';
 import { useDisplayPreferences } from '@/stores/display-preferences';
+import { usePlaybackPreferences } from '@/stores/playback-preferences';
 import { useLibraryPreferences } from '@/stores/library-preferences';
 import { useHiddenMusicStore } from '@/stores/hidden-music';
 import { usePlaylistStore } from '@/stores/playlists';
@@ -18,6 +19,8 @@ export function useAppBootstrap() {
   const displayReady = useDisplayPreferences((state) => state.ready);
   const loadDisplayPreferences = useDisplayPreferences((state) => state.load);
   useEffect(() => { void loadDisplayPreferences(); }, [loadDisplayPreferences]);
+  const loadPlaybackPreferences = usePlaybackPreferences(state => state.load);
+  useEffect(() => { void loadPlaybackPreferences(); }, [loadPlaybackPreferences]);
   const loadLibraryPreferences = useLibraryPreferences((state) => state.load);
   useEffect(() => { void loadLibraryPreferences(); }, [loadLibraryPreferences]);
   const privacy = useHiddenMusicStore();

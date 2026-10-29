@@ -13,6 +13,15 @@ export function AlbumDisplaySettings() {
   const busy = !preferences.ready || preferences.loading || preferences.saving;
   const unavailable = !preferences.ready || preferences.loading;
   return <View>
+    <View style={[styles.row, { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.separator }]}>
+      <View style={iconStyle}><Ionicons name="layers-outline" size={23} color={unavailable ? colors.muted : colors.tint} /></View>
+      <View style={styles.copy}>
+        <Text style={[styles.title, { color: unavailable ? colors.muted : colors.text }]}>앨범 제목만으로 묶기</Text>
+        <Text style={[styles.hint, { color: colors.muted }]}>아티스트가 달라도 앨범 제목이 같으면 하나의 앨범으로 표시합니다. 끄면 제목과 아티스트를 함께 구분합니다.</Text>
+      </View>
+      <AnimatedSwitch accessibilityLabel="앨범 제목만으로 묶기" value={preferences.groupAlbumsByTitle} disabled={unavailable} busy={preferences.saving}
+        onValueChange={enabled => void preferences.setGroupAlbumsByTitle(enabled)} trackColor={{ false: colors.separator, true: colors.tint }} />
+    </View>
     <View style={styles.row}>
       <View style={iconStyle}><Ionicons name="albums-outline" size={23} color={unavailable ? colors.muted : colors.tint} /></View>
       <View style={styles.copy}>

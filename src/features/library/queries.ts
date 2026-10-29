@@ -83,31 +83,36 @@ export function useSongs(enabled = true, sourceOverride?: MusicSourceFilter) {
 export function useAlbums(enabled = true) {
   const presets = useHiddenMusicStore((state) => state.profile.presets);
   const includeFolderAlbums = useLibraryPreferences((state) => state.includeFolderAlbums);
+  const groupByTitle = useLibraryPreferences(state => state.groupAlbumsByTitle);
   const ready = useLibraryPreferences((state) => state.ready);
-  const select = useCallback((library: Page<Song>) => albumsFromSongs(visibleSongs(library, presets), includeFolderAlbums), [presets, includeFolderAlbums]);
+  const select = useCallback((library: Page<Song>) => albumsFromSongs(visibleSongs(library, presets), includeFolderAlbums, groupByTitle), [presets, includeFolderAlbums, groupByTitle]);
   return useSongLibrary(select, enabled && ready);
 }
 export function useArtists(enabled = true) {
   const presets = useHiddenMusicStore((state) => state.profile.presets);
+  const groupByTitle = useLibraryPreferences(state => state.groupAlbumsByTitle);
+  const ready = useLibraryPreferences(state => state.ready);
   const select = useCallback((library: Page<Song>): Page<Artist> => {
     const visible = visibleSongs(library, presets);
     const artists = new Map<string, Set<string>>();
     for (const song of visible.items) {
       const name = artistName(song.artist);
       const albums = artists.get(name) ?? new Set<string>();
-      albums.add(albumId(song));
+      albums.add(albumId(song, groupByTitle));
       artists.set(name, albums);
     }
     const items = [...artists].map(([name, albums]) => ({ id: name, name, albumCount: albums.size })).sort((a, b) => a.name.localeCompare(b.name));
     return { items, total: items.length, stale: visible.stale };
-  }, [presets]);
-  return useSongLibrary(select, enabled);
+  }, [presets, groupByTitle]);
+  return useSongLibrary(select, enabled && ready);
 }
 export function useAlbumSongs(album: Album) {
   const presets = useHiddenMusicStore((state) => state.profile.presets);
+  const includeFolderAlbums = useLibraryPreferences(state => state.includeFolderAlbums);
+  const ready = useLibraryPreferences(state => state.ready);
   const id = album.id;
-  const select = useCallback((library: Page<Song>) => songsForAlbum(visibleSongs(library, presets), { id }), [presets, id]);
-  return useSongLibrary(select);
+  const select = useCallback((library: Page<Song>) => songsForAlbum(visibleSongs(library, presets), { id }, includeFolderAlbums), [presets, id, includeFolderAlbums]);
+  return useSongLibrary(select, ready);
 }
 export function useArtistSongs(artist: Artist) {
   const presets = useHiddenMusicStore((state) => state.profile.presets);

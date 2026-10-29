@@ -21,8 +21,8 @@ import type { Page, Song } from '@/types/music';
 
 type ArtworkOperation = 'pick' | 'search' | 'apply' | 'reset';
 
-export function ArtworkEditor({ song, album, artist, disabled, onBusyChange, albumSongs, standalone = false }: {
-  song: Song; album: string; artist: string; disabled: boolean; onBusyChange: (busy: boolean) => void; albumSongs?: readonly Song[]; standalone?: boolean;
+export function ArtworkEditor({ song, album, artist, disabled, onBusyChange, albumSongs, albumGroupId, standalone = false }: {
+  song: Song; album: string; artist: string; disabled: boolean; onBusyChange: (busy: boolean) => void; albumSongs?: readonly Song[]; albumGroupId?: string; standalone?: boolean;
 }) {
   const colors = useColors(), store = useSongArtworkStore();
   const queryClient = useQueryClient();
@@ -44,7 +44,7 @@ export function ArtworkEditor({ song, album, artist, disabled, onBusyChange, alb
   useEffect(() => { if (!toast) return; const timer = setTimeout(() => setToast(null), 3500); return () => clearTimeout(timer); }, [toast]);
   const visible = albumSongs ?? data?.items;
   const currentSong = visible?.find(item => metadataKey(item, scope) === key) ?? song;
-  const albumKeys = useMemo(() => albumSongs ? albumArtworkTargets(currentSong, albumSongs, scope) : artworkTargets(currentSong, data?.items ?? [], scope, true), [currentSong, data?.items, scope, albumSongs]);
+  const albumKeys = useMemo(() => albumSongs ? albumArtworkTargets(currentSong, albumSongs, scope, albumGroupId) : artworkTargets(currentSong, data?.items ?? [], scope, true), [currentSong, data?.items, scope, albumSongs, albumGroupId]);
   const keys = albumSongs || wholeAlbum ? albumKeys : key ? [key] : [];
   const targetSongs = [currentSong, ...(visible ?? []).filter(item => metadataKey(item, scope) !== key && keys.includes(metadataKey(item, scope) ?? ''))];
   const fileTargets = targetSongs.filter(item => item.source !== 'drive' && item.source !== 'mybox');

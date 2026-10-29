@@ -46,6 +46,8 @@ const common = { '@/components/text': { Text: 'Text' },
   '@/components/text': { Text: 'Text' },
   'react-native': { Platform: { OS: 'android' } }, 'expo-secure-store': storage };
 const display = load('src/stores/display-preferences.ts', common).useDisplayPreferences;
+const playbackPreferenceMocks = { ...common, 'expo-sqlite/kv-store': { __esModule: true, default: { getItem: storage.getItemAsync, setItem: storage.setItemAsync } } };
+const playbackPreferences = load('src/stores/playback-preferences.ts', playbackPreferenceMocks).usePlaybackPreferences;
 const library = load('src/stores/library-preferences.ts', common).useLibraryPreferences;
 const menus = load('src/stores/menu-preferences.ts', { ...common, '@/features/settings/menu-layout': menuRules }).useMenuPreferences;
 const streaming = load('src/stores/streaming-preferences.ts', common).useStreamingPreferences;
@@ -85,6 +87,7 @@ const service = load('src/services/settings-backup.ts', {
   '@/stores/library-detail-preferences': { useLibraryDetailPreferences: details },
   '@/stores/menu-preferences': { useMenuPreferences: menus },
   '@/stores/display-preferences': { useDisplayPreferences: display }, '@/stores/library-preferences': { useLibraryPreferences: library },
+  '@/stores/playback-preferences': { usePlaybackPreferences: playbackPreferences },
   '@/stores/streaming-preferences': { useStreamingPreferences: streaming }, '@/stores/folder-exclusions': { useFolderExclusionStore: exclusions },
   '@/stores/hidden-feature-access': { useHiddenFeatureAccess: access }, '@/stores/hidden-music': { useHiddenMusicStore: privacy },
   '@/stores/playlists': { usePlaylistStore: playlists }, '@/features/settings/backup-format': format,
@@ -117,7 +120,29 @@ async function main() {
   assert.equal(display.getState().hideArtwork, true); assert.equal(library.getState().includeFolderAlbums, false);
   assert.equal(streaming.getState().quality, 'mp3'); assert.deepEqual(exclusions.getState().folders, ['/storage/primary/Music/제외']);
   const restored = JSON.parse(await service.createSettingsBackup());
-  assert.deepEqual(restored.preferences, { ...clean.preferences, menus: menus.getState().layout, themeMode: 'auto', libraryDetails: { artistPhotos: true, albumColors: true }, haptics: hapticRules.DEFAULT_HAPTIC_PREFERENCES, favoriteDisplay: favoriteDisplayRules.DEFAULT_FAVORITE_DISPLAY, blurEnabled: true, blur: blurRules.DEFAULT_BLUR_PREFERENCES, appearance: appearanceRules.DEFAULT_APPEARANCE }, 'Round trip includes all general settings');
+  assert.deepEqual(restored.preferences, { ...clean.preferences, playOnSeek: false, groupAlbumsByTitle: false, menus: menus.getState().layout, themeMode: 'auto', libraryDetails: { artistPhotos: true, albumColors: true }, haptics: hapticRules.DEFAULT_HAPTIC_PREFERENCES, favoriteDisplay: favoriteDisplayRules.DEFAULT_FAVORITE_DISPLAY, blurEnabled: true, blur: blurRules.DEFAULT_BLUR_PREFERENCES, appearance: appearanceRules.DEFAULT_APPEARANCE }, 'Round trip includes all general settings');
+  const groupingBackup = { ...clean, preferences: { ...clean.preferences, groupAlbumsByTitle: true } };
+  await service.restoreSettingsBackup(groupingBackup, false);
+  assert.equal(JSON.parse(await service.createSettingsBackup()).preferences.groupAlbumsByTitle, true);
+  const restartedLibrary = load('src/stores/library-preferences.ts', common).useLibraryPreferences;
+  await restartedLibrary.getState().load(); assert.equal(restartedLibrary.getState().groupAlbumsByTitle, true);
+  await service.restoreSettingsBackup(clean, false); assert.equal(library.getState().groupAlbumsByTitle, true, 'Older backups preserve album grouping');
+  failKey = 'yeongdumusic-album-title-grouping-v1'; failures = 1;
+  await assert.rejects(service.restoreSettingsBackup({ ...groupingBackup, preferences: { ...groupingBackup.preferences, groupAlbumsByTitle: false } }, false), /기존 설정으로 되돌렸습니다/);
+  assert.equal(library.getState().groupAlbumsByTitle, true); failKey = ''; failures = 0;
+  assert.throws(() => format.parseSettingsBackup(JSON.stringify({ ...groupingBackup, preferences: { ...groupingBackup.preferences, groupAlbumsByTitle: 'true' } })));
+  await library.getState().setGroupAlbumsByTitle(false);
+  const seekBackup = { ...clean, preferences: { ...clean.preferences, playOnSeek: true } };
+  await service.restoreSettingsBackup(seekBackup, false);
+  assert.equal(JSON.parse(await service.createSettingsBackup()).preferences.playOnSeek, true);
+  const restartedPlaybackPreferences = load('src/stores/playback-preferences.ts', playbackPreferenceMocks).usePlaybackPreferences;
+  await restartedPlaybackPreferences.getState().load(); assert.equal(restartedPlaybackPreferences.getState().playOnSeek, true, 'Seek playback choice survives restart');
+  await service.restoreSettingsBackup(clean, false); assert.equal(playbackPreferences.getState().playOnSeek, true, 'Older backups preserve the current seek playback choice');
+  failKey = 'yeongdumusic-play-on-seek-v1'; failures = 1;
+  await assert.rejects(service.restoreSettingsBackup({ ...seekBackup, preferences: { ...seekBackup.preferences, playOnSeek: false } }, false), /기존 설정으로 되돌렸습니다/);
+  assert.equal(playbackPreferences.getState().playOnSeek, true); failKey = ''; failures = 0;
+  assert.throws(() => format.parseSettingsBackup(JSON.stringify({ ...seekBackup, preferences: { ...seekBackup.preferences, playOnSeek: 'true' } })));
+  await playbackPreferences.getState().setPlayOnSeek(false);
   const customColors = { ...appearanceRules.DEFAULT_APPEARANCE, accent: '#123456', miniBackground: '#F29B4B' };
   const colorBackup = { ...clean, preferences: { ...clean.preferences, appearance: customColors } };
   await service.restoreSettingsBackup(colorBackup, false);

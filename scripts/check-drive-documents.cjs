@@ -91,7 +91,7 @@ async function checkRecovery(h, song) {
     'expo-sqlite/kv-store': { __esModule: true, default: { getItem: async () => saved } },
   });
   const restored = await service.readRestoredPlayback();
-  assert.equal(restored.queue[0].id, song.id); assert.equal(restored.position, 31, 'SAF playback restores without a Google API account');
+  assert.equal(restored.queue[0].id, song.id); assert.equal(restored.position, 0, 'SAF playback restores at zero without a Google API account');
   current = []; assert.equal(await service.readRestoredPlayback(), null, 'Removed or revoked documents cannot be restored');
   assert.deepEqual(await h.source(song), { uri: song.drive.documentUri });
 }

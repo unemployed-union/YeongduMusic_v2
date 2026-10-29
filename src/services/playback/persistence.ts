@@ -1,6 +1,6 @@
 import { useS3Store } from '@/stores/s3';
 import { useMyboxStore } from '@/stores/mybox';
-import { AppState, Platform } from 'react-native';
+import { Platform } from 'react-native';
 import { privacyScope, hiddenMatcher } from '@/features/hidden-music/rules';
 import { useAuthStore } from '@/stores/auth';
 import { useGoogleDriveStore } from '@/stores/google-drive';
@@ -14,9 +14,9 @@ import { isPlaybackRate } from './playback-rate';
 import { applySongArtwork } from '@/features/artwork/rules';
 
 const KEY = 'yeongdumusic-playback-v1';
-const SAVE_INTERVAL_MS = 15000;
-const BACKGROUND_SAVE_INTERVAL_MS = 30000;
 const MAX_AGE_MS = 24 * 60 * 60 * 1000;
+let persistenceStop: (() => void) | null = null;
+let writeTail: Promise<void> = Promise.resolve();
 
 type Snapshot = {
   version: 1;
@@ -133,11 +133,18 @@ export async function readRestoredPlayback(): Promise<RestoredPlayback | null> {
       restored = nasClient ? { ...song, artworkUrl: nasClient.coverUrl(song.nasId ?? song.id) } : auth.mode === 'mock' ? song : null;
     }
     if (!restored) continue;
-    if (i === saved.index && restored.id === selectedId) index = queue.length;
+    if (i === saved.index && restored.id === selectedId) {
+      index = queue.length;
+      // Library metadata can still have an unknown/stale length after restart.
+      // Keep the measured length so the restored slider has its full range.
+      if (song.duration > 0) restored = { ...restored, duration: song.duration };
+    }
     queue.push(restored);
   }
   if (index < 0) return null;
-  return { queue, index, position: saved.position, playing: saved.playing, shuffle: saved.shuffle, repeat: saved.repeat,
+  // A new playback runtime always starts the last selected song from the beginning,
+  // including older records that still contain a nonzero resume position.
+  return { queue, index, position: 0, playing: saved.playing, shuffle: saved.shuffle, repeat: saved.repeat,
     playbackRate: isPlaybackRate(saved.playbackRate) ? saved.playbackRate : 1, preservePitch: typeof saved.preservePitch === 'boolean' ? saved.preservePitch : true };
 }
 
@@ -148,12 +155,13 @@ function snapshot(): string | null {
   const current: Snapshot = {
     version: 1,
     // Cover URLs can contain a NAS session ID. Rebuild them from the current session on restore.
-    queue: state.queue.map(item => {
+    queue: state.queue.map((item, index) => {
       const { artworkUrl: _artworkUrl, artworkOriginal: _original, ...song } = applySongArtwork(item, undefined, '');
+      if (index === state.index && Number.isFinite(state.duration) && state.duration > 0) return { ...song, duration: state.duration } as Song;
       return song as Song;
     }),
     index: state.index,
-    position: state.position,
+    position: 0,
     playing: state.playing,
     shuffle: state.shuffle,
     repeat: state.repeat,
@@ -168,44 +176,25 @@ function snapshot(): string | null {
   return JSON.stringify(current);
 }
 
-/** Start only after the initial restore, so an empty new store cannot erase the saved queue. */
+/** Start after recovery, then keep one recorder for the entire JS playback runtime. */
 export function startPlaybackPersistence(): () => void {
-  let timer: ReturnType<typeof setTimeout> | null = null;
-  let lastSave = 0;
-  let foreground = AppState.currentState !== 'background' && AppState.currentState !== 'inactive';
-  let tail: Promise<void> = Promise.resolve();
+  if (persistenceStop) return persistenceStop;
   const persist = () => {
-    if (timer !== null) clearTimeout(timer);
-    timer = null;
-    lastSave = Date.now();
     const value = snapshot();
-    tail = tail.then(() => write(value)).catch(() => {});
-  };
-  const schedule = (important: boolean) => {
-    // Position samples must neither allocate a fresh timer nor postpone a pending important save.
-    if (timer !== null) {
-      if (!important) return;
-      clearTimeout(timer);
-    }
-    const interval = foreground ? SAVE_INTERVAL_MS : BACKGROUND_SAVE_INTERVAL_MS;
-    timer = setTimeout(persist, important ? 250 : Math.max(250, interval - (Date.now() - lastSave)));
+    writeTail = writeTail.then(() => write(value)).catch(() => {});
   };
   const unsubscribe = usePlaybackStore.subscribe((state, previous) => {
     const changed = state.queue !== previous.queue || state.index !== previous.index || state.playing !== previous.playing ||
-      state.shuffle !== previous.shuffle || state.repeat !== previous.repeat || state.playbackRate !== previous.playbackRate || state.preservePitch !== previous.preservePitch;
-    if (changed || Math.abs(state.position - previous.position) >= 0.5) schedule(changed);
+      state.shuffle !== previous.shuffle || state.repeat !== previous.repeat || state.playbackRate !== previous.playbackRate || state.preservePitch !== previous.preservePitch ||
+      state.duration > 0 && Math.abs(state.duration - previous.duration) > 0.5;
+    // Save track/queue/preferences and measured duration, never elapsed progress.
+    if (changed) persist();
   });
-  const appState = AppState.addEventListener('change', (next) => {
-    const active = next === 'active';
-    if (foreground === active) return;
-    foreground = active;
-    if (!foreground) persist();
-    else {
-      if (timer !== null) clearTimeout(timer);
-      timer = null;
-      if (usePlaybackStore.getState().queue.length) schedule(false);
-    }
-  });
-  if (usePlaybackStore.getState().queue.length) schedule(true);
-  return () => { if (timer !== null) clearTimeout(timer); unsubscribe(); appState.remove(); };
+  if (usePlaybackStore.getState().queue.length) persist();
+  const stop = () => {
+    if (persistenceStop !== stop) return;
+    unsubscribe(); persistenceStop = null;
+  };
+  persistenceStop = stop;
+  return stop;
 }

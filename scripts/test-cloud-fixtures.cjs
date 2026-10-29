@@ -155,6 +155,12 @@ exports.cloudFixtures = (globals = {}, dependencies = {}) => {
     },
   };
   const useLibraryDetailPreferences = (select) => (select ? select(details) : details);
+  const playbackPreferences = { ready: true, loading: false, saving: false, loadError: false, error: null, playOnSeek: false, load: async () => {},
+    setPlayOnSeek: async enabled => { playbackPreferences.playOnSeek = enabled; } };
+  const usePlaybackPreferences = select => select ? select(playbackPreferences) : playbackPreferences;
+  usePlaybackPreferences.getState = () => playbackPreferences;
+  shared['@/stores/playback-preferences'] = dependencies['@/stores/playback-preferences'] ?? { usePlaybackPreferences };
+  shared['@/stores/playback-preferences'] = dependencies['@/stores/playback-preferences'] ?? { usePlaybackPreferences };
   useLibraryDetailPreferences.getState = () => details;
   useLibraryDetailPreferences.subscribe = () => () => {};
   const useSongArtworkStore = (select) => (select ? select(artwork) : artwork);
@@ -281,6 +287,8 @@ exports.cloudFixtures = (globals = {}, dependencies = {}) => {
     '@/features/settings/blur-preferences': blurRules,
     './blur-preferences': blurRules,
     '@/features/settings/blur-settings': { BlurSettings: 'BlurSettings' },
+    '@/features/playback/seek-playback-settings': { SeekPlaybackSettings: 'SeekPlaybackSettings' },
+    '@/stores/playback-preferences': { usePlaybackPreferences },
     '@/stores/favorite-display-preferences': { useFavoriteDisplayPreferences },
     '@/features/favorites/display-preferences': favoriteDisplayRules,
     '@/components/favorite-button': { FavoriteButton: 'FavoriteButton' },

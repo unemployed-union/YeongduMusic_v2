@@ -114,11 +114,13 @@ function checkMenus() {
       '@/components/toast-notice': { ToastNotice: 'Toast' }, '@/features/settings/theme-settings': { ThemeSettings: 'Theme' },
       '@/features/settings/blur-settings': { BlurSettings: 'Blur' }, '@/features/playback/streaming-quality-settings': { StreamingQualitySettings: 'Quality' },
       '@/features/playback/playback-options-settings': { PlaybackOptionsSettings: 'Options' }, '@/features/lyrics/translation-settings': { LyricsTranslationSettings: 'Lyrics' } };
+    mocks['@/features/playback/seek-playback-settings'] = { SeekPlaybackSettings: 'SeekPlaybackSettings' };
     const rootMenu = nodes(read('src/app/settings.tsx', mocks).default());
     assert.equal(rootMenu.some(node => node.type === 'SystemLink'), available);
     assert.equal(rootMenu.some(node => node.props?.href === '/settings/haptics'), !available);
     for (const href of ['/settings/cloud', '/settings/library', '/settings/backup']) assert(rootMenu.some(node => node.props?.href === href));
     const playback = nodes(read('src/app/settings/playback.tsx', mocks).default());
+    assert(playback.some(node => node.type === 'SeekPlaybackSettings'), 'Seek playback remains configurable in-app with old and new iOS binaries');
     assert.equal(playback.some(node => node.type === 'Theme'), !available); assert.equal(playback.some(node => node.type === 'Quality'), !available);
     assert.equal(playback.some(node => node.type === 'Blur'), !available); assert.equal(playback.some(node => node.type === 'Options'), !available);
     assert(playback.some(node => node.type === 'Lyrics')); assert(playback.some(node => node.props?.href === '/settings/colors'));

@@ -12,6 +12,7 @@ import { SongRow } from '@/components/song-row';
 import { mockAlbums } from '@/features/library/mock-repository';
 import { playAndOpenPlayer } from '@/features/playback/play-and-open-player';
 import { useAlbumSongs } from '@/features/library/queries';
+import { albumArtistLabel, albumTitleFromId } from '@/features/library/album-library';
 import { useAppColorScheme, useColors } from '@/theme/tokens';
 import type { Album, Song } from '@/types/music';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -42,6 +43,7 @@ export default function AlbumScreen() {
   const album: Album = useMemo(() => mockAlbums.find((item) => item.id === params.id) ?? { id: params.id, title: params.title ?? '앨범', artist: params.artist ?? '', artworkUrl: params.artworkUrl || undefined }, [params.id, params.title, params.artist, params.artworkUrl]);
   const query = useAlbumSongs(album);
   const songs = query.data?.items ?? EMPTY_SONGS;
+  const artist = useMemo(() => albumTitleFromId(album.id) !== null && songs.length ? albumArtistLabel(songs) : album.artist, [album.id, album.artist, songs]);
   const artworkSong = songs.find(song => song.artworkOriginal && song.artworkUrl) ?? songs.find(song => song.artworkUrl);
   const artworkAlbum = { ...album, artworkUrl: artworkSong?.artworkUrl, palette: artworkSong ? artworkSong.palette : album.palette };
   const decorated = detail.ready && !detail.loadError && detail.preferences.albumColors && !hideArtwork && !!(artworkAlbum.artworkUrl || artworkAlbum.palette);
@@ -79,7 +81,7 @@ export default function AlbumScreen() {
             </Pressable>
             <View style={wide ? { maxWidth: 440, flexShrink: 1, alignItems: 'flex-start' } : { alignItems: 'center' }}>
               <Text style={[styles.title, wide && { textAlign: 'left', marginTop: 0 }, { color: decorated ? '#FFFFFF' : colors.text }]}>{album.title}</Text>
-              <Text style={[styles.artist, wide && { textAlign: 'left' }, { color: decorated ? '#FFFFFF' : colors.tint }]}>{album.artist}</Text>
+              <Text style={[styles.artist, wide && { textAlign: 'left' }, { color: decorated ? '#FFFFFF' : colors.tint }]}>{artist}</Text>
               <Text style={[styles.count, { color: decorated ? '#E5E5EB' : colors.muted }]}>{query.data?.total ?? 0}곡</Text>
             </View>
           </View>
@@ -100,7 +102,7 @@ export default function AlbumScreen() {
     <Animated.View pointerEvents="none" accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={[styles.headerGradient, { height: headerHeight + 28 }, header.gradientStyle]}>
       <LinearGradient colors={[colors.background, colors.background, colors.background + '00']} locations={[0, headerHeight / (headerHeight + 28), 1]} style={StyleSheet.absoluteFill} />
     </Animated.View>
-    {editingArtwork && songs.length > 0 && <AlbumArtworkEditor key={album.id} album={album} songs={songs} onClose={() => setEditingArtwork(false)} />}
+    {editingArtwork && songs.length > 0 && <AlbumArtworkEditor key={album.id} album={{ ...album, artist }} songs={songs} onClose={() => setEditingArtwork(false)} />}
   </View>;
 }
 const styles = StyleSheet.create({ artShadow: { borderRadius: 14, backgroundColor: '#35354D', shadowColor: '#000000', shadowOffset: { width: 0, height: 9 }, shadowOpacity: 0.3, shadowRadius: 16, elevation: 12 }, screen: { flex: 1 }, backdrop: { position: 'absolute', top: 0, left: 0, right: 0 }, headerGradient: { position: 'absolute', top: 0, left: 0, right: 0 }, empty: { padding: 30, textAlign: 'center' }, list: { flexGrow: 1 }, hero: { alignItems: 'center', paddingBottom: 23, paddingHorizontal: 22 }, actions: { alignItems: 'center', paddingHorizontal: 22, paddingTop: 15, paddingBottom: 19 }, song: { paddingHorizontal: 22 }, footer: { flexGrow: 1 }, title: { fontSize: 26, fontWeight: '800', marginTop: 20, textAlign: 'center' }, artist: { fontSize: 16, fontWeight: '600', marginTop: 5, textAlign: 'center' }, count: { fontSize: 13, marginTop: 6 }, play: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 7, height: 44, borderRadius: 11, alignSelf: 'stretch' }, playText: { color: 'white', fontSize: 15, fontWeight: '800' } });

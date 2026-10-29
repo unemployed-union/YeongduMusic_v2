@@ -16,7 +16,7 @@ import { parseAppearance, type AppearancePreferences } from '@/theme/appearance'
 export const MAX_BACKUP_BYTES = 2 * 1024 * 1024;
 export type SettingsBackup = {
   format: 'yeongdu-music-settings'; version: 1; exportedAt: string;
-  preferences: { hideArtwork: boolean; includeFolderAlbums: boolean; quality: StreamingQuality; excludedFolders: string[]; menus?: MenuLayout; themeMode?: ThemeMode; libraryDetails?: LibraryDetailPreferences; haptics?: HapticPreferences; favoriteDisplay?: FavoriteDisplayPreferences; blurEnabled?: boolean; blur?: BlurPreferences; appearance?: AppearancePreferences };
+  preferences: { hideArtwork: boolean; includeFolderAlbums: boolean; quality: StreamingQuality; excludedFolders: string[]; groupAlbumsByTitle?: boolean; playOnSeek?: boolean; menus?: MenuLayout; themeMode?: ThemeMode; libraryDetails?: LibraryDetailPreferences; haptics?: HapticPreferences; favoriteDisplay?: FavoriteDisplayPreferences; blurEnabled?: boolean; blur?: BlurPreferences; appearance?: AppearancePreferences };
   account?: { scope: string; hidden: HiddenMusicProfile; playlists: PlaylistProfile; access: { enabled: boolean; quickHideMode: QuickHideMode } };
 };
 
@@ -50,6 +50,8 @@ export function parseSettingsBackup(text: string): SettingsBackup {
     preferences: { hideArtwork: bool(preferences.hideArtwork), includeFolderAlbums: bool(preferences.includeFolderAlbums), quality: preferences.quality, excludedFolders: [...new Set((folders as string[]).map(localFolderKey))] },
   };
   if (preferences.menus !== undefined) result.preferences.menus = parseMenuLayout(preferences.menus);
+  if (preferences.playOnSeek !== undefined) result.preferences.playOnSeek = bool(preferences.playOnSeek);
+  if (preferences.groupAlbumsByTitle !== undefined) result.preferences.groupAlbumsByTitle = bool(preferences.groupAlbumsByTitle);
   if (preferences.themeMode !== undefined) result.preferences.themeMode = parseThemeMode(preferences.themeMode);
   if (preferences.libraryDetails !== undefined) result.preferences.libraryDetails = parseDetailPreferences(preferences.libraryDetails);
   if (preferences.haptics !== undefined) result.preferences.haptics = parseHapticPreferences(preferences.haptics);

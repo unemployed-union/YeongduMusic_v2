@@ -32,6 +32,7 @@ let generation = 0;
 let sourceRequest: AbortController | null = null;
 let loadedSongId: string | null = null;
 let pendingSavedPosition = 0;
+let transportRevision = 0;
 let finishing = false;
 let checkingSession = false;
 let checkedGeneration = -1;
@@ -206,6 +207,10 @@ function activeEngine(): ExpoAudioEngine {
     const state = usePlaybackStore.getState();
     engine = new ExpoAudioEngine(state.playbackRate, state.preservePitch);
     engine.subscribe((status) => {
+      const playback = usePlaybackStore.getState();
+      // loadIndex clears this identity before pausing the old source. Its final
+      // status must not overwrite the next song's position or saved duration.
+      if (!loadedSongId || playback.queue[playback.index]?.id !== loadedSongId) return;
       usePlaybackStore
         .getState()
         .setStatus({
@@ -341,11 +346,12 @@ export async function restorePlayback(
   const state = usePlaybackStore.getState();
   state.setQueue(queue.map(currentMetadata), index);
   usePlaybackStore.setState({ shuffle, repeat });
-  usePlayerBackgroundStore.getState().selectArtwork(usePlaybackStore.getState().queue[index]);
+  const restoredSong = usePlaybackStore.getState().queue[index];
+  usePlayerBackgroundStore.getState().selectArtwork(restoredSong);
   if (wasPlaying) await loadIndex(index, position);
   else {
     pendingSavedPosition = position;
-    state.setStatus({ position, playing: false, buffering: false });
+    state.setStatus({ position, duration: restoredSong.duration, playing: false, buffering: false });
   }
   return (
     usePlaybackStore.getState().queue[usePlaybackStore.getState().index]?.id === queue[index].id
@@ -386,6 +392,7 @@ export async function enqueue(song: Song): Promise<void> {
   state.enqueue(currentMetadata(song));
 }
 export function togglePlayback(): void {
+  transportRevision++;
   reconcilePlaybackVisibility();
   const state = usePlaybackStore.getState();
   if (state.index < 0) return;
@@ -404,18 +411,30 @@ export function getPlaybackPosition(): number {
   return engine?.getPosition() ?? usePlaybackStore.getState().position;
 }
 
-export async function seek(seconds: number): Promise<void> {
+export async function seek(seconds: number, playIfPaused = false): Promise<void> {
   const state = usePlaybackStore.getState(),
     repeat = state.sectionRepeat;
+  if (!state.queue[state.index] || !Number.isFinite(seconds)) return;
+  const shouldPlay = playIfPaused && !state.playing && !state.buffering;
+  const requestedTransportRevision = transportRevision;
   const requestedGeneration = generation;
   const requestSeek = sectionRepeat.beginSeek();
   const target =
     repeat?.enabled && repeat.end !== null
       ? Math.max(repeat.start, Math.min(seconds, repeat.end - 0.01))
       : seconds;
+  // A restored paused queue has no loaded source. Update the pending position
+  // before optionally opening the source for an explicit seek-and-play request.
+  if (!state.buffering && state.queue[state.index].id !== loadedSongId) {
+    pendingSavedPosition = Math.max(0, state.duration > 0 ? Math.min(target, state.duration) : target);
+    state.setStatus({ position: pendingSavedPosition });
+    if (shouldPlay) await loadIndex(state.index, pendingSavedPosition);
+    return;
+  }
   await activeEngine().seek(target, !!repeat?.enabled);
   if (requestedGeneration !== generation || !sectionRepeat.isCurrentSeek(requestSeek)) return;
   usePlaybackStore.getState().setStatus({ position: target });
+  if (shouldPlay && requestedTransportRevision === transportRevision && !usePlaybackStore.getState().playing) togglePlayback();
   sectionRepeat.schedule();
 }
 export async function next(fromEnd = false): Promise<void> {

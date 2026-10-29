@@ -10,7 +10,6 @@ type RecoveryReadiness = {
 };
 
 export function usePlaybackRecovery({ ready, privacyReady, privacyScope, scope, localReady, driveReady, driveAccountId, s3Ready, myboxReady = true }: RecoveryReadiness) {
-  const persistenceStop = useRef<(() => void) | null>(null);
   const recoveryAttempted = useRef(false);
   useEffect(() => {
     if (!ready || !privacyReady || privacyScope !== scope || !localReady || !driveReady || !s3Ready || !myboxReady || recoveryAttempted.current) return;
@@ -25,18 +24,19 @@ export function usePlaybackRecovery({ ready, privacyReady, privacyScope, scope, 
         const saved = await readRestoredPlayback();
         if (cancelled || !saved || usePlaybackStore.getState().queue.length) return;
         // A disk snapshot describes a past session, not a currently running player.
-        // Restore the queue/position without loading audio until the user presses play.
-        const restored = await restorePlayback(saved.queue, saved.index, saved.position, false, saved.shuffle, saved.repeat, saved.playbackRate, saved.preservePitch);
+        // Restore the last song at zero without loading audio until the user presses play.
+        const restored = await restorePlayback(saved.queue, saved.index, 0, false, saved.shuffle, saved.repeat, saved.playbackRate, saved.preservePitch);
         if (restored && !cancelled) router.navigate(usePlaybackStore.getState().playing ? '/player' : '/(tabs)/(library)');
       } catch { /* Playback recovery must not block the library. */ }
       finally {
         if (!cancelled) {
           recoveryAttempted.current = true;
-          if (!persistenceStop.current) persistenceStop.current = startPlaybackPersistence();
+          // Activity removal can unmount this screen while audio keeps playing.
+          // The idempotent recorder belongs to the playback runtime, not React.
+          startPlaybackPersistence();
         }
       }
     })();
     return () => { cancelled = true; };
   }, [ready, privacyReady, privacyScope, scope, localReady, driveReady, driveAccountId, s3Ready, myboxReady]);
-  useEffect(() => () => { persistenceStop.current?.(); persistenceStop.current = null; }, []);
 }

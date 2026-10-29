@@ -48,6 +48,7 @@ const slots = [], commands = [], queue = [{ id: 'one', title: 'Song', artist: 'A
 let activeSlots = slots;
 const state = { queue, index: 0, playing: true, buffering: false, error: null, sectionRepeat: null, position: 30, duration: 180 };
 const seekRequests = [];
+let playOnSeek = false;
 Object.assign(modules, {
   react: { useRef: initial => activeSlots[cursor++] ??= { current: initial }, useCallback: fn => fn, useState: initial => {
     const index = cursor++; if (!(index in activeSlots)) activeSlots[index] = initial;
@@ -70,7 +71,8 @@ Object.assign(modules, {
   '@/stores/playback': { usePlaybackStore: select => select(state) },
   '@/stores/auth': { useAuthStore: select => select({ mode: 'mock' }) },
   '@/services/haptics': { playHaptic() {} },
-  '@/services/playback/controller': { playQueue: (...args) => commands.push(args), seek: value => new Promise(resolve => { seekRequests.push({ value, resolve }); }) },
+  '@/services/playback/controller': { playQueue: (...args) => commands.push(args), seek: (value, autoPlay) => new Promise(resolve => { seekRequests.push({ value, autoPlay, resolve }); }) },
+  '@/stores/playback-preferences': { usePlaybackPreferences: { getState: () => ({ playOnSeek }) } },
 });
 modules['./player-screen-styles'] = read('src/features/playback/player-screen-styles.ts', modules);
 modules['./player-progress'] = read('src/features/playback/player-progress.tsx', { ...modules,
@@ -136,16 +138,23 @@ bar.props.onSlidingComplete(65); bar = slider(progressView());
 assert.equal(bar.props.thumbTintColor, 'transparent'); assert.equal(bar.props.value, 65, 'Keep the preview until the engine completes seeking');
 assert.equal(flatten(mask(progressView()).props.maskElement.props.style).backgroundColor, 'transparent', 'Releasing hides the native thumb before the seek completes');
 assert.equal(seekRequests.at(-1).value, 65);
+assert.equal(seekRequests.at(-1).autoPlay, false, 'Default slider seeks preserve pause');
 bar.props.onSlidingStart(70); bar.props.onValueChange(80); bar.props.onTouchCancel();
 assert.equal(slider(progressView()).props.value, 30); assert.equal(slider(progressView()).props.thumbTintColor, 'transparent');
 assert.equal(flatten(mask(progressView()).props.maskElement.props.style).backgroundColor, 'transparent', 'Canceled touches restore the fully masked idle state');
 bar.props.onSlidingStart(30); progressView(false); assert.equal(slider(progressView(false)).props.thumbTintColor, 'transparent', 'Losing focus hides the thumb');
 assert.equal(flatten(mask(progressView(false)).props.maskElement.props.style).backgroundColor, 'transparent');
 platform = 'android'; bar = slider(progressView());
+playOnSeek = true; bar.props.onSlidingComplete(75);
+assert.equal(seekRequests.at(-1).autoPlay, true, 'Android applies the saved seek playback option on release');
+playOnSeek = false;
 assert.equal(flatten(bar.props.style).width, 510); assert.equal(flatten(bar.props.style).marginLeft, -14);
 assert.equal(bar.props.thumbTintColor, '#FFFFFF'); assert.equal(bar.props.onTouchStart, undefined);
 assert.equal(mask(progressView()), undefined, 'Android retains its unmasked native slider');
 platform = 'ios'; dimensions = { width: 320, height: 568, fontScale: 2 }; tree = render();
+playOnSeek = true; slider(progressView()).props.onSlidingComplete(75);
+assert.equal(seekRequests.at(-1).autoPlay, true, 'iOS applies the same option on release');
+playOnSeek = false;
 assert(nodes(tree).some(node => node.type === 'ScrollView'), 'Small windows and large text keep the scrollable layout');
 assert.equal(flatten(bottom(tree).props.style).paddingBottom, 8);
 const config = JSON.parse(fs.readFileSync(path.join(__dirname, '../app.json'), 'utf8')).expo;

@@ -47,6 +47,9 @@ async function main() {
   assert.deepEqual(rules.artworkTargets(original, [second, second], 'demo', true), [key, nextKey]);
   assert.deepEqual(rules.artworkTargets(original, [], 'demo', true), [key], 'Only visible album songs participate');
   assert.deepEqual(rules.artworkTargets({ ...original, albumSource: 'fallback' }, [second], 'demo', true), [key]);
+  const guest = { ...second, artist: 'Guest', albumId: 'another-group' }, unrelated = { ...second, id: 'unrelated', album: 'Other', albumId: 'other' };
+  assert.deepEqual(rules.albumArtworkTargets(original, [original, guest, unrelated], 'demo', albums.albumId(original, true)), [key, nextKey], 'An explicit merged album includes all its visible artists and no other titles');
+  assert.deepEqual(rules.artworkTargets(original, [guest], 'demo', true), [key], 'Display grouping does not widen song-level bulk edits');
   for (const value of ['../original.jpg', 'https://example.invalid/art.jpg', 'data:image/svg+xml;base64,YQ==', 'art-bad.jpg']) assert.throws(() => rules.validateArtwork(value));
   assert.throws(() => rules.parseArtworkStorage('{broken'));
   assert.throws(() => rules.parseArtworkStorage(JSON.stringify({ version: 1, patches: { wrong: image } })));

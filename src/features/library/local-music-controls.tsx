@@ -18,6 +18,7 @@ import type { ImportKind } from '@/services/local-music/storage';
 import { useLiquidGlass } from '@/theme/liquid-glass';
 import { GlassBackdrop } from '@/components/glass-backdrop';
 import { glassControlStyles } from '@/components/glass-controls';
+import { useMusicSources } from './use-music-sources';
 
 const labels = musicSourceLabels;
 const sourceIcons = { all: 'musical-notes-outline', nas: 'server-outline', local: 'phone-portrait-outline', drive: 'logo-google', s3: 'file-tray-stacked-outline', mybox: 'cloud-outline' } as const;
@@ -62,6 +63,7 @@ export function LocalMusicControls({ sortControl, menuLabel }: { sortControl?: R
   const colors = useColors();
   const glass = useLiquidGlass();
   const local = useLocalMusicStore();
+  const sources = useMusicSources();
   const drive = useGoogleDriveStore();
   const documents = useDriveDocumentsStore();
   const s3 = useS3Store();
@@ -96,7 +98,7 @@ export function LocalMusicControls({ sortControl, menuLabel }: { sortControl?: R
       <ScrollView style={glass.supported && styles.scrollBody} contentInsetAdjustmentBehavior={glass.supported ? 'never' : undefined}
         contentContainerStyle={[styles.body, glass.supported && { padding: 16, gap: 20 }]}>
         <SourceSection title="음악 보관함">
-        {(['all', 'nas', 'local', 'drive', 's3', 'mybox'] as const).map((source) => <SourceOption key={source} icon={sourceIcons[source]} label={labels[source]} legacyIcon={false}
+        {sources.map((source) => <SourceOption key={source} icon={sourceIcons[source]} label={labels[source]} legacyIcon={false}
           selected={local.source === source} onPress={() => { local.setSource(source); setOpen(false); }} />)}
         </SourceSection>
         {!glass.supported && <View style={{ height: StyleSheet.hairlineWidth, backgroundColor: colors.separator }} />}

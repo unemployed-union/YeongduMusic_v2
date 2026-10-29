@@ -81,6 +81,8 @@ export function BackupSettings() {
       <Text style={[styles.title, { color: colors.text }]}>{selected.name}</Text>
       <Text style={[styles.detail, { color: colors.muted }]}>화면 모드: {selected.backup.preferences.themeMode === undefined ? '현재 설정 유지' : selected.backup.preferences.themeMode === 'dark' ? '다크' : selected.backup.preferences.themeMode === 'light' ? '화이트' : '자동'}</Text>
       <Text style={[styles.detail, { color: colors.muted }]}>보관함 상세 화면: {selected.backup.preferences.libraryDetails ? `아티스트 사진 ${selected.backup.preferences.libraryDetails.artistPhotos ? '켬' : '끔'} · 앨범 색상 ${selected.backup.preferences.libraryDetails.albumColors ? '켬' : '끔'}` : '현재 설정 유지'}</Text>
+      <Text style={[styles.detail, { color: colors.muted }]}>탐색 후 자동 재생: {selected.backup.preferences.playOnSeek === undefined ? '현재 설정 유지' : selected.backup.preferences.playOnSeek ? '켬' : '끔'}</Text>
+      <Text style={[styles.detail, { color: colors.muted }]}>앨범 제목만으로 묶기: {selected.backup.preferences.groupAlbumsByTitle === undefined ? '현재 설정 유지' : selected.backup.preferences.groupAlbumsByTitle ? '켬' : '끔'}</Text>
       <Text style={[styles.detail, { color: colors.muted }]}>블러 효과: {selectedBlurEnabled === undefined ? '현재 설정 유지' : selectedBlurEnabled ? '켬' : '끔'}</Text>
       <Text style={[styles.detail, { color: colors.muted }]}>색상 설정: {selected.backup.preferences.appearance ? APPEARANCE_FIELDS.map(field => `${APPEARANCE_LABELS[field]} ${selected.backup.preferences.appearance![field] ?? '기본'}`).join(' · ') : '현재 설정 유지'}</Text>
       {selectedBlur && <Text style={[styles.detail, { color: colors.muted }]}>{BLUR_AREAS.map(area => {

@@ -4,6 +4,7 @@ import Slider from '@react-native-community/slider';
 import MaskedView from '@react-native-masked-view/masked-view';
 import { Text } from '@/components/text';
 import { usePlaybackStore } from '@/stores/playback';
+import { usePlaybackPreferences } from '@/stores/playback-preferences';
 import { seek } from '@/services/playback/controller';
 import { playHaptic } from '@/services/haptics';
 const SLIDER_INSET = 14;
@@ -60,8 +61,9 @@ export function PlayerProgress({
       onValueChange={ios ? (value) => setDraft(value) : undefined}
       onSlidingComplete={(value) => {
         playHaptic('seek');
+        const playOnSeek = usePlaybackPreferences.getState().playOnSeek;
         if (!ios) {
-          void seek(value);
+          void seek(value, playOnSeek);
           return;
         }
         setDraft(value);
@@ -69,7 +71,7 @@ export function PlayerProgress({
         const finish = () => {
           if (request === seekRequest.current) setDraft(null);
         };
-        void seek(value).then(finish, finish);
+        void seek(value, playOnSeek).then(finish, finish);
       }}
     />
   );

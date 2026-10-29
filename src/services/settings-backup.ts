@@ -1,4 +1,5 @@
 import { useDisplayPreferences } from '@/stores/display-preferences';
+import { usePlaybackPreferences } from '@/stores/playback-preferences';
 import { useLibraryPreferences } from '@/stores/library-preferences';
 import { useMenuPreferences } from '@/stores/menu-preferences';
 import { useThemePreferences } from '@/stores/theme-preferences';
@@ -16,9 +17,9 @@ import { parseSettingsBackup, serializeSettingsBackup, type SettingsBackup } fro
 import { withBackupOperation as exclusive } from './backup-operation';
 
 async function prepare() {
-  await Promise.all([useDisplayPreferences.getState().load(true), useLibraryPreferences.getState().load(true), useMenuPreferences.getState().load(true),
+  await Promise.all([usePlaybackPreferences.getState().load(true), useDisplayPreferences.getState().load(true), useLibraryPreferences.getState().load(true), useMenuPreferences.getState().load(true),
     useStreamingPreferences.getState().load(), useFolderExclusionStore.getState().load(true), useHiddenFeatureAccess.getState().load(true), useThemePreferences.getState().load(true), useLibraryDetailPreferences.getState().load(true), useHapticPreferences.getState().load(true), useFavoriteDisplayPreferences.getState().load(true), useBlurPreferences.getState().load(true), useAppearancePreferences.getState().load(true)]);
-  const states = [useDisplayPreferences.getState(), useLibraryPreferences.getState(), useMenuPreferences.getState(), useStreamingPreferences.getState(), useFolderExclusionStore.getState(), useThemePreferences.getState(), useLibraryDetailPreferences.getState(), useHapticPreferences.getState(), useFavoriteDisplayPreferences.getState(), useBlurPreferences.getState(), useAppearancePreferences.getState()];
+  const states = [usePlaybackPreferences.getState(), useDisplayPreferences.getState(), useLibraryPreferences.getState(), useMenuPreferences.getState(), useStreamingPreferences.getState(), useFolderExclusionStore.getState(), useThemePreferences.getState(), useLibraryDetailPreferences.getState(), useHapticPreferences.getState(), useFavoriteDisplayPreferences.getState(), useBlurPreferences.getState(), useAppearancePreferences.getState()];
   for (const state of states) {
     if (!state.ready || state.error) throw new Error(state.error ?? '설정을 먼저 불러와 주세요.');
     if (state.loading || state.saving) throw new Error('설정을 저장 중입니다. 잠시 후 다시 시도해 주세요.');
@@ -42,7 +43,9 @@ async function authorize(scope: string) {
 function snapshot(includeAccount: boolean): SettingsBackup {
   const preferences: SettingsBackup['preferences'] = {
     hideArtwork: useDisplayPreferences.getState().hideArtwork,
+    playOnSeek: usePlaybackPreferences.getState().playOnSeek,
     includeFolderAlbums: useLibraryPreferences.getState().includeFolderAlbums,
+    groupAlbumsByTitle: useLibraryPreferences.getState().groupAlbumsByTitle,
     menus: useMenuPreferences.getState().layout,
     themeMode: useThemePreferences.getState().mode,
     libraryDetails: useLibraryDetailPreferences.getState().preferences,
@@ -110,7 +113,16 @@ export async function restoreSettingsBackup(input: SettingsBackup, includeAccoun
       const hideArtwork = (value: boolean) => checked(() => display.setHideArtwork(value), () => useDisplayPreferences.getState().error);
       const folderAlbums = (value: boolean) => checked(() => library.setIncludeFolderAlbums(value), () => useLibraryPreferences.getState().error);
       await apply(() => hideArtwork(backup.preferences.hideArtwork), () => hideArtwork(previous.preferences.hideArtwork));
+      if (backup.preferences.playOnSeek !== undefined && previous.preferences.playOnSeek !== undefined) {
+        const enabled = backup.preferences.playOnSeek, original = previous.preferences.playOnSeek;
+        await apply(() => usePlaybackPreferences.getState().setPlayOnSeek(enabled), () => usePlaybackPreferences.getState().setPlayOnSeek(original));
+      }
       await apply(() => folderAlbums(backup.preferences.includeFolderAlbums), () => folderAlbums(previous.preferences.includeFolderAlbums));
+      if (backup.preferences.groupAlbumsByTitle !== undefined && previous.preferences.groupAlbumsByTitle !== undefined) {
+        const enabled = backup.preferences.groupAlbumsByTitle, original = previous.preferences.groupAlbumsByTitle;
+        const grouping = (value: boolean) => checked(() => library.setGroupAlbumsByTitle(value), () => useLibraryPreferences.getState().error);
+        await apply(() => grouping(enabled), () => grouping(original));
+      }
       if (backup.preferences.menus && previous.preferences.menus) {
         const menus = backup.preferences.menus, original = previous.preferences.menus;
         const restoreMenus = (value: typeof menus) => checked(() => useMenuPreferences.getState().restore(value), () => useMenuPreferences.getState().error);

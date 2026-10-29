@@ -89,14 +89,18 @@ assert.deepEqual(nodes(tree).filter(node => node.type === 'Section').map(node =>
 
 const sourceLabels = read('src/services/music-source.ts').musicSourceLabels, menuRules = read('src/features/settings/menu-layout.ts');
 let source = 'nas', selectedTab;
+let visibleSources = ['all', 'nas', 'local'];
 const { LibrarySidebar } = read('src/features/library/library-sidebar.tsx', { ...base,
   '@/services/music-source': { musicSourceLabels: sourceLabels }, '@/features/settings/menu-layout': menuRules,
   '@/stores/local-music': { useLocalMusicStore: select => select({ source, setSource: value => { source = value; } }) },
+  './use-music-sources': { useMusicSources: () => visibleSources },
 });
 const sidebarProps = { tabs: ['artists', 'songs', 'favorites'], selected: 'songs', width: 248, onSelect: value => { selectedTab = value; } };
 tree = LibrarySidebar(sidebarProps);
 assert.equal(tree.props.showSettings, false, 'The library settings action moves to the title bar');
 assert.deepEqual(nodes(tree).filter(node => node.props?.accessibilityRole === 'tab').map(node => nodes(node).find(child => child.type === 'Text').props.children), ['아티스트', '노래', '좋아요']);
+assert.deepEqual(nodes(tree).filter(node => node.props?.accessibilityRole === 'button').map(node => nodes(node).find(child => child.type === 'Text').props.children), ['전체 음악', 'NAS 음악', '이 기기 음악'], 'The tablet hides unconnected sources');
+visibleSources = ['all', 'nas', 'local', 'drive']; tree = LibrarySidebar(sidebarProps);
 nodes(tree).find(node => node.type === 'Button' && nodes(node).some(child => child.props?.children === 'Google Drive')).props.onPress(); assert.equal(source, 'drive');
 nodes(tree).find(node => node.props?.accessibilityRole === 'tab').props.onPress(); assert.equal(selectedTab, 'artists');
 tree = LibrarySidebar({ ...sidebarProps, selected: 'favorites' });

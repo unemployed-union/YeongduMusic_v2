@@ -135,6 +135,7 @@ function checkSettingsUI(store) {
     '@/features/lyrics/translation-settings': { LyricsTranslationSettings: 'LyricsTranslationSettings' },
     '@/features/playback/streaming-quality-settings': { StreamingQualitySettings: 'StreamingQualitySettings' },
     '@/features/playback/playback-options-settings': { PlaybackOptionsSettings: 'PlaybackOptionsSettings' },
+    '@/features/playback/seek-playback-settings': { SeekPlaybackSettings: 'SeekPlaybackSettings' },
   }).default;
   assert.equal(nodes(playback()).filter(node => node.type === 'Link' && node.props.href === '/settings/player-menu').length, 1, 'The player menu settings appear once in the playback submenu');
   assert(nodes(playback()).some(node => node.type === 'BlurSettings'), 'Playback/display settings expose the global blur switch');

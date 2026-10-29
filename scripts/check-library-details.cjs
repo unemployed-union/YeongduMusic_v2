@@ -229,11 +229,13 @@ async function checkAlbumColors() {
 }
 function checkAlbumScreen(store) {
   const h = hooks(); let hidden = false, enabled, colorsReady = true;
+  const albumHelpers = load('src/features/library/album-library.ts'), params = { id: 'album', title: 'Album', artist: 'Artist' };
   const header = headerModule(h);
   store.setState({ ready: true, loadError: false, preferences: { artistPhotos: true, albumColors: true } });
   const songs = [{ id: 'one', artworkUrl: 'file:///cover' }];
   const Screen = load('src/app/(tabs)/(library)/album/[id].tsx', { ...uiMocks, react: h.react,
-    'expo-router': { Stack: { Screen: 'StackScreen' }, useIsFocused: () => true, useLocalSearchParams: () => ({ id: 'album', title: 'Album', artist: 'Artist' }) },
+    'expo-router': { Stack: { Screen: 'StackScreen' }, useIsFocused: () => true, useLocalSearchParams: () => params },
+    '@/features/library/album-library': albumHelpers,
     'expo-router/react-navigation': { useHeaderHeight: () => 96 },
     'expo-status-bar': { StatusBar: 'StatusBar' },
     'react-native-reanimated': { __esModule: true, default: { View: 'AnimatedView' } },
@@ -293,6 +295,10 @@ function checkAlbumScreen(store) {
   hidden = true; assert(!hasBackdrop(render())); assert.equal(enabled, false);
   hidden = false; store.setState({ preferences: { artistPhotos: true, albumColors: false } }); assert(!hasBackdrop(render()));
   store.setState({ preferences: { artistPhotos: true, albumColors: true } }); songs[0].artworkUrl = undefined; assert(!hasBackdrop(render()));
+  songs[0].artist = 'One'; songs.push({ id: 'two', artist: 'Two' });
+  params.id = albumHelpers.albumId({ album: 'Album' }, true);
+  list = nodes(render()).find(node => node.type === 'List');
+  assert(nodes(list.props.ListHeaderComponent).some(node => node.type === 'Text' && node.props.children === '여러 아티스트'), 'Merged album headers describe all the artists, including entry from the player');
 }
 function checkAlbumEditor() {
   const h = hooks(), songs = [{ id: 'drive', source: 'drive' }, { id: 'nas', source: 'nas' }]; let closed = 0;

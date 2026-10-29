@@ -34,6 +34,7 @@ import { openSystemEqualizer } from '@/services/playback/equalizer';
 import { cancelSectionRepeat, next, playQueue, previous } from '@/services/playback/controller';
 import { sectionClock } from '@/services/playback/section-repeat';
 import { usePlaybackStore } from '@/stores/playback';
+import { useLibraryPreferences } from '@/stores/library-preferences';
 import { usePlayerBackgroundStore } from '@/stores/player-background';
 import { AddToPlaylistDialog } from '@/features/playlists/dialogs';
 import { LyricsPanel } from '@/features/lyrics/lyrics-panel';
@@ -107,7 +108,7 @@ export function PlayerScreen() {
         : {
             pathname: '/(tabs)/(library)/album/[id]',
             params: {
-              id: albumId(song),
+              id: albumId(song, useLibraryPreferences.getState().groupAlbumsByTitle),
               title: song.album,
               artist: song.albumArtist || song.artist,
               artworkUrl: song.artworkUrl ?? '',
