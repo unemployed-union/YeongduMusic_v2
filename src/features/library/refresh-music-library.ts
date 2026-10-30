@@ -21,9 +21,9 @@ export function captureRefreshContext() {
     source,
     identity: libraryIdentity(auth.mode, auth.session),
     isCurrent: () => {
-      const currentAuth = useAuthStore.getState(),
-        currentDrive = useGoogleDriveStore.getState(),
-        currentS3 = useS3Store.getState();
+      const currentAuth = useAuthStore.getState();
+      const currentDrive = useGoogleDriveStore.getState();
+      const currentS3 = useS3Store.getState();
       return (
         currentAuth.generation === auth.generation &&
         currentAuth.mode === auth.mode &&
@@ -49,13 +49,19 @@ export async function refreshMusicLibrary(
   isActive = context.isCurrent,
 ): Promise<string | null> {
   const { source, mode, identity } = context;
-  if (!isActive()) return null;
+  if (!isActive()) {
+    return null;
+  }
   const cloudResult = await refreshSelectedCloudLibraries(source, isActive);
-  if (!cloudResult) return null;
+  if (!cloudResult) {
+    return null;
+  }
   const { driveFailed, s3Failed, myboxFailed } = cloudResult;
   if (source === 'mybox') {
     await queryClient.invalidateQueries({ queryKey: ['local-library'] });
-    if (!isActive() || myboxFailed) return null;
+    if (!isActive() || myboxFailed) {
+      return null;
+    }
     return useMyboxStore.getState().connection
       ? 'MYBOX 음악 목록을 불러왔습니다.'
       : '설정에서 MYBOX를 연결해 주세요.';
@@ -65,25 +71,34 @@ export async function refreshMusicLibrary(
     .join(' · ');
   if (source === 's3' || source === 'drive') {
     await queryClient.invalidateQueries({ queryKey: ['local-library'] });
-    if (!isActive() || (source === 's3' ? s3Failed : driveFailed)) return null;
-    if (source === 's3')
+    if (!isActive() || (source === 's3' ? s3Failed : driveFailed)) {
+      return null;
+    }
+    if (source === 's3') {
       return useS3Store.getState().connection
         ? 'S3 음악 목록을 불러왔습니다.'
         : '설정에서 S3를 연결해 주세요.';
+    }
     const drive = useGoogleDriveStore.getState();
-    if (useDriveDocumentsStore.getState().songs.length)
+    if (useDriveDocumentsStore.getState().songs.length) {
       return 'Google Drive 음악 목록과 파일 읽기 권한을 확인했습니다.';
-    if (useDriveDocumentsStore.getState().documents.length)
+    }
+    if (useDriveDocumentsStore.getState().documents.length) {
       return '파일 앱에서 Google Drive 음원을 다시 선택해 읽기 권한을 복원해 주세요.';
+    }
     return !drive.account || !drive.files.length
       ? '설정에서 Google Drive 음원을 선택해 주세요.'
       : 'Google Drive 음악 목록을 불러왔습니다.';
   }
   await useLocalMusicStore.getState().load();
-  if (!isActive()) return null;
+  if (!isActive()) {
+    return null;
+  }
   if (source === 'local' || mode === 'setup') {
     await queryClient.invalidateQueries({ queryKey: ['local-library'] });
-    if (!isActive()) return null;
+    if (!isActive()) {
+      return null;
+    }
     return driveFailed || s3Failed || myboxFailed
       ? '기기 목록을 갱신했습니다. ' + cloudRetry + '는 다시 시도해 주세요.'
       : '음악 목록을 불러왔습니다.';
@@ -94,10 +109,14 @@ export async function refreshMusicLibrary(
     identity,
     isActive,
   );
-  if (!result || !isActive()) return null;
-  return driveFailed || s3Failed || myboxFailed
-    ? 'Audio Station 목록을 갱신했습니다. ' + cloudRetry + '는 다시 시도해 주세요.'
-    : mode === 'mock'
-      ? '데모 목록을 새로고침했습니다.'
-      : 'Audio Station에서 음악 목록을 불러왔습니다.';
+  if (!result || !isActive()) {
+    return null;
+  }
+  if (driveFailed || s3Failed || myboxFailed) {
+    return 'Audio Station 목록을 갱신했습니다. ' + cloudRetry + '는 다시 시도해 주세요.';
+  } else if (mode === 'mock') {
+    return '데모 목록을 새로고침했습니다.';
+  } else {
+    return 'Audio Station에서 음악 목록을 불러왔습니다.';
+  }
 }

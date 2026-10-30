@@ -24,18 +24,27 @@ export const useDisplayPreferences = create<DisplayPreferences>((set, get) => {
     saving: false,
     error: null,
     load: (force = false) => {
-      if (loading) return loading;
-      if (get().ready && !force) return Promise.resolve();
+      if (loading) {
+        return loading;
+      }
+      if (get().ready && !force) {
+        return Promise.resolve();
+      }
       set({ loading: true, error: null });
       loading = persistenceQueue
         .settled()
         .then(async () => {
-          const value =
-            Platform.OS === 'web'
-              ? typeof localStorage === 'undefined'
-                ? null
-                : localStorage.getItem(KEY)
-              : await SecureStore.getItemAsync(KEY);
+          let value: string | null;
+          if (Platform.OS === 'web') {
+            if (typeof localStorage === 'undefined') {
+              value = null;
+            } else {
+              value = localStorage.getItem(KEY);
+            }
+          } else {
+            value = await SecureStore.getItemAsync(KEY);
+          }
+
           set({ hideArtwork: value === 'true', ready: true });
         })
         .catch(() => {
@@ -52,8 +61,11 @@ export const useDisplayPreferences = create<DisplayPreferences>((set, get) => {
       writes++;
       set({ saving: true });
       const write = persistenceQueue.run(async () => {
-        if (Platform.OS === 'web') localStorage.setItem(KEY, String(hidden));
-        else await SecureStore.setItemAsync(KEY, String(hidden));
+        if (Platform.OS === 'web') {
+          localStorage.setItem(KEY, String(hidden));
+        } else {
+          await SecureStore.setItemAsync(KEY, String(hidden));
+        }
         set({ hideArtwork: hidden, ready: true, error: null });
       });
 

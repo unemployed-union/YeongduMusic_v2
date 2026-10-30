@@ -36,8 +36,11 @@ export const useMenuPreferences = create<MenuPreferences>((set, get) => {
       const layout = parseMenuLayout(change(get().layout));
       const value = JSON.stringify(layout);
       try {
-        if (Platform.OS === 'web') localStorage.setItem(KEY, value);
-        else await SecureStore.setItemAsync(KEY, value);
+        if (Platform.OS === 'web') {
+          localStorage.setItem(KEY, value);
+        } else {
+          await SecureStore.setItemAsync(KEY, value);
+        }
       } catch {
         throw new Error('메뉴 설정을 저장하지 못했습니다. 다시 시도해 주세요.');
       }
@@ -65,18 +68,27 @@ export const useMenuPreferences = create<MenuPreferences>((set, get) => {
     saving: false,
     error: null,
     load: (force = false) => {
-      if (loading) return loading;
-      if (get().ready && !force) return Promise.resolve();
+      if (loading) {
+        return loading;
+      }
+      if (get().ready && !force) {
+        return Promise.resolve();
+      }
       set({ loading: true, error: null });
       loading = persistenceQueue
         .settled()
         .then(async () => {
-          const value =
-            Platform.OS === 'web'
-              ? typeof localStorage === 'undefined'
-                ? null
-                : localStorage.getItem(KEY)
-              : await SecureStore.getItemAsync(KEY);
+          let value: string | null;
+          if (Platform.OS === 'web') {
+            if (typeof localStorage === 'undefined') {
+              value = null;
+            } else {
+              value = localStorage.getItem(KEY);
+            }
+          } else {
+            value = await SecureStore.getItemAsync(KEY);
+          }
+
           set({
             layout: value === null ? defaultMenuLayout() : parseMenuLayout(JSON.parse(value)),
             ready: true,
@@ -102,10 +114,11 @@ export const useMenuPreferences = create<MenuPreferences>((set, get) => {
     move: (group, id, direction) =>
       update((layout) => {
         const items = [...layout[group]];
-        const index = items.findIndex((item) => item.id === id),
-          next = index + direction;
-        if (index >= 0 && next >= 0 && next < items.length)
+        const index = items.findIndex((item) => item.id === id);
+        const next = index + direction;
+        if (index >= 0 && next >= 0 && next < items.length) {
           [items[index], items[next]] = [items[next], items[index]];
+        }
         return { ...layout, [group]: items };
       }),
     restore: (layout) => {

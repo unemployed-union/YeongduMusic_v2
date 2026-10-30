@@ -1,25 +1,48 @@
 import { useEffect, type ReactNode } from 'react';
 import { StyleSheet } from 'react-native';
 import { useIsFocused } from 'expo-router';
-import Animated, { cancelAnimation, useAnimatedStyle, useReducedMotion, useSharedValue, withTiming } from 'react-native-reanimated';
+import Animated, {
+  cancelAnimation,
+  useAnimatedStyle,
+  useReducedMotion,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
 import { useLiquidGlass } from '@/theme/liquid-glass';
 
 /** Animate only the content pane; keep its state and the adjacent sidebar intact. */
-export function ContentTransition({ enabled, transitionKey, children }: { enabled: boolean; transitionKey?: string; children: ReactNode }) {
-  const focused = useIsFocused(), reducedMotion = useReducedMotion();
+export function ContentTransition({
+  enabled,
+  transitionKey,
+  children,
+}: {
+  enabled: boolean;
+  transitionKey?: string;
+  children: ReactNode;
+}) {
+  const focused = useIsFocused();
+  const reducedMotion = useReducedMotion();
   const glass = useLiquidGlass();
   const opacity = useSharedValue(1);
   useEffect(() => {
     cancelAnimation(opacity);
-    if (!enabled || !focused || reducedMotion) { opacity.set(1); return; }
+    if (!enabled || !focused || reducedMotion) {
+      opacity.set(1);
+      return;
+    }
     opacity.set(0);
     opacity.set(withTiming(1, { duration: 180 }));
-    return () => { cancelAnimation(opacity); opacity.set(1); };
+    return () => {
+      cancelAnimation(opacity);
+      opacity.set(1);
+    };
   }, [enabled, focused, reducedMotion, transitionKey, opacity]);
   // A zero-opacity ancestor can permanently suppress native glass on iPad.
-  const animatedStyle = useAnimatedStyle(() => glass.supported
-    ? { transform: [{ translateY: (1 - opacity.get()) * 8 }] }
-    : { opacity: opacity.get() });
+  const animatedStyle = useAnimatedStyle(() =>
+    glass.supported
+      ? { transform: [{ translateY: (1 - opacity.get()) * 8 }] }
+      : { opacity: opacity.get() },
+  );
   return <Animated.View style={[styles.pane, enabled && animatedStyle]}>{children}</Animated.View>;
 }
 

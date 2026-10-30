@@ -43,24 +43,34 @@ const RECOVERY_ERROR = '음악 연결이 끊겼습니다. 네트워크를 확인
 
 /** Override unreliable NAS response MIME types without transcoding or downloading the track. */
 function withIosFlacType(source: AudioSource, song: Song): AudioSource {
-  if (Platform.OS !== 'ios' || (song.source !== undefined && song.source !== 'nas')) return source;
+  if (Platform.OS !== 'ios' || (song.source !== undefined && song.source !== 'nas')) {
+    return source;
+  }
   const codec = song.audioCodec?.trim().toLowerCase();
-  if (codec ? codec !== 'flac' : !/\.flac$/i.test(song.path ?? song.title)) return source;
-  const uri =
-    typeof source === 'string'
-      ? source
-      : source && typeof source === 'object' && source.assetId === undefined
-        ? source.uri
-        : undefined;
-  if (!uri) return source;
+  if (codec ? codec !== 'flac' : !/\.flac$/i.test(song.path ?? song.title)) {
+    return source;
+  }
+  let uri: string | undefined;
+  if (typeof source === 'string') {
+    uri = source;
+  } else if (source && typeof source === 'object' && source.assetId === undefined) {
+    uri = source.uri;
+  } else {
+    uri = undefined;
+  }
+
+  if (!uri) {
+    return source;
+  }
   try {
     const url = new URL(uri);
     if (
       !['http:', 'https:'].includes(url.protocol) ||
       url.searchParams.get('api') !== 'SYNO.AudioStation.Stream' ||
       url.searchParams.get('method') !== 'stream'
-    )
+    ) {
       return source;
+    }
   } catch {
     return source;
   }
@@ -131,22 +141,30 @@ export class ExpoAudioEngine implements AudioEngine {
 
   private async setup(): Promise<AudioPlayer> {
     const lifecycle = this.lifecycle;
-    if (!this.configured)
+    if (!this.configured) {
       this.configured = setAudioModeAsync({
         playsInSilentMode: true,
         shouldPlayInBackground: this.backgroundPlaybackAvailable,
         interruptionMode: 'doNotMix',
       });
+    }
     await this.configured;
-    if (lifecycle !== this.lifecycle) throw new Error('재생 요청이 취소되었습니다.');
+    if (lifecycle !== this.lifecycle) {
+      throw new Error('재생 요청이 취소되었습니다.');
+    }
     if (!this.player) {
+      let forwardBufferDuration: number;
+      if (Platform.OS === 'android') {
+        forwardBufferDuration = ANDROID_FORWARD_BUFFER_SECONDS;
+      } else {
+        forwardBufferDuration = 0;
+      }
       this.player = createAudioPlayer(null, {
         // Lyrics read the engine clock directly; UI does not need two native events per second.
         updateInterval: 1000,
         // iOS 57.0.5 applies this only to the constructor's initial AVPlayerItem,
         // not later replace() calls. This reusable player's improvement is Android-only.
-        preferredForwardBufferDuration:
-          Platform.OS === 'android' ? ANDROID_FORWARD_BUFFER_SECONDS : 0,
+        preferredForwardBufferDuration: forwardBufferDuration,
       });
       this.subscription = this.player.addListener('playbackStatusUpdate', (status: AudioStatus) => {
         this.observeBuffering(status);
@@ -165,7 +183,9 @@ export class ExpoAudioEngine implements AudioEngine {
 
   getPosition(): number {
     // Read the native clock without increasing status updates across the app.
-    if (this.resume || this.starting || this.retryTimer !== null) return this.position;
+    if (this.resume || this.starting || this.retryTimer !== null) {
+      return this.position;
+    }
     const position = this.player?.currentTime;
     return typeof position === 'number' && Number.isFinite(position) && position >= 0
       ? position
@@ -185,15 +205,22 @@ export class ExpoAudioEngine implements AudioEngine {
   }
 
   private clearRecoveryTimers(): void {
-    if (this.stallTimer !== null) clearTimeout(this.stallTimer);
-    if (this.retryTimer !== null) clearTimeout(this.retryTimer);
-    this.stallTimer = this.retryTimer = null;
+    if (this.stallTimer !== null) {
+      clearTimeout(this.stallTimer);
+    }
+    if (this.retryTimer !== null) {
+      clearTimeout(this.retryTimer);
+    }
+    this.retryTimer = null;
+    this.stallTimer = null;
   }
 
   private watchStall(): void {
     // Android stops periodic status events while buffering. Start a deadline from
     // the transition itself; do not depend on another native event arriving.
-    if (!this.wantsPlayback || this.stallTimer !== null || this.retryTimer !== null) return;
+    if (!this.wantsPlayback || this.stallTimer !== null || this.retryTimer !== null) {
+      return;
+    }
     this.stallTimer = setTimeout(() => {
       this.stallTimer = null;
       this.scheduleRecovery();
@@ -203,7 +230,8 @@ export class ExpoAudioEngine implements AudioEngine {
   private scheduleRecovery(): void {
     if (this.localSource) {
       this.clearRecoveryTimers();
-      this.wantsPlayback = this.starting = false;
+      this.starting = false;
+      this.wantsPlayback = false;
       this.resume = null;
       this.failure =
         '로컬 음악을 재생할 수 없습니다. 파일 접근·오디오 포맷을 확인하고 다시 가져와 주세요.';
@@ -211,7 +239,9 @@ export class ExpoAudioEngine implements AudioEngine {
       this.publish(false, false);
       return;
     }
-    if (!this.wantsPlayback || this.source === null || this.retryTimer !== null) return;
+    if (!this.wantsPlayback || this.source === null || this.retryTimer !== null) {
+      return;
+    }
     this.clearRecoveryTimers();
     this.stableFrom = null;
     this.failure = RECOVERY_ERROR;
@@ -227,7 +257,9 @@ export class ExpoAudioEngine implements AudioEngine {
     const delay = RETRY_DELAYS_MS[this.retries++];
     this.retryTimer = setTimeout(() => {
       this.retryTimer = null;
-      if (operation !== this.operation || !this.wantsPlayback || !this.player) return;
+      if (operation !== this.operation || !this.wantsPlayback || !this.player) {
+        return;
+      }
       // replace() prepares a fresh connection. Wait for ready before seeking;
       // seeking an unloaded AVPlayerItem can silently lose the resume position.
       this.resume = { operation, position: this.position, seeking: false };
@@ -248,23 +280,33 @@ export class ExpoAudioEngine implements AudioEngine {
   private async resumePlayback(): Promise<void> {
     const resume = this.resume;
     const player = this.player;
-    if (!resume || resume.seeking || !player) return;
+    if (!resume || resume.seeking || !player) {
+      return;
+    }
     resume.seeking = true;
     try {
       // pause()/replace() can emit the previous item's ready status. Check the
       // current native item after that replacement finishes, before seeking.
       await Promise.resolve();
-      if (resume.operation !== this.operation || !this.wantsPlayback) return;
+      if (resume.operation !== this.operation || !this.wantsPlayback) {
+        return;
+      }
       if (!player.isLoaded) {
         resume.seeking = false;
         return;
       }
-      if (resume.position > 0) await player.seekTo(resume.position, 0, 0);
-      if (resume.operation !== this.operation || !this.wantsPlayback) return;
+      if (resume.position > 0) {
+        await player.seekTo(resume.position, 0, 0);
+      }
+      if (resume.operation !== this.operation || !this.wantsPlayback) {
+        return;
+      }
       this.resume = null;
       player.play();
     } catch {
-      if (resume.operation !== this.operation) return;
+      if (resume.operation !== this.operation) {
+        return;
+      }
       this.resume = null;
       this.scheduleRecovery();
     }
@@ -277,7 +319,9 @@ export class ExpoAudioEngine implements AudioEngine {
       return;
     }
     if (this.resume) {
-      if (status.isLoaded) void this.resumePlayback();
+      if (status.isLoaded) {
+        void this.resumePlayback();
+      }
       this.publish(this.wantsPlayback, this.wantsPlayback);
       return;
     }
@@ -286,15 +330,19 @@ export class ExpoAudioEngine implements AudioEngine {
       this.publish(this.wantsPlayback, this.wantsPlayback);
       return;
     }
-    if (Number.isFinite(status.duration) && status.duration > 0) this.duration = status.duration;
+    if (Number.isFinite(status.duration) && status.duration > 0) {
+      this.duration = status.duration;
+    }
     if (
       Number.isFinite(status.currentTime) &&
       (status.isLoaded || status.currentTime > 0) &&
       !(this.failure && this.starting)
-    )
+    ) {
       this.position = status.currentTime;
+    }
     if (status.didJustFinish) {
-      this.wantsPlayback = this.starting = false;
+      this.starting = false;
+      this.wantsPlayback = false;
       this.clearRecoveryTimers();
       this.publish(false, false, true);
       return;
@@ -307,7 +355,9 @@ export class ExpoAudioEngine implements AudioEngine {
       this.clearRecoveryTimers();
       // A brief successful resume must not create an unlimited retry loop.
       this.stableFrom ??= this.position;
-      if (this.position - this.stableFrom >= 30) this.retries = 0;
+      if (this.position - this.stableFrom >= 30) {
+        this.retries = 0;
+      }
     } else if (
       !this.starting &&
       !status.playing &&
@@ -335,7 +385,9 @@ export class ExpoAudioEngine implements AudioEngine {
   }
 
   private observeBuffering(status: AudioStatus): void {
-    if (!__DEV__) return;
+    if (!__DEV__) {
+      return;
+    }
     if (status.error || status.didJustFinish) {
       this.resetBufferingObservation();
       return;
@@ -365,26 +417,51 @@ export class ExpoAudioEngine implements AudioEngine {
     const operation = ++this.operation;
     this.clearRecoveryTimers();
     this.resume = null;
-    this.wantsPlayback = this.starting = true;
+    this.starting = true;
+    this.wantsPlayback = true;
     this.failure = null;
     this.retries = 0;
     this.stableFrom = null;
     this.position = Number.isFinite(initialPosition) ? Math.max(0, initialPosition) : 0;
     this.duration = song.duration;
     const player = await this.setup();
-    if (lifecycle !== this.lifecycle || operation !== this.operation) return;
+    if (lifecycle !== this.lifecycle || operation !== this.operation) {
+      return;
+    }
     this.source = withIosFlacType(source, song);
     this.localSource = song.source === 'local';
     this.resetBufferingObservation();
     this.watchStall();
-    if (this.position > 0) this.resume = { operation, position: this.position, seeking: false };
+    if (this.position > 0) {
+      this.resume = { operation, position: this.position, seeking: false };
+    }
     player.replace(this.source);
     this.applyPlaybackRate(player);
     if (this.backgroundPlaybackAvailable) {
       // showSkip* and remoteTrackChange are provided by our pinned expo-audio pnpm patch.
       // Stock showSeek* options only move 10 seconds within the current song.
-      if (this.lockScreenActive) this.updateMetadata(song);
-      else {
+      if (this.lockScreenActive) {
+        this.updateMetadata(song);
+      } else {
+        let lockScreenOptions: Parameters<typeof player.setActiveForLockScreen>[2];
+        if (Platform.OS === 'android') {
+          lockScreenOptions = {
+            isLiveStream: false,
+            showSkipPrevious: true,
+            showSkipNext: true,
+            showSeekBackward: false,
+            showSeekForward: false,
+          };
+        } else if (Platform.OS === 'ios') {
+          // A NAS item may initially report an indefinite duration; keep seeking available.
+          lockScreenOptions = {
+            isLiveStream: false,
+            showSeekBackward: false,
+            showSeekForward: false,
+          };
+        } else {
+          lockScreenOptions = undefined;
+        }
         player.setActiveForLockScreen(
           true,
           {
@@ -393,34 +470,26 @@ export class ExpoAudioEngine implements AudioEngine {
             albumTitle: song.album,
             artworkUrl: song.artworkUrl,
           },
-          Platform.OS === 'android'
-            ? {
-                isLiveStream: false,
-                showSkipPrevious: true,
-                showSkipNext: true,
-                showSeekBackward: false,
-                showSeekForward: false,
-              }
-            : // AVPlayer can report an indefinite duration while a NAS file is loading.
-              // Do not let that initial value permanently disable the system scrub bar.
-              Platform.OS === 'ios'
-              ? { isLiveStream: false, showSeekBackward: false, showSeekForward: false }
-              : undefined,
+          lockScreenOptions,
         );
         this.lockScreenActive = true;
       }
     }
-    if (this.resume) void this.resumePlayback();
-    else player.play();
+    if (this.resume) {
+      void this.resumePlayback();
+    } else {
+      player.play();
+    }
   }
   updateMetadata(song: Song): void {
-    if (this.backgroundPlaybackAvailable)
+    if (this.backgroundPlaybackAvailable) {
       this.player?.updateLockScreenMetadata({
         title: song.title,
         artist: song.artist,
         albumTitle: song.album,
         artworkUrl: song.artworkUrl,
       });
+    }
   }
   getAudioSessionId(): number | null {
     // Android-only property supplied by our pinned expo-audio patch; absent in older binaries.
@@ -440,23 +509,30 @@ export class ExpoAudioEngine implements AudioEngine {
   }
   pause(forTrackTransition = false): void {
     this.operation++;
-    this.wantsPlayback = this.starting = false;
+    this.starting = false;
+    this.wantsPlayback = false;
     this.resume = null;
     this.clearRecoveryTimers();
     this.resetBufferingObservation();
     this.player?.pause();
     // Preserve the native end-of-track wake lock until the next source starts.
     // Explicit pause, final queue end, sleep timers and stop release it now.
-    if (!forTrackTransition && Platform.OS === 'android') this.player?.finishTrackTransition?.();
+    if (!forTrackTransition && Platform.OS === 'android') {
+      this.player?.finishTrackTransition?.();
+    }
     this.publish(false, false);
   }
   async seek(seconds: number, precise = false): Promise<void> {
     this.resetBufferingObservation();
     this.position = seconds;
-    if (this.resume) this.resume.position = seconds;
-    else if (!this.failure) {
-      if (precise) await this.player?.seekTo(seconds, 0, 0);
-      else await this.player?.seekTo(seconds);
+    if (this.resume) {
+      this.resume.position = seconds;
+    } else if (!this.failure) {
+      if (precise) {
+        await this.player?.seekTo(seconds, 0, 0);
+      } else {
+        await this.player?.seekTo(seconds);
+      }
     }
   }
   subscribe(listener: (status: EngineStatus) => void): () => void {
@@ -474,7 +550,8 @@ export class ExpoAudioEngine implements AudioEngine {
   release(): void {
     this.lifecycle++;
     this.operation++;
-    this.wantsPlayback = this.starting = false;
+    this.starting = false;
+    this.wantsPlayback = false;
     this.source = null;
     this.resume = null;
     this.clearRecoveryTimers();
@@ -483,7 +560,9 @@ export class ExpoAudioEngine implements AudioEngine {
     this.subscription = null;
     this.remoteSubscription?.remove();
     this.remoteSubscription = null;
-    if (this.backgroundPlaybackAvailable) this.player?.setActiveForLockScreen(false);
+    if (this.backgroundPlaybackAvailable) {
+      this.player?.setActiveForLockScreen(false);
+    }
     this.lockScreenActive = false;
     this.player?.release();
     this.player = null;

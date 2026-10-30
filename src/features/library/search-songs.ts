@@ -6,7 +6,9 @@ function normalize(value: string): string {
 
 export function searchSongs(library: Page<Song>, term: string): Page<Song> {
   const query = normalize(term);
-  if (!query) return { items: [], total: 0, stale: library.stale };
+  if (!query) {
+    return { items: [], total: 0, stale: library.stale };
+  }
   const words = query.split(/\s+/u);
   const items = library.items.filter((song) => {
     const fields = [song.title, song.artist, song.album].map(normalize);

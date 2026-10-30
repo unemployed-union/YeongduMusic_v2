@@ -35,71 +35,138 @@ type Snapshot = {
   savedAt: number;
 };
 
-export type RestoredPlayback = Pick<Snapshot, 'queue' | 'index' | 'position' | 'playing' | 'shuffle' | 'repeat'> & { playbackRate: number; preservePitch: boolean };
+export type RestoredPlayback = Pick<
+  Snapshot,
+  'queue' | 'index' | 'position' | 'playing' | 'shuffle' | 'repeat'
+> & { playbackRate: number; preservePitch: boolean };
 
 async function read(): Promise<string | null> {
-  if (Platform.OS === 'web') return typeof localStorage === 'undefined' ? null : localStorage.getItem(KEY);
+  if (Platform.OS === 'web') {
+    return typeof localStorage === 'undefined' ? null : localStorage.getItem(KEY);
+  }
   return (await import('expo-sqlite/kv-store')).default.getItem(KEY);
 }
 
 async function write(value: string | null): Promise<void> {
   if (Platform.OS === 'web') {
     if (typeof localStorage !== 'undefined') {
-      if (value === null) localStorage.removeItem(KEY);
-      else localStorage.setItem(KEY, value);
+      if (value === null) {
+        localStorage.removeItem(KEY);
+      } else {
+        localStorage.setItem(KEY, value);
+      }
     }
     return;
   }
   const storage = (await import('expo-sqlite/kv-store')).default;
-  if (value === null) await storage.removeItem(KEY);
-  else await storage.setItem(KEY, value);
+  if (value === null) {
+    await storage.removeItem(KEY);
+  } else {
+    await storage.setItem(KEY, value);
+  }
 }
 
 function validSong(value: unknown): value is Song {
-  if (!value || typeof value !== 'object') return false;
+  if (!value || typeof value !== 'object') {
+    return false;
+  }
   const song = value as Partial<Song>;
-  return typeof song.id === 'string' && !!song.id && typeof song.title === 'string' &&
-    typeof song.artist === 'string' && typeof song.album === 'string' &&
-    typeof song.duration === 'number' && Number.isFinite(song.duration) && song.duration >= 0 &&
-    (song.source === 'nas' || song.source === undefined ||
+  return (
+    typeof song.id === 'string' &&
+    !!song.id &&
+    typeof song.title === 'string' &&
+    typeof song.artist === 'string' &&
+    typeof song.album === 'string' &&
+    typeof song.duration === 'number' &&
+    Number.isFinite(song.duration) &&
+    song.duration >= 0 &&
+    (song.source === 'nas' ||
+      song.source === undefined ||
       (song.source === 'local' && !!song.local && typeof song.local.fileName === 'string') ||
-      (song.source === 'drive' && !!song.drive && typeof song.drive.fileId === 'string' && typeof song.drive.accountId === 'string') ||
-      (song.source === 's3' && !!song.s3 && typeof song.s3.key === 'string' && typeof song.s3.connectionId === 'string' && Number.isSafeInteger(song.s3.size) && song.s3.size > 0) ||
-      (song.source === 'mybox' && !!song.mybox && typeof song.mybox.fileId === 'string' && typeof song.mybox.fileName === 'string' && typeof song.mybox.connectionId === 'string' && typeof song.path === 'string' && Number.isSafeInteger(song.mybox.size) && song.mybox.size > 0));
+      (song.source === 'drive' &&
+        !!song.drive &&
+        typeof song.drive.fileId === 'string' &&
+        typeof song.drive.accountId === 'string') ||
+      (song.source === 's3' &&
+        !!song.s3 &&
+        typeof song.s3.key === 'string' &&
+        typeof song.s3.connectionId === 'string' &&
+        Number.isSafeInteger(song.s3.size) &&
+        song.s3.size > 0) ||
+      (song.source === 'mybox' &&
+        !!song.mybox &&
+        typeof song.mybox.fileId === 'string' &&
+        typeof song.mybox.fileName === 'string' &&
+        typeof song.mybox.connectionId === 'string' &&
+        typeof song.path === 'string' &&
+        Number.isSafeInteger(song.mybox.size) &&
+        song.mybox.size > 0))
+  );
 }
 
 function parse(raw: string | null): Snapshot | null {
-  if (!raw) return null;
+  if (!raw) {
+    return null;
+  }
   try {
     const value = JSON.parse(raw) as Partial<Snapshot>;
-    if (value.version !== 1 || !Array.isArray(value.queue) || !value.queue.length || value.queue.length > 10000 ||
-      !value.queue.every(validSong) || !Number.isInteger(value.index) || value.index! < 0 || value.index! >= value.queue.length ||
-      typeof value.position !== 'number' || !Number.isFinite(value.position) || value.position < 0 ||
-      typeof value.playing !== 'boolean' || typeof value.shuffle !== 'boolean' ||
+    if (
+      value.version !== 1 ||
+      !Array.isArray(value.queue) ||
+      !value.queue.length ||
+      value.queue.length > 10000 ||
+      !value.queue.every(validSong) ||
+      !Number.isInteger(value.index) ||
+      value.index! < 0 ||
+      value.index! >= value.queue.length ||
+      typeof value.position !== 'number' ||
+      !Number.isFinite(value.position) ||
+      value.position < 0 ||
+      typeof value.playing !== 'boolean' ||
+      typeof value.shuffle !== 'boolean' ||
       !['off', 'all', 'one'].includes(value.repeat ?? '') ||
       !(value.nasScope === null || typeof value.nasScope === 'string') ||
       !(value.driveAccountId === null || typeof value.driveAccountId === 'string') ||
-      !(value.s3ConnectionId === undefined || value.s3ConnectionId === null || typeof value.s3ConnectionId === 'string') ||
-      !(value.myboxConnectionId === undefined || value.myboxConnectionId === null || typeof value.myboxConnectionId === 'string') ||
-      typeof value.savedAt !== 'number' || Date.now() - value.savedAt > MAX_AGE_MS || value.savedAt > Date.now() + 60_000) return null;
+      !(
+        value.s3ConnectionId === undefined ||
+        value.s3ConnectionId === null ||
+        typeof value.s3ConnectionId === 'string'
+      ) ||
+      !(
+        value.myboxConnectionId === undefined ||
+        value.myboxConnectionId === null ||
+        typeof value.myboxConnectionId === 'string'
+      ) ||
+      typeof value.savedAt !== 'number' ||
+      Date.now() - value.savedAt > MAX_AGE_MS ||
+      value.savedAt > Date.now() + 60_000
+    ) {
+      return null;
+    }
     return value as Snapshot;
-  } catch { return null; }
+  } catch {
+    return null;
+  }
 }
 
 export async function readRestoredPlayback(): Promise<RestoredPlayback | null> {
   const saved = parse(await read());
-  if (!saved) return null;
+  if (!saved) {
+    return null;
+  }
   const auth = useAuthStore.getState();
   const privacy = useHiddenMusicStore.getState();
   const local = useLocalMusicStore.getState();
   const driveAccountId = useGoogleDriveStore.getState().account?.id ?? null;
-  const driveFiles = new Set(useGoogleDriveStore.getState().files.map(file => file.id));
+  const driveFiles = new Set(useGoogleDriveStore.getState().files.map((file) => file.id));
   const scope = privacyScope(auth.mode, auth.session);
   const currentLocal = new Map(local.songs.map((song) => [song.id, song]));
-  const currentDrive = new Map(useGoogleDriveStore.getState().songs.map(song => [song.id, song]));
-  const currentDocuments = new Map(useDriveDocumentsStore.getState().songs.map(song => [song.id, song]));
-  const currentS3 = new Map(useS3Store.getState().songs.map(song => [song.id, song]));
-  const currentMybox = new Map(useMyboxStore.getState().songs.map(song => [song.id, song]));
+  const currentDrive = new Map(useGoogleDriveStore.getState().songs.map((song) => [song.id, song]));
+  const currentDocuments = new Map(
+    useDriveDocumentsStore.getState().songs.map((song) => [song.id, song]),
+  );
+  const currentS3 = new Map(useS3Store.getState().songs.map((song) => [song.id, song]));
+  const currentMybox = new Map(useMyboxStore.getState().songs.map((song) => [song.id, song]));
   const hidden = hiddenMatcher(privacy.profile.presets);
   const nasClient = auth.mode === 'nas' && auth.session ? new SynologyClient(auth.session) : null;
   const selectedId = saved.queue[saved.index].id;
@@ -108,56 +175,122 @@ export async function readRestoredPlayback(): Promise<RestoredPlayback | null> {
   for (let i = 0; i < saved.queue.length; i++) {
     const { artworkOriginal: _original, ...song } = applySongArtwork(saved.queue[i], undefined, '');
     let restored: Song | null = null;
-    if (song.source === 'local') restored = currentLocal.get(song.id) ?? null;
-    else if (song.source === 'drive') {
+    if (song.source === 'local') {
+      restored = currentLocal.get(song.id) ?? null;
+    } else if (song.source === 'drive') {
       if (song.drive.documentUri) {
         const current = currentDocuments.get(song.id);
-        restored = current?.source === 'drive' && current.drive.documentUri === song.drive.documentUri
-          ? { ...song, drive: current.drive, artworkUrl: current.artworkUrl, palette: current.palette ?? song.palette } : null;
+        restored =
+          current?.source === 'drive' && current.drive.documentUri === song.drive.documentUri
+            ? {
+                ...song,
+                drive: current.drive,
+                artworkUrl: current.artworkUrl,
+                palette: current.palette ?? song.palette,
+              }
+            : null;
       } else {
         const current = currentDrive.get(song.id);
-        restored = song.drive.accountId === driveAccountId && saved.driveAccountId === driveAccountId && driveFiles.has(song.drive.fileId) ? { ...song, artworkUrl: current?.artworkUrl, palette: current?.palette ?? song.palette } : null;
+        restored =
+          song.drive.accountId === driveAccountId &&
+          saved.driveAccountId === driveAccountId &&
+          driveFiles.has(song.drive.fileId)
+            ? {
+                ...song,
+                artworkUrl: current?.artworkUrl,
+                palette: current?.palette ?? song.palette,
+              }
+            : null;
       }
-    }
-    else if (song.source === 's3') {
+    } else if (song.source === 's3') {
       const connection = useS3Store.getState().connection;
       const current = currentS3.get(song.id);
-      restored = connection && saved.s3ConnectionId === connection.id && song.s3.connectionId === connection.id && song.s3.key.startsWith(connection.prefix) ? { ...song, artworkUrl: current?.artworkUrl, palette: current?.palette ?? song.palette } : null;
+      restored =
+        connection &&
+        saved.s3ConnectionId === connection.id &&
+        song.s3.connectionId === connection.id &&
+        song.s3.key.startsWith(connection.prefix)
+          ? { ...song, artworkUrl: current?.artworkUrl, palette: current?.palette ?? song.palette }
+          : null;
+    } else if (song.source === 'mybox') {
+      const connection = useMyboxStore.getState().connection;
+      const current = currentMybox.get(song.id);
+      restored =
+        connection &&
+        saved.myboxConnectionId === connection.id &&
+        song.mybox.connectionId === connection.id &&
+        song.path?.startsWith(connection.folder)
+          ? {
+              ...song,
+              ...(current?.source === 'mybox' ? { mybox: current.mybox, path: current.path } : {}),
+              artworkUrl: current?.artworkUrl,
+              palette: current?.palette ?? song.palette,
+            }
+          : null;
+    } else if (
+      saved.nasScope === scope &&
+      privacy.ready &&
+      privacy.scope === scope &&
+      !hidden(song)
+    ) {
+      let restoredNasSong: Song | null;
+      if (nasClient) {
+        restoredNasSong = { ...song, artworkUrl: nasClient.coverUrl(song.nasId ?? song.id) };
+      } else if (auth.mode === 'mock') {
+        restoredNasSong = song;
+      } else {
+        restoredNasSong = null;
+      }
+      restored = restoredNasSong;
     }
-    else if (song.source === 'mybox') {
-      const connection = useMyboxStore.getState().connection, current = currentMybox.get(song.id);
-      restored = connection && saved.myboxConnectionId === connection.id && song.mybox.connectionId === connection.id && song.path?.startsWith(connection.folder)
-        ? { ...song, ...(current?.source === 'mybox' ? { mybox: current.mybox, path: current.path } : {}), artworkUrl: current?.artworkUrl, palette: current?.palette ?? song.palette } : null;
+    if (!restored) {
+      continue;
     }
-    else if (saved.nasScope === scope && privacy.ready && privacy.scope === scope && !hidden(song)) {
-      restored = nasClient ? { ...song, artworkUrl: nasClient.coverUrl(song.nasId ?? song.id) } : auth.mode === 'mock' ? song : null;
-    }
-    if (!restored) continue;
     if (i === saved.index && restored.id === selectedId) {
       index = queue.length;
       // Library metadata can still have an unknown/stale length after restart.
       // Keep the measured length so the restored slider has its full range.
-      if (song.duration > 0) restored = { ...restored, duration: song.duration };
+      if (song.duration > 0) {
+        restored = { ...restored, duration: song.duration };
+      }
     }
     queue.push(restored);
   }
-  if (index < 0) return null;
+  if (index < 0) {
+    return null;
+  }
   // A new playback runtime always starts the last selected song from the beginning,
   // including older records that still contain a nonzero resume position.
-  return { queue, index, position: 0, playing: saved.playing, shuffle: saved.shuffle, repeat: saved.repeat,
-    playbackRate: isPlaybackRate(saved.playbackRate) ? saved.playbackRate : 1, preservePitch: typeof saved.preservePitch === 'boolean' ? saved.preservePitch : true };
+  return {
+    queue,
+    index,
+    position: 0,
+    playing: saved.playing,
+    shuffle: saved.shuffle,
+    repeat: saved.repeat,
+    playbackRate: isPlaybackRate(saved.playbackRate) ? saved.playbackRate : 1,
+    preservePitch: typeof saved.preservePitch === 'boolean' ? saved.preservePitch : true,
+  };
 }
 
 function snapshot(): string | null {
   const state = usePlaybackStore.getState();
-  if (state.index < 0 || !state.queue[state.index]) return null;
+  if (state.index < 0 || !state.queue[state.index]) {
+    return null;
+  }
   const auth = useAuthStore.getState();
   const current: Snapshot = {
     version: 1,
     // Cover URLs can contain a NAS session ID. Rebuild them from the current session on restore.
     queue: state.queue.map((item, index) => {
-      const { artworkUrl: _artworkUrl, artworkOriginal: _original, ...song } = applySongArtwork(item, undefined, '');
-      if (index === state.index && Number.isFinite(state.duration) && state.duration > 0) return { ...song, duration: state.duration } as Song;
+      const {
+        artworkUrl: _artworkUrl,
+        artworkOriginal: _original,
+        ...song
+      } = applySongArtwork(item, undefined, '');
+      if (index === state.index && Number.isFinite(state.duration) && state.duration > 0) {
+        return { ...song, duration: state.duration } as Song;
+      }
       return song as Song;
     }),
     index: state.index,
@@ -178,22 +311,37 @@ function snapshot(): string | null {
 
 /** Start after recovery, then keep one recorder for the entire JS playback runtime. */
 export function startPlaybackPersistence(): () => void {
-  if (persistenceStop) return persistenceStop;
+  if (persistenceStop) {
+    return persistenceStop;
+  }
   const persist = () => {
     const value = snapshot();
     writeTail = writeTail.then(() => write(value)).catch(() => {});
   };
   const unsubscribe = usePlaybackStore.subscribe((state, previous) => {
-    const changed = state.queue !== previous.queue || state.index !== previous.index || state.playing !== previous.playing ||
-      state.shuffle !== previous.shuffle || state.repeat !== previous.repeat || state.playbackRate !== previous.playbackRate || state.preservePitch !== previous.preservePitch ||
-      state.duration > 0 && Math.abs(state.duration - previous.duration) > 0.5;
+    const changed =
+      state.queue !== previous.queue ||
+      state.index !== previous.index ||
+      state.playing !== previous.playing ||
+      state.shuffle !== previous.shuffle ||
+      state.repeat !== previous.repeat ||
+      state.playbackRate !== previous.playbackRate ||
+      state.preservePitch !== previous.preservePitch ||
+      (state.duration > 0 && Math.abs(state.duration - previous.duration) > 0.5);
     // Save track/queue/preferences and measured duration, never elapsed progress.
-    if (changed) persist();
+    if (changed) {
+      persist();
+    }
   });
-  if (usePlaybackStore.getState().queue.length) persist();
+  if (usePlaybackStore.getState().queue.length) {
+    persist();
+  }
   const stop = () => {
-    if (persistenceStop !== stop) return;
-    unsubscribe(); persistenceStop = null;
+    if (persistenceStop !== stop) {
+      return;
+    }
+    unsubscribe();
+    persistenceStop = null;
   };
   persistenceStop = stop;
   return stop;

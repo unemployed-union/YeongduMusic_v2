@@ -9,12 +9,28 @@ export const SETTINGS_MENU_ICON_INSET = ROW_PADDING + (ICON_SLOT_SIZE - ICON_SIZ
 /** Match the main Settings menu's icon slot, label gap and row padding. */
 export const settingsMenuStyles = StyleSheet.create({
   row: { minHeight: 68, flexDirection: 'row', alignItems: 'center', gap: 18, padding: ROW_PADDING },
-  icon: { width: ICON_SLOT_SIZE, height: ICON_SLOT_SIZE, alignItems: 'center', justifyContent: 'center' },
-  iconTile: { width: 34, height: 34, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },
+  icon: {
+    width: ICON_SLOT_SIZE,
+    height: ICON_SLOT_SIZE,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  iconTile: {
+    width: 34,
+    height: 34,
+    borderRadius: 11,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 });
 
 /** Keep all settings icons consistent while preserving their older-platform layout. */
-export function useSettingsMenuIconStyle(tintColor: string, legacyStyle: StyleProp<ViewStyle> = settingsMenuStyles.icon): StyleProp<ViewStyle> {
+export function useSettingsMenuIconStyle(
+  tintColor: string,
+  legacyStyle: StyleProp<ViewStyle> = settingsMenuStyles.icon,
+): StyleProp<ViewStyle> {
   const { supported } = useLiquidGlass();
-  return supported ? [legacyStyle, settingsMenuStyles.iconTile, { backgroundColor: tintColor + '14' }] : legacyStyle;
+  return supported
+    ? [legacyStyle, settingsMenuStyles.iconTile, { backgroundColor: tintColor + '14' }]
+    : legacyStyle;
 }

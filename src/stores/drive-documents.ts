@@ -31,8 +31,8 @@ const message = (error: unknown) =>
 const { run: exclusive } = createSerialQueue();
 export const useDriveDocumentsStore = create<State>((set, get) => {
   function publish(documents: DriveDocument[], grants: string[]) {
-    const allowed = new Set(grants),
-      available = documents.filter((item) => allowed.has(item.uri));
+    const allowed = new Set(grants);
+    const available = documents.filter((item) => allowed.has(item.uri));
     const missing = documents.length - available.length;
     const songs = available.map(documentSong);
     set((state) => {
@@ -70,28 +70,34 @@ export const useDriveDocumentsStore = create<State>((set, get) => {
         }
       }),
     add: async () => {
-      if (get().busy) return;
+      if (get().busy) {
+        return;
+      }
       set({ busy: true, error: null, message: null });
       try {
         await exclusive(async () => {
           // Read first so a failed/corrupt load can never overwrite stored selections.
           const previous = await readDriveDocuments();
           const picked = await pickDriveDocuments();
-          if (!picked) return;
+          if (!picked) {
+            return;
+          }
           const before = new Set(await driveDocumentPermissions());
           const previousIds = new Set(previous.map((item) => item.id));
           const merged = new Map(previous.map((item) => [item.id, item]));
           picked.documents.forEach((item) => merged.set(item.id, item));
           const documents = [...merged.values()];
-          if (documents.length > 10000)
+          if (documents.length > 10000) {
             throw new Error('선택한 음악은 최대 10,000개까지 저장할 수 있습니다.');
+          }
           await persistDriveDocuments(picked.documents);
           let grants: string[];
           try {
             grants = await driveDocumentPermissions();
             const granted = new Set(grants);
-            if (picked.documents.some((item) => !granted.has(item.uri)))
+            if (picked.documents.some((item) => !granted.has(item.uri))) {
               throw new Error('선택한 파일의 읽기 권한을 유지하지 못했습니다. 다시 선택해 주세요.');
+            }
             await writeDriveDocuments(documents);
           } catch (error) {
             await releaseDriveDocuments(
@@ -113,15 +119,19 @@ export const useDriveDocumentsStore = create<State>((set, get) => {
       }
     },
     remove: async (id) => {
-      if (get().busy) return;
+      if (get().busy) {
+        return;
+      }
       set({ busy: true, error: null, message: null });
       try {
         await exclusive(async () => {
-          const previous = await readDriveDocuments(),
-            removed = previous.find((item) => item.id === id);
-          if (!removed) return;
-          const documents = previous.filter((item) => item.id !== id),
-            grants = await driveDocumentPermissions();
+          const previous = await readDriveDocuments();
+          const removed = previous.find((item) => item.id === id);
+          if (!removed) {
+            return;
+          }
+          const documents = previous.filter((item) => item.id !== id);
+          const grants = await driveDocumentPermissions();
           await writeDriveDocuments(documents);
           publish(documents, grants);
           // Unpublish first: even failed grant cleanup cannot play a removed item.
@@ -136,9 +146,12 @@ export const useDriveDocumentsStore = create<State>((set, get) => {
   };
 });
 export async function driveDocumentSource(song: Song): Promise<{ uri: string }> {
-  if (song.source !== 'drive' || !song.drive.documentUri || song.drive.accountId !== 'saf')
+  if (song.source !== 'drive' || !song.drive.documentUri || song.drive.accountId !== 'saf') {
     throw new Error('Drive 파일 선택 정보가 올바르지 않습니다.');
-  if (!useDriveDocumentsStore.getState().ready) await useDriveDocumentsStore.getState().load();
+  }
+  if (!useDriveDocumentsStore.getState().ready) {
+    await useDriveDocumentsStore.getState().load();
+  }
   const selected = () =>
     useDriveDocumentsStore
       .getState()
@@ -149,9 +162,10 @@ export async function driveDocumentSource(song: Song): Promise<{ uri: string }> 
           item.uri === song.drive.documentUri,
       );
   const grants = await driveDocumentPermissions();
-  if (!selected() || !grants.includes(song.drive.documentUri))
+  if (!selected() || !grants.includes(song.drive.documentUri)) {
     throw new Error(
       'Drive 파일의 읽기 권한이 없거나 목록에서 제외되었습니다. 파일 앱에서 다시 선택해 주세요.',
     );
+  }
   return { uri: song.drive.documentUri };
 }

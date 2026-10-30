@@ -35,30 +35,42 @@ export function useAppBootstrap() {
     void bootstrap();
   }, [bootstrap]);
   useEffect(() => {
-    if (ready && mode === 'setup') reconcilePlaybackVisibility();
+    if (ready && mode === 'setup') {
+      reconcilePlaybackVisibility();
+    }
   }, [ready, mode]);
   useEffect(() => {
     const current = useHiddenMusicStore.getState();
     // Android recreates the React tree after dismissing the activity. Reloading
     // the same profile temporarily clears ready and can stop the live player.
-    if (ready && !(current.ready && current.scope === scope)) void loadPrivacy(scope);
+    if (ready && !(current.ready && current.scope === scope)) {
+      void loadPrivacy(scope);
+    }
   }, [ready, scope, loadPrivacy]);
   useEffect(() => {
-    if (ready) void loadPlaylists(scope);
+    if (ready) {
+      void loadPlaylists(scope);
+    }
   }, [ready, scope, loadPlaylists]);
   useEffect(() => {
     const subscription = AppState.addEventListener('change', (state) => {
-      if (state === 'background') useHiddenMusicStore.getState().lock();
+      if (state === 'background') {
+        useHiddenMusicStore.getState().lock();
+      }
       if (state === 'active') {
         checkSleepTimer();
         const documents = useDriveDocumentsStore.getState();
-        if (documents.ready && !documents.busy && documents.documents.length) void documents.load();
+        if (documents.ready && !documents.busy && documents.documents.length) {
+          void documents.load();
+        }
       }
     });
     return () => subscription.remove();
   }, []);
   useEffect(() => {
-    if (privacy.ready && privacy.scope === scope) reconcilePlaybackVisibility();
+    if (privacy.ready && privacy.scope === scope) {
+      reconcilePlaybackVisibility();
+    }
   }, [privacy.ready, privacy.scope, privacy.profile.presets, scope]);
   return { ready, displayReady, privacy, scope, ...sources };
 }

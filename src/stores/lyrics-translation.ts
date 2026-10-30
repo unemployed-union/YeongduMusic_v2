@@ -22,13 +22,15 @@ type State = {
 };
 export const useLyricsTranslationStore = create<State>((set, get) => {
   const persistenceQueue = createSerialQueue();
-  let loading: Promise<void> | null = null,
-    writes = 0;
+  let loading: Promise<void> | null = null;
+  let writes = 0;
   async function persist(
     change: (state: State) => { options: TranslationOptions; enabled: boolean },
   ) {
     await get().load();
-    if (get().loadError) throw new Error(get().error ?? '가사 번역 설정을 다시 불러와 주세요.');
+    if (get().loadError) {
+      throw new Error(get().error ?? '가사 번역 설정을 다시 불러와 주세요.');
+    }
     writes++;
     set({ saving: true, error: null });
     const operation = persistenceQueue.run(async () => {
@@ -58,17 +60,24 @@ export const useLyricsTranslationStore = create<State>((set, get) => {
     loadError: false,
     error: null,
     load: (force = false) => {
-      if (loading) return loading;
-      if (get().ready && !force) return Promise.resolve();
+      if (loading) {
+        return loading;
+      }
+      if (get().ready && !force) {
+        return Promise.resolve();
+      }
       set({ loading: true, error: null });
       loading = persistenceQueue
         .settled()
         .then(async () => {
           const raw = await readPreference(KEY);
           const value = raw === null ? null : JSON.parse(raw);
-          if (value && value.version !== 1) throw new Error('설정 버전을 확인할 수 없습니다.');
-          if (value?.enabled !== undefined && typeof value.enabled !== 'boolean')
+          if (value && value.version !== 1) {
+            throw new Error('설정 버전을 확인할 수 없습니다.');
+          }
+          if (value?.enabled !== undefined && typeof value.enabled !== 'boolean') {
             throw new Error('번역 사용 설정을 확인할 수 없습니다.');
+          }
           set({
             options:
               raw === null ? DEFAULT_TRANSLATION_OPTIONS : parseTranslationOptions(value?.options),

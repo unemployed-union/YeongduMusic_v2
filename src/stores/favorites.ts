@@ -31,8 +31,12 @@ export const useFavoritesStore = create<State>((set, get) => {
     loadError: false,
     error: null,
     load: (force = false) => {
-      if (loading) return loading;
-      if (get().ready && !force) return Promise.resolve();
+      if (loading) {
+        return loading;
+      }
+      if (get().ready && !force) {
+        return Promise.resolve();
+      }
       set({ loading: true, error: null });
       const operation = persistenceQueue.run(async () => {
         const songs = parseFavorites(await readPreference(KEY));
@@ -56,15 +60,25 @@ export const useFavoritesStore = create<State>((set, get) => {
     setLiked: async (key, liked) => {
       validateMetadataKey(key);
       await get().load();
-      if (get().loadError) throw new Error(get().error ?? '좋아요한 곡을 먼저 다시 불러와 주세요.');
+      if (get().loadError) {
+        throw new Error(get().error ?? '좋아요한 곡을 먼저 다시 불러와 주세요.');
+      }
       const operation = persistenceQueue.run(async () => {
-        if (get().loadError) throw new Error('좋아요한 곡을 먼저 다시 불러와 주세요.');
+        if (get().loadError) {
+          throw new Error('좋아요한 곡을 먼저 다시 불러와 주세요.');
+        }
         const songs = { ...get().songs };
-        if (liked === (songs[key] !== undefined)) return;
-        if (liked) songs[key] = Date.now();
-        else delete songs[key];
-        if (Object.keys(songs).length > 10000)
+        if (liked === (songs[key] !== undefined)) {
+          return;
+        }
+        if (liked) {
+          songs[key] = Date.now();
+        } else {
+          delete songs[key];
+        }
+        if (Object.keys(songs).length > 10000) {
           throw new Error('좋아요는 최대 10,000곡까지 저장할 수 있습니다.');
+        }
         await write(songs);
         set({ songs, error: null });
       });

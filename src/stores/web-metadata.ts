@@ -25,24 +25,31 @@ type State = Preferences & {
   retry: () => Promise<void>;
 };
 export function parseWebMetadataPreferences(raw: string | null): Preferences {
-  if (raw === null) return { enabled: false, excluded: {}, checked: {} };
+  if (raw === null) {
+    return { enabled: false, excluded: {}, checked: {} };
+  }
   const value = JSON.parse(raw);
   if (
     value?.version !== 1 ||
     typeof value.enabled !== 'boolean' ||
     !value.excluded ||
     !value.checked
-  )
+  ) {
     throw new Error('웹 곡 정보 설정을 읽을 수 없습니다.');
+  }
   function entries(input: unknown, excluded: boolean) {
-    if (!input || typeof input !== 'object' || Array.isArray(input))
+    if (!input || typeof input !== 'object' || Array.isArray(input)) {
       throw new Error('웹 곡 정보 설정을 읽을 수 없습니다.');
+    }
     const list = Object.entries(input);
-    if (list.length > 10000) throw new Error('웹 곡 정보 설정이 저장 한도를 초과했습니다.');
+    if (list.length > 10000) {
+      throw new Error('웹 곡 정보 설정이 저장 한도를 초과했습니다.');
+    }
     for (const [key, field] of list) {
       validateMetadataKey(key);
-      if (excluded ? field !== true : typeof field !== 'string' || field.length > 5000)
+      if (excluded ? field !== true : typeof field !== 'string' || field.length > 5000) {
         throw new Error('웹 곡 정보 설정을 읽을 수 없습니다.');
+      }
     }
     return Object.fromEntries(list);
   }
@@ -54,11 +61,13 @@ export function parseWebMetadataPreferences(raw: string | null): Preferences {
 }
 export const useWebMetadataStore = create<State>((set, get) => {
   const persistenceQueue = createSerialQueue();
-  let loading: Promise<void> | null = null,
-    writes = 0;
+  let loading: Promise<void> | null = null;
+  let writes = 0;
   async function update(change: (value: Preferences) => Preferences) {
     await get().load();
-    if (get().loadError) throw new Error('웹 곡 정보 설정을 다시 불러와 주세요.');
+    if (get().loadError) {
+      throw new Error('웹 곡 정보 설정을 다시 불러와 주세요.');
+    }
     writes++;
     set({ saving: true, error: null });
     const operation = persistenceQueue.run(async () => {
@@ -93,8 +102,12 @@ export const useWebMetadataStore = create<State>((set, get) => {
     automaticError: null,
     retryRevision: 0,
     load: (force = false) => {
-      if (loading) return loading;
-      if (get().ready && !force) return Promise.resolve();
+      if (loading) {
+        return loading;
+      }
+      if (get().ready && !force) {
+        return Promise.resolve();
+      }
       set({ loading: true, error: null });
       loading = persistenceQueue
         .settled()
@@ -123,8 +136,11 @@ export const useWebMetadataStore = create<State>((set, get) => {
       validateMetadataKey(key);
       return update((value) => {
         const next = { ...value.excluded };
-        if (excluded) next[key] = true;
-        else delete next[key];
+        if (excluded) {
+          next[key] = true;
+        } else {
+          delete next[key];
+        }
         const checked = { ...value.checked };
         delete checked[key];
         return { ...value, excluded: next, checked };

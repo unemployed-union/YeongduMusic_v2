@@ -7,7 +7,12 @@ const MARGIN = 12;
 const GAP = 12;
 const clamp = (value: number, min: number, max: number) => Math.max(min, Math.min(value, max));
 
-export function getActionMenuPosition(anchor: ActionMenuAnchor, viewport: Viewport, insets: Insets, measuredHeight: number) {
+export function getActionMenuPosition(
+  anchor: ActionMenuAnchor,
+  viewport: Viewport,
+  insets: Insets,
+  measuredHeight: number,
+) {
   const leftEdge = insets.left + MARGIN;
   const rightEdge = viewport.width - insets.right - MARGIN;
   const topEdge = insets.top + MARGIN;

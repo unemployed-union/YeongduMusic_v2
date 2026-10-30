@@ -11,15 +11,31 @@ export function albumHeaderProgress(offset: number, heroHeight: number, headerHe
 }
 
 export function useAlbumHeader(albumId: string, heroHeight: number, headerHeight: number) {
-  const offset = useSharedValue(0), [overSongs, setOverSongs] = useState(false);
-  useEffect(() => { offset.set(0); }, [albumId, offset]);
-  useAnimatedReaction(() => albumHeaderProgress(offset.get(), heroHeight, headerHeight) >= 0.5, (next, previous) => {
-    if (next !== previous) scheduleOnRN(setOverSongs, next);
-  });
-  const onScroll = useCallback<NonNullable<ScrollViewProps['onScroll']>>(event => {
-    const position = Math.max(0, event.nativeEvent.contentOffset.y + (event.nativeEvent.contentInset?.top ?? 0));
-    offset.set(position);
-  }, [offset]);
-  const gradientStyle = useAnimatedStyle(() => ({ opacity: albumHeaderProgress(offset.get(), heroHeight, headerHeight) }));
+  const offset = useSharedValue(0);
+  const [overSongs, setOverSongs] = useState(false);
+  useEffect(() => {
+    offset.set(0);
+  }, [albumId, offset]);
+  useAnimatedReaction(
+    () => albumHeaderProgress(offset.get(), heroHeight, headerHeight) >= 0.5,
+    (next, previous) => {
+      if (next !== previous) {
+        scheduleOnRN(setOverSongs, next);
+      }
+    },
+  );
+  const onScroll = useCallback<NonNullable<ScrollViewProps['onScroll']>>(
+    (event) => {
+      const position = Math.max(
+        0,
+        event.nativeEvent.contentOffset.y + (event.nativeEvent.contentInset?.top ?? 0),
+      );
+      offset.set(position);
+    },
+    [offset],
+  );
+  const gradientStyle = useAnimatedStyle(() => ({
+    opacity: albumHeaderProgress(offset.get(), heroHeight, headerHeight),
+  }));
   return { onScroll, gradientStyle, overSongs };
 }

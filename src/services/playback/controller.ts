@@ -85,7 +85,9 @@ export function checkSleepTimer(fromEnd = false, changingTrack = false): boolean
     fromEnd,
     changingTrack,
   );
-  if (decision.kind === 'keep') return false;
+  if (decision.kind === 'keep') {
+    return false;
+  }
   if (decision.kind === 'arm') {
     state.setSleepTimer(decision.timer);
     return false;
@@ -98,8 +100,9 @@ export function checkSleepTimer(fromEnd = false, changingTrack = false): boolean
   return true;
 }
 usePlaybackStore.subscribe((state, previousState) => {
-  const song = state.queue[state.index],
-    previous = previousState.queue[previousState.index];
+  const song = state.queue[state.index];
+
+  const previous = previousState.queue[previousState.index];
   // Restored/paused queues can receive artwork edits before a native source exists.
   if (
     song &&
@@ -124,13 +127,16 @@ usePlaybackStore.subscribe((state, previousState) => {
       /* A lock-screen refresh cannot invalidate saved song metadata. */
     }
   }
-  if (state.sleepTimer !== previousState.sleepTimer) updateSleepTimerSchedule(state.sleepTimer);
+  if (state.sleepTimer !== previousState.sleepTimer) {
+    updateSleepTimerSchedule(state.sleepTimer);
+  }
   sectionRepeat.onStateChange(state, previousState);
 });
 
 function currentMetadata(song: Song): Song {
-  const metadata = useSongMetadataStore.getState(),
-    auth = useAuthStore.getState();
+  const metadata = useSongMetadataStore.getState();
+
+  const auth = useAuthStore.getState();
   const key = metadataKey(song, privacyScope(auth.mode, auth.session));
   const updated =
     metadata.ready && !metadata.loadError
@@ -142,27 +148,35 @@ function currentMetadata(song: Song): Song {
     : updated;
 }
 function reconcileMetadataQueue(): void {
-  const state = usePlaybackStore.getState(),
-    queue = state.queue.map(currentMetadata);
-  if (queue.some((song, index) => song !== state.queue[index]))
+  const state = usePlaybackStore.getState();
+
+  const queue = state.queue.map(currentMetadata);
+  if (queue.some((song, index) => song !== state.queue[index])) {
     usePlaybackStore.setState({ queue });
+  }
 }
 useSongMetadataStore.subscribe((state, previous) => {
-  if (state.ready && (state.patches !== previous.patches || state.ready !== previous.ready))
+  if (state.ready && (state.patches !== previous.patches || state.ready !== previous.ready)) {
     reconcileMetadataQueue();
+  }
 });
 useSongArtworkStore.subscribe((state, previous) => {
-  if (state.ready && (state.patches !== previous.patches || state.ready !== previous.ready))
+  if (state.ready && (state.patches !== previous.patches || state.ready !== previous.ready)) {
     reconcileMetadataQueue();
+  }
 });
 
 async function checkPlaybackSession(): Promise<void> {
   const { mode, session, generation: authGeneration, expire } = useAuthStore.getState();
   const playback = usePlaybackStore.getState();
   const song = playback.queue[playback.index];
-  if (song?.source === 'local') return;
+  if (song?.source === 'local') {
+    return;
+  }
   if (song && isCloudSong(song)) {
-    if (recoveredCloudGeneration === generation || loadedSongId !== song.id) return;
+    if (recoveredCloudGeneration === generation || loadedSongId !== song.id) {
+      return;
+    }
     const requestGeneration = generation;
     recoveredCloudGeneration = requestGeneration;
     try {
@@ -170,23 +184,30 @@ async function checkPlaybackSession(): Promise<void> {
         refreshCredentials: true,
         signal: sourceRequest?.signal,
       });
-      if (requestGeneration !== generation) return;
+      if (requestGeneration !== generation) {
+        return;
+      }
       usePlaybackStore.getState().setStatus({ lossless: isLosslessPlayback(song, source) });
       await activeEngine().load(source, song);
-      if (requestGeneration !== generation) return;
+      if (requestGeneration !== generation) {
+        return;
+      }
       await activeEngine().seek(playback.position);
     } catch (error) {
-      if (requestGeneration === generation)
+      if (requestGeneration === generation) {
         usePlaybackStore.getState().setStatus({
           playing: false,
           buffering: false,
           error:
             error instanceof Error ? error.message : '클라우드 음악 재생 연결을 확인해 주세요.',
         });
+      }
     }
     return;
   }
-  if (checkingSession || checkedGeneration === generation || mode !== 'nas' || !session) return;
+  if (checkingSession || checkedGeneration === generation || mode !== 'nas' || !session) {
+    return;
+  }
   checkingSession = true;
   checkedGeneration = generation;
   try {
@@ -195,8 +216,9 @@ async function checkPlaybackSession(): Promise<void> {
     if (
       error instanceof SessionExpiredError ||
       (error instanceof SynologyError && error.code === 105)
-    )
+    ) {
       await expire(session, authGeneration);
+    }
   } finally {
     checkingSession = false;
   }
@@ -210,7 +232,9 @@ function activeEngine(): AudioEngine {
       const playback = usePlaybackStore.getState();
       // loadIndex clears this identity before pausing the old source. Its final
       // status must not overwrite the next song's position or saved duration.
-      if (!loadedSongId || playback.queue[playback.index]?.id !== loadedSongId) return;
+      if (!loadedSongId || playback.queue[playback.index]?.id !== loadedSongId) {
+        return;
+      }
       usePlaybackStore.getState().setStatus({
         playing: status.playing,
         buffering: status.buffering,
@@ -248,9 +272,15 @@ function activeEngine(): AudioEngine {
           ),
         }));
       }
-      if (checkSleepTimer()) return;
-      if (status.error) void checkPlaybackSession();
-      if (sectionRepeat.check(status.ended)) return;
+      if (checkSleepTimer()) {
+        return;
+      }
+      if (status.error) {
+        void checkPlaybackSession();
+      }
+      if (sectionRepeat.check(status.ended)) {
+        return;
+      }
       if (status.ended && !finishing) {
         finishing = true;
         void next(true).finally(() => {
@@ -279,26 +309,34 @@ async function loadIndex(index: number, initialPosition = 0): Promise<void> {
     reconcilePlaybackVisibility();
     return;
   }
-  if (state.sleepTimer?.mode === 'track' && !state.sleepTimer.afterDeadline) cancelSleepTimer();
+  if (state.sleepTimer?.mode === 'track' && !state.sleepTimer.afterDeadline) {
+    cancelSleepTimer();
+  }
   const currentGeneration = ++generation;
   sourceRequest?.abort();
   sourceRequest = new AbortController();
   sectionRepeat.resetPending();
   pendingSavedPosition = 0;
   state.setQueue(state.queue, index);
-  if (initialPosition > 0) state.setStatus({ position: initialPosition });
+  if (initialPosition > 0) {
+    state.setStatus({ position: initialPosition });
+  }
   usePlayerBackgroundStore.getState().selectArtwork(song);
   try {
     loadedSongId = null;
     engine?.pause(true);
     state.setStatus({ buffering: true, playing: false });
     const source = await resolvePlaybackSource(song, { signal: sourceRequest.signal });
-    if (currentGeneration !== generation) return;
+    if (currentGeneration !== generation) {
+      return;
+    }
     loadedSongId = song.id;
     const currentSong = usePlaybackStore.getState().queue[index];
     state.setStatus({ lossless: isLosslessPlayback(currentSong, source) });
     await activeEngine().load(source, currentSong, initialPosition);
-    if (currentGeneration !== generation) return;
+    if (currentGeneration !== generation) {
+      return;
+    }
     const latest = usePlaybackStore.getState().queue[index];
     if (latest && latest !== currentSong) {
       try {
@@ -330,7 +368,9 @@ export async function restorePlayback(
   playbackRate = 1,
   preservePitch = true,
 ): Promise<boolean> {
-  if (usePlaybackStore.getState().queue.length || !queue[index]) return false;
+  if (usePlaybackStore.getState().queue.length || !queue[index]) {
+    return false;
+  }
   validatePlaybackRate(playbackRate);
   setPlaybackRate(playbackRate);
   setPreservePitch(preservePitch);
@@ -339,8 +379,9 @@ export async function restorePlayback(
   usePlaybackStore.setState({ shuffle, repeat });
   const restoredSong = usePlaybackStore.getState().queue[index];
   usePlayerBackgroundStore.getState().selectArtwork(restoredSong);
-  if (wasPlaying) await loadIndex(index, position);
-  else {
+  if (wasPlaying) {
+    await loadIndex(index, position);
+  } else {
     pendingSavedPosition = position;
     state.setStatus({
       position,
@@ -355,13 +396,17 @@ export async function restorePlayback(
 }
 
 export async function playQueue(queue: Song[], index = 0): Promise<void> {
-  if (!queue.length || !queue[index] || checkSleepTimer(false, true)) return;
+  if (!queue.length || !queue[index] || checkSleepTimer(false, true)) {
+    return;
+  }
   const privacy = useHiddenMusicStore.getState();
   const auth = useAuthStore.getState();
   const nasReady = privacy.ready && privacy.scope === privacyScope(auth.mode, auth.session);
   const match = hiddenMatcher(privacy.profile.presets);
   const hidden = (song: Song) => isNasSong(song) && (!nasReady || match(song));
-  if (hidden(queue[index])) return;
+  if (hidden(queue[index])) {
+    return;
+  }
   const { queue: visible, index: selected } = filterPlaybackQueue(
     queue,
     index,
@@ -378,8 +423,9 @@ export async function enqueue(song: Song): Promise<void> {
     (privacy.scope !== privacyScope(auth.mode, auth.session) ||
       !privacy.ready ||
       hiddenMatcher(privacy.profile.presets)(song))
-  )
+  ) {
     return;
+  }
   const state = usePlaybackStore.getState();
   if (state.index < 0) {
     await playQueue([song]);
@@ -391,7 +437,9 @@ export function togglePlayback(): void {
   transportRevision++;
   reconcilePlaybackVisibility();
   const state = usePlaybackStore.getState();
-  if (state.index < 0) return;
+  if (state.index < 0) {
+    return;
+  }
   if (
     state.queue[state.index]?.id !== loadedSongId ||
     ((state.queue[state.index]?.source === 'local' || isCloudSong(state.queue[state.index])) &&
@@ -400,17 +448,23 @@ export function togglePlayback(): void {
     void loadIndex(state.index, pendingSavedPosition);
     return;
   }
-  if (state.playing) activeEngine().pause();
-  else activeEngine().play();
+  if (state.playing) {
+    activeEngine().pause();
+  } else {
+    activeEngine().play();
+  }
 }
 export function getPlaybackPosition(): number {
   return engine?.getPosition() ?? usePlaybackStore.getState().position;
 }
 
 export async function seek(seconds: number, playIfPaused = false): Promise<void> {
-  const state = usePlaybackStore.getState(),
-    repeat = state.sectionRepeat;
-  if (!state.queue[state.index] || !Number.isFinite(seconds)) return;
+  const state = usePlaybackStore.getState();
+
+  const repeat = state.sectionRepeat;
+  if (!state.queue[state.index] || !Number.isFinite(seconds)) {
+    return;
+  }
   const shouldPlay = playIfPaused && !state.playing && !state.buffering;
   const requestedTransportRevision = transportRevision;
   const requestedGeneration = generation;
@@ -427,25 +481,34 @@ export async function seek(seconds: number, playIfPaused = false): Promise<void>
       state.duration > 0 ? Math.min(target, state.duration) : target,
     );
     state.setStatus({ position: pendingSavedPosition });
-    if (shouldPlay) await loadIndex(state.index, pendingSavedPosition);
+    if (shouldPlay) {
+      await loadIndex(state.index, pendingSavedPosition);
+    }
     return;
   }
   await activeEngine().seek(target, !!repeat?.enabled);
-  if (requestedGeneration !== generation || !sectionRepeat.isCurrentSeek(requestSeek)) return;
+  if (requestedGeneration !== generation || !sectionRepeat.isCurrentSeek(requestSeek)) {
+    return;
+  }
   usePlaybackStore.getState().setStatus({ position: target });
   if (
     shouldPlay &&
     requestedTransportRevision === transportRevision &&
     !usePlaybackStore.getState().playing
-  )
+  ) {
     togglePlayback();
+  }
   sectionRepeat.schedule();
 }
 export async function next(fromEnd = false): Promise<void> {
-  if (checkSleepTimer(fromEnd, !fromEnd)) return;
+  if (checkSleepTimer(fromEnd, !fromEnd)) {
+    return;
+  }
   reconcilePlaybackVisibility();
   const state = usePlaybackStore.getState();
-  if (state.index < 0) return;
+  if (state.index < 0) {
+    return;
+  }
   if (fromEnd && state.repeat === 'one') {
     await seek(0);
     activeEngine().play();
@@ -454,11 +517,14 @@ export async function next(fromEnd = false): Promise<void> {
   let index = state.index + 1;
   if (state.shuffle && state.queue.length > 1) {
     index = Math.floor(Math.random() * (state.queue.length - 1));
-    if (index >= state.index) index++;
+    if (index >= state.index) {
+      index++;
+    }
   }
   if (index >= state.queue.length) {
-    if (state.repeat === 'all') index = 0;
-    else {
+    if (state.repeat === 'all') {
+      index = 0;
+    } else {
       activeEngine().pause();
       state.setStatus({ playing: false, position: state.duration });
       return;
@@ -469,19 +535,29 @@ export async function next(fromEnd = false): Promise<void> {
 export async function previous(restartCurrent = true): Promise<void> {
   reconcilePlaybackVisibility();
   const state = usePlaybackStore.getState();
-  if (state.index < 0 || checkSleepTimer(false, !(restartCurrent && state.position > 3))) return;
+  if (state.index < 0 || checkSleepTimer(false, !(restartCurrent && state.position > 3))) {
+    return;
+  }
   if (restartCurrent && state.position > 3) {
     await seek(0);
     return;
   }
-  await loadIndex(
-    state.index > 0 ? state.index - 1 : state.repeat === 'all' ? state.queue.length - 1 : 0,
-  );
+  let previousIndex: number;
+  if (state.index > 0) {
+    previousIndex = state.index - 1;
+  } else if (state.repeat === 'all') {
+    previousIndex = state.queue.length - 1;
+  } else {
+    previousIndex = 0;
+  }
+  await loadIndex(previousIndex);
 }
 export function stopNasPlayback(): void {
   const state = usePlaybackStore.getState();
   const song = state.queue[state.index];
-  if (song && isNasSong(song)) stopPlayback();
+  if (song && isNasSong(song)) {
+    stopPlayback();
+  }
 }
 export function stopPlayback(): void {
   generation++;
@@ -501,7 +577,9 @@ export function reconcilePlaybackVisibility(excludedLocal?: (song: Song) => bool
   const privacy = useHiddenMusicStore.getState();
   const auth = useAuthStore.getState();
   const state = usePlaybackStore.getState();
-  if (!state.queue.length) return;
+  if (!state.queue.length) {
+    return;
+  }
   if (excludedLocal) {
     const current = state.queue[state.index];
     if (current && excludedLocal(current)) {
@@ -536,7 +614,9 @@ export function reconcilePlaybackVisibility(excludedLocal?: (song: Song) => bool
     return;
   }
   const filtered = filterPlaybackQueue(state.queue, state.index, (song) => !hidden(song));
-  if (filtered.queue.length !== state.queue.length) usePlaybackStore.setState(filtered);
+  if (filtered.queue.length !== state.queue.length) {
+    usePlaybackStore.setState(filtered);
+  }
 }
 
 useHiddenMusicStore.subscribe((state, previousState) => {
@@ -544,6 +624,7 @@ useHiddenMusicStore.subscribe((state, previousState) => {
     state.ready !== previousState.ready ||
     state.scope !== previousState.scope ||
     state.profile.presets !== previousState.profile.presets
-  )
+  ) {
     reconcilePlaybackVisibility();
+  }
 });

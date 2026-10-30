@@ -27,8 +27,8 @@ function useSongLibrary<T>(
   const patches = useSongMetadataStore((state) => state.patches);
   const metadataReady = useSongMetadataStore((state) => state.ready);
   const metadataScope = privacyScope(mode, session);
-  const artworkPatches = useSongArtworkStore((state) => state.patches),
-    artworkReady = useSongArtworkStore((state) => state.ready);
+  const artworkPatches = useSongArtworkStore((state) => state.patches);
+  const artworkReady = useSongArtworkStore((state) => state.ready);
   const artworkBaseUri = useSongArtworkStore((state) => state.baseUri);
   const sources = useSourceLibraries();
   const {
@@ -73,34 +73,34 @@ function useSongLibrary<T>(
   });
   // Keep local files usable when NAS is unreachable, without publishing a
   // partial library as a successful NAS query or suppressing its retry notice.
-  const fallback = useMemo(
-    () =>
-      !nasOnly &&
-      source === 'all' &&
-      query.isError &&
-      !query.data &&
-      (localSongs.length || driveSongs.length || s3Songs.length || myboxSongs.length)
-        ? select(
-            applyLibraryEdits(
-              combineSongLibraries({ items: [], total: 0 }, libraries, 'all', false),
-              edits,
-            ),
-          )
-        : undefined,
-    [
-      nasOnly,
-      source,
-      query.isError,
-      query.data,
-      localSongs,
-      driveSongs,
-      s3Songs,
-      myboxSongs,
-      select,
-      libraries,
-      edits,
-    ],
-  );
+  const fallback = useMemo(() => {
+    const needsFallback = !nasOnly && source === 'all' && query.isError && !query.data;
+    if (!needsFallback) {
+      return undefined;
+    }
+
+    const hasFallbackSongs =
+      localSongs.length || driveSongs.length || s3Songs.length || myboxSongs.length;
+    if (!hasFallbackSongs) {
+      return undefined;
+    }
+
+    const fallbackLibrary = combineSongLibraries({ items: [], total: 0 }, libraries, 'all', false);
+    const editedLibrary = applyLibraryEdits(fallbackLibrary, edits);
+    return select(editedLibrary);
+  }, [
+    nasOnly,
+    source,
+    query.isError,
+    query.data,
+    localSongs,
+    driveSongs,
+    s3Songs,
+    myboxSongs,
+    select,
+    libraries,
+    edits,
+  ]);
   const cloudError = [
     includeDrive && driveError,
     includeDrive && documentError,

@@ -10,8 +10,8 @@ export function useMusicSourceBootstrap() {
   const s3Connection = useS3Store((state) => state.connection);
   const s3Ready = useS3Store((state) => state.ready);
   const bootstrapS3 = useS3Store((state) => state.bootstrap);
-  const myboxConnection = useMyboxStore((state) => state.connection),
-    myboxReady = useMyboxStore((state) => state.ready);
+  const myboxConnection = useMyboxStore((state) => state.connection);
+  const myboxReady = useMyboxStore((state) => state.ready);
   const bootstrapMybox = useMyboxStore((state) => state.bootstrap);
   useEffect(() => {
     void bootstrapMybox();
@@ -53,18 +53,19 @@ export function useMusicSourceBootstrap() {
         (song.drive.accountId !== driveAccountId || !driveFileIds.has(song.drive.fileId)),
     );
   }, [driveAccountId, driveFileIds]);
-  const documentSongs = useDriveDocumentsStore((state) => state.songs),
-    documentsReady = useDriveDocumentsStore((state) => state.ready);
+  const documentSongs = useDriveDocumentsStore((state) => state.songs);
+  const documentsReady = useDriveDocumentsStore((state) => state.ready);
   const loadDocuments = useDriveDocumentsStore((state) => state.load);
   const documentIds = useMemo(() => new Set(documentSongs.map((song) => song.id)), [documentSongs]);
   useEffect(() => {
     void loadDocuments();
   }, [loadDocuments]);
   useEffect(() => {
-    if (documentsReady)
+    if (documentsReady) {
       reconcilePlaybackVisibility(
         (song) => song.source === 'drive' && !!song.drive.documentUri && !documentIds.has(song.id),
       );
+    }
   }, [documentsReady, documentIds]);
   const loadLocalMusic = useLocalMusicStore((state) => state.load);
   const allLocalSongs = useLocalMusicStore((state) => state.allSongs);

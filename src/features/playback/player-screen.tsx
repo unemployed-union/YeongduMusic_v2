@@ -55,15 +55,15 @@ import { playerScreenStyles as styles } from './player-screen-styles';
 
 export function PlayerScreen() {
   const ios = Platform.OS === 'ios';
-  const queue = usePlaybackStore((state) => state.queue),
-    index = usePlaybackStore((state) => state.index);
-  const playing = usePlaybackStore((state) => state.playing),
-    buffering = usePlaybackStore((state) => state.buffering);
-  const shuffle = usePlaybackStore((state) => state.shuffle),
-    repeat = usePlaybackStore((state) => state.repeat);
+  const queue = usePlaybackStore((state) => state.queue);
+  const index = usePlaybackStore((state) => state.index);
+  const playing = usePlaybackStore((state) => state.playing);
+  const buffering = usePlaybackStore((state) => state.buffering);
+  const shuffle = usePlaybackStore((state) => state.shuffle);
+  const repeat = usePlaybackStore((state) => state.repeat);
   const error = usePlaybackStore((state) => state.error);
-  const toggleShuffle = usePlaybackStore((state) => state.toggleShuffle),
-    cycleRepeat = usePlaybackStore((state) => state.cycleRepeat);
+  const toggleShuffle = usePlaybackStore((state) => state.toggleShuffle);
+  const cycleRepeat = usePlaybackStore((state) => state.cycleRepeat);
   const visible = usePlaybackVisibility();
   const glass = useLiquidGlass();
   const song = queue[index];
@@ -81,7 +81,9 @@ export function PlayerScreen() {
   const [previousVisibility, setPreviousVisibility] = useState(visible);
   if (previousVisibility !== visible) {
     setPreviousVisibility(visible);
-    if (!visible) setMenu(null);
+    if (!visible) {
+      setMenu(null);
+    }
   }
   const menuOpen = menu !== null;
   const menuBlurTarget = useRef<View | null>(null);
@@ -91,9 +93,13 @@ export function PlayerScreen() {
   const [editingSong, setEditingSong] = useState<Song | null>(null);
   const detailTarget = useRef<Href | null>(null);
   const dismissPlayer = useCallback(() => {
-    if (detailTarget.current) router.dismissTo(detailTarget.current);
-    else if (router.canGoBack()) router.back();
-    else router.replace('/(tabs)/(library)');
+    if (detailTarget.current) {
+      router.dismissTo(detailTarget.current);
+    } else if (router.canGoBack()) {
+      router.back();
+    } else {
+      router.replace('/(tabs)/(library)');
+    }
   }, []);
   const { gesture, animatedStyle, close, ready, closing } = usePlayerDismiss(
     height + insets.bottom,
@@ -101,7 +107,9 @@ export function PlayerScreen() {
     visible,
   );
   const openDetail = (detail: 'artist' | 'album') => {
-    if (!song || closing.get()) return;
+    if (!song || closing.get()) {
+      return;
+    }
     detailTarget.current =
       detail === 'artist'
         ? { pathname: '/(tabs)/(library)/artist/[id]', params: { id: artist, name: artist } }
@@ -119,14 +127,18 @@ export function PlayerScreen() {
   };
   useFocusEffect(
     useCallback(() => {
-      const state = usePlaybackStore.getState(),
-        current = state.queue[state.index];
-      if (current) usePlayerBackgroundStore.getState().selectArtwork(current, { immediate: true });
+      const state = usePlaybackStore.getState();
+      const current = state.queue[state.index];
+      if (current) {
+        usePlayerBackgroundStore.getState().selectArtwork(current, { immediate: true });
+      }
     }, []),
   );
   useFocusEffect(
     useCallback(() => {
-      if (!menuOpen) return;
+      if (!menuOpen) {
+        return;
+      }
       const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
         setMenu(null);
         return true;
@@ -141,12 +153,23 @@ export function PlayerScreen() {
   };
   const selectMenuAction = (action: PlayerMenuAction) => {
     setMenu(null);
-    if (action === 'album' || action === 'artist') openDetail(action);
-    else if (action === 'lyrics')
-      setPanel(layout.split ? 'lyrics' : panel === 'lyrics' ? 'artwork' : 'lyrics');
-    else if (action === 'download' && song) void useOfflineMusicStore.getState().download(song);
-    else if (action === 'edit-metadata' && song) setEditingSong(song);
-    else if (action === 'delete-local' && song)
+    if (action === 'album' || action === 'artist') {
+      openDetail(action);
+    } else if (action === 'lyrics') {
+      let nextPanel: 'artwork' | 'lyrics';
+      if (layout.split) {
+        nextPanel = 'lyrics';
+      } else if (panel === 'lyrics') {
+        nextPanel = 'artwork';
+      } else {
+        nextPanel = 'lyrics';
+      }
+      setPanel(nextPanel);
+    } else if (action === 'download' && song) {
+      void useOfflineMusicStore.getState().download(song);
+    } else if (action === 'edit-metadata' && song) {
+      setEditingSong(song);
+    } else if (action === 'delete-local' && song) {
       Alert.alert(
         '기기 음악 삭제',
         '앱에 저장된 복사본을 삭제합니다. NAS·Drive·S3·휴대전화의 원본은 유지됩니다.',
@@ -161,8 +184,11 @@ export function PlayerScreen() {
           },
         ],
       );
-    else if (action === 'equalizer') void openSystemEqualizer();
-    else setSaveList(action === 'add-song' ? 'song' : 'queue');
+    } else if (action === 'equalizer') {
+      void openSystemEqualizer();
+    } else {
+      setSaveList(action === 'add-song' ? 'song' : 'queue');
+    }
   };
   const artSize = layout.artworkSize;
   const changeTrack = useCallback(async (direction: ArtworkSwipeDirection) => {
@@ -170,12 +196,10 @@ export function PlayerScreen() {
     try {
       await (direction === 'next' ? next() : previous(false));
     } catch (failure) {
-      usePlaybackStore
-        .getState()
-        .setStatus({
-          buffering: false,
-          error: failure instanceof Error ? failure.message : '곡을 변경할 수 없습니다.',
-        });
+      usePlaybackStore.getState().setStatus({
+        buffering: false,
+        error: failure instanceof Error ? failure.message : '곡을 변경할 수 없습니다.',
+      });
     }
   }, []);
   const artworkSwipe = useArtworkSwipe(artSize, ready, closing, changeTrack, visible);
@@ -293,6 +317,60 @@ export function PlayerScreen() {
       />
     </View>
   ) : null;
+  let playerContent: React.ReactNode;
+  if (!song) {
+    playerContent = (
+      <View style={styles.empty}>
+        <Text style={styles.emptyText}>재생 중인 음악이 없습니다.</Text>
+      </View>
+    );
+  } else if (layout.split) {
+    let activePanel: React.ReactNode;
+    if (showQueue) {
+      activePanel = queuePanel;
+    } else {
+      activePanel = lyricsPanel;
+    }
+    playerContent = (
+      <>
+        <ScrollView
+          style={{ width: layout.primaryWidth, flexGrow: 0, flexShrink: 0 }}
+          contentContainerStyle={[styles.primaryContent, { justifyContent: 'center' }]}
+          showsVerticalScrollIndicator={false}
+        >
+          {artworkPanel}
+          {playbackControls}
+        </ScrollView>
+        <View style={styles.secondary}>{activePanel}</View>
+      </>
+    );
+  } else if (layout.compact && panel === 'artwork') {
+    playerContent = (
+      <ScrollView
+        contentContainerStyle={styles.primaryContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {artworkPanel}
+        {playbackControls}
+      </ScrollView>
+    );
+  } else {
+    let activePanel: React.ReactNode;
+    if (showQueue) {
+      activePanel = queuePanel;
+    } else if (panel === 'lyrics') {
+      activePanel = lyricsPanel;
+    } else {
+      activePanel = artworkPanel;
+    }
+
+    playerContent = (
+      <>
+        {activePanel}
+        {playbackControls}
+      </>
+    );
+  }
   return (
     <Animated.View style={[styles.player, animatedStyle]}>
       <BlurTargetView ref={menuBlurTarget} collapsable={false} style={styles.player}>
@@ -335,36 +413,7 @@ export function PlayerScreen() {
               layout.split && { flexDirection: 'row', gap: layout.gap },
             ]}
           >
-            {!song ? (
-              <View style={styles.empty}>
-                <Text style={styles.emptyText}>재생 중인 음악이 없습니다.</Text>
-              </View>
-            ) : layout.split ? (
-              <>
-                <ScrollView
-                  style={{ width: layout.primaryWidth, flexGrow: 0, flexShrink: 0 }}
-                  contentContainerStyle={[styles.primaryContent, { justifyContent: 'center' }]}
-                  showsVerticalScrollIndicator={false}
-                >
-                  {artworkPanel}
-                  {playbackControls}
-                </ScrollView>
-                <View style={styles.secondary}>{showQueue ? queuePanel : lyricsPanel}</View>
-              </>
-            ) : layout.compact && panel === 'artwork' ? (
-              <ScrollView
-                contentContainerStyle={styles.primaryContent}
-                showsVerticalScrollIndicator={false}
-              >
-                {artworkPanel}
-                {playbackControls}
-              </ScrollView>
-            ) : (
-              <>
-                {showQueue ? queuePanel : panel === 'lyrics' ? lyricsPanel : artworkPanel}
-                {playbackControls}
-              </>
-            )}
+            {playerContent}
           </View>
         </View>
       </BlurTargetView>

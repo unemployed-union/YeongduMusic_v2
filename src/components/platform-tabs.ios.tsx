@@ -4,7 +4,12 @@ import { NativeTabs } from 'expo-router/unstable-native-tabs';
 import { View, useWindowDimensions } from 'react-native';
 import { useKeyboardState } from 'react-native-keyboard-controller';
 import { useMenuPreferences } from '@/stores/menu-preferences';
-import { BOTTOM_MENU_HREFS, BOTTOM_MENU_ROUTES, MENU_LABELS, visibleMenuIds } from '@/features/settings/menu-layout';
+import {
+  BOTTOM_MENU_HREFS,
+  BOTTOM_MENU_ROUTES,
+  MENU_LABELS,
+  visibleMenuIds,
+} from '@/features/settings/menu-layout';
 import { useLiquidGlass } from '@/theme/liquid-glass';
 import { useColors } from '@/theme/tokens';
 import { workspaceLayout } from '@/theme/layout';
@@ -27,43 +32,67 @@ export function PlatformTabs({ fallback: Fallback }: PlatformTabsProps) {
 
 /** UIKit owns the floating, deforming selection lens and its pan gesture. */
 export function SystemTabs() {
-  const colors = useColors(), glass = useLiquidGlass('tabBar');
-  const savedBottom = useMenuPreferences(state => state.layout.bottom);
+  const colors = useColors();
+  const glass = useLiquidGlass('tabBar');
+  const savedBottom = useMenuPreferences((state) => state.layout.bottom);
   const focused = useIsFocused();
   const [displayedBottom, setDisplayedBottom] = useState(savedBottom);
   // Defer native menu changes while Settings covers the navigator. Otherwise hiding
   // the selected tab would give UIKit an invalid selection before we can redirect.
-  if (focused && displayedBottom !== savedBottom) setDisplayedBottom(savedBottom);
+  if (focused && displayedBottom !== savedBottom) {
+    setDisplayedBottom(savedBottom);
+  }
   const bottom = focused ? savedBottom : displayedBottom;
   const segments = useSegments();
   const { width, height, fontScale } = useWindowDimensions();
   const tablet = workspaceLayout(width, height, fontScale).expanded;
-  const keyboardVisible = useKeyboardState(state => state.isVisible);
-  const hasSong = usePlaybackStore(state => !!state.queue[state.index]);
+  const keyboardVisible = useKeyboardState((state) => state.isVisible);
+  const hasSong = usePlaybackStore((state) => !!state.queue[state.index]);
   const accessoryTarget = useRef<View | null>(null);
   const visible = visibleMenuIds(bottom);
   const current = segments.at(1);
   // Hidden native tabs cannot be selected, including after changing the menu in Settings.
-  if (current && bottom.some(item => BOTTOM_MENU_ROUTES[item.id] === current && !item.visible)) {
+  if (current && bottom.some((item) => BOTTOM_MENU_ROUTES[item.id] === current && !item.visible)) {
     return <Redirect href={BOTTOM_MENU_HREFS[visible[0]]} />;
   }
-  const ordered = [...bottom.filter(item => item.visible), ...bottom.filter(item => !item.visible)];
-  return <NativeTabsEnabledContext.Provider value>
-    <NativeTabs hidden={keyboardVisible || tablet} sidebarAdaptable={false} minimizeBehavior="never"
-      tintColor={colors.tint} iconColor={{ default: colors.muted, selected: colors.tint }}
-      labelStyle={{ default: { color: colors.muted }, selected: { color: colors.tint } }}
-      disableTransparentOnScrollEdge backgroundColor={glass.enabled ? undefined : colors.surface}
-      blurEffect={glass.enabled ? undefined : 'none'}
-      screenListeners={{ tabPress: () => playHaptic('selection') }}>
-      {hasSong && !keyboardVisible && !tablet && <NativeTabs.BottomAccessory>
-        <MiniPlayer embedded blurTarget={accessoryTarget} />
-      </NativeTabs.BottomAccessory>}
-      {ordered.map(item => <NativeTabs.Trigger key={item.id} name={BOTTOM_MENU_ROUTES[item.id]}
-        hidden={!item.visible} disableAutomaticContentInsets testID={'native-tab-' + item.id} accessibilityLabel={MENU_LABELS[item.id]}
-        contentStyle={{ backgroundColor: colors.background }}>
-        <NativeTabs.Trigger.Icon sf={icons[item.id]} />
-        <NativeTabs.Trigger.Label>{MENU_LABELS[item.id]}</NativeTabs.Trigger.Label>
-      </NativeTabs.Trigger>)}
-    </NativeTabs>
-  </NativeTabsEnabledContext.Provider>;
+  const ordered = [
+    ...bottom.filter((item) => item.visible),
+    ...bottom.filter((item) => !item.visible),
+  ];
+  return (
+    <NativeTabsEnabledContext.Provider value>
+      <NativeTabs
+        hidden={keyboardVisible || tablet}
+        sidebarAdaptable={false}
+        minimizeBehavior="never"
+        tintColor={colors.tint}
+        iconColor={{ default: colors.muted, selected: colors.tint }}
+        labelStyle={{ default: { color: colors.muted }, selected: { color: colors.tint } }}
+        disableTransparentOnScrollEdge
+        backgroundColor={glass.enabled ? undefined : colors.surface}
+        blurEffect={glass.enabled ? undefined : 'none'}
+        screenListeners={{ tabPress: () => playHaptic('selection') }}
+      >
+        {hasSong && !keyboardVisible && !tablet && (
+          <NativeTabs.BottomAccessory>
+            <MiniPlayer embedded blurTarget={accessoryTarget} />
+          </NativeTabs.BottomAccessory>
+        )}
+        {ordered.map((item) => (
+          <NativeTabs.Trigger
+            key={item.id}
+            name={BOTTOM_MENU_ROUTES[item.id]}
+            hidden={!item.visible}
+            disableAutomaticContentInsets
+            testID={'native-tab-' + item.id}
+            accessibilityLabel={MENU_LABELS[item.id]}
+            contentStyle={{ backgroundColor: colors.background }}
+          >
+            <NativeTabs.Trigger.Icon sf={icons[item.id]} />
+            <NativeTabs.Trigger.Label>{MENU_LABELS[item.id]}</NativeTabs.Trigger.Label>
+          </NativeTabs.Trigger>
+        ))}
+      </NativeTabs>
+    </NativeTabsEnabledContext.Provider>
+  );
 }

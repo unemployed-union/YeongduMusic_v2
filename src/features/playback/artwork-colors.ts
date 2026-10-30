@@ -26,25 +26,30 @@ function mix(from: string, to: string, progress: number): string {
 function darkTone(color: string, amount: number): string {
   let rgb = channels(mix('#101118', color, amount));
   // Bound luminance even for white/yellow artwork so white controls stay readable.
-  const luminance = () => rgb.reduce((sum, value, index) => {
-    const channel = value / 255;
-    const linear = channel <= 0.04045 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4;
-    return sum + linear * [0.2126, 0.7152, 0.0722][index];
-  }, 0);
-  while (luminance() > 0.14) rgb = rgb.map((value) => value * 0.92);
+  const luminance = () =>
+    rgb.reduce((sum, value, index) => {
+      const channel = value / 255;
+      const linear = channel <= 0.04045 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4;
+      return sum + linear * [0.2126, 0.7152, 0.0722][index];
+    }, 0);
+  while (luminance() > 0.14) {
+    rgb = rgb.map((value) => value * 0.92);
+  }
   return hex(rgb);
 }
 
 export function createArtworkGradient(primary: string, secondary: string): GradientColors {
-  if (!valid(primary) || !valid(secondary)) return DEFAULT_PLAYER_COLORS;
+  if (!valid(primary) || !valid(secondary)) {
+    return DEFAULT_PLAYER_COLORS;
+  }
   return [darkTone(primary, 0.64), darkTone(secondary, 0.46), darkTone(primary, 0.16)];
 }
 
 export function gradientFromImageColors(result: ImageColorsResult): GradientColors {
   const primary = result.platform === 'ios' ? result.background : result.dominant;
-  const secondary = result.platform === 'ios'
-    ? [result.secondary, result.primary, primary].find(valid)
-    : [result.vibrant, result.muted, primary].find(valid);
-  return createArtworkGradient(valid(primary) ? primary : secondary ?? '', secondary ?? '');
+  const secondary =
+    result.platform === 'ios'
+      ? [result.secondary, result.primary, primary].find(valid)
+      : [result.vibrant, result.muted, primary].find(valid);
+  return createArtworkGradient(valid(primary) ? primary : (secondary ?? ''), secondary ?? '');
 }
-

@@ -19,8 +19,9 @@ function validate(value: unknown): string[] {
     !Array.isArray(value) ||
     value.length > 200 ||
     value.some((folder) => typeof folder !== 'string' || !folder.trim() || folder.length > 4096)
-  )
+  ) {
     throw new Error('제외 폴더 설정 형식이 올바르지 않습니다.');
+  }
   return [...new Set((value as string[]).map(localFolderKey))];
 }
 export const useFolderExclusionStore = create<FolderExclusions>((set, get) => {
@@ -34,18 +35,27 @@ export const useFolderExclusionStore = create<FolderExclusions>((set, get) => {
     saving: false,
     error: null,
     load: (force = false) => {
-      if (loading) return loading;
-      if (get().ready && !force) return Promise.resolve();
+      if (loading) {
+        return loading;
+      }
+      if (get().ready && !force) {
+        return Promise.resolve();
+      }
       set({ loading: true, error: null });
       loading = persistenceQueue
         .settled()
         .then(async () => {
-          const raw =
-            Platform.OS === 'web'
-              ? typeof localStorage === 'undefined'
-                ? null
-                : localStorage.getItem(KEY)
-              : await SecureStore.getItemAsync(KEY);
+          let raw: string | null;
+          if (Platform.OS === 'web') {
+            if (typeof localStorage === 'undefined') {
+              raw = null;
+            } else {
+              raw = localStorage.getItem(KEY);
+            }
+          } else {
+            raw = await SecureStore.getItemAsync(KEY);
+          }
+
           set({ folders: raw === null ? [] : validate(JSON.parse(raw)), ready: true });
         })
         .catch(() => {
@@ -60,13 +70,18 @@ export const useFolderExclusionStore = create<FolderExclusions>((set, get) => {
     setFolders: async (folders) => {
       const next = validate(folders);
       await get().load();
-      if (!get().ready) throw new Error(get().error ?? '제외 폴더 설정을 먼저 불러와 주세요.');
+      if (!get().ready) {
+        throw new Error(get().error ?? '제외 폴더 설정을 먼저 불러와 주세요.');
+      }
       writes++;
       set({ saving: true });
       const write = persistenceQueue.run(async () => {
         const value = JSON.stringify(next);
-        if (Platform.OS === 'web') localStorage.setItem(KEY, value);
-        else await SecureStore.setItemAsync(KEY, value);
+        if (Platform.OS === 'web') {
+          localStorage.setItem(KEY, value);
+        } else {
+          await SecureStore.setItemAsync(KEY, value);
+        }
         set({ folders: next, error: null });
       });
 

@@ -177,7 +177,7 @@ export const LibraryPage = memo(function LibraryPage({
     [tab, cardWidth, colors, play, grid.columns, spacious, glass.supported],
   );
   const frame = [width === undefined && styles.fill, { width }];
-  if (isPending)
+  if (isPending) {
     return (
       <View
         style={frame}
@@ -187,6 +187,15 @@ export const LibraryPage = memo(function LibraryPage({
         <ListLoading />
       </View>
     );
+  }
+  let itemCountUnit: string;
+  if (tab === 'songs' || tab === 'favorites') {
+    itemCountUnit = '곡';
+  } else if (tab === 'albums') {
+    itemCountUnit = '개 앨범';
+  } else {
+    itemCountUnit = '명 아티스트';
+  }
   return (
     <View
       style={frame}
@@ -227,11 +236,7 @@ export const LibraryPage = memo(function LibraryPage({
                 {data && (
                   <Text style={[styles.stale, { color: colors.muted }]}>
                     {data.total ?? 0}
-                    {tab === 'songs' || tab === 'favorites'
-                      ? '곡'
-                      : tab === 'albums'
-                        ? '개 앨범'
-                        : '명 아티스트'}
+                    {itemCountUnit}
                   </Text>
                 )}
                 {data?.stale ? (

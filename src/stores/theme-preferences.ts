@@ -16,12 +16,14 @@ type State = {
   setMode: (mode: ThemeMode) => Promise<void>;
 };
 function applyNative(mode: ThemeMode) {
-  if (Platform.OS !== 'web') Appearance.setColorScheme(mode === 'auto' ? 'unspecified' : mode);
+  if (Platform.OS !== 'web') {
+    Appearance.setColorScheme(mode === 'auto' ? 'unspecified' : mode);
+  }
 }
 export const useThemePreferences = create<State>((set, get) => {
   const persistenceQueue = createSerialQueue();
-  let loading: Promise<void> | null = null,
-    writes = 0;
+  let loading: Promise<void> | null = null;
+  let writes = 0;
   return {
     mode: 'auto',
     ready: false,
@@ -30,15 +32,19 @@ export const useThemePreferences = create<State>((set, get) => {
     loadError: false,
     error: null,
     load: (force = false) => {
-      if (loading) return loading;
-      if (get().ready && !force) return Promise.resolve();
+      if (loading) {
+        return loading;
+      }
+      if (get().ready && !force) {
+        return Promise.resolve();
+      }
       set({ loading: true, error: null });
       loading = persistenceQueue
         .settled()
         .then(async () => {
           const stored = await readPreference(KEY);
-          let mode: ThemeMode = 'auto',
-            error: string | null = null;
+          let mode: ThemeMode = 'auto';
+          let error: string | null = null;
           if (stored !== null) {
             try {
               mode = parseThemeMode(stored);
@@ -66,7 +72,9 @@ export const useThemePreferences = create<State>((set, get) => {
     setMode: async (value) => {
       const mode = parseThemeMode(value);
       await get().load();
-      if (get().loadError) throw new Error('화면 모드를 먼저 다시 불러와 주세요.');
+      if (get().loadError) {
+        throw new Error('화면 모드를 먼저 다시 불러와 주세요.');
+      }
       writes++;
       set({ saving: true, error: null });
       const operation = persistenceQueue.run(async () => {

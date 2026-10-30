@@ -4,5 +4,9 @@ import { SettingsPage } from '@/features/settings/settings-ui';
 import { HapticSettings } from '@/features/haptics/haptic-settings';
 
 export default function HapticsSettingsScreen() {
-  return <SettingsPage>{isIosSystemSettingsAvailable ? <IosSystemSettingsLink /> : <HapticSettings />}</SettingsPage>;
+  return (
+    <SettingsPage>
+      {isIosSystemSettingsAvailable ? <IosSystemSettingsLink /> : <HapticSettings />}
+    </SettingsPage>
+  );
 }

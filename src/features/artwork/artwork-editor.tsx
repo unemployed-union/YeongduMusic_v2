@@ -40,31 +40,31 @@ export function ArtworkEditor({
   albumGroupId?: string;
   standalone?: boolean;
 }) {
-  const colors = useColors(),
-    store = useSongArtworkStore();
+  const colors = useColors();
+  const store = useSongArtworkStore();
   const queryClient = useQueryClient();
-  const auth = useAuthStore(),
-    scope = privacyScope(auth.mode, auth.session),
-    key = metadataKey(song, scope);
-  const [originalKey] = useState(key),
-    [expanded, setExpanded] = useState(standalone || !!albumSongs),
-    [wholeAlbum, setWholeAlbum] = useState(false);
-  const [albumQuery, setAlbumQuery] = useState<string | null>(null),
-    [artistQuery, setArtistQuery] = useState<string | null>(null);
-  const [selection, setSelection] = useState<string | null>(null),
-    [selectedId, setSelectedId] = useState<string | null>(null);
-  const [results, setResults] = useState<ArtworkCandidate[] | null>(null),
-    [failed, setFailed] = useState<string[]>([]);
-  const [operation, setOperation] = useState<ArtworkOperation | null>(null),
-    [error, setError] = useState<string | null>(null),
-    [notice, setNotice] = useState<string | null>(null);
+  const auth = useAuthStore();
+  const scope = privacyScope(auth.mode, auth.session);
+  const key = metadataKey(song, scope);
+  const [originalKey] = useState(key);
+  const [expanded, setExpanded] = useState(standalone || !!albumSongs);
+  const [wholeAlbum, setWholeAlbum] = useState(false);
+  const [albumQuery, setAlbumQuery] = useState<string | null>(null);
+  const [artistQuery, setArtistQuery] = useState<string | null>(null);
+  const [selection, setSelection] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [results, setResults] = useState<ArtworkCandidate[] | null>(null);
+  const [failed, setFailed] = useState<string[]>([]);
+  const [operation, setOperation] = useState<ArtworkOperation | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const [searchError, setSearchError] = useState<string | null>(null);
   const working = operation !== null;
-  const [writeFile, setWriteFile] = useState(false),
-    [progress, setProgress] = useState<string | null>(null),
-    [toast, setToast] = useState<{ message: string } | null>(null);
-  const controller = useRef<AbortController | null>(null),
-    mounted = useRef(true);
+  const [writeFile, setWriteFile] = useState(false);
+  const [progress, setProgress] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ message: string } | null>(null);
+  const controller = useRef<AbortController | null>(null);
+  const mounted = useRef(true);
   const { data, isPending, isFetching } = useSongs(expanded && !albumSongs);
   const load = store.load;
   useEffect(() => {
@@ -84,7 +84,9 @@ export function ArtworkEditor({
     [key],
   );
   useEffect(() => {
-    if (!toast) return;
+    if (!toast) {
+      return;
+    }
     const timer = setTimeout(() => setToast(null), 3500);
     return () => clearTimeout(timer);
   }, [toast]);
@@ -97,7 +99,15 @@ export function ArtworkEditor({
         : artworkTargets(currentSong, data?.items ?? [], scope, true),
     [currentSong, data?.items, scope, albumSongs, albumGroupId],
   );
-  const keys = albumSongs || wholeAlbum ? albumKeys : key ? [key] : [];
+  let keys: string[];
+  if (albumSongs || wholeAlbum) {
+    keys = albumKeys;
+  } else if (key) {
+    keys = [key];
+  } else {
+    keys = [];
+  }
+
   const targetSongs = [
     currentSong,
     ...(visible ?? []).filter(
@@ -115,7 +125,9 @@ export function ArtworkEditor({
         .find(Boolean) ?? null);
   function targetsVisible() {
     const hidden = useHiddenMusicStore.getState();
-    if (!hidden.ready || hidden.scope !== scope) return false;
+    if (!hidden.ready || hidden.scope !== scope) {
+      return false;
+    }
     const matches = hiddenMatcher(hidden.profile.presets);
     return !targetSongs.some(matches);
   }
@@ -128,18 +140,24 @@ export function ArtworkEditor({
     !key ||
     key !== originalKey ||
     !keys.length;
-  const preview = selection
-    ? artworkUri(selection, store.baseUri)
-    : selectedId
-      ? results?.find((item) => item.id === selectedId)?.uri
-      : key && store.patches[key]
-        ? artworkUri(store.patches[key], store.baseUri)
-        : currentSong.artworkUrl;
+  let preview: string | undefined;
+  if (selection) {
+    preview = artworkUri(selection, store.baseUri);
+  } else if (selectedId) {
+    preview = results?.find((item) => item.id === selectedId)?.uri;
+  } else if (key && store.patches[key]) {
+    preview = artworkUri(store.patches[key], store.baseUri);
+  } else {
+    preview = currentSong.artworkUrl;
+  }
+
   async function work(
     kind: ArtworkOperation,
     action: (signal: AbortSignal, allowed: () => boolean) => Promise<void>,
   ) {
-    if (unavailable || controller.current) return;
+    if (unavailable || controller.current) {
+      return;
+    }
     const current = new AbortController();
     controller.current = current;
     const allowed = () =>
@@ -150,7 +168,9 @@ export function ArtworkEditor({
         privacyScope(useAuthStore.getState().mode, useAuthStore.getState().session),
       ) === originalKey;
     const stop = useHiddenMusicStore.subscribe(() => {
-      if (!targetsVisible()) current.abort();
+      if (!targetsVisible()) {
+        current.abort();
+      }
     });
     setOperation(kind);
     setProgress(null);
@@ -163,12 +183,17 @@ export function ArtworkEditor({
     } catch (cause) {
       if (mounted.current && !current.signal.aborted) {
         const message = cause instanceof Error ? cause.message : '앨범아트를 수정하지 못했습니다.';
-        if (kind === 'search') setSearchError(message);
-        else setError(message);
+        if (kind === 'search') {
+          setSearchError(message);
+        } else {
+          setError(message);
+        }
       }
     } finally {
       stop();
-      if (controller.current === current) controller.current = null;
+      if (controller.current === current) {
+        controller.current = null;
+      }
       if (mounted.current) {
         setOperation(null);
         setProgress(null);
@@ -178,41 +203,57 @@ export function ArtworkEditor({
   }
   async function applySelection(signal: AbortSignal, allowed: () => boolean) {
     const { downloadArtwork } = await import('@/services/artwork/files');
-    if (!allowed()) return;
-    if (selectedId) setProgress('선택한 앨범아트를 다운로드하는 중…');
-    const image =
-      selection ??
-      (selectedId
-        ? await downloadArtwork(selectedId, signal)
-        : writeFile && key
-          ? store.patches[key]
-          : null);
-    if (!image || !allowed()) return;
+    if (!allowed()) {
+      return;
+    }
+    if (selectedId) {
+      setProgress('선택한 앨범아트를 다운로드하는 중…');
+    }
+    let image: string | null | undefined = selection;
+    if (image === null || image === undefined) {
+      if (selectedId) {
+        image = await downloadArtwork(selectedId, signal);
+      } else if (writeFile && key) {
+        image = store.patches[key];
+      } else {
+        image = null;
+      }
+    }
+    if (!image || !allowed()) {
+      return;
+    }
     let written = 0;
     const applied = new Set<string>();
     if (writeFile && !cloudFileWriteBlocked) {
-      if (fileUnavailable) throw new Error(fileUnavailable);
+      if (fileUnavailable) {
+        throw new Error(fileUnavailable);
+      }
       const { writeSongArtworkFile } = await import('@/services/metadata/write-song-file');
       const { libraryIdentity } = await import('@/features/library/repository');
       const identity = libraryIdentity(auth.mode, auth.session);
       try {
         for (const target of fileTargets) {
-          if (!allowed() || !targetsVisible()) throw new Error('파일 저장 적용이 취소되었습니다.');
+          if (!allowed() || !targetsVisible()) {
+            throw new Error('파일 저장 적용이 취소되었습니다.');
+          }
           const position = written + 1;
           setProgress(`${position}/${fileTargets.length}곡 · 파일에 앨범아트를 저장하는 중…`);
           const result = await writeSongArtworkFile(
             target,
             image,
             (message) => {
-              if (mounted.current && controller.current?.signal === signal)
+              if (mounted.current && controller.current?.signal === signal) {
                 setProgress(`${position}/${fileTargets.length}곡 · ${message}`);
+              }
             },
             signal,
             () => allowed() && targetsVisible(),
           );
           written++;
-          if (!allowed()) throw new Error('파일 저장 적용이 취소되었습니다.');
-          if (!target.source || target.source === 'nas')
+          if (!allowed()) {
+            throw new Error('파일 저장 적용이 취소되었습니다.');
+          }
+          if (!target.source || target.source === 'nas') {
             queryClient.setQueryData<Page<Song>>(['song-library', identity], (page) =>
               page
                 ? {
@@ -223,6 +264,7 @@ export function ArtworkEditor({
                   }
                 : page,
             );
+          }
           // Publish each confirmed file write separately; bulk writes cannot be atomic across storage services.
           const targetKey = metadataKey(target, scope)!;
           await store.save([targetKey], image, () => allowed() && targetsVisible());
@@ -230,21 +272,28 @@ export function ArtworkEditor({
         }
       } catch (cause) {
         const message = `${written}곡의 파일에 앨범아트를 저장했습니다. 나머지 적용은 완료하지 못했습니다. ${cause instanceof Error ? cause.message : '연결을 확인해 주세요.'}`;
-        if (mounted.current && written) setNotice(message);
+        if (mounted.current && written) {
+          setNotice(message);
+        }
         throw new Error(message);
       }
     }
     const remaining = keys.filter((id) => !applied.has(id));
-    if (remaining.length && allowed())
+    if (remaining.length && allowed()) {
       setProgress(`${remaining.length}곡의 앱 표시용 앨범아트를 저장하는 중…`);
+    }
     try {
-      if (remaining.length) await store.save(remaining, image, () => allowed() && targetsVisible());
+      if (remaining.length) {
+        await store.save(remaining, image, () => allowed() && targetsVisible());
+      }
     } catch (cause) {
       const message =
         (written
           ? `${written}곡의 파일 저장은 완료했지만 나머지 앱 표시 저장은 완료하지 못했습니다. `
           : '') + (cause instanceof Error ? cause.message : '다시 시도해 주세요.');
-      if (mounted.current && written) setNotice(message);
+      if (mounted.current && written) {
+        setNotice(message);
+      }
       throw new Error(message);
     }
     if (allowed()) {
@@ -256,25 +305,31 @@ export function ArtworkEditor({
     }
   }
   const busy = unavailable || working;
-  const statusTitle =
-    operation === 'search'
-      ? '앨범아트를 찾는 중…'
-      : operation === 'pick'
-        ? '이미지를 선택하는 중…'
-        : operation === 'reset'
-          ? '원래 앨범아트로 되돌리는 중…'
-          : writeFile
-            ? '파일과 앱에 앨범아트를 저장하는 중…'
-            : '앱에 앨범아트를 적용하는 중…';
-  const statusDetail =
-    progress ??
-    (operation === 'search'
-      ? 'MusicBrainz·Cover Art Archive에서 후보를 찾고 있습니다.'
-      : operation === 'pick'
-        ? '파일 선택 창에서 이미지를 골라 주세요.'
-        : operation === 'reset'
-          ? '앱에서 수정한 표지를 지우고 있습니다.'
-          : '선택한 이미지를 준비하고 있습니다.');
+  let statusTitle: string;
+  if (operation === 'search') {
+    statusTitle = '앨범아트를 찾는 중…';
+  } else if (operation === 'pick') {
+    statusTitle = '이미지를 선택하는 중…';
+  } else if (operation === 'reset') {
+    statusTitle = '원래 앨범아트로 되돌리는 중…';
+  } else if (writeFile) {
+    statusTitle = '파일과 앱에 앨범아트를 저장하는 중…';
+  } else {
+    statusTitle = '앱에 앨범아트를 적용하는 중…';
+  }
+
+  let statusDetail = progress;
+  if (statusDetail === null || statusDetail === undefined) {
+    if (operation === 'search') {
+      statusDetail = 'MusicBrainz·Cover Art Archive에서 후보를 찾고 있습니다.';
+    } else if (operation === 'pick') {
+      statusDetail = '파일 선택 창에서 이미지를 골라 주세요.';
+    } else if (operation === 'reset') {
+      statusDetail = '앱에서 수정한 표지를 지우고 있습니다.';
+    } else {
+      statusDetail = '선택한 이미지를 준비하고 있습니다.';
+    }
+  }
   const workStatus = (
     <View
       style={[styles.status, { backgroundColor: colors.background, borderColor: colors.separator }]}

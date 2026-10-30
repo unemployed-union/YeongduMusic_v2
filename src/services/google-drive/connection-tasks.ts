@@ -29,14 +29,20 @@ export function createConnectionTaskRunner({ isCurrent, getSignal, isBusy, onPro
         new Promise<never>((_, reject) => {
           onAbort = () => reject(new Error('Google 연결 요청이 변경되거나 취소되었습니다.'));
           signal.addEventListener('abort', onAbort, { once: true });
-          if (signal.aborted) onAbort();
+          if (signal.aborted) {
+            onAbort();
+          }
           timer = setTimeout(() => reject(timeout()), milliseconds);
         }),
       ]);
-      if (Date.now() >= expires) throw timeout();
+      if (Date.now() >= expires) {
+        throw timeout();
+      }
       return result;
     } finally {
-      if (timer !== undefined) clearTimeout(timer);
+      if (timer !== undefined) {
+        clearTimeout(timer);
+      }
       signal.removeEventListener('abort', onAbort);
     }
   }
@@ -47,7 +53,9 @@ export function createConnectionTaskRunner({ isCurrent, getSignal, isBusy, onPro
     milliseconds = 30000,
   ): Promise<T> {
     const check = () => {
-      if (!isCurrent(generation)) throw new Error('Google 연결 요청이 변경되거나 취소되었습니다.');
+      if (!isCurrent(generation)) {
+        throw new Error('Google 연결 요청이 변경되거나 취소되었습니다.');
+      }
     };
     check();
     const signal = getSignal();
@@ -64,14 +72,18 @@ export function createConnectionTaskRunner({ isCurrent, getSignal, isBusy, onPro
       );
       check();
     }
-    if (isBusy()) onProgress(label);
+    if (isBusy()) {
+      onProgress(label);
+    }
     const operation = Promise.resolve().then(() => {
       check();
       return job();
     });
     pendingOperation = operation;
     const clear = () => {
-      if (pendingOperation === operation) pendingOperation = null;
+      if (pendingOperation === operation) {
+        pendingOperation = null;
+      }
     };
     void operation.then(clear, clear);
     const result = await deadline(operation, label, milliseconds, signal);

@@ -39,7 +39,9 @@ export const useAppearancePreferences = create<State>((set, get) => {
     load: persistence.load,
     setColor: (field, color) =>
       persistence.save((current) => {
-        if (!APPEARANCE_FIELDS.includes(field)) throw new Error('Invalid color field');
+        if (!APPEARANCE_FIELDS.includes(field)) {
+          throw new Error('Invalid color field');
+        }
         return { ...current, [field]: color };
       }),
     restore: (value) => {

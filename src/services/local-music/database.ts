@@ -3,7 +3,7 @@ import type { Song } from '@/types/music';
 
 let database: Promise<SQLite.SQLiteDatabase> | null = null;
 export async function openLocalDatabase() {
-  if (!database)
+  if (!database) {
     database = SQLite.openDatabaseAsync('music-library.db')
       .then(async (db) => {
         await db.execAsync(
@@ -15,14 +15,17 @@ export async function openLocalDatabase() {
         database = null;
         throw error;
       });
+  }
+
   return database;
 }
 export async function saveLocalSong(song: Song) {
-  await (
-    await openLocalDatabase()
-  ).runAsync(
+  const db = await openLocalDatabase();
+  const serializedSong = JSON.stringify(song);
+
+  await db.runAsync(
     'INSERT OR REPLACE INTO local_tracks (id, value) VALUES (?, ?)',
     song.id,
-    JSON.stringify(song),
+    serializedSong,
   );
 }

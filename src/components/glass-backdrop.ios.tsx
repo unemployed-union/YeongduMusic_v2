@@ -8,7 +8,17 @@ import type { GlassBackdropProps } from './glass-backdrop';
 export function GlassBackdrop({ style, dark, interactive = false, tintColor }: GlassBackdropProps) {
   const scheme = useAppColorScheme();
   const glass = useLiquidGlass();
-  if (!glass.enabled) return null;
-  return <GlassView pointerEvents="none" glassEffectStyle="regular" colorScheme={dark ? 'dark' : scheme}
-    isInteractive={interactive} tintColor={tintColor} style={[StyleSheet.absoluteFill, style]} />;
+  if (!glass.enabled) {
+    return null;
+  }
+  return (
+    <GlassView
+      pointerEvents="none"
+      glassEffectStyle="regular"
+      colorScheme={dark ? 'dark' : scheme}
+      isInteractive={interactive}
+      tintColor={tintColor}
+      style={[StyleSheet.absoluteFill, style]}
+    />
+  );
 }

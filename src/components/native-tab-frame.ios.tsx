@@ -25,30 +25,50 @@ function Frame({ children, active, detail }: NativeTabFrameProps) {
   const insets = useSafeAreaInsets();
   const { width, height, fontScale } = useWindowDimensions();
   const workspace = workspaceLayout(width, height, fontScale);
-  const keyboardVisible = useKeyboardState(state => state.isVisible);
-  const info = tabletTabInfo({ name: BOTTOM_MENU_ROUTES[active], ...(detail && { state: { routes: [detail] } }) });
+  const keyboardVisible = useKeyboardState((state) => state.isVisible);
+  const info = tabletTabInfo({
+    name: BOTTOM_MENU_ROUTES[active],
+    ...(detail && { state: { routes: [detail] } }),
+  });
   const sidebar = workspace.expanded && !info.libraryHome;
   const miniWidth = Math.min(760, workspace.contentWidth);
   // Reserve UIKit's measured safe area for system tabs and their accessory.
   const bottom = keyboardVisible ? 0 : insets.bottom;
-  return <View style={styles.row}>
-    {sidebar && <TabletSidebar active={active} width={workspace.sidebarWidth} />}
-    <ContentTransition enabled={sidebar} transitionKey={info.transitionKey}>
-      {sidebar && <ContentTitleBar title={info.title} />}
-      <BlurTargetView ref={target} style={styles.content}>
-        <ScreenBlurTargetContext.Provider value={target}>
-          <TabBarInsetContext.Provider value={bottom}>{children}</TabBarInsetContext.Provider>
-        </ScreenBlurTargetContext.Provider>
-      </BlurTargetView>
-      {/* On phones UIKit positions the shared BottomAccessory, even during queue restoration. */}
-      {workspace.expanded && !keyboardVisible && <View pointerEvents="box-none" style={[styles.mini, { bottom: bottom + MINI_PLAYER_INSET }, workspace.expanded && {
-        width: miniWidth, left: (sidebar ? 0 : workspace.sidebarWidth) + (workspace.contentWidth - miniWidth) / 2, alignSelf: 'auto',
-      }]}><MiniPlayer blurTarget={target} /></View>}
-    </ContentTransition>
-  </View>;
+  return (
+    <View style={styles.row}>
+      {sidebar && <TabletSidebar active={active} width={workspace.sidebarWidth} />}
+      <ContentTransition enabled={sidebar} transitionKey={info.transitionKey}>
+        {sidebar && <ContentTitleBar title={info.title} />}
+        <BlurTargetView ref={target} style={styles.content}>
+          <ScreenBlurTargetContext.Provider value={target}>
+            <TabBarInsetContext.Provider value={bottom}>{children}</TabBarInsetContext.Provider>
+          </ScreenBlurTargetContext.Provider>
+        </BlurTargetView>
+        {/* On phones UIKit positions the shared BottomAccessory, even during queue restoration. */}
+        {workspace.expanded && !keyboardVisible && (
+          <View
+            pointerEvents="box-none"
+            style={[
+              styles.mini,
+              { bottom: bottom + MINI_PLAYER_INSET },
+              workspace.expanded && {
+                width: miniWidth,
+                left:
+                  (sidebar ? 0 : workspace.sidebarWidth) + (workspace.contentWidth - miniWidth) / 2,
+                alignSelf: 'auto',
+              },
+            ]}
+          >
+            <MiniPlayer blurTarget={target} />
+          </View>
+        )}
+      </ContentTransition>
+    </View>
+  );
 }
 
 const styles = StyleSheet.create({
-  row: { flex: 1, flexDirection: 'row' }, content: { flex: 1 },
+  row: { flex: 1, flexDirection: 'row' },
+  content: { flex: 1 },
   mini: { position: 'absolute', width: '100%', maxWidth: 760, alignSelf: 'center', height: 64 },
 });

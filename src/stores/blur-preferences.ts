@@ -40,7 +40,9 @@ export const useBlurPreferences = create<State>((set, get) => {
 
   function updateArea(area: BlurArea, option: Partial<BlurPreferences['areas'][BlurArea]>) {
     return persistence.save((current) => {
-      if (!BLUR_AREAS.includes(area)) throw new Error('Invalid blur area');
+      if (!BLUR_AREAS.includes(area)) {
+        throw new Error('Invalid blur area');
+      }
       return {
         ...current,
         areas: { ...current.areas, [area]: { ...current.areas[area], ...option } },

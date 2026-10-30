@@ -15,7 +15,7 @@ import {
 import { parseMetadata } from '@/features/metadata/rules';
 import { prepareS3File } from './cloud-file';
 import { prepareNasFile } from './nas-file';
-import { checkCancelled, rewriteTags, type FileProgress } from './file-io';
+import { checkCancelled, rewriteTags, type FileProgress, type FileTarget } from './file-io';
 import { artworkUri } from '@/features/artwork/rules';
 import type { Song, SongMetadata } from '@/types/music';
 
@@ -25,7 +25,9 @@ export async function writeSongFile(
   metadata: SongMetadata,
   progress: FileProgress,
 ): Promise<{ song: Song; message: string }> {
-  if (song.source === 'drive') throw new Error(DRIVE_FILE_WRITE_BLOCKED_MESSAGE);
+  if (song.source === 'drive') {
+    throw new Error(DRIVE_FILE_WRITE_BLOCKED_MESSAGE);
+  }
   return writeFile(song, parseMetadata(metadata), progress);
 }
 export async function writeSongArtworkFile(
@@ -45,49 +47,74 @@ async function writeFile(
 ): Promise<{ song: Song; message: string }> {
   // Artwork and text can be saved separately in the same editor. Use the latest
   // stored size after an earlier file write without changing the stable song ID.
-  const song =
-    inputSong.source === 'local'
-      ? (useLocalMusicStore.getState().songs.find((item) => item.id === inputSong.id) ?? inputSong)
-      : inputSong.source === 's3'
-        ? (useS3Store.getState().songs.find((item) => item.id === inputSong.id) ?? inputSong)
-        : inputSong;
-  if (song.source === 'drive') throw new Error(DRIVE_FILE_WRITE_BLOCKED_MESSAGE);
-  if (writing) throw new Error('다른 음악 파일을 저장하고 있습니다. 완료 후 다시 시도해 주세요.');
-  const auth = useAuthStore.getState(),
-    s3 = useS3Store.getState();
+  let song: Song;
+  if (inputSong.source === 'local') {
+    song =
+      useLocalMusicStore.getState().songs.find((item) => item.id === inputSong.id) ?? inputSong;
+  } else if (inputSong.source === 's3') {
+    song = useS3Store.getState().songs.find((item) => item.id === inputSong.id) ?? inputSong;
+  } else {
+    song = inputSong;
+  }
+
+  if (song.source === 'drive') {
+    throw new Error(DRIVE_FILE_WRITE_BLOCKED_MESSAGE);
+  }
+  if (writing) {
+    throw new Error('다른 음악 파일을 저장하고 있습니다. 완료 후 다시 시도해 주세요.');
+  }
+  const auth = useAuthStore.getState();
+
+  const s3 = useS3Store.getState();
   const unavailable = fileWriteUnavailable(song, auth.mode, Platform.OS);
-  if (unavailable) throw new Error(unavailable);
+  if (unavailable) {
+    throw new Error(unavailable);
+  }
   const local = song.source === 'local';
-  if (local && useLocalMusicStore.getState().busy)
+  if (local && useLocalMusicStore.getState().busy) {
     throw new Error('기기 음악 작업이 진행 중입니다. 완료 후 다시 저장해 주세요.');
+  }
   writing = true;
-  const request = new AbortController(),
-    signal = request.signal;
+  const request = new AbortController();
+
+  const signal = request.signal;
   const abort = () => request.abort();
   artwork?.signal?.addEventListener('abort', abort, { once: true });
-  if (artwork?.signal?.aborted) abort();
+  if (artwork?.signal?.aborted) {
+    abort();
+  }
   const check = () => {
-    if (artwork?.allowed && !artwork.allowed()) request.abort();
+    if (artwork?.allowed && !artwork.allowed()) {
+      request.abort();
+    }
     checkCancelled(signal);
   };
-  const stops = local
-    ? []
-    : song.source === 's3'
-      ? [
-          useS3Store.subscribe((state) => {
-            if (state.generation !== s3.generation || state.connection?.id !== song.s3.connectionId)
-              request.abort();
-          }),
-        ]
-      : [
-          useAuthStore.subscribe((state) => {
-            if (state.generation !== auth.generation || state.session !== auth.session)
-              request.abort();
-          }),
-        ];
+  let stops: (() => void)[];
+  if (local) {
+    stops = [];
+  } else if (song.source === 's3') {
+    stops = [
+      useS3Store.subscribe((state) => {
+        if (state.generation !== s3.generation || state.connection?.id !== song.s3.connectionId) {
+          request.abort();
+        }
+      }),
+    ];
+  } else {
+    stops = [
+      useAuthStore.subscribe((state) => {
+        if (state.generation !== auth.generation || state.session !== auth.session) {
+          request.abort();
+        }
+      }),
+    ];
+  }
+
   const timer = setTimeout(() => request.abort(), 10 * 60_000);
   let folder: Directory | null = null;
-  if (local) useLocalMusicStore.setState({ busy: true });
+  if (local) {
+    useLocalMusicStore.setState({ busy: true });
+  }
   try {
     check();
     const artworkFiles = artwork ? await import('@/services/artwork/files') : null;
@@ -101,33 +128,40 @@ async function writeFile(
         : undefined;
     check();
     progress('원본 파일과 쓰기 권한 확인 중');
-    const target =
-      song.source === 's3'
-        ? await prepareS3File(song, signal)
-        : local
-          ? null
-          : auth.mode === 'nas' && auth.session && song.path
-            ? await prepareNasFile(auth.session, song.path, signal)
-            : null;
-    if (!local && !target) throw new Error('원본 파일을 찾을 수 없습니다.');
-    const name = target?.name ?? (song.source === 'local' ? song.local.fileName : ''),
-      format = fileTagFormat(name);
-    if (!format) throw new Error('원본 파일 저장은 MP3·FLAC 형식을 지원합니다.');
+    let target: FileTarget | null = null;
+    if (song.source === 's3') {
+      target = await prepareS3File(song, signal);
+    } else if (!local && auth.mode === 'nas' && auth.session && song.path) {
+      target = await prepareNasFile(auth.session, song.path, signal);
+    }
+    if (!local && !target) {
+      throw new Error('원본 파일을 찾을 수 없습니다.');
+    }
+    const name = target?.name ?? (song.source === 'local' ? song.local.fileName : '');
+
+    const format = fileTagFormat(name);
+    if (!format) {
+      throw new Error('원본 파일 저장은 MP3·FLAC 형식을 지원합니다.');
+    }
     // Do not use a remote filename as a local path.
-    if (!name || /[\/\\\0]/.test(name) || name === '.' || name === '..')
+    if (!name || /[\/\\\0]/.test(name) || name === '.' || name === '..') {
       throw new Error('원본 파일 이름을 확인할 수 없습니다.');
+    }
     const expectedSize = target?.size ?? (song.source === 'local' ? song.local.size : 0);
-    if (!Number.isSafeInteger(expectedSize) || expectedSize <= 0)
+    if (!Number.isSafeInteger(expectedSize) || expectedSize <= 0) {
       throw new Error('원본 파일 크기를 확인할 수 없습니다.');
-    if (Paths.availableDiskSpace < expectedSize * 3 + 32 * 1024 * 1024)
+    }
+    if (Paths.availableDiskSpace < expectedSize * 3 + 32 * 1024 * 1024) {
       throw new Error('원본과 수정본을 임시 저장할 기기 공간이 부족합니다.');
+    }
     folder = new Directory(
       Paths.cache,
       'metadata-write-' + Date.now() + '-' + Math.random().toString(36).slice(2, 10),
     );
     folder.create();
-    const input = new File(folder, 'source-original'),
-      output = new File(folder, name);
+    const input = new File(folder, 'source-original');
+
+    const output = new File(folder, name);
     progress('원본 음악 파일 읽는 중');
     if (local) {
       const source = await localSource(song);
@@ -155,28 +189,37 @@ async function writeFile(
     if (
       original.size !== expectedSize ||
       (target?.md5 && original.digest !== target.md5.toLowerCase())
-    )
+    ) {
       throw new Error('다운로드한 파일이 원본과 일치하지 않습니다. 원본은 변경하지 않았습니다.');
-    if (target) await target.unchanged();
+    }
+    if (target) {
+      await target.unchanged();
+    }
     check();
     progress('음악 태그 작성 중');
     await rewriteTags(input, output, format, fields, signal, picture);
     check();
-    let updated: Song, message: string;
+    let updated: Song;
+    let message: string;
     if (local) {
       updated = await replaceLocalMetadataFile(song.id, output.uri, fields, check, artworkUrl);
       message = '앱에 보관된 음악 파일에 저장했습니다.';
     } else {
-      if (!target) throw new Error('원본 저장소 연결이 없습니다.');
+      if (!target) {
+        throw new Error('원본 저장소 연결이 없습니다.');
+      }
       message = await target.commit(output, progress);
       updated = { ...song, ...writtenSongChanges(fields, artworkUrl) };
-      if (updated.source === 's3')
+      if (updated.source === 's3') {
         updated = { ...updated, s3: { ...updated.s3, size: output.size, modifiedTime: undefined } };
+      }
     }
     // A source snapshot now represents the written tags, so removing a display edit
     // must not resurrect pre-write values in the current queue.
     if (!signal.aborted) {
-      if (updated.source === 's3') useS3Store.getState().recordWrittenSong(updated);
+      if (updated.source === 's3') {
+        useS3Store.getState().recordWrittenSong(updated);
+      }
       usePlaybackStore.setState((state) => ({
         queue: mergeWrittenSong(state.queue, updated, artworkUrl),
       }));
@@ -188,7 +231,9 @@ async function writeFile(
     stops.forEach((stop) => stop());
     try {
       try {
-        if (folder?.exists) folder.delete();
+        if (folder?.exists) {
+          folder.delete();
+        }
       } catch {
         /* The OS can clear leftover cache files later. */
       }

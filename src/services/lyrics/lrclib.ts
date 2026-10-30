@@ -5,46 +5,80 @@ import type { Song } from '@/types/music';
 
 type FailureKind = 'cancelled' | 'timeout' | 'network' | 'http' | 'response' | 'rate-limit';
 export class LyricsRequestError extends Error {
-  constructor(readonly kind: FailureKind, message: string, readonly status?: number) {
+  constructor(
+    readonly kind: FailureKind,
+    message: string,
+    readonly status?: number,
+  ) {
     super(message);
     this.name = kind === 'cancelled' ? 'AbortError' : 'LyricsRequestError';
   }
 }
 export function checkLyricsCancelled(signal?: AbortSignal): void {
-  if (signal?.aborted) throw new LyricsRequestError('cancelled', '가사 요청이 취소되었습니다.');
+  if (signal?.aborted) {
+    throw new LyricsRequestError('cancelled', '가사 요청이 취소되었습니다.');
+  }
 }
 
 const CLIENT_IDENTITY = 'YeongduMusic/1.0.0 (https://github.com/unemployed-union/YeongduMusic-V2)';
 
 const missing = (): LyricsDocument => ({ provider: 'lrclib', kind: 'missing', lines: [] });
-const normalize = (value: string) => value.normalize('NFC').trim().replace(/\s+/g, ' ').toLocaleLowerCase();
+const normalize = (value: string) =>
+  value.normalize('NFC').trim().replace(/\s+/g, ' ').toLocaleLowerCase();
 let requests: Promise<unknown> = Promise.resolve();
 let nextRequestAt = 0;
 
 function wait(milliseconds: number, signal?: AbortSignal): Promise<void> {
   checkLyricsCancelled(signal);
   return new Promise((resolve, reject) => {
-    const onAbort = () => { clearTimeout(timer); signal?.removeEventListener('abort', onAbort); reject(new LyricsRequestError('cancelled', '가사 요청이 취소되었습니다.')); };
-    const timer = setTimeout(() => { signal?.removeEventListener('abort', onAbort); resolve(); }, milliseconds);
+    const onAbort = () => {
+      clearTimeout(timer);
+      signal?.removeEventListener('abort', onAbort);
+      reject(new LyricsRequestError('cancelled', '가사 요청이 취소되었습니다.'));
+    };
+    const timer = setTimeout(() => {
+      signal?.removeEventListener('abort', onAbort);
+      resolve();
+    }, milliseconds);
     signal?.addEventListener('abort', onAbort);
   });
 }
 
-async function requestLyrics(song: Song, duration: number, signal?: AbortSignal, search = false): Promise<LyricsDocument> {
+async function requestLyrics(
+  song: Song,
+  duration: number,
+  signal?: AbortSignal,
+  search = false,
+): Promise<LyricsDocument> {
   checkLyricsCancelled(signal);
-  if (!song.title.trim() || !song.artist.trim()) return missing();
+  if (!song.title.trim() || !song.artist.trim()) {
+    return missing();
+  }
   const parameters = new URLSearchParams({ track_name: song.title, artist_name: song.artist });
-  if (!search && song.album.trim()) parameters.set('album_name', song.album);
+  if (!search && song.album.trim()) {
+    parameters.set('album_name', song.album);
+  }
   const knownDuration = Number.isFinite(duration) && duration >= 1 && duration <= 3600;
-  if (!search && knownDuration) parameters.set('duration', String(duration));
+  if (!search && knownDuration) {
+    parameters.set('duration', String(duration));
+  }
   const controller = new AbortController();
   const deadline = Date.now() + 15000;
   let stopped: LyricsRequestError | null = null;
   let rejectStopped!: (error: LyricsRequestError) => void;
-  const interruption = new Promise<never>((_, reject) => { rejectStopped = reject; });
+  const interruption = new Promise<never>((_, reject) => {
+    rejectStopped = reject;
+  });
   const stop = (kind: 'cancelled' | 'timeout') => {
-    if (stopped) return;
-    stopped = new LyricsRequestError(kind, kind === 'timeout' ? '온라인 가사 요청 시간이 초과되었습니다. 다시 시도해 주세요.' : '가사 요청이 취소되었습니다.');
+    if (stopped) {
+      return;
+    }
+    stopped = new LyricsRequestError(
+      kind,
+      kind === 'timeout'
+        ? '온라인 가사 요청 시간이 초과되었습니다. 다시 시도해 주세요.'
+        : '가사 요청이 취소되었습니다.',
+    );
     rejectStopped(stopped);
     controller.abort();
   };
@@ -52,9 +86,15 @@ async function requestLyrics(song: Song, duration: number, signal?: AbortSignal,
   const timer = setTimeout(() => stop('timeout'), 15000);
   signal?.addEventListener('abort', onAbort);
   const check = () => {
-    if (!stopped && signal?.aborted) stop('cancelled');
-    if (!stopped && Date.now() >= deadline) stop('timeout');
-    if (stopped) throw stopped;
+    if (!stopped && signal?.aborted) {
+      stop('cancelled');
+    }
+    if (!stopped && Date.now() >= deadline) {
+      stop('timeout');
+    }
+    if (stopped) {
+      throw stopped;
+    }
   };
   async function fetchLyrics(): Promise<LyricsDocument> {
     check();
@@ -70,62 +110,172 @@ async function requestLyrics(song: Song, duration: number, signal?: AbortSignal,
           ...(Platform.OS === 'web' ? {} : { 'User-Agent': CLIENT_IDENTITY }),
         },
       });
-    } catch { check(); throw new LyricsRequestError('network', '온라인 가사에 연결할 수 없습니다. 네트워크를 확인해 주세요.'); }
+    } catch {
+      check();
+      throw new LyricsRequestError(
+        'network',
+        '온라인 가사에 연결할 수 없습니다. 네트워크를 확인해 주세요.',
+      );
+    }
     check();
-    if (response.status === 404) return missing();
+    if (response.status === 404) {
+      return missing();
+    }
     if (response.status === 429 || response.status === 503) {
       const retryAfter = response.headers.get('retry-after');
       const seconds = Number(retryAfter);
-      const delay = retryAfter && Number.isFinite(seconds) ? seconds * 1000 : retryAfter ? Date.parse(retryAfter) - Date.now() : 30000;
-      nextRequestAt = Math.max(nextRequestAt, Date.now() + (Number.isFinite(delay) ? Math.max(1000, delay) : 30000));
-      throw new LyricsRequestError('rate-limit', '가사 서버가 잠시 쉬고 있습니다. 잠시 후 다시 시도해 주세요.', response.status);
+      let delay: number;
+      if (retryAfter && Number.isFinite(seconds)) {
+        delay = seconds * 1000;
+      } else if (retryAfter) {
+        delay = Date.parse(retryAfter) - Date.now();
+      } else {
+        delay = 30000;
+      }
+
+      nextRequestAt = Math.max(
+        nextRequestAt,
+        Date.now() + (Number.isFinite(delay) ? Math.max(1000, delay) : 30000),
+      );
+      throw new LyricsRequestError(
+        'rate-limit',
+        '가사 서버가 잠시 쉬고 있습니다. 잠시 후 다시 시도해 주세요.',
+        response.status,
+      );
     }
-    if (!response.ok) throw new LyricsRequestError('http', `온라인 가사 서버 오류 (HTTP ${response.status}).`, response.status);
+    if (!response.ok) {
+      throw new LyricsRequestError(
+        'http',
+        `온라인 가사 서버 오류 (HTTP ${response.status}).`,
+        response.status,
+      );
+    }
     let body: string;
-    try { body = await response.text(); }
-    catch { check(); throw new LyricsRequestError('network', '온라인 가사 응답을 받지 못했습니다.'); }
+    try {
+      body = await response.text();
+    } catch {
+      check();
+      throw new LyricsRequestError('network', '온라인 가사 응답을 받지 못했습니다.');
+    }
     check();
-    if (body.length > 1000000) throw new LyricsRequestError('response', '가사 응답이 너무 큽니다.');
+    if (body.length > 1000000) {
+      throw new LyricsRequestError('response', '가사 응답이 너무 큽니다.');
+    }
     let raw: unknown;
-    try { raw = JSON.parse(body); }
-    catch { check(); throw new LyricsRequestError('response', '온라인 가사 응답을 읽을 수 없습니다.'); }
+    try {
+      raw = JSON.parse(body);
+    } catch {
+      check();
+      throw new LyricsRequestError('response', '온라인 가사 응답을 읽을 수 없습니다.');
+    }
     check();
-    if (search ? !Array.isArray(raw) : (!raw || typeof raw !== 'object' || Array.isArray(raw))) throw new LyricsRequestError('response', '온라인 가사 형식이 올바르지 않습니다.');
-    const records: unknown[] = search ? raw as unknown[] : [raw];
-    if (records.length > 100) throw new LyricsRequestError('response', '가사 검색 결과가 너무 많습니다.');
+    if (search ? !Array.isArray(raw) : !raw || typeof raw !== 'object' || Array.isArray(raw)) {
+      throw new LyricsRequestError('response', '온라인 가사 형식이 올바르지 않습니다.');
+    }
+    const records: unknown[] = search ? (raw as unknown[]) : [raw];
+    if (records.length > 100) {
+      throw new LyricsRequestError('response', '가사 검색 결과가 너무 많습니다.');
+    }
     const candidates: { document: LyricsDocument; albumMatch: boolean }[] = [];
     for (const value of records) {
-      if (!value || typeof value !== 'object' || Array.isArray(value)) throw new LyricsRequestError('response', '온라인 가사 형식이 올바르지 않습니다.');
-      const record = value as Record<string, unknown>;
-      if (typeof record.trackName !== 'string' || typeof record.artistName !== 'string' || typeof record.instrumental !== 'boolean' ||
-        !(record.syncedLyrics === null || typeof record.syncedLyrics === 'string') || !(record.plainLyrics === null || typeof record.plainLyrics === 'string')) {
+      if (!value || typeof value !== 'object' || Array.isArray(value)) {
         throw new LyricsRequestError('response', '온라인 가사 형식이 올바르지 않습니다.');
       }
-      if (normalize(record.trackName) !== normalize(song.title) || normalize(record.artistName) !== normalize(song.artist)) continue;
-      if (knownDuration && (typeof record.duration !== 'number' || !Number.isFinite(record.duration) || Math.abs(record.duration - duration) > 2)) continue;
-      const synced = parseLyrics(typeof record.syncedLyrics === 'string' ? record.syncedLyrics : '', 'lrclib');
-      const document: LyricsDocument = record.instrumental ? { provider: 'lrclib', kind: 'instrumental', lines: [] } : synced.kind === 'synced' ? synced : parseLyrics(typeof record.plainLyrics === 'string' ? record.plainLyrics : '', 'lrclib');
-      candidates.push({ document, albumMatch: typeof record.albumName === 'string' && normalize(record.albumName) === normalize(song.album) });
+      const record = value as Record<string, unknown>;
+      if (
+        typeof record.trackName !== 'string' ||
+        typeof record.artistName !== 'string' ||
+        typeof record.instrumental !== 'boolean' ||
+        !(record.syncedLyrics === null || typeof record.syncedLyrics === 'string') ||
+        !(record.plainLyrics === null || typeof record.plainLyrics === 'string')
+      ) {
+        throw new LyricsRequestError('response', '온라인 가사 형식이 올바르지 않습니다.');
+      }
+      if (
+        normalize(record.trackName) !== normalize(song.title) ||
+        normalize(record.artistName) !== normalize(song.artist)
+      ) {
+        continue;
+      }
+      if (
+        knownDuration &&
+        (typeof record.duration !== 'number' ||
+          !Number.isFinite(record.duration) ||
+          Math.abs(record.duration - duration) > 2)
+      ) {
+        continue;
+      }
+      const synced = parseLyrics(
+        typeof record.syncedLyrics === 'string' ? record.syncedLyrics : '',
+        'lrclib',
+      );
+      let document: LyricsDocument;
+      if (record.instrumental) {
+        document = { provider: 'lrclib', kind: 'instrumental', lines: [] };
+      } else if (synced.kind === 'synced') {
+        document = synced;
+      } else {
+        document = parseLyrics(
+          typeof record.plainLyrics === 'string' ? record.plainLyrics : '',
+          'lrclib',
+        );
+      }
+
+      candidates.push({
+        document,
+        albumMatch:
+          typeof record.albumName === 'string' &&
+          normalize(record.albumName) === normalize(song.album),
+      });
     }
-    const rank = (candidate: typeof candidates[number]) => (candidate.document.kind === 'synced' ? 4 : candidate.document.kind === 'plain' ? 2 : 0) + Number(candidate.albumMatch);
+    const rank = (candidate: (typeof candidates)[number]) => {
+      let kindRank: number;
+      if (candidate.document.kind === 'synced') {
+        kindRank = 4;
+      } else if (candidate.document.kind === 'plain') {
+        kindRank = 2;
+      } else {
+        kindRank = 0;
+      }
+      return kindRank + Number(candidate.albumMatch);
+    };
     candidates.sort((a, b) => rank(b) - rank(a));
     check();
     return candidates[0]?.document ?? missing();
   }
-  try { return await Promise.race([interruption, fetchLyrics()]); }
-  finally { clearTimeout(timer); signal?.removeEventListener('abort', onAbort); }
+  try {
+    return await Promise.race([interruption, fetchLyrics()]);
+  } finally {
+    clearTimeout(timer);
+    signal?.removeEventListener('abort', onAbort);
+  }
 }
 
 // Sequential, on-demand requests only; respect the provider's Retry-After.
-export function onlineLyrics(song: Song, duration: number, signal?: AbortSignal, search = false): Promise<LyricsDocument> {
+export function onlineLyrics(
+  song: Song,
+  duration: number,
+  signal?: AbortSignal,
+  search = false,
+): Promise<LyricsDocument> {
   const result = requests.then(async () => {
     checkLyricsCancelled(signal);
     const delay = nextRequestAt - Date.now();
-    if (delay > 500) throw new LyricsRequestError('rate-limit', '가사 서버가 잠시 쉬고 있습니다. 잠시 후 다시 시도해 주세요.');
-    if (delay > 0) await wait(delay, signal);
+    if (delay > 500) {
+      throw new LyricsRequestError(
+        'rate-limit',
+        '가사 서버가 잠시 쉬고 있습니다. 잠시 후 다시 시도해 주세요.',
+      );
+    }
+    if (delay > 0) {
+      await wait(delay, signal);
+    }
     checkLyricsCancelled(signal);
-    try { return await requestLyrics(song, duration, signal, search); }
-    finally { nextRequestAt = Math.max(nextRequestAt, Date.now() + 250); }
+    try {
+      return await requestLyrics(song, duration, signal, search);
+    } finally {
+      nextRequestAt = Math.max(nextRequestAt, Date.now() + 250);
+    }
   });
   requests = result.catch(() => {});
   return result;

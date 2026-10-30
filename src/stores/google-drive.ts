@@ -100,7 +100,9 @@ export const useGoogleDriveStore = create<State>((set, get) => {
     metadataLoading: false,
     metadataWarning: null,
     cancelConnection: () => {
-      if (!get().busy && !get().loading && !get().fileSaving && !get().metadataLoading) return;
+      if (!get().busy && !get().loading && !get().fileSaving && !get().metadataLoading) {
+        return;
+      }
       invalidate();
       libraryRequest?.abort();
       fileRequest?.abort();
@@ -116,7 +118,9 @@ export const useGoogleDriveStore = create<State>((set, get) => {
       });
     },
     bootstrap: async () => {
-      if (get().ready || get().busy) return;
+      if (get().ready || get().busy) {
+        return;
+      }
       const generation = get().generation;
       set({ busy: true });
       try {
@@ -133,12 +137,15 @@ export const useGoogleDriveStore = create<State>((set, get) => {
           });
         }
       } finally {
-        if (current(generation)) set({ ready: true, busy: false, progress: null });
+        if (current(generation)) {
+          set({ ready: true, busy: false, progress: null });
+        }
       }
-      if (current(generation) && get().account)
+      if (current(generation) && get().account) {
         await get()
           .refresh()
           .catch(() => {});
+      }
     },
     connect: async () => {
       const generation = begin();
@@ -155,12 +162,15 @@ export const useGoogleDriveStore = create<State>((set, get) => {
           });
         }
       } finally {
-        if (current(generation)) set({ busy: false, progress: null });
+        if (current(generation)) {
+          set({ busy: false, progress: null });
+        }
       }
-      if (current(generation) && get().account)
+      if (current(generation) && get().account) {
         await get()
           .refresh()
           .catch(() => {});
+      }
     },
     disconnect: async () => {
       const generation = begin();
@@ -177,7 +187,9 @@ export const useGoogleDriveStore = create<State>((set, get) => {
           });
         }
       } finally {
-        if (current(generation)) set({ busy: false, progress: null });
+        if (current(generation)) {
+          set({ busy: false, progress: null });
+        }
       }
     },
     accessToken: async (accountId, rejectedToken) => {
@@ -185,9 +197,11 @@ export const useGoogleDriveStore = create<State>((set, get) => {
       return exclusive(() => authentication.accessToken(generation, accountId, rejectedToken));
     },
     pickFiles: async () => {
-      const account = get().account,
-        generation = get().generation;
-      if (!account || get().busy || get().fileSaving || get().loading) return;
+      const account = get().account;
+      const generation = get().generation;
+      if (!account || get().busy || get().fileSaving || get().loading) {
+        return;
+      }
       set({ busy: true, error: null, progress: 'Google에서 음악 파일 선택' });
       let ids: string[] | null = null;
       try {
@@ -200,9 +214,13 @@ export const useGoogleDriveStore = create<State>((set, get) => {
           ),
         );
       } catch (error) {
-        if (current(generation)) set({ error: googleConnectionError(error) });
+        if (current(generation)) {
+          set({ error: googleConnectionError(error) });
+        }
       } finally {
-        if (current(generation)) set({ busy: false, progress: null });
+        if (current(generation)) {
+          set({ busy: false, progress: null });
+        }
       }
       if (current(generation) && get().account?.id === account.id && ids?.length) {
         const names = new Map(get().files.map((file) => [file.id, file.name]));
@@ -214,11 +232,14 @@ export const useGoogleDriveStore = create<State>((set, get) => {
     },
     selectFiles: async (files) => {
       const account = get().account;
-      if (!account) throw new Error('Google Drive를 먼저 연결해 주세요.');
-      if (get().busy || get().fileSaving)
+      if (!account) {
+        throw new Error('Google Drive를 먼저 연결해 주세요.');
+      }
+      if (get().busy || get().fileSaving) {
         throw new Error('Google 파일 선택을 변경하고 있습니다. 잠시 후 다시 시도해 주세요.');
-      const generation = get().generation,
-        request = new AbortController();
+      }
+      const generation = get().generation;
+      const request = new AbortController();
       fileRequest = request;
       set({ fileSaving: true, error: null });
       const isCurrent = () =>
@@ -235,11 +256,15 @@ export const useGoogleDriveStore = create<State>((set, get) => {
           selected.push({ id: verified.id, name: verified.name });
         }
         await exclusive(async () => {
-          if (!isCurrent()) return;
+          if (!isCurrent()) {
+            return;
+          }
           await step(generation, '선택한 음악 저장', () =>
             saveDriveSelection(account.id, selected, isCurrent),
           );
-          if (!isCurrent()) return;
+          if (!isCurrent()) {
+            return;
+          }
           libraryRequest?.abort();
           libraryRequest = null;
           set({
@@ -250,7 +275,9 @@ export const useGoogleDriveStore = create<State>((set, get) => {
             metadataWarning: null,
           });
         });
-        if (isCurrent()) await get().refresh();
+        if (isCurrent()) {
+          await get().refresh();
+        }
       } catch (error) {
         if (isCurrent()) {
           set({ error: googleConnectionError(error) });
@@ -259,13 +286,17 @@ export const useGoogleDriveStore = create<State>((set, get) => {
       } finally {
         if (fileRequest === request) {
           fileRequest = null;
-          if (current(generation)) set({ fileSaving: false });
+          if (current(generation)) {
+            set({ fileSaving: false });
+          }
         }
       }
     },
     refresh: async () => {
       const { account, files } = get();
-      if (!account) return;
+      if (!account) {
+        return;
+      }
       if (!files.length) {
         set({ songs: [], loading: false, metadataLoading: false, metadataWarning: null });
         return;
@@ -313,9 +344,12 @@ export const useGoogleDriveStore = create<State>((set, get) => {
           },
         );
       } catch (error) {
-        if (current(generation) && libraryRequest === request && !request.signal.aborted)
+        if (current(generation) && libraryRequest === request && !request.signal.aborted) {
           set({ error: googleConnectionError(error) });
-        if (!request.signal.aborted) throw error;
+        }
+        if (!request.signal.aborted) {
+          throw error;
+        }
       } finally {
         if (!enriching && current(generation) && libraryRequest === request) {
           libraryRequest = null;
@@ -326,28 +360,35 @@ export const useGoogleDriveStore = create<State>((set, get) => {
   };
 });
 export async function driveSource(song: Song, refreshToken = false) {
-  if (song.source !== 'drive') throw new Error('Google Drive 곡이 아닙니다.');
-  if (song.drive.documentUri)
+  if (song.source !== 'drive') {
+    throw new Error('Google Drive 곡이 아닙니다.');
+  }
+  if (song.drive.documentUri) {
     return (await import('@/stores/drive-documents')).driveDocumentSource(song);
+  }
   const { fileId, accountId } = song.drive;
   const selected = () =>
     useGoogleDriveStore.getState().account?.id === accountId &&
     useGoogleDriveStore.getState().files.some((file) => file.id === fileId);
-  if (!selected())
+  if (!selected()) {
     throw new Error(
       'Google 계정 또는 선택한 음악 파일이 변경되었습니다. 설정에서 다시 선택해 주세요.',
     );
+  }
   const token = (rejected?: string) =>
     useGoogleDriveStore.getState().accessToken(accountId, rejected);
-  if (refreshToken) await token(await token());
+  if (refreshToken) {
+    await token(await token());
+  }
   const info = await driveJson(
     'https://www.googleapis.com/drive/v3/files/' +
       encodeURIComponent(fileId) +
       '?fields=id,trashed,capabilities(canDownload)',
     token,
   );
-  if (!info || typeof info !== 'object' || !('id' in info) || info.id !== fileId)
+  if (!info || typeof info !== 'object' || !('id' in info) || info.id !== fileId) {
     throw new Error('Google Drive 파일 정보를 확인할 수 없습니다.');
+  }
   if (
     ('trashed' in info && info.trashed === true) ||
     ('capabilities' in info &&
@@ -355,10 +396,12 @@ export async function driveSource(song: Song, refreshToken = false) {
       typeof info.capabilities === 'object' &&
       'canDownload' in info.capabilities &&
       info.capabilities.canDownload === false)
-  )
+  ) {
     throw new Error('Google Drive 파일이 삭제되었거나 다운로드 권한이 없습니다.');
+  }
   const accessToken = await token();
-  if (!selected())
+  if (!selected()) {
     throw new Error('Google 계정 또는 선택한 음악 파일이 변경되었습니다. 다시 곡을 선택해 주세요.');
+  }
   return { uri: driveMediaUrl(fileId), headers: { Authorization: 'Bearer ' + accessToken } };
 }

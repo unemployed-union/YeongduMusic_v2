@@ -7,12 +7,26 @@ import { DetailDisplaySettings } from '@/features/library/detail-display-setting
 import { FavoriteDisplaySettings } from '@/features/favorites/favorite-display-settings';
 
 export default function LibrarySettingsScreen() {
-  return <SettingsPage>
-    <SettingsSection title="보관함 메뉴 순서 및 표시"><MenuLayoutSettings group="library" /></SettingsSection>
-    <SettingsSection title="앨범"><AlbumDisplaySettings /></SettingsSection>
-    <SettingsSection title="상세 화면"><DetailDisplaySettings /></SettingsSection>
-    <SettingsSection title="좋아요 버튼 표시"><FavoriteDisplaySettings /></SettingsSection>
-    <SettingsSection title="웹 메타데이터"><WebMetadataSettings /></SettingsSection>
-    <SettingsSection title="이 기기"><FolderExclusionSettings /></SettingsSection>
-  </SettingsPage>;
+  return (
+    <SettingsPage>
+      <SettingsSection title="보관함 메뉴 순서 및 표시">
+        <MenuLayoutSettings group="library" />
+      </SettingsSection>
+      <SettingsSection title="앨범">
+        <AlbumDisplaySettings />
+      </SettingsSection>
+      <SettingsSection title="상세 화면">
+        <DetailDisplaySettings />
+      </SettingsSection>
+      <SettingsSection title="좋아요 버튼 표시">
+        <FavoriteDisplaySettings />
+      </SettingsSection>
+      <SettingsSection title="웹 메타데이터">
+        <WebMetadataSettings />
+      </SettingsSection>
+      <SettingsSection title="이 기기">
+        <FolderExclusionSettings />
+      </SettingsSection>
+    </SettingsPage>
+  );
 }

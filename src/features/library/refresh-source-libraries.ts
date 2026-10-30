@@ -8,13 +8,15 @@ export async function refreshSelectedCloudLibraries(
   source: MusicSourceFilter,
   isActive: () => boolean,
 ) {
-  let driveFailed = false,
-    s3Failed = false,
-    myboxFailed = false;
+  let driveFailed = false;
+  let s3Failed = false;
+  let myboxFailed = false;
   if (source === 'all' || source === 'drive') {
     await useDriveDocumentsStore.getState().load();
     driveFailed = !!useDriveDocumentsStore.getState().error;
-    if (!isActive()) return null;
+    if (!isActive()) {
+      return null;
+    }
   }
   if ((source === 'all' || source === 'mybox') && useMyboxStore.getState().connection) {
     try {
@@ -22,16 +24,22 @@ export async function refreshSelectedCloudLibraries(
     } catch {
       myboxFailed = true;
     }
-    if (!isActive()) return null;
+    if (!isActive()) {
+      return null;
+    }
   }
-  if (source === 'mybox') return { driveFailed, s3Failed, myboxFailed };
+  if (source === 'mybox') {
+    return { driveFailed, s3Failed, myboxFailed };
+  }
   if ((source === 'all' || source === 'drive') && useGoogleDriveStore.getState().account) {
     try {
       await useGoogleDriveStore.getState().refresh();
     } catch {
       driveFailed = true;
     }
-    if (!isActive()) return null;
+    if (!isActive()) {
+      return null;
+    }
   }
   if ((source === 'all' || source === 's3') && useS3Store.getState().connection) {
     try {
@@ -39,7 +47,9 @@ export async function refreshSelectedCloudLibraries(
     } catch {
       s3Failed = true;
     }
-    if (!isActive()) return null;
+    if (!isActive()) {
+      return null;
+    }
   }
   return { driveFailed, s3Failed, myboxFailed };
 }

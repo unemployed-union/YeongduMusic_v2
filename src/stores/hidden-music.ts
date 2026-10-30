@@ -32,108 +32,232 @@ let authentication = 0;
 export const useHiddenMusicStore = create<HiddenState>((set, get) => {
   function assertEditable(concealing = false) {
     const state = get();
-    if (!state.ready || !state.scope) throw new Error('숨김 설정을 먼저 불러와 주세요. NAS 계정은 다시 로그인해야 할 수 있습니다.');
-    if (state.busy) throw new Error('진행 중인 작업이 끝난 후 다시 시도해 주세요.');
-    if (!concealing && state.profile.biometricLock && !state.unlocked) throw new Error('생체 인증 또는 기기 암호로 숨김 설정을 먼저 열어 주세요.');
+    if (!state.ready || !state.scope) {
+      throw new Error('숨김 설정을 먼저 불러와 주세요. NAS 계정은 다시 로그인해야 할 수 있습니다.');
+    }
+    if (state.busy) {
+      throw new Error('진행 중인 작업이 끝난 후 다시 시도해 주세요.');
+    }
+    if (!concealing && state.profile.biometricLock && !state.unlocked) {
+      throw new Error('생체 인증 또는 기기 암호로 숨김 설정을 먼저 열어 주세요.');
+    }
     return state;
   }
-  async function persist(change: (profile: HiddenMusicProfile) => HiddenMusicProfile, verify = false, concealing = false) {
+  async function persist(
+    change: (profile: HiddenMusicProfile) => HiddenMusicProfile,
+    verify = false,
+    concealing = false,
+  ) {
     const state = assertEditable(concealing);
     const current = generation;
     const auth = authentication;
     set({ busy: true, error: null });
     try {
-      if (verify) await authenticateHiddenSettings();
-      if (current !== generation || auth !== authentication) throw new Error('설정 화면이 잠겼습니다. 다시 열어 주세요.');
+      if (verify) {
+        await authenticateHiddenSettings();
+      }
+      if (current !== generation || auth !== authentication) {
+        throw new Error('설정 화면이 잠겼습니다. 다시 열어 주세요.');
+      }
       const profile = change(state.profile);
       await writeHiddenProfile(state.scope!, profile);
-      if (current === generation) set({ profile, unlocked: verify ? auth === authentication : get().unlocked });
+      if (current === generation) {
+        set({ profile, unlocked: verify ? auth === authentication : get().unlocked });
+      }
     } catch (error) {
-      if (current === generation) set({ error: error instanceof Error ? error.message : '숨김 설정을 저장하지 못했습니다.' });
+      if (current === generation) {
+        set({ error: error instanceof Error ? error.message : '숨김 설정을 저장하지 못했습니다.' });
+      }
       throw error;
     } finally {
-      if (current === generation) set({ busy: false });
+      if (current === generation) {
+        set({ busy: false });
+      }
     }
   }
   return {
-    scope: null, ready: false, profile: emptyProfile(), unlocked: false, busy: false, error: null,
+    scope: null,
+    ready: false,
+    profile: emptyProfile(),
+    unlocked: false,
+    busy: false,
+    error: null,
     load: async (scope) => {
       const current = ++generation;
       ++authentication;
-      set({ scope, ready: false, profile: emptyProfile(), unlocked: false, busy: false, error: null });
+      set({
+        scope,
+        ready: false,
+        profile: emptyProfile(),
+        unlocked: false,
+        busy: false,
+        error: null,
+      });
       try {
         const profile = scope ? await readHiddenProfile(scope) : emptyProfile();
-        if (current === generation) set({ profile, ready: true });
+        if (current === generation) {
+          set({ profile, ready: true });
+        }
       } catch (error) {
-        if (current === generation) set({ error: error instanceof Error ? error.message : '숨김 설정을 불러오지 못했습니다.' });
+        if (current === generation) {
+          set({
+            error: error instanceof Error ? error.message : '숨김 설정을 불러오지 못했습니다.',
+          });
+        }
       }
     },
-    lock: () => { ++authentication; set({ unlocked: false }); },
+    lock: () => {
+      ++authentication;
+      set({ unlocked: false });
+    },
     hideAll: async () => {
       const state = get();
       // There is no account-specific hidden profile in local-only mode.
-      if (state.ready && !state.scope) { get().lock(); return; }
+      if (state.ready && !state.scope) {
+        get().lock();
+        return;
+      }
       // This can only tighten visibility. Editing/revealing still requires authentication.
-      await persist(profile => ({ ...profile, presets: profile.presets.map(preset => ({ ...preset, enabled: true })),
-        hiddenPlaylistIds: [...new Set([...(profile.hiddenPlaylistIds ?? []), ...(profile.quickHidePlaylistIds ?? [])])] }), false, true);
+      await persist(
+        (profile) => ({
+          ...profile,
+          presets: profile.presets.map((preset) => ({ ...preset, enabled: true })),
+          hiddenPlaylistIds: [
+            ...new Set([
+              ...(profile.hiddenPlaylistIds ?? []),
+              ...(profile.quickHidePlaylistIds ?? []),
+            ]),
+          ],
+        }),
+        false,
+        true,
+      );
       get().lock();
     },
     hideSelectedPreset: async () => {
-      await persist(profile => {
-        const id = profile.quickHidePresetId;
-        if (!id || !profile.presets.some(preset => preset.id === id)) throw new Error('기타 설정에서 빠른 숨기기에 사용할 프리셋을 먼저 선택해 주세요.');
-        return { ...profile, presets: profile.presets.map(preset => preset.id === id ? { ...preset, enabled: true } : preset),
-          hiddenPlaylistIds: [...new Set([...(profile.hiddenPlaylistIds ?? []), ...(profile.quickHidePlaylistIds ?? [])])] };
-      }, false, true);
+      await persist(
+        (profile) => {
+          const id = profile.quickHidePresetId;
+          if (!id || !profile.presets.some((preset) => preset.id === id)) {
+            throw new Error('기타 설정에서 빠른 숨기기에 사용할 프리셋을 먼저 선택해 주세요.');
+          }
+          return {
+            ...profile,
+            presets: profile.presets.map((preset) =>
+              preset.id === id ? { ...preset, enabled: true } : preset,
+            ),
+            hiddenPlaylistIds: [
+              ...new Set([
+                ...(profile.hiddenPlaylistIds ?? []),
+                ...(profile.quickHidePlaylistIds ?? []),
+              ]),
+            ],
+          };
+        },
+        false,
+        true,
+      );
       get().lock();
     },
-    setQuickHidePreset: (id) => persist(profile => {
-      if (!profile.presets.some(preset => preset.id === id)) throw new Error('선택한 프리셋을 찾을 수 없습니다. 다시 선택해 주세요.');
-      return { ...profile, quickHidePresetId: id };
-    }),
+    setQuickHidePreset: (id) =>
+      persist((profile) => {
+        if (!profile.presets.some((preset) => preset.id === id)) {
+          throw new Error('선택한 프리셋을 찾을 수 없습니다. 다시 선택해 주세요.');
+        }
+        return { ...profile, quickHidePresetId: id };
+      }),
     setQuickHidePlaylist: (id, selected) => {
-      if (!id) return Promise.reject(new Error('플레이리스트를 확인해 주세요.'));
-      return persist(profile => ({ ...profile, quickHidePlaylistIds: selected
-        ? [...new Set([...(profile.quickHidePlaylistIds ?? []), id])]
-        : (profile.quickHidePlaylistIds ?? []).filter(value => value !== id) }));
+      if (!id) {
+        return Promise.reject(new Error('플레이리스트를 확인해 주세요.'));
+      }
+      return persist((profile) => ({
+        ...profile,
+        quickHidePlaylistIds: selected
+          ? [...new Set([...(profile.quickHidePlaylistIds ?? []), id])]
+          : (profile.quickHidePlaylistIds ?? []).filter((value) => value !== id),
+      }));
     },
     restoreProfile: async (profile, scope) => {
       const clean = parseProfile(JSON.stringify(profile));
-      if (get().scope !== scope) throw new Error('계정이 변경되었습니다. 현재 계정의 백업을 선택해 주세요.');
+      if (get().scope !== scope) {
+        throw new Error('계정이 변경되었습니다. 현재 계정의 백업을 선택해 주세요.');
+      }
       const current = generation;
       await persist(() => clean, clean.biometricLock && !get().profile.biometricLock);
-      if (current !== generation) throw new Error('계정이 변경되었습니다. 다시 시도해 주세요.');
+      if (current !== generation) {
+        throw new Error('계정이 변경되었습니다. 다시 시도해 주세요.');
+      }
     },
     unlock: async () => {
       const state = get();
-      if (!state.ready || !state.scope || state.busy) return;
+      if (!state.ready || !state.scope || state.busy) {
+        return;
+      }
       const current = generation;
       const auth = ++authentication;
       set({ busy: true, error: null });
       try {
-        if (state.profile.biometricLock) await authenticateHiddenSettings();
-        if (current === generation && auth === authentication) set({ unlocked: true });
+        if (state.profile.biometricLock) {
+          await authenticateHiddenSettings();
+        }
+        if (current === generation && auth === authentication) {
+          set({ unlocked: true });
+        }
       } catch (error) {
-        if (current === generation) set({ error: error instanceof Error ? error.message : '인증을 완료하지 못했습니다.' });
+        if (current === generation) {
+          set({ error: error instanceof Error ? error.message : '인증을 완료하지 못했습니다.' });
+        }
       } finally {
-        if (current === generation) set({ busy: false });
+        if (current === generation) {
+          set({ busy: false });
+        }
       }
     },
-    setBiometricLock: (enabled) => persist((profile) => ({ ...profile, biometricLock: enabled }), enabled),
+    setBiometricLock: (enabled) =>
+      persist((profile) => ({ ...profile, biometricLock: enabled }), enabled),
     savePreset: (preset) => {
-      const clean = { ...preset, name: preset.name.trim(), songIds: [...new Set(preset.songIds)], folders: [...new Set(preset.folders.map(normalizeFolder))] };
-      if (!clean.name || clean.name.length > 60) return Promise.reject(new Error('프리셋 이름을 1~60자로 입력해 주세요.'));
-      if (!clean.songIds.length && !clean.folders.length) return Promise.reject(new Error('숨길 폴더나 곡을 하나 이상 선택해 주세요.'));
-      return persist((profile) => ({ ...profile, presets: profile.presets.some((item) => item.id === clean.id) ? profile.presets.map((item) => item.id === clean.id ? clean : item) : [...profile.presets, clean] }));
+      const clean = {
+        ...preset,
+        name: preset.name.trim(),
+        songIds: [...new Set(preset.songIds)],
+        folders: [...new Set(preset.folders.map(normalizeFolder))],
+      };
+      if (!clean.name || clean.name.length > 60) {
+        return Promise.reject(new Error('프리셋 이름을 1~60자로 입력해 주세요.'));
+      }
+      if (!clean.songIds.length && !clean.folders.length) {
+        return Promise.reject(new Error('숨길 폴더나 곡을 하나 이상 선택해 주세요.'));
+      }
+      return persist((profile) => ({
+        ...profile,
+        presets: profile.presets.some((item) => item.id === clean.id)
+          ? profile.presets.map((item) => (item.id === clean.id ? clean : item))
+          : [...profile.presets, clean],
+      }));
     },
-    togglePreset: (id) => persist((profile) => ({ ...profile, presets: profile.presets.map((preset) => preset.id === id ? { ...preset, enabled: !preset.enabled } : preset) })),
-    removePreset: (id) => persist((profile) => ({ ...profile, presets: profile.presets.filter((preset) => preset.id !== id),
-      quickHidePresetId: profile.quickHidePresetId === id ? undefined : profile.quickHidePresetId })),
+    togglePreset: (id) =>
+      persist((profile) => ({
+        ...profile,
+        presets: profile.presets.map((preset) =>
+          preset.id === id ? { ...preset, enabled: !preset.enabled } : preset,
+        ),
+      })),
+    removePreset: (id) =>
+      persist((profile) => ({
+        ...profile,
+        presets: profile.presets.filter((preset) => preset.id !== id),
+        quickHidePresetId: profile.quickHidePresetId === id ? undefined : profile.quickHidePresetId,
+      })),
     setPlaylistHidden: (id, hidden) => {
-      if (!id) return Promise.reject(new Error('플레이리스트를 확인해 주세요.'));
-      return persist((profile) => ({ ...profile, hiddenPlaylistIds: hidden
-        ? [...new Set([...(profile.hiddenPlaylistIds ?? []), id])]
-        : (profile.hiddenPlaylistIds ?? []).filter((value) => value !== id) }));
+      if (!id) {
+        return Promise.reject(new Error('플레이리스트를 확인해 주세요.'));
+      }
+      return persist((profile) => ({
+        ...profile,
+        hiddenPlaylistIds: hidden
+          ? [...new Set([...(profile.hiddenPlaylistIds ?? []), id])]
+          : (profile.hiddenPlaylistIds ?? []).filter((value) => value !== id),
+      }));
     },
   };
 });

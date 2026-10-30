@@ -16,10 +16,14 @@ export function combineSongLibraries(
   source: MusicSourceFilter,
   includeNas: boolean,
 ): Page<Song> {
-  if (source === 'nas') return nas;
+  if (source === 'nas') {
+    return nas;
+  }
   const items = includeNas ? [...nas.items] : [];
   for (const kind of ['local', 'drive', 's3', 'mybox'] as const) {
-    if (source === 'all' || source === kind) items.push(...libraries[kind]);
+    if (source === 'all' || source === kind) {
+      items.push(...libraries[kind]);
+    }
   }
   return { ...nas, items, total: items.length };
 }

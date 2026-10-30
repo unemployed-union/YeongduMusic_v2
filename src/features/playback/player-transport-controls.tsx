@@ -27,6 +27,23 @@ export function PlayerTransportControls({
   onCycleRepeat,
 }: Props) {
   const ios = Platform.OS === 'ios';
+  let playbackIndicator: React.ReactNode;
+  if (buffering) {
+    playbackIndicator = (
+      <ActivityIndicator color={ios || glass.enabled ? 'white' : colors.onAccent} />
+    );
+  } else if (ios) {
+    playbackIndicator = <PlaybackGlyph playing={playing} color="white" size={40} />;
+  } else {
+    playbackIndicator = (
+      <Ionicons
+        name={playing ? 'pause' : 'play'}
+        size={32}
+        color={glass.enabled ? 'white' : colors.onAccent}
+        style={[styles.playIcon, !playing && styles.playIconTriangle]}
+      />
+    );
+  }
   return (
     <View style={styles.controls}>
       <Pressable
@@ -66,18 +83,7 @@ export function PlayerTransportControls({
             style={{ borderRadius: 34 }}
           />
         )}
-        {buffering ? (
-          <ActivityIndicator color={ios || glass.enabled ? 'white' : colors.onAccent} />
-        ) : ios ? (
-          <PlaybackGlyph playing={playing} color="white" size={40} />
-        ) : (
-          <Ionicons
-            name={playing ? 'pause' : 'play'}
-            size={32}
-            color={glass.enabled ? 'white' : colors.onAccent}
-            style={[styles.playIcon, !playing && styles.playIconTriangle]}
-          />
-        )}
+        {playbackIndicator}
       </Pressable>
       <Pressable
         accessibilityLabel="다음 곡"

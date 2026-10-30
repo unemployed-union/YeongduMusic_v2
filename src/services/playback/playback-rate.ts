@@ -5,5 +5,7 @@ export function isPlaybackRate(value: unknown): value is number {
 }
 
 export function validatePlaybackRate(value: number): void {
-  if (!isPlaybackRate(value)) throw new Error('배속은 0.5배에서 2배 사이로 선택해 주세요.');
+  if (!isPlaybackRate(value)) {
+    throw new Error('배속은 0.5배에서 2배 사이로 선택해 주세요.');
+  }
 }

@@ -28,25 +28,33 @@ export async function refreshDriveLibrary(
       missing = ids.length;
     },
   );
-  if (!observer.isCurrent()) return false;
+  if (!observer.isCurrent()) {
+    return false;
+  }
   observer.onSongs(songs, missing);
   void enrichDriveSongs(songs, token, signal, (updated) => {
-    if (observer.isCurrent()) observer.onMetadata(updated);
+    if (observer.isCurrent()) {
+      observer.onMetadata(updated);
+    }
   })
     .then((failures) => {
-      if (observer.isCurrent() && failures)
+      if (observer.isCurrent() && failures) {
         observer.onWarning(
           '일부 곡의 태그·앨범아트를 읽지 못했습니다. 음악 목록 다시 불러오기로 재시도할 수 있습니다.',
         );
+      }
     })
     .catch(() => {
-      if (observer.isCurrent())
+      if (observer.isCurrent()) {
         observer.onWarning(
           '태그·앨범아트를 읽지 못했습니다. 음악 목록 다시 불러오기로 재시도해 주세요.',
         );
+      }
     })
     .finally(() => {
-      if (observer.isCurrent()) observer.onSettled();
+      if (observer.isCurrent()) {
+        observer.onSettled();
+      }
     });
   return true;
 }

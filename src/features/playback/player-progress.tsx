@@ -69,7 +69,9 @@ export function PlayerProgress({
         setDraft(value);
         const request = ++seekRequest.current;
         const finish = () => {
-          if (request === seekRequest.current) setDraft(null);
+          if (request === seekRequest.current) {
+            setDraft(null);
+          }
         };
         void seek(value, playOnSeek).then(finish, finish);
       }}

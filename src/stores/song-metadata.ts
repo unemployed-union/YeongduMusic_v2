@@ -28,22 +28,30 @@ async function write(patches: MetadataPatches) {
 }
 export const useSongMetadataStore = create<MetadataState>((set, get) => {
   const persistenceQueue = createSerialQueue();
-  let loading: Promise<void> | null = null,
-    writes = 0;
+  let loading: Promise<void> | null = null;
+  let writes = 0;
   async function change(key: string, fields?: SongMetadata, allowed?: () => boolean) {
     validateMetadataKey(key);
     const patch = fields ? parseMetadata(fields) : undefined;
     await get().load();
-    if (get().loadError) throw new Error(get().error ?? '곡 정보를 다시 불러온 뒤 저장해 주세요.');
+    if (get().loadError) {
+      throw new Error(get().error ?? '곡 정보를 다시 불러온 뒤 저장해 주세요.');
+    }
     writes++;
     set({ busy: true, error: null });
     const operation = persistenceQueue.run(async () => {
-      if (allowed && (!allowed() || get().patches[key])) return false;
+      if (allowed && (!allowed() || get().patches[key])) {
+        return false;
+      }
       const patches = { ...get().patches };
-      if (patch) patches[key] = patch;
-      else delete patches[key];
-      if (Object.keys(patches).length > 10000)
+      if (patch) {
+        patches[key] = patch;
+      } else {
+        delete patches[key];
+      }
+      if (Object.keys(patches).length > 10000) {
         throw new Error('수정할 수 있는 곡은 최대 10,000곡입니다.');
+      }
       await write(patches);
       // A switch/account/visibility change during native storage I/O must also
       // leave no automatic edit to reappear on the next app launch.
@@ -74,8 +82,12 @@ export const useSongMetadataStore = create<MetadataState>((set, get) => {
     error: null,
     loadError: false,
     load: (force = false) => {
-      if (loading) return loading;
-      if (get().ready && !force) return Promise.resolve();
+      if (loading) {
+        return loading;
+      }
+      if (get().ready && !force) {
+        return Promise.resolve();
+      }
       set({ loading: true, error: null });
       loading = persistenceQueue
         .settled()

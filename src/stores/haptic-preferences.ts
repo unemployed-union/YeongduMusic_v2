@@ -21,7 +21,9 @@ type State = PreferenceStatus & {
 
 function decodeHaptics(value: unknown): HapticPreferences {
   const stored = value as { version?: unknown; preferences?: unknown } | null;
-  if (stored && stored.version !== 1) throw new Error('햅틱 설정 버전을 확인할 수 없습니다.');
+  if (stored && stored.version !== 1) {
+    throw new Error('햅틱 설정 버전을 확인할 수 없습니다.');
+  }
   return parseHapticPreferences(stored?.preferences);
 }
 

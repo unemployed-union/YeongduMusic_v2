@@ -23,19 +23,55 @@ export type ScrollEdgeFadeProps = {
 };
 const LOCATIONS = [0, 0.2, 0.5, 0.8, 1] as const;
 type FadeColors = readonly [string, string, string, string, string];
-const Edge = memo(function Edge({ colors, height, bottom, animatedStyle }: {
-  colors: FadeColors; height: number; bottom?: boolean;
+const Edge = memo(function Edge({
+  colors,
+  height,
+  bottom,
+  animatedStyle,
+}: {
+  colors: FadeColors;
+  height: number;
+  bottom?: boolean;
   animatedStyle: ReturnType<typeof useScrollEdgeTransition>['topStyle'];
 }) {
-  return <Animated.View pointerEvents="none" accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={[styles.edge, bottom ? styles.bottom : styles.top, { height }, animatedStyle]}>
-    <LinearGradient colors={colors} locations={LOCATIONS} dither={false} style={StyleSheet.absoluteFill} />
-  </Animated.View>;
+  return (
+    <Animated.View
+      pointerEvents="none"
+      accessibilityElementsHidden
+      importantForAccessibility="no-hide-descendants"
+      style={[styles.edge, bottom ? styles.bottom : styles.top, { height }, animatedStyle]}
+    >
+      <LinearGradient
+        colors={colors}
+        locations={LOCATIONS}
+        dither={false}
+        style={StyleSheet.absoluteFill}
+      />
+    </Animated.View>
+  );
 });
 
 /** Two small, pre-mounted gradients; never mask or capture the scroll content. */
-export function ScrollEdgeFade({ children, style, fadeHeight = 28, topEnabled = true, tint, backgroundColor, fill = true }: ScrollEdgeFadeProps) {
+export function ScrollEdgeFade({
+  children,
+  style,
+  fadeHeight = 28,
+  topEnabled = true,
+  tint,
+  backgroundColor,
+  fill = true,
+}: ScrollEdgeFadeProps) {
   const colors = useColors();
-  const color = backgroundColor ?? (tint === 'dark' ? palette.dark.background : tint === 'light' ? palette.light.background : colors.background);
+  let color: string;
+  if (backgroundColor !== undefined && backgroundColor !== null) {
+    color = backgroundColor;
+  } else if (tint === 'dark') {
+    color = palette.dark.background;
+  } else if (tint === 'light') {
+    color = palette.light.background;
+  } else {
+    color = colors.background;
+  }
   const gradients = useMemo(() => {
     const top = [color, color + 'D9', color + '80', color + '20', color + '00'] as const;
     return { top, bottom: [...top].reverse() as [string, string, string, string, string] };
@@ -45,13 +81,22 @@ export function ScrollEdgeFade({ children, style, fadeHeight = 28, topEnabled = 
   const [height, setHeight] = useState<number | null>(null);
   const edge = Math.min(Math.max(0, fadeHeight), height === null ? fadeHeight : height / 3);
   const layout = fill ? styles.fill : styles.shrink;
-  return <View style={[styles.frame, layout, style]} onLayout={(event) => setHeight(event.nativeEvent.layout.height)}>
-    <ScrollEdgeChild element={child} scrollProps={scrollProps} />
-    <Edge colors={gradients.top} height={edge} animatedStyle={transition.topStyle} />
-    <Edge colors={gradients.bottom} height={edge} bottom animatedStyle={transition.bottomStyle} />
-  </View>;
+  return (
+    <View
+      style={[styles.frame, layout, style]}
+      onLayout={(event) => setHeight(event.nativeEvent.layout.height)}
+    >
+      <ScrollEdgeChild element={child} scrollProps={scrollProps} />
+      <Edge colors={gradients.top} height={edge} animatedStyle={transition.topStyle} />
+      <Edge colors={gradients.bottom} height={edge} bottom animatedStyle={transition.bottomStyle} />
+    </View>
+  );
 }
 const styles = StyleSheet.create({
-  fill: { flex: 1, minHeight: 0 }, shrink: { flexShrink: 1, minHeight: 0 }, frame: { overflow: 'hidden' },
-  edge: { position: 'absolute', left: 0, right: 0 }, top: { top: 0 }, bottom: { bottom: 0 },
+  fill: { flex: 1, minHeight: 0 },
+  shrink: { flexShrink: 1, minHeight: 0 },
+  frame: { overflow: 'hidden' },
+  edge: { position: 'absolute', left: 0, right: 0 },
+  top: { top: 0 },
+  bottom: { bottom: 0 },
 });

@@ -23,8 +23,8 @@ type State = {
 };
 export const useSongArtworkStore = create<State>((set, get) => {
   const persistenceQueue = createSerialQueue();
-  let loading: Promise<void> | null = null,
-    writes = 0;
+  let loading: Promise<void> | null = null;
+  let writes = 0;
   async function write(patches: ArtworkPatches) {
     const raw = JSON.stringify({ version: 1, patches });
     await writePreference(KEY, raw);
@@ -38,8 +38,12 @@ export const useSongArtworkStore = create<State>((set, get) => {
     loadError: false,
     error: null,
     load: (force = false) => {
-      if (loading) return loading;
-      if (get().ready && !force) return Promise.resolve();
+      if (loading) {
+        return loading;
+      }
+      if (get().ready && !force) {
+        return Promise.resolve();
+      }
       set({ loading: true, error: null });
       loading = persistenceQueue
         .settled()
@@ -68,22 +72,33 @@ export const useSongArtworkStore = create<State>((set, get) => {
     save: async (keys, image, allowed) => {
       const unique = [...new Set(keys)];
       unique.forEach(validateMetadataKey);
-      if (!unique.length) throw new Error('앨범아트를 적용할 곡을 찾을 수 없습니다.');
-      if (image !== undefined) validateArtwork(image);
+      if (!unique.length) {
+        throw new Error('앨범아트를 적용할 곡을 찾을 수 없습니다.');
+      }
+      if (image !== undefined) {
+        validateArtwork(image);
+      }
       await get().load();
-      if (get().loadError) throw new Error('앨범아트 수정 내용을 다시 불러와 주세요.');
+      if (get().loadError) {
+        throw new Error('앨범아트 수정 내용을 다시 불러와 주세요.');
+      }
       writes++;
       set({ busy: true, error: null });
       const operation = persistenceQueue.run(async () => {
-        if (allowed && !allowed())
+        if (allowed && !allowed()) {
           throw new Error('앨범아트 수정이 취소되었습니다. 곡 메뉴에서 다시 열어 주세요.');
+        }
         const patches = { ...get().patches };
         for (const key of unique) {
-          if (image === undefined) delete patches[key];
-          else patches[key] = image;
+          if (image === undefined) {
+            delete patches[key];
+          } else {
+            patches[key] = image;
+          }
         }
-        if (Object.keys(patches).length > 10000)
+        if (Object.keys(patches).length > 10000) {
           throw new Error('앨범아트는 최대 10,000곡에 저장할 수 있습니다.');
+        }
         await write(patches);
         if (allowed && !allowed()) {
           await write(get().patches);

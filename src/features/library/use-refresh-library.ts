@@ -19,32 +19,82 @@ export function useRefreshLibrary() {
   useEffect(() => {
     revision.current++;
     mounted.current = true;
-    const changed = () => { revision.current++; setMessage(null); setError(null); };
+    const changed = () => {
+      revision.current++;
+      setMessage(null);
+      setError(null);
+    };
     const stops = [
-      useLocalMusicStore.subscribe((state, previous) => { if (state.source !== previous.source) changed(); }),
-      useAuthStore.subscribe((state, previous) => { if (state.generation !== previous.generation) changed(); }),
-      useGoogleDriveStore.subscribe((state, previous) => { if (state.generation !== previous.generation || state.account?.id !== previous.account?.id || state.files !== previous.files) changed(); }),
-      useDriveDocumentsStore.subscribe((state, previous) => { if (state.revision !== previous.revision) changed(); }),
-      useS3Store.subscribe((state, previous) => { if (state.generation !== previous.generation || state.connection !== previous.connection) changed(); }),
-      useMyboxStore.subscribe((state, previous) => { if (state.generation !== previous.generation || state.connection !== previous.connection) changed(); }),
+      useLocalMusicStore.subscribe((state, previous) => {
+        if (state.source !== previous.source) {
+          changed();
+        }
+      }),
+      useAuthStore.subscribe((state, previous) => {
+        if (state.generation !== previous.generation) {
+          changed();
+        }
+      }),
+      useGoogleDriveStore.subscribe((state, previous) => {
+        if (
+          state.generation !== previous.generation ||
+          state.account?.id !== previous.account?.id ||
+          state.files !== previous.files
+        ) {
+          changed();
+        }
+      }),
+      useDriveDocumentsStore.subscribe((state, previous) => {
+        if (state.revision !== previous.revision) {
+          changed();
+        }
+      }),
+      useS3Store.subscribe((state, previous) => {
+        if (state.generation !== previous.generation || state.connection !== previous.connection) {
+          changed();
+        }
+      }),
+      useMyboxStore.subscribe((state, previous) => {
+        if (state.generation !== previous.generation || state.connection !== previous.connection) {
+          changed();
+        }
+      }),
     ];
-    return () => { mounted.current = false; stops.forEach(stop => stop()); };
+    return () => {
+      mounted.current = false;
+      stops.forEach((stop) => stop());
+    };
   }, []);
 
   const refresh = useCallback(async () => {
-    if (running.current || !mounted.current) return;
+    if (running.current || !mounted.current) {
+      return;
+    }
     running.current = true;
-    setRefreshing(true); setError(null); setMessage(null);
-    const context = captureRefreshContext(), requestRevision = revision.current;
-    const isActive = () => mounted.current && revision.current === requestRevision && context.isCurrent();
+    setRefreshing(true);
+    setError(null);
+    setMessage(null);
+    const context = captureRefreshContext();
+    const requestRevision = revision.current;
+    const isActive = () =>
+      mounted.current && revision.current === requestRevision && context.isCurrent();
     try {
       const result = await refreshMusicLibrary(queryClient, context, isActive);
-      if (isActive()) setMessage(result);
+      if (isActive()) {
+        setMessage(result);
+      }
     } catch (failure) {
-      if (isActive()) setError('목록 갱신 실패 · 기존 목록을 유지합니다. ' + (failure instanceof Error ? failure.message : '다시 시도해 주세요.'));
+      if (isActive()) {
+        setError(
+          '목록 갱신 실패 · 기존 목록을 유지합니다. ' +
+            (failure instanceof Error ? failure.message : '다시 시도해 주세요.'),
+        );
+      }
     } finally {
       running.current = false;
-      if (mounted.current) setRefreshing(false);
+      if (mounted.current) {
+        setRefreshing(false);
+      }
     }
   }, [queryClient]);
   return { refreshing, message, error, refresh };

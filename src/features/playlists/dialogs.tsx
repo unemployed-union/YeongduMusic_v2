@@ -1,6 +1,15 @@
 import { ScrollEdgeFade } from '@/components/scroll-edge-fade';
 import { useState, type ReactNode } from 'react';
-import { ActivityIndicator, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import {
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  View,
+} from 'react-native';
 import { TextInput } from '@/components/text-input';
 import { Text } from '@/components/text';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -17,85 +26,399 @@ import { GlassBackdrop } from '@/components/glass-backdrop';
 import MaskedView from '@react-native-masked-view/masked-view';
 import { LinearGradient } from 'expo-linear-gradient';
 
-export function PlaylistSheet({ title, onClose, children, visible = true, onDismiss, glassSurface = false }: { title: string; onClose: () => void; children: ReactNode; visible?: boolean; onDismiss?: () => void; glassSurface?: boolean }) {
-  const colors = useColors(), insets = useSafeAreaInsets();
+export function PlaylistSheet({
+  title,
+  onClose,
+  children,
+  visible = true,
+  onDismiss,
+  glassSurface = false,
+}: {
+  title: string;
+  onClose: () => void;
+  children: ReactNode;
+  visible?: boolean;
+  onDismiss?: () => void;
+  glassSurface?: boolean;
+}) {
+  const colors = useColors();
+  const insets = useSafeAreaInsets();
   const glass = useLiquidGlass();
   const separateBody = glassSurface && glass.supported;
-  return <Modal transparent visible={visible} animationType="slide" onRequestClose={onClose} onDismiss={onDismiss}>
-    <KeyboardAvoidingView style={styles.overlay} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-      <Pressable style={StyleSheet.absoluteFill} accessibilityLabel="닫기" onPress={onClose} />
-      <View accessibilityViewIsModal style={[styles.sheet, { backgroundColor: glassSurface && glass.enabled ? 'transparent' : colors.surface, paddingBottom: Math.max(insets.bottom, 16), maxHeight: '85%' }, glass.supported && { borderRadius: 30, marginHorizontal: insets.left + 12, marginRight: insets.right + 12, marginBottom: Math.max(insets.bottom, 12), paddingBottom: 16 }]}>
-        {glassSurface && glass.enabled && <GlassBackdrop style={{ borderRadius: 30 }} />}
-        {glass.supported && <View accessible={false} style={{ alignSelf: 'center', width: 36, height: 5, borderRadius: 3, backgroundColor: colors.separator, marginBottom: 12 }} />}
-        <View style={[styles.header, separateBody && [styles.sourceHeader, { borderBottomColor: colors.separator }]]}>
-          <Text style={[styles.heading, { color: colors.text }, glass.supported && { fontWeight: '700' }]}>{title}</Text>
-          <Pressable accessibilityRole="button" accessibilityLabel="닫기" onPress={onClose}
-            style={[styles.icon, glass.supported && { width: 44, height: 44, borderRadius: 22, marginRight: 0, alignItems: 'center', justifyContent: 'center', backgroundColor: separateBody ? colors.surface : glass.enabled ? 'transparent' : colors.background }, separateBody && { marginLeft: 12, flexShrink: 0 }]}>
-            {glass.enabled && !glassSurface && <GlassBackdrop style={{ borderRadius: 22 }} />}
-            <Ionicons name="close" size={glass.supported ? 20 : 24} color={separateBody ? colors.text : colors.muted} />
-          </Pressable>
-        </View>
-        {separateBody ? <MaskedView style={styles.sourceViewport} maskElement={
-          <View pointerEvents="none" accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={{ flex: 1 }}>
-            <LinearGradient colors={['#FFFFFF00', '#FFFFFF']} dither={false} style={{ height: 12, maxHeight: '33%' }} />
-            <View style={{ flex: 1, backgroundColor: '#FFFFFF' }} />
-            <LinearGradient colors={['#FFFFFF', '#FFFFFF00']} dither={false} style={{ height: 16, maxHeight: '33%' }} />
-          </View>
-        }>{children}</MaskedView> : children}
-      </View>
-    </KeyboardAvoidingView>
-  </Modal>;
-}
-export function PlaylistNameDialog({ title, initialName = '', onSave, onClose }: { title: string; initialName?: string; onSave: (name: string) => Promise<unknown>; onClose: () => void }) {
-  const colors = useColors();
-  const [name, setName] = useState(initialName), [busy, setBusy] = useState(false), [error, setError] = useState<string | null>(null);
-  async function save() {
-    if (busy) return;
-    setBusy(true); setError(null);
-    try { await onSave(name); onClose(); } catch (cause) { setError(cause instanceof Error ? cause.message : '저장하지 못했습니다.'); } finally { setBusy(false); }
+  let dialogBackgroundColor: string;
+  if (separateBody) {
+    dialogBackgroundColor = colors.surface;
+  } else if (glass.enabled) {
+    dialogBackgroundColor = 'transparent';
+  } else {
+    dialogBackgroundColor = colors.background;
   }
-  return <PlaylistSheet title={title} onClose={onClose}><View style={styles.body}>
-    <TextInput autoFocus underlineColorAndroid="transparent" accessibilityLabel="플레이리스트 이름" placeholder="예: 운동, 드라이브, 잠들기 전" placeholderTextColor={colors.muted} value={name} onChangeText={setName} maxLength={60} editable={!busy} returnKeyType="done" onSubmitEditing={() => void save()} style={[styles.input, { color: colors.text, borderColor: colors.separator }]} />
-    {error && <Text accessibilityRole="alert" style={{ color: colors.tint }}>{error}</Text>}
-    <Pressable accessibilityRole="button" disabled={busy || !name.trim()} onPress={() => void save()} style={[styles.primary, { backgroundColor: colors.tint, opacity: busy || !name.trim() ? 0.5 : 1 }]}>{busy ? <ActivityIndicator color="white" /> : <Text style={styles.primaryText}>저장</Text>}</Pressable>
-  </View></PlaylistSheet>;
+  return (
+    <Modal
+      transparent
+      visible={visible}
+      animationType="slide"
+      onRequestClose={onClose}
+      onDismiss={onDismiss}
+    >
+      <KeyboardAvoidingView
+        style={styles.overlay}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
+        <Pressable style={StyleSheet.absoluteFill} accessibilityLabel="닫기" onPress={onClose} />
+        <View
+          accessibilityViewIsModal
+          style={[
+            styles.sheet,
+            {
+              backgroundColor: glassSurface && glass.enabled ? 'transparent' : colors.surface,
+              paddingBottom: Math.max(insets.bottom, 16),
+              maxHeight: '85%',
+            },
+            glass.supported && {
+              borderRadius: 30,
+              marginHorizontal: insets.left + 12,
+              marginRight: insets.right + 12,
+              marginBottom: Math.max(insets.bottom, 12),
+              paddingBottom: 16,
+            },
+          ]}
+        >
+          {glassSurface && glass.enabled && <GlassBackdrop style={{ borderRadius: 30 }} />}
+          {glass.supported && (
+            <View
+              accessible={false}
+              style={{
+                alignSelf: 'center',
+                width: 36,
+                height: 5,
+                borderRadius: 3,
+                backgroundColor: colors.separator,
+                marginBottom: 12,
+              }}
+            />
+          )}
+          <View
+            style={[
+              styles.header,
+              separateBody && [styles.sourceHeader, { borderBottomColor: colors.separator }],
+            ]}
+          >
+            <Text
+              style={[
+                styles.heading,
+                { color: colors.text },
+                glass.supported && { fontWeight: '700' },
+              ]}
+            >
+              {title}
+            </Text>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="닫기"
+              onPress={onClose}
+              style={[
+                styles.icon,
+                glass.supported && {
+                  width: 44,
+                  height: 44,
+                  borderRadius: 22,
+                  marginRight: 0,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  backgroundColor: dialogBackgroundColor,
+                },
+                separateBody && { marginLeft: 12, flexShrink: 0 },
+              ]}
+            >
+              {glass.enabled && !glassSurface && <GlassBackdrop style={{ borderRadius: 22 }} />}
+              <Ionicons
+                name="close"
+                size={glass.supported ? 20 : 24}
+                color={separateBody ? colors.text : colors.muted}
+              />
+            </Pressable>
+          </View>
+          {separateBody ? (
+            <MaskedView
+              style={styles.sourceViewport}
+              maskElement={
+                <View
+                  pointerEvents="none"
+                  accessibilityElementsHidden
+                  importantForAccessibility="no-hide-descendants"
+                  style={{ flex: 1 }}
+                >
+                  <LinearGradient
+                    colors={['#FFFFFF00', '#FFFFFF']}
+                    dither={false}
+                    style={{ height: 12, maxHeight: '33%' }}
+                  />
+                  <View style={{ flex: 1, backgroundColor: '#FFFFFF' }} />
+                  <LinearGradient
+                    colors={['#FFFFFF', '#FFFFFF00']}
+                    dither={false}
+                    style={{ height: 16, maxHeight: '33%' }}
+                  />
+                </View>
+              }
+            >
+              {children}
+            </MaskedView>
+          ) : (
+            children
+          )}
+        </View>
+      </KeyboardAvoidingView>
+    </Modal>
+  );
 }
-export function AddToPlaylistDialog({ songs, onClose, allowEnqueue = false, title }: { songs: Song[]; onClose: () => void; allowEnqueue?: boolean; title?: string }) {
+export function PlaylistNameDialog({
+  title,
+  initialName = '',
+  onSave,
+  onClose,
+}: {
+  title: string;
+  initialName?: string;
+  onSave: (name: string) => Promise<unknown>;
+  onClose: () => void;
+}) {
+  const colors = useColors();
+  const [name, setName] = useState(initialName);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  async function save() {
+    if (busy) {
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    try {
+      await onSave(name);
+      onClose();
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : '저장하지 못했습니다.');
+    } finally {
+      setBusy(false);
+    }
+  }
+  return (
+    <PlaylistSheet title={title} onClose={onClose}>
+      <View style={styles.body}>
+        <TextInput
+          autoFocus
+          underlineColorAndroid="transparent"
+          accessibilityLabel="플레이리스트 이름"
+          placeholder="예: 운동, 드라이브, 잠들기 전"
+          placeholderTextColor={colors.muted}
+          value={name}
+          onChangeText={setName}
+          maxLength={60}
+          editable={!busy}
+          returnKeyType="done"
+          onSubmitEditing={() => void save()}
+          style={[styles.input, { color: colors.text, borderColor: colors.separator }]}
+        />
+        {error && (
+          <Text accessibilityRole="alert" style={{ color: colors.tint }}>
+            {error}
+          </Text>
+        )}
+        <Pressable
+          accessibilityRole="button"
+          disabled={busy || !name.trim()}
+          onPress={() => void save()}
+          style={[
+            styles.primary,
+            { backgroundColor: colors.tint, opacity: busy || !name.trim() ? 0.5 : 1 },
+          ]}
+        >
+          {busy ? (
+            <ActivityIndicator color="white" />
+          ) : (
+            <Text style={styles.primaryText}>저장</Text>
+          )}
+        </Pressable>
+      </View>
+    </PlaylistSheet>
+  );
+}
+export function AddToPlaylistDialog({
+  songs,
+  onClose,
+  allowEnqueue = false,
+  title,
+}: {
+  songs: Song[];
+  onClose: () => void;
+  allowEnqueue?: boolean;
+  title?: string;
+}) {
   const colors = useColors();
   const store = usePlaylistStore();
   const privacy = useHiddenMusicStore();
-  const [name, setName] = useState(''), [error, setError] = useState<string | null>(null), [message, setMessage] = useState<string | null>(null);
+  const [name, setName] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
   const available = store.ready && store.scope === privacy.scope && privacy.ready;
   const hidden = hiddenMatcher(privacy.profile.presets);
   const eligible = songs.filter((song) => !hidden(song));
   const ids = [...new Set(eligible.map((song) => song.id))];
   async function save(id?: string) {
-    if (!available || store.busy || !ids.length) return;
-    if (id && privacy.profile.hiddenPlaylistIds?.includes(id)) return;
-    setError(null); setMessage(null);
+    if (!available || store.busy || !ids.length) {
+      return;
+    }
+    if (id && privacy.profile.hiddenPlaylistIds?.includes(id)) {
+      return;
+    }
+    setError(null);
+    setMessage(null);
     try {
       if (id) {
         const preset = store.profile.presets.find((item) => item.id === id);
         const added = ids.filter((value) => !preset?.songIds.includes(value)).length;
         await store.addSongs(id, ids);
-        setMessage(added ? `${preset?.name}에 ${added}곡을 추가했습니다.` : '이미 모두 저장된 곡입니다.');
-      } else { await store.createPreset(name, ids); setMessage(`${name.trim()}에 ${ids.length}곡을 저장했습니다.`); setName(''); }
-    } catch (cause) { setError(cause instanceof Error ? cause.message : '저장하지 못했습니다.'); }
+        setMessage(
+          added ? `${preset?.name}에 ${added}곡을 추가했습니다.` : '이미 모두 저장된 곡입니다.',
+        );
+      } else {
+        await store.createPreset(name, ids);
+        setMessage(`${name.trim()}에 ${ids.length}곡을 저장했습니다.`);
+        setName('');
+      }
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : '저장하지 못했습니다.');
+    }
   }
   async function addToQueue() {
-    if (!eligible[0]) return;
-    try { await enqueue(eligible[0]); onClose(); } catch (cause) { setError(cause instanceof Error ? cause.message : '추가하지 못했습니다.'); }
+    if (!eligible[0]) {
+      return;
+    }
+    try {
+      await enqueue(eligible[0]);
+      onClose();
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : '추가하지 못했습니다.');
+    }
   }
-  return <PlaylistSheet title={title ?? (allowEnqueue ? '곡 메뉴' : '플레이리스트에 추가')} onClose={onClose}><ScrollEdgeFade fill={false} backgroundColor={colors.surface}><ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={[styles.body, styles.scrollBody]}>
-    <Text style={{ color: colors.muted }}>{ids.length}곡 · 여러 목록에 저장할 수 있습니다.</Text>
-    {allowEnqueue && <Pressable style={styles.option} onPress={() => void addToQueue()} disabled={!eligible.length}><Ionicons name="list" size={22} color={colors.tint} /><Text style={{ color: colors.text }}>다음 재생 대기열에 추가</Text></Pressable>}
-    {!available ? <View><Text style={{ color: colors.muted }}>{store.error ?? '플레이리스트를 불러오는 중입니다.'}</Text>{store.error && <Pressable onPress={() => void store.load(privacy.scope)} style={styles.option}><Text style={{ color: colors.tint }}>다시 불러오기</Text></Pressable>}</View> : <>
-      <TextInput underlineColorAndroid="transparent" accessibilityLabel="새 플레이리스트 이름" placeholder="새 플레이리스트 이름" placeholderTextColor={colors.muted} value={name} onChangeText={setName} maxLength={60} editable={!store.busy} style={[styles.input, { color: colors.text, borderColor: colors.separator }]} />
-      <Pressable accessibilityRole="button" disabled={store.busy || !name.trim() || !ids.length} onPress={() => void save()} style={[styles.primary, { backgroundColor: colors.tint, opacity: store.busy || !name.trim() || !ids.length ? 0.5 : 1 }]}><Text style={styles.primaryText}>새 목록으로 저장</Text></Pressable>
-      {visiblePlaylists(store.profile.presets, privacy.profile.hiddenPlaylistIds).map((preset) => <Pressable key={preset.id} disabled={store.busy || !ids.length} accessibilityRole="button" accessibilityLabel={preset.name + '에 추가'} onPress={() => void save(preset.id)} style={[styles.option, { borderBottomColor: colors.separator, borderBottomWidth: StyleSheet.hairlineWidth }]}><Ionicons name="musical-notes-outline" size={24} color={colors.tint} /><Text numberOfLines={1} style={{ flex: 1, color: colors.text, fontWeight: '600' }}>{preset.name}</Text><Ionicons name="add-circle-outline" size={24} color={colors.tint} /></Pressable>)}
-    </>}
-    {store.busy && <ActivityIndicator color={colors.tint} />}
-    {(error || message) && <Text accessibilityRole={error ? 'alert' : undefined} accessibilityLiveRegion="polite" style={{ color: colors.tint }}>{error ?? message}</Text>}
-  </ScrollView></ScrollEdgeFade></PlaylistSheet>;
+  return (
+    <PlaylistSheet
+      title={title ?? (allowEnqueue ? '곡 메뉴' : '플레이리스트에 추가')}
+      onClose={onClose}
+    >
+      <ScrollEdgeFade fill={false} backgroundColor={colors.surface}>
+        <ScrollView
+          keyboardShouldPersistTaps="handled"
+          contentContainerStyle={[styles.body, styles.scrollBody]}
+        >
+          <Text style={{ color: colors.muted }}>
+            {ids.length}곡 · 여러 목록에 저장할 수 있습니다.
+          </Text>
+          {allowEnqueue && (
+            <Pressable
+              style={styles.option}
+              onPress={() => void addToQueue()}
+              disabled={!eligible.length}
+            >
+              <Ionicons name="list" size={22} color={colors.tint} />
+              <Text style={{ color: colors.text }}>다음 재생 대기열에 추가</Text>
+            </Pressable>
+          )}
+          {!available ? (
+            <View>
+              <Text style={{ color: colors.muted }}>
+                {store.error ?? '플레이리스트를 불러오는 중입니다.'}
+              </Text>
+              {store.error && (
+                <Pressable onPress={() => void store.load(privacy.scope)} style={styles.option}>
+                  <Text style={{ color: colors.tint }}>다시 불러오기</Text>
+                </Pressable>
+              )}
+            </View>
+          ) : (
+            <>
+              <TextInput
+                underlineColorAndroid="transparent"
+                accessibilityLabel="새 플레이리스트 이름"
+                placeholder="새 플레이리스트 이름"
+                placeholderTextColor={colors.muted}
+                value={name}
+                onChangeText={setName}
+                maxLength={60}
+                editable={!store.busy}
+                style={[styles.input, { color: colors.text, borderColor: colors.separator }]}
+              />
+              <Pressable
+                accessibilityRole="button"
+                disabled={store.busy || !name.trim() || !ids.length}
+                onPress={() => void save()}
+                style={[
+                  styles.primary,
+                  {
+                    backgroundColor: colors.tint,
+                    opacity: store.busy || !name.trim() || !ids.length ? 0.5 : 1,
+                  },
+                ]}
+              >
+                <Text style={styles.primaryText}>새 목록으로 저장</Text>
+              </Pressable>
+              {visiblePlaylists(store.profile.presets, privacy.profile.hiddenPlaylistIds).map(
+                (preset) => (
+                  <Pressable
+                    key={preset.id}
+                    disabled={store.busy || !ids.length}
+                    accessibilityRole="button"
+                    accessibilityLabel={preset.name + '에 추가'}
+                    onPress={() => void save(preset.id)}
+                    style={[
+                      styles.option,
+                      {
+                        borderBottomColor: colors.separator,
+                        borderBottomWidth: StyleSheet.hairlineWidth,
+                      },
+                    ]}
+                  >
+                    <Ionicons name="musical-notes-outline" size={24} color={colors.tint} />
+                    <Text
+                      numberOfLines={1}
+                      style={{ flex: 1, color: colors.text, fontWeight: '600' }}
+                    >
+                      {preset.name}
+                    </Text>
+                    <Ionicons name="add-circle-outline" size={24} color={colors.tint} />
+                  </Pressable>
+                ),
+              )}
+            </>
+          )}
+          {store.busy && <ActivityIndicator color={colors.tint} />}
+          {(error || message) && (
+            <Text
+              accessibilityRole={error ? 'alert' : undefined}
+              accessibilityLiveRegion="polite"
+              style={{ color: colors.tint }}
+            >
+              {error ?? message}
+            </Text>
+          )}
+        </ScrollView>
+      </ScrollEdgeFade>
+    </PlaylistSheet>
+  );
 }
-const styles = StyleSheet.create({ overlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: '#00000066' }, sheet: { borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingTop: 12 }, header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 22 }, sourceHeader: { flexShrink: 0, paddingBottom: 12, borderBottomWidth: StyleSheet.hairlineWidth }, sourceViewport: { flexShrink: 1, minHeight: 0, overflow: 'hidden' }, heading: { flex: 1, fontSize: 20, fontWeight: '800' }, icon: { padding: 10, marginRight: -10 }, body: { padding: 22, gap: 16 }, scrollBody: { paddingVertical: 28 }, input: { minHeight: 48, borderWidth: 1, borderRadius: 12, paddingHorizontal: 14, fontSize: 16 }, primary: { minHeight: 48, alignItems: 'center', justifyContent: 'center', borderRadius: 12 }, primaryText: { color: 'white', fontWeight: '700', fontSize: 15 }, option: { minHeight: 52, flexDirection: 'row', alignItems: 'center', gap: 12 } });
+const styles = StyleSheet.create({
+  overlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: '#00000066' },
+  sheet: { borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingTop: 12 },
+  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 22 },
+  sourceHeader: { flexShrink: 0, paddingBottom: 12, borderBottomWidth: StyleSheet.hairlineWidth },
+  sourceViewport: { flexShrink: 1, minHeight: 0, overflow: 'hidden' },
+  heading: { flex: 1, fontSize: 20, fontWeight: '800' },
+  icon: { padding: 10, marginRight: -10 },
+  body: { padding: 22, gap: 16 },
+  scrollBody: { paddingVertical: 28 },
+  input: { minHeight: 48, borderWidth: 1, borderRadius: 12, paddingHorizontal: 14, fontSize: 16 },
+  primary: { minHeight: 48, alignItems: 'center', justifyContent: 'center', borderRadius: 12 },
+  primaryText: { color: 'white', fontWeight: '700', fontSize: 15 },
+  option: { minHeight: 52, flexDirection: 'row', alignItems: 'center', gap: 12 },
+});

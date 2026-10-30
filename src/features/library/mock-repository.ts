@@ -1,12 +1,38 @@
 import type { Album, Artist, MusicRepository, Page, PageRequest, Song } from '@/types/music';
 
 const palettes: readonly (readonly [string, string])[] = [
-  ['#CC5265', '#381C4C'], ['#F4A65C', '#8C3D66'], ['#4679B5', '#132A51'],
-  ['#89BBA4', '#244B5A'], ['#D6B58A', '#6B4763'], ['#B474B4', '#3D275C'],
-  ['#82B8C6', '#294A72'], ['#E46D66', '#562552'], ['#B0B86C', '#394F54'],
+  ['#CC5265', '#381C4C'],
+  ['#F4A65C', '#8C3D66'],
+  ['#4679B5', '#132A51'],
+  ['#89BBA4', '#244B5A'],
+  ['#D6B58A', '#6B4763'],
+  ['#B474B4', '#3D275C'],
+  ['#82B8C6', '#294A72'],
+  ['#E46D66', '#562552'],
+  ['#B0B86C', '#394F54'],
 ];
-const artists = ['Yuna Park', 'The Low Tides', 'Mira', 'Atelier 9', 'Jonah', 'Sunday Drive', 'Hana Moon', 'Northline', 'Blue Hour'];
-const titles = ['Afterglow', 'Soft Focus', 'Night Swim', 'Somewhere, Slowly', 'Still Here', 'Paper Skies', 'Little Moments', 'New Light', 'In Bloom'];
+const artists = [
+  'Yuna Park',
+  'The Low Tides',
+  'Mira',
+  'Atelier 9',
+  'Jonah',
+  'Sunday Drive',
+  'Hana Moon',
+  'Northline',
+  'Blue Hour',
+];
+const titles = [
+  'Afterglow',
+  'Soft Focus',
+  'Night Swim',
+  'Somewhere, Slowly',
+  'Still Here',
+  'Paper Skies',
+  'Little Moments',
+  'New Light',
+  'In Bloom',
+];
 const songsByAlbum = [
   ['First Light', 'Window Seat', 'September Rain', 'Closer to Home', 'Afterglow'],
   ['Low Tide', 'Drift', 'Coastline', 'Saltwater', 'Breathe Again'],
@@ -20,26 +46,51 @@ const songsByAlbum = [
 ];
 
 export const mockAlbums: Album[] = titles.map((title, index) => ({
-  id: `mock-album-${index}`, title, artist: artists[index], year: 2024 - index % 4,
-  palette: palettes[index], songCount: 5,
+  id: `mock-album-${index}`,
+  title,
+  artist: artists[index],
+  year: 2024 - (index % 4),
+  palette: palettes[index],
+  songCount: 5,
 }));
-export const mockArtists: Artist[] = artists.map((name, index) => ({ id: `mock-artist-${index}`, name, albumCount: 1 }));
+export const mockArtists: Artist[] = artists.map((name, index) => ({
+  id: `mock-artist-${index}`,
+  name,
+  albumCount: 1,
+}));
 export const mockSongs: Song[] = mockAlbums.flatMap((album, albumIndex) =>
   songsByAlbum[albumIndex].map((title, index) => ({
-    id: `mock-song-${albumIndex}-${index}`, title, artist: album.artist, album: album.title,
-    path: `/demo/music/${album.artist}/${album.title}/${index + 1}.wav`, albumId: album.id, duration: 182 + index * 19 + albumIndex * 3,
-    trackNumber: index + 1, palette: album.palette,
+    id: `mock-song-${albumIndex}-${index}`,
+    title,
+    artist: album.artist,
+    album: album.title,
+    path: `/demo/music/${album.artist}/${album.title}/${index + 1}.wav`,
+    albumId: album.id,
+    duration: 182 + index * 19 + albumIndex * 3,
+    trackNumber: index + 1,
+    palette: album.palette,
   })),
 );
 
 function page<T>(items: T[], request: PageRequest): Page<T> {
-  return { items: items.slice(request.offset, request.offset + request.limit), total: items.length };
+  return {
+    items: items.slice(request.offset, request.offset + request.limit),
+    total: items.length,
+  };
 }
 
 export const mockRepository: MusicRepository = {
-  async songs(request) { return page(mockSongs, request); },
-  async albums(request) { return page(mockAlbums, request); },
-  async artists(request) { return page(mockArtists, request); },
+  async songs(request) {
+    return page(mockSongs, request);
+  },
+  async albums(request) {
+    return page(mockAlbums, request);
+  },
+  async artists(request) {
+    return page(mockArtists, request);
+  },
 
-  async streamSource() { return { assetId: require('../../../assets/audio/mock-tone.wav') }; },
+  async streamSource() {
+    return { assetId: require('../../../assets/audio/mock-tone.wav') };
+  },
 };

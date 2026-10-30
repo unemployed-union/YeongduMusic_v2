@@ -38,13 +38,14 @@ type State = {
   recordWrittenSong: (song: Song) => void;
 };
 export const useS3Store = create<State>((set, get) => {
-  let credentials: S3Connection | null = null,
-    request: AbortController | null = null;
+  let credentials: S3Connection | null = null;
+  let request: AbortController | null = null;
   const { run: exclusive } = createSerialQueue();
   const current = (generation: number) => get().generation === generation;
   const supported = () => {
-    if (Platform.OS === 'web')
+    if (Platform.OS === 'web') {
       throw new S3RequestError('S3 연결은 Android·iOS 앱에서 사용할 수 있습니다.');
+    }
   };
   function begin() {
     request?.abort();
@@ -77,50 +78,77 @@ export const useS3Store = create<State>((set, get) => {
     scanned: 0,
     generation: 0,
     bootstrap: async () => {
-      if (get().ready || get().busy) return;
+      if (get().ready || get().busy) {
+        return;
+      }
       const generation = get().generation;
       set({ busy: true });
       try {
-        if (Platform.OS === 'web') return;
+        if (Platform.OS === 'web') {
+          return;
+        }
         const saved = await exclusive(() => SecureStore.getItemAsync(KEY));
-        if (!current(generation) || !saved) return;
+        if (!current(generation) || !saved) {
+          return;
+        }
         const input = JSON.parse(saved) as S3Input;
         const connection = await prepareS3Connection(input);
-        if (!current(generation)) return;
+        if (!current(generation)) {
+          return;
+        }
         credentials = connection;
         set({ connection: publicS3Connection(connection) });
       } catch (error) {
-        if (current(generation)) set({ error: message(error) });
+        if (current(generation)) {
+          set({ error: message(error) });
+        }
       } finally {
-        if (current(generation)) set({ ready: true, busy: false });
+        if (current(generation)) {
+          set({ ready: true, busy: false });
+        }
       }
-      if (current(generation) && get().connection)
+      if (current(generation) && get().connection) {
         await get()
           .refresh()
           .catch(() => {});
+      }
     },
     connect: async (input) => {
       const { generation, signal } = begin();
       try {
         supported();
         const connection = await prepareS3Connection(input);
-        if (!current(generation)) return;
+        if (!current(generation)) {
+          return;
+        }
         const songs = await loadS3Songs(connection, signal, (scanned) => {
-          if (current(generation)) set({ scanned });
+          if (current(generation)) {
+            set({ scanned });
+          }
         });
         await exclusive(async () => {
-          if (!current(generation)) return;
+          if (!current(generation)) {
+            return;
+          }
           await SecureStore.setItemAsync(KEY, JSON.stringify(connection));
           // Cleanup remains inside the write barrier; it cannot delete a newer connection.
-          if (!current(generation)) await SecureStore.deleteItemAsync(KEY);
+          if (!current(generation)) {
+            await SecureStore.deleteItemAsync(KEY);
+          }
         });
-        if (!current(generation)) return;
+        if (!current(generation)) {
+          return;
+        }
         credentials = connection;
         set({ connection: publicS3Connection(connection), songs });
       } catch (error) {
-        if (current(generation)) set({ error: message(error) });
+        if (current(generation)) {
+          set({ error: message(error) });
+        }
       } finally {
-        if (current(generation)) set({ busy: false });
+        if (current(generation)) {
+          set({ busy: false });
+        }
       }
     },
     disconnect: async () => {
@@ -128,15 +156,20 @@ export const useS3Store = create<State>((set, get) => {
       try {
         supported();
         await exclusive(async () => {
-          if (current(generation)) await SecureStore.deleteItemAsync(KEY);
+          if (current(generation)) {
+            await SecureStore.deleteItemAsync(KEY);
+          }
         });
       } catch {
-        if (current(generation))
+        if (current(generation)) {
           set({
             error: 'S3 인증 정보를 기기에서 삭제하지 못했습니다. 연결 해제를 다시 시도해 주세요.',
           });
+        }
       } finally {
-        if (current(generation)) set({ busy: false });
+        if (current(generation)) {
+          set({ busy: false });
+        }
       }
     },
     cancel: () => {
@@ -151,18 +184,24 @@ export const useS3Store = create<State>((set, get) => {
       });
     },
     refresh: async () => {
-      if (!credentials || get().busy) return;
-      const connection = credentials,
-        generation = get().generation;
+      if (!credentials || get().busy) {
+        return;
+      }
+      const connection = credentials;
+      const generation = get().generation;
       request?.abort();
       const task = new AbortController();
       request = task;
       set({ loading: true, scanned: 0, error: null });
       try {
         const songs = await loadS3Songs(connection, task.signal, (scanned) => {
-          if (current(generation) && request === task) set({ scanned });
+          if (current(generation) && request === task) {
+            set({ scanned });
+          }
         });
-        if (current(generation) && request === task && !task.signal.aborted) set({ songs });
+        if (current(generation) && request === task && !task.signal.aborted) {
+          set({ songs });
+        }
       } catch (error) {
         if (current(generation) && request === task && !task.signal.aborted) {
           set({ error: message(error) });
@@ -176,7 +215,9 @@ export const useS3Store = create<State>((set, get) => {
       }
     },
     recordWrittenSong: (song) => {
-      if (song.source !== 's3' || get().connection?.id !== song.s3.connectionId) return;
+      if (song.source !== 's3' || get().connection?.id !== song.s3.connectionId) {
+        return;
+      }
       request?.abort();
       request = null;
       set((state) => ({
@@ -185,23 +226,27 @@ export const useS3Store = create<State>((set, get) => {
       }));
     },
     fileRequest: async (song, method, headers) => {
-      const connection = credentials,
-        generation = get().generation;
-      if (song.source !== 's3' || !connection || connection.id !== song.s3.connectionId)
+      const connection = credentials;
+      const generation = get().generation;
+      if (song.source !== 's3' || !connection || connection.id !== song.s3.connectionId) {
         throw new S3RequestError('이 음악의 S3 연결을 설정에서 다시 연결해 주세요.');
+      }
       const uri = await signedS3Url(connection, song.s3.key, {}, 900, { method, headers });
-      if (!current(generation) || credentials !== connection)
+      if (!current(generation) || credentials !== connection) {
         throw new S3RequestError('S3 연결이 변경되었습니다. 곡을 다시 선택해 주세요.');
+      }
       return { uri };
     },
     source: async (song) => {
-      const connection = credentials,
-        generation = get().generation;
-      if (song.source !== 's3' || !connection || connection.id !== song.s3.connectionId)
+      const connection = credentials;
+      const generation = get().generation;
+      if (song.source !== 's3' || !connection || connection.id !== song.s3.connectionId) {
         throw new S3RequestError('이 음악의 S3 연결을 설정에서 다시 연결해 주세요.');
+      }
       const uri = await signedS3Url(connection, song.s3.key);
-      if (!current(generation) || credentials !== connection)
+      if (!current(generation) || credentials !== connection) {
         throw new S3RequestError('S3 연결이 변경되었습니다. 곡을 다시 선택해 주세요.');
+      }
       return { uri };
     },
   };

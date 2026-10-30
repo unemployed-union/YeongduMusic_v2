@@ -18,8 +18,10 @@ export function writtenSongChanges(fields: SongMetadata | undefined, artworkUrl?
 
 export function mergeWrittenSong(queue: Song[], updated: Song, artworkUrl?: string): Song[] {
   return queue.map((item) => {
-    if (item.id !== updated.id || (item.source ?? 'nas') !== (updated.source ?? 'nas')) return item;
-    if (!artworkUrl)
+    if (item.id !== updated.id || (item.source ?? 'nas') !== (updated.source ?? 'nas')) {
+      return item;
+    }
+    if (!artworkUrl) {
       return {
         ...updated,
         duration: item.duration || updated.duration,
@@ -27,10 +29,13 @@ export function mergeWrittenSong(queue: Song[], updated: Song, artworkUrl?: stri
         palette: item.palette,
         artworkOriginal: item.artworkOriginal,
       };
+    }
     let current = item;
-    if (item.source === 'local' && updated.source === 'local')
+    if (item.source === 'local' && updated.source === 'local') {
       current = { ...item, local: updated.local };
-    else if (item.source === 's3' && updated.source === 's3') current = { ...item, s3: updated.s3 };
+    } else if (item.source === 's3' && updated.source === 's3') {
+      current = { ...item, s3: updated.s3 };
+    }
     return {
       ...current,
       artworkUrl,

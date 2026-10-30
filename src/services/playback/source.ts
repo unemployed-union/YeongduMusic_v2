@@ -11,6 +11,8 @@ export async function resolvePlaybackSource(
     const { localSource } = await import('@/services/local-music/storage');
     return localSource(song);
   }
-  if (isCloudSong(song)) return resolveCloudPlaybackSource(song, { signal, refreshCredentials });
+  if (isCloudSong(song)) {
+    return resolveCloudPlaybackSource(song, { signal, refreshCredentials });
+  }
   return musicRepository().streamSource(song);
 }

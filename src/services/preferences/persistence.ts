@@ -37,8 +37,12 @@ export function createPreferencePersistence<T>(options: Options<T>) {
   };
 
   function load(force = false): Promise<void> {
-    if (loading) return loading;
-    if (options.getStatus().ready && !force) return Promise.resolve();
+    if (loading) {
+      return loading;
+    }
+    if (options.getStatus().ready && !force) {
+      return Promise.resolve();
+    }
 
     options.setStatus({ loading: true, error: null });
     loading = queue
@@ -61,7 +65,9 @@ export function createPreferencePersistence<T>(options: Options<T>) {
 
   async function save(update: (current: T) => T): Promise<void> {
     await load();
-    if (options.getStatus().loadError) throw new Error(options.messages.blocked);
+    if (options.getStatus().loadError) {
+      throw new Error(options.messages.blocked);
+    }
 
     writes++;
     options.setStatus({ saving: true, error: null });
