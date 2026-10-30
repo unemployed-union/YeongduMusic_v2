@@ -179,7 +179,12 @@ exports.cloudFixtures = (globals = {}, dependencies = {}) => {
       Platform: dependencies['react-native']?.Platform ?? { OS: 'android' },
     },
   };
-  return {
+  const modules = {
+    ...(dependencies['@/services/google-drive/picker'] ? {
+      '@/services/google-drive/library': sourceLoader('src/services/google-drive/library.ts', nativeBoundaries, globals),
+      '@/services/playback/metadata': sourceLoader('src/services/playback/metadata.ts', nativeBoundaries, globals),
+      '@/services/google-drive/session': sourceLoader('src/services/google-drive/session.ts', nativeBoundaries, globals),
+    } : {}),
     './queue': sourceLoader('src/services/playback/queue.ts', nativeBoundaries, globals),
     './section-repeat-controller': dependencies['@/stores/playback']
       ? sourceLoader(
@@ -326,20 +331,6 @@ exports.cloudFixtures = (globals = {}, dependencies = {}) => {
     ...('expo-file-system/legacy' in dependencies
       ? { './file-copy': read('src/services/local-music/file-copy.ts', globals, dependencies) }
       : {}),
-    ...('@/services/playback/persistence' in dependencies && 'react' in dependencies
-      ? {
-          '@/features/startup/use-app-bootstrap': read(
-            'src/features/startup/use-app-bootstrap.ts',
-            globals,
-            shared,
-          ),
-          '@/features/startup/use-playback-recovery': read(
-            'src/features/startup/use-playback-recovery.ts',
-            globals,
-            shared,
-          ),
-        }
-      : {}),
     '@/services/music-source': read('src/services/music-source.ts', globals),
     '@/services/cloud-music/source': read(
       'src/services/cloud-music/source.ts',
@@ -357,4 +348,29 @@ exports.cloudFixtures = (globals = {}, dependencies = {}) => {
     '@/stores/mybox': { useMyboxStore },
     './mybox': { useMyboxStore },
   };
+  const boundaries = { ...modules, ...dependencies };
+  const sourceCache = new Map();
+  function lazySource(file) {
+    let loaded;
+    return new Proxy({}, {
+      get: (_, name) => {
+        loaded ??= sourceLoader(file, boundaries, globals, sourceCache);
+        return loaded[name];
+      },
+    });
+  }
+  for (const [name, file] of Object.entries({
+    './source': 'src/services/playback/source.ts',
+    '@/features/startup/use-app-bootstrap': 'src/features/startup/use-app-bootstrap.ts',
+    '@/features/startup/use-playback-recovery': 'src/features/startup/use-playback-recovery.ts',
+    './refresh-source-libraries': 'src/features/library/refresh-source-libraries.ts',
+    './song-library': 'src/features/library/song-library.ts',
+    './use-source-libraries': 'src/features/library/use-source-libraries.ts',
+    '@/services/metadata/written-song': 'src/services/metadata/written-song.ts',
+    './written-song': 'src/services/metadata/written-song.ts',
+    './database': 'src/services/local-music/database.ts',
+    './files': 'src/services/local-music/files.ts',
+    './metadata-recovery': 'src/services/local-music/metadata-recovery.ts',
+  })) modules[name] = lazySource(file);
+  return modules;
 };

@@ -37,7 +37,25 @@
 
 `stores/google-drive.ts`는 연결 상태와 사용자 작업을 조정합니다. SDK 초기화·인증 오류 변환은 `services/google-drive/auth.ts`, 허용 범위 판단은 `scopes.ts`, 단계별 진행·시간 제한·취소는 `connection-tasks.ts`에 있습니다.
 
+인증 복원·연결·해제와 토큰 캐시는 `services/google-drive/session.ts`가 맡습니다. 세션 작업과 파일 선택 저장은 저장소의 같은 직렬 큐를 사용합니다. `library.ts`는 파일 목록을 먼저 공개하고 태그 읽기를 별도로 계속하며, 이전 요청의 결과는 저장소가 제공하는 `isCurrent`로 차단합니다. 대기열 메타데이터 병합은 `services/playback/metadata.ts`에 있습니다.
+
 네이티브 인증 요청은 화면에서 취소하거나 시간 제한을 넘겨도 실제 Promise가 끝나기 전까지 다음 인증 요청을 막습니다. 이 장벽과 저장 직전 세대 검사를 유지해야 합니다. 파일 선택기와 연결 저장소는 같은 `drive.file` 범위 판단을 사용합니다.
+
+## 보관함과 음악 소스
+
+`features/library/use-source-libraries.ts`는 기기·Drive API·문서·S3·MYBOX 저장소를 구독합니다. `song-library.ts`는 React나 저장소 없이 소스별 목록을 순서대로 조합하고 메타데이터·표지 편집을 적용합니다. 정상 조회와 NAS 장애 시 대체 목록은 같은 변환을 사용합니다. NAS 장애를 다른 소스의 성공으로 숨기지는 않습니다.
+
+`refresh-source-libraries.ts`는 소스별 새로고침과 실패 결과를 맡고, `refresh-music-library.ts`는 현재 연결 확인·캐시 갱신·사용자 안내를 조정합니다. 기존 실행 순서와 NAS의 세 API 성공 조건을 유지합니다.
+
+`services/playback/source.ts`의 `resolvePlaybackSource`가 로컬·클라우드·NAS·데모 재생 소스를 선택합니다. 클라우드는 `resolveCloudPlaybackSource`와 `resolveCloudDownloadSource`를 구분하고 `{ signal, refreshCredentials }` 옵션을 사용합니다. 기존 `cloudStreamSource` 진입점도 유지합니다. MYBOX 재생 캐시는 재생 경로에서만 사용하며, NAS 보관은 다운로드 작업 시작 시 캡처한 세션과 원본 음질을 유지합니다. 오류 객체를 공통 오류로 감싸거나 저장 형식을 바꾸지 않습니다.
+
+## 로컬 파일과 태그 저장
+
+`services/local-music/storage.ts`는 가져오기·다운로드 보관·삭제·태그 교체를 하나의 변경 큐로 직렬화합니다. `database.ts`는 SQLite 접근, `files.ts`는 앱 소유 파일 경로와 접근 검사, `metadata-recovery.ts`는 기존 파일 교체 저널 복구를 맡습니다. 스캔은 `import-types.ts`와 공통 확장자 판정만 참조하며 저장 모듈로 되돌아가지 않습니다. 기존 저장 모듈의 공개 진입점과 데이터 형식은 유지합니다.
+
+`services/metadata/written-song.ts`는 실제 파일에 쓴 정보로 곡 스냅샷과 대기열을 갱신합니다. 앱 표시 편집과 파일 쓰기의 의미를 혼합하지 않습니다. ID3 태그 읽기와 작성은 별도 함수로 구분하지만, 원래의 프레임·표지·오디오 보존 조건은 유지합니다.
+
+음악 소스 초기화와 접근 가능성 갱신은 `features/startup/use-music-source-bootstrap.ts`, 계정별 숨김·목록 복원과 앱 상태 처리는 `use-app-bootstrap.ts`가 맡습니다. 재생 런타임의 수명을 화면 마운트 수명에 종속시키지 않습니다.
 
 ## 서식과 검증
 

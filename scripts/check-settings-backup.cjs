@@ -41,8 +41,7 @@ const storage = {
     saved.set(key, value);
   },
 };
-const common = { '@/components/text': { Text: 'Text' },
-  '@/components/text': { Text: 'Text' },
+const common = {
   '@/components/text': { Text: 'Text' },
   'react-native': { Platform: { OS: 'android' } }, 'expo-secure-store': storage };
 const display = load('src/stores/display-preferences.ts', common).useDisplayPreferences;
@@ -306,8 +305,6 @@ async function checkFiles() {
     delete() { deleted.push(this.uri); files.delete(this.uri); }
   }
   const api = load('src/features/settings/backup-files.ts', {
-    '@/components/text': { Text: 'Text' },
-  '@/components/text': { Text: 'Text' },
   '@/components/text': { Text: 'Text' },
   'react-native': { Platform: { OS: 'android' } },
     'expo-file-system': { File, Paths: { cache: { uri: 'file:///cache/' } }, Directory: {
@@ -333,8 +330,6 @@ async function checkFiles() {
   await assert.rejects(api.pickSettingsBackup(), /2MB/); assert.ok(!deleted.includes(pickerAsset.uri));
   const downloads = [], revoked = [];
   const web = load('src/features/settings/backup-files.ts', {
-    '@/components/text': { Text: 'Text' },
-  '@/components/text': { Text: 'Text' },
   '@/components/text': { Text: 'Text' },
   'react-native': { Platform: { OS: 'web' } },
     'expo-file-system': { File: class { constructor() { throw new Error('Native filesystem on web'); } } },
@@ -359,8 +354,6 @@ async function checkUI(privateBackup) {
     react: { useEffect: () => {}, useRef: value => refs[refIndex++] ??= { current: value },
       useState: initial => { const index = stateIndex++; states[index] ??= initial; return [states[index], value => { states[index] = value; }]; } },
     'react/jsx-runtime': { jsx, jsxs: jsx },
-    '@/components/text': { Text: 'Text' },
-  '@/components/text': { Text: 'Text' },
   '@/components/text': { Text: 'Text' },
   'react-native': { Platform: { OS: 'android' }, Text: 'Text', View: 'View', Pressable: 'Pressable', ActivityIndicator: 'Spinner', StyleSheet: { create: styles => styles } },
     '@expo/vector-icons/Ionicons': { __esModule: true, default: 'Icon' },

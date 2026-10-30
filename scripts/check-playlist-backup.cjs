@@ -50,8 +50,6 @@ const privacy = load('src/stores/hidden-music.ts', {
 }).useHiddenMusicStore;
 const access = load('src/stores/hidden-feature-access.ts', {
   '@/components/text': { Text: 'Text' },
-  '@/components/text': { Text: 'Text' },
-  '@/components/text': { Text: 'Text' },
   'react-native': { Platform: { OS: 'android' } },
   'expo-secure-store': { getItemAsync: async key => values.get(key) ?? null, setItemAsync: async (key, value) => values.set(key, value) },
 }).useHiddenFeatureAccess;
@@ -196,8 +194,6 @@ async function checkFiles(text) {
   }
   const downloads = [];
   const shared = load('src/features/settings/backup-files.ts', {
-    '@/components/text': { Text: 'Text' },
-  '@/components/text': { Text: 'Text' },
   '@/components/text': { Text: 'Text' },
   'react-native': { Platform: platform }, './backup-format': settingsFormat,
     'expo-file-system': { File, Paths: { cache: { uri: 'file:///cache/' } }, Directory: { pickDirectoryAsync: async () => {
@@ -234,8 +230,6 @@ async function checkUI(backup, privateBackup) {
       const index = stateIndex++; if (!(index in states)) states[index] = initial;
       return [states[index], value => { states[index] = value; }];
     } }, 'react/jsx-runtime': { jsx, jsxs: jsx },
-    '@/components/text': { Text: 'Text' },
-  '@/components/text': { Text: 'Text' },
   '@/components/text': { Text: 'Text' },
   'react-native': { Platform: { OS: 'android' }, Text: 'Text', View: 'View', Pressable: 'Pressable', ActivityIndicator: 'Spinner', StyleSheet: { create: styles => styles } },
     '@expo/vector-icons/Ionicons': { __esModule: true, default: 'Icon' }, '@/components/animated-switch': { AnimatedSwitch: 'Switch' },

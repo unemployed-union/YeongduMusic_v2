@@ -1,4 +1,4 @@
-﻿// Derive Expo branding assets from the supplied original, without redrawing it.
+// Derive Expo branding assets from the supplied original, without redrawing it.
 const fs = require('node:fs');
 const path = require('node:path');
 const { generateImageAsync, generateImageBackgroundAsync, compositeImagesAsync } = require('@expo/image-utils');

@@ -26,8 +26,6 @@ const modules = {
   './album-properties': { AlbumProperties: 'AlbumProperties' },
   'react/jsx-runtime': { jsx, jsxs: jsx },
   '@/components/text': { Text: 'Text' },
-  '@/components/text': { Text: 'Text' },
-  '@/components/text': { Text: 'Text' },
   'react-native': { FlatList: 'FlatList', View: 'View', Text: 'Text', Pressable: 'Pressable', RefreshControl: 'RefreshControl', StyleSheet: { create: value => value, hairlineWidth: 1 } },
   'expo-router': { router: { push() {} }, useIsFocused: () => true }, '@expo/vector-icons/Ionicons': 'Ionicons',
   '@/components/tab-scroll-edge-fade': { TabScrollEdgeFade: 'ScrollEdgeFade' }, '@/components/artwork': { Artwork: 'Artwork' },

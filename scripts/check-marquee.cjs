@@ -10,8 +10,6 @@ const modules = {
   react: { memo: fn => fn, useState: initial => { const index = slot++; if (states[index] === undefined) states[index] = initial; return [states[index], value => { states[index] = value; }]; }, useEffect: fn => effects.push(fn) },
   'react/jsx-runtime': { jsx, jsxs: jsx },
   '@/components/text': { Text: 'Text' },
-  '@/components/text': { Text: 'Text' },
-  '@/components/text': { Text: 'Text' },
   'react-native': { Platform: { OS: 'android' }, View: 'View', Text: 'Text', StyleSheet: { create: value => value }, useWindowDimensions: () => ({ fontScale: 1 }) },
   '@react-native-masked-view/masked-view': { __esModule: true, default: 'MaskedView' },
   'expo-linear-gradient': { LinearGradient: 'Gradient' },

@@ -1,10 +1,9 @@
 import { filterPlaybackQueue } from './queue';
 import { isCloudSong, isNasSong } from '@/services/music-source';
-import { cloudStreamSource } from '@/services/cloud-music/source';
+import { resolvePlaybackSource } from './source';
 import { isLosslessPlayback } from './lossless';
-import { ExpoAudioEngine } from './audio-engine';
+import { ExpoAudioEngine, type AudioEngine } from './audio-engine';
 import { SessionExpiredError, SynologyClient, SynologyError } from '@/services/synology/api';
-import { musicRepository } from '@/features/library/repository';
 import { useAuthStore } from '@/stores/auth';
 import { usePlaybackStore, type RepeatMode, type SleepTimerStopMode } from '@/stores/playback';
 import { usePlayerBackgroundStore } from '@/stores/player-background';
@@ -24,7 +23,7 @@ import { applyMetadata, metadataKey } from '@/features/metadata/rules';
 import { useSongArtworkStore } from '@/stores/song-artwork';
 import { applySongArtwork } from '@/features/artwork/rules';
 
-let engine: ExpoAudioEngine | null = null;
+let engine: AudioEngine | null = null;
 export function getPlaybackAudioSessionId(): number | null {
   return engine?.getAudioSessionId() ?? null;
 }
@@ -167,7 +166,10 @@ async function checkPlaybackSession(): Promise<void> {
     const requestGeneration = generation;
     recoveredCloudGeneration = requestGeneration;
     try {
-      const source = await cloudStreamSource(song, true, { signal: sourceRequest?.signal });
+      const source = await resolvePlaybackSource(song, {
+        refreshCredentials: true,
+        signal: sourceRequest?.signal,
+      });
       if (requestGeneration !== generation) return;
       usePlaybackStore.getState().setStatus({ lossless: isLosslessPlayback(song, source) });
       await activeEngine().load(source, song);
@@ -175,14 +177,12 @@ async function checkPlaybackSession(): Promise<void> {
       await activeEngine().seek(playback.position);
     } catch (error) {
       if (requestGeneration === generation)
-        usePlaybackStore
-          .getState()
-          .setStatus({
-            playing: false,
-            buffering: false,
-            error:
-              error instanceof Error ? error.message : '클라우드 음악 재생 연결을 확인해 주세요.',
-          });
+        usePlaybackStore.getState().setStatus({
+          playing: false,
+          buffering: false,
+          error:
+            error instanceof Error ? error.message : '클라우드 음악 재생 연결을 확인해 주세요.',
+        });
     }
     return;
   }
@@ -202,7 +202,7 @@ async function checkPlaybackSession(): Promise<void> {
   }
 }
 
-function activeEngine(): ExpoAudioEngine {
+function activeEngine(): AudioEngine {
   if (!engine) {
     const state = usePlaybackStore.getState();
     engine = new ExpoAudioEngine(state.playbackRate, state.preservePitch);
@@ -211,15 +211,13 @@ function activeEngine(): ExpoAudioEngine {
       // loadIndex clears this identity before pausing the old source. Its final
       // status must not overwrite the next song's position or saved duration.
       if (!loadedSongId || playback.queue[playback.index]?.id !== loadedSongId) return;
-      usePlaybackStore
-        .getState()
-        .setStatus({
-          playing: status.playing,
-          buffering: status.buffering,
-          position: status.position,
-          duration: status.duration,
-          error: status.error,
-        });
+      usePlaybackStore.getState().setStatus({
+        playing: status.playing,
+        buffering: status.buffering,
+        position: status.position,
+        duration: status.duration,
+        error: status.error,
+      });
       const current = usePlaybackStore.getState().queue[usePlaybackStore.getState().index];
       if (
         current?.source === 'local' &&
@@ -263,12 +261,10 @@ function activeEngine(): ExpoAudioEngine {
     engine.subscribeRemoteNavigation((command) => {
       // Use the same queue, shuffle/repeat and previous-button semantics as the app UI.
       void (command === 'next' ? next() : previous()).catch((error: unknown) => {
-        usePlaybackStore
-          .getState()
-          .setStatus({
-            buffering: false,
-            error: error instanceof Error ? error.message : '곡을 변경할 수 없습니다.',
-          });
+        usePlaybackStore.getState().setStatus({
+          buffering: false,
+          error: error instanceof Error ? error.message : '곡을 변경할 수 없습니다.',
+        });
       });
     });
   }
@@ -296,12 +292,7 @@ async function loadIndex(index: number, initialPosition = 0): Promise<void> {
     loadedSongId = null;
     engine?.pause(true);
     state.setStatus({ buffering: true, playing: false });
-    const source =
-      song.source === 'local'
-        ? await (await import('@/services/local-music/storage')).localSource(song)
-        : isCloudSong(song)
-          ? await cloudStreamSource(song, false, { signal: sourceRequest.signal })
-          : await musicRepository().streamSource(song);
+    const source = await resolvePlaybackSource(song, { signal: sourceRequest.signal });
     if (currentGeneration !== generation) return;
     loadedSongId = song.id;
     const currentSong = usePlaybackStore.getState().queue[index];
@@ -351,7 +342,12 @@ export async function restorePlayback(
   if (wasPlaying) await loadIndex(index, position);
   else {
     pendingSavedPosition = position;
-    state.setStatus({ position, duration: restoredSong.duration, playing: false, buffering: false });
+    state.setStatus({
+      position,
+      duration: restoredSong.duration,
+      playing: false,
+      buffering: false,
+    });
   }
   return (
     usePlaybackStore.getState().queue[usePlaybackStore.getState().index]?.id === queue[index].id
@@ -426,7 +422,10 @@ export async function seek(seconds: number, playIfPaused = false): Promise<void>
   // A restored paused queue has no loaded source. Update the pending position
   // before optionally opening the source for an explicit seek-and-play request.
   if (!state.buffering && state.queue[state.index].id !== loadedSongId) {
-    pendingSavedPosition = Math.max(0, state.duration > 0 ? Math.min(target, state.duration) : target);
+    pendingSavedPosition = Math.max(
+      0,
+      state.duration > 0 ? Math.min(target, state.duration) : target,
+    );
     state.setStatus({ position: pendingSavedPosition });
     if (shouldPlay) await loadIndex(state.index, pendingSavedPosition);
     return;
@@ -434,7 +433,12 @@ export async function seek(seconds: number, playIfPaused = false): Promise<void>
   await activeEngine().seek(target, !!repeat?.enabled);
   if (requestedGeneration !== generation || !sectionRepeat.isCurrentSeek(requestSeek)) return;
   usePlaybackStore.getState().setStatus({ position: target });
-  if (shouldPlay && requestedTransportRevision === transportRevision && !usePlaybackStore.getState().playing) togglePlayback();
+  if (
+    shouldPlay &&
+    requestedTransportRevision === transportRevision &&
+    !usePlaybackStore.getState().playing
+  )
+    togglePlayback();
   sectionRepeat.schedule();
 }
 export async function next(fromEnd = false): Promise<void> {

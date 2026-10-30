@@ -1,37 +1,27 @@
 import { createConnectionTaskRunner } from '@/services/google-drive/connection-tasks';
 import { createSerialQueue } from '@/services/async/serial-queue';
-import { googleSignIn, googleConnectionError } from '@/services/google-drive/auth';
-import { hasDriveFileGrant } from '@/services/google-drive/scopes';
+import { googleConnectionError } from '@/services/google-drive/auth';
 import { create } from 'zustand';
-import * as SecureStore from 'expo-secure-store';
-import { Platform } from 'react-native';
-import { DRIVE_SCOPE } from '@/services/google-drive/config';
 import {
   driveJson,
   driveMediaUrl,
-  loadDriveSongs,
   readDriveFile,
   type DriveFile,
 } from '@/services/google-drive/api';
 import type { Song } from '@/types/music';
-import { enrichDriveSongs } from '@/services/google-drive/metadata';
+import { refreshDriveLibrary } from '@/services/google-drive/library';
+import { mergeDriveQueueMetadata } from '@/services/playback/metadata';
 import { usePlaybackStore } from '@/stores/playback';
 import { useSongMetadataStore } from '@/stores/song-metadata';
-import { applyMetadata, metadataKey } from '@/features/metadata/rules';
-import { driveFileAccessToken, pickDriveFileIds } from '@/services/google-drive/picker';
-import {
-  loadDriveSelection,
-  parseDriveSelection,
-  saveDriveSelection,
-} from '@/services/google-drive/selection';
-const KEY = 'yeongdu-google-drive-v1';
-type Account = { id: string; email: string };
+import { pickDriveFileIds } from '@/services/google-drive/picker';
+import { parseDriveSelection, saveDriveSelection } from '@/services/google-drive/selection';
+import { createDriveSession, type DriveAccount } from '@/services/google-drive/session';
 type State = {
   ready: boolean;
   busy: boolean;
   loading: boolean;
   progress: string | null;
-  account: Account | null;
+  account: DriveAccount | null;
   songs: Song[];
   error: string | null;
   generation: number;
@@ -49,12 +39,6 @@ type State = {
   accessToken: (accountId: string, rejectedToken?: string) => Promise<string>;
 };
 export const useGoogleDriveStore = create<State>((set, get) => {
-  let cachedToken: {
-    accountId: string;
-    value: string;
-    generation: number;
-    savedAt: number;
-  } | null = null;
   const { run: exclusive } = createSerialQueue();
   let libraryRequest: AbortController | null = null;
   let fileRequest: AbortController | null = null;
@@ -73,7 +57,7 @@ export const useGoogleDriveStore = create<State>((set, get) => {
     attempt = new AbortController();
   }
   function begin() {
-    cachedToken = null;
+    authentication.clearToken();
     invalidate();
     libraryRequest?.abort();
     fileRequest?.abort();
@@ -95,14 +79,13 @@ export const useGoogleDriveStore = create<State>((set, get) => {
     return generation;
   }
 
-  function saveAuth(generation: number, value: string) {
-    return step(generation, '인증 정보 저장', async () => {
-      await SecureStore.setItemAsync(KEY, value);
-      // A write can complete after timeout/cancel. Cleanup stays inside the
-      // barrier so it cannot delete credentials written by a newer connection.
-      if (!current(generation)) await SecureStore.deleteItemAsync(KEY);
-    });
-  }
+  const authentication = createDriveSession({
+    step,
+    isCurrent: current,
+    getAccount: () => get().account,
+    onConnected: (account, files) => set({ account, files }),
+    onWarning: (error) => set({ error }),
+  });
   return {
     ready: false,
     busy: false,
@@ -137,30 +120,7 @@ export const useGoogleDriveStore = create<State>((set, get) => {
       const generation = get().generation;
       set({ busy: true });
       try {
-        await exclusive(async () => {
-          const saved = await step(generation, '저장된 연결 확인', () =>
-            SecureStore.getItemAsync(KEY),
-          );
-          if (!saved || !current(generation)) return;
-          const account = JSON.parse(saved) as Account & { scope?: unknown };
-          if (typeof account.id !== 'string' || typeof account.email !== 'string')
-            throw new Error('Google 저장 정보를 확인할 수 없습니다. 다시 로그인해 주세요.');
-          if (account.scope !== DRIVE_SCOPE)
-            throw new Error(
-              'Google Drive 접근 권한이 변경되었습니다. 다시 연결하고 음악 파일을 선택해 주세요.',
-            );
-          const files = await step(generation, '선택한 음악 확인', () =>
-            loadDriveSelection(account.id),
-          );
-          const google = await step(generation, '로그인 준비', googleSignIn),
-            response = await step(generation, '로그인 복원', () => google.signInSilently());
-          if (!current(generation)) return;
-          if (response.type !== 'success' || response.data.user.id !== account.id)
-            throw new Error('Google 연결을 다시 로그인해 주세요.');
-          if (!hasDriveFileGrant(response.data.scopes))
-            throw new Error('Google Drive 선택 파일 권한으로 다시 연결해 주세요.');
-          set({ account: { id: account.id, email: account.email }, files });
-        });
+        await exclusive(() => authentication.restore(generation));
       } catch (error) {
         if (current(generation)) {
           invalidate();
@@ -183,60 +143,7 @@ export const useGoogleDriveStore = create<State>((set, get) => {
     connect: async () => {
       const generation = begin();
       try {
-        await exclusive(async () => {
-          if (!current(generation)) return;
-          const google = await step(generation, '로그인 준비', googleSignIn);
-          await step(generation, 'Google Play 서비스 확인', () =>
-            google.hasPlayServices({ showPlayServicesUpdateDialog: true }),
-          );
-          await step(generation, '이전 로그인 정리', () => google.signOut());
-          await step(generation, '기기 연결 정보 정리', () => SecureStore.deleteItemAsync(KEY));
-          if (!current(generation)) return;
-          let response = await step(
-            generation,
-            '계정 선택 · 권한 승인',
-            () => google.signIn(),
-            120000,
-          );
-          if (!current(generation) || response.type !== 'success') return;
-          if (!hasDriveFileGrant(response.data.scopes)) {
-            // Old full-drive grants must not be silently reused after a scope downgrade.
-            await step(generation, '이전 Drive 권한 철회', () => google.revokeAccess());
-            await step(generation, '이전 로그인 정리', () => google.signOut());
-            response = await step(generation, '선택 파일 권한 승인', () => google.signIn(), 120000);
-            if (response.type !== 'success') return;
-          }
-          if (!hasDriveFileGrant(response.data.scopes))
-            throw new Error('Google Drive 선택 파일 권한을 승인해 주세요.');
-          const account = { id: response.data.user.id, email: response.data.user.email };
-          const accessToken =
-            Platform.OS === 'android'
-              ? await step(
-                  generation,
-                  'Drive 접근 토큰 발급',
-                  () => driveFileAccessToken(account.email),
-                  60000,
-                )
-              : (await step(generation, 'Drive 접근 토큰 발급', () => google.getTokens(), 60000))
-                  .accessToken;
-          if (!accessToken)
-            throw new Error('Google Drive 접근 토큰을 발급받지 못했습니다. 다시 연결해 주세요.');
-          const files = await step(generation, '선택한 음악 확인', () =>
-            loadDriveSelection(account.id),
-          );
-          if (!current(generation)) return;
-          await saveAuth(
-            generation,
-            JSON.stringify({ ...account, scope: DRIVE_SCOPE, accessToken }),
-          );
-          cachedToken = {
-            accountId: account.id,
-            value: accessToken,
-            generation,
-            savedAt: Date.now(),
-          };
-          set({ account, files });
-        });
+        await exclusive(() => authentication.connect(generation));
       } catch (error) {
         if (current(generation)) {
           invalidate();
@@ -258,32 +165,7 @@ export const useGoogleDriveStore = create<State>((set, get) => {
     disconnect: async () => {
       const generation = begin();
       try {
-        await exclusive(async () => {
-          if (!current(generation)) return;
-          let storageFailed = false;
-          try {
-            await step(generation, '기기 인증 정보 삭제', () => SecureStore.deleteItemAsync(KEY));
-          } catch {
-            storageFailed = true;
-          }
-          if (!current(generation)) return;
-          const google = await step(generation, '로그인 준비', googleSignIn);
-          try {
-            await step(generation, 'Google 권한 철회', () => google.revokeAccess());
-          } catch {
-            if (current(generation))
-              set({
-                error:
-                  'Google 연결은 기기에서 해제했습니다. 온라인 권한 철회에 실패했으므로 Google 계정의 연결된 앱에서도 권한을 삭제해 주세요.',
-              });
-          } finally {
-            await step(generation, 'Google 로그아웃', () => google.signOut());
-          }
-          if (storageFailed && current(generation))
-            set({
-              error: 'Google 인증 정보의 기기 삭제에 실패했습니다. 연결 해제를 다시 시도해 주세요.',
-            });
-        });
+        await exclusive(() => authentication.disconnect(generation));
       } catch (error) {
         if (current(generation)) {
           invalidate();
@@ -300,48 +182,7 @@ export const useGoogleDriveStore = create<State>((set, get) => {
     },
     accessToken: async (accountId, rejectedToken) => {
       const generation = get().generation;
-      return exclusive(async () => {
-        const check = () => {
-          if (!current(generation) || get().account?.id !== accountId)
-            throw new Error('Google 계정 연결이 변경되었습니다. 다시 곡을 선택해 주세요.');
-        };
-        check();
-        if (
-          cachedToken &&
-          cachedToken.accountId === accountId &&
-          cachedToken.generation === generation &&
-          Date.now() - cachedToken.savedAt < 45 * 60_000 &&
-          cachedToken.value !== rejectedToken
-        )
-          return cachedToken.value;
-        const google = await step(generation, '로그인 준비', googleSignIn);
-        if (google.getCurrentUser()?.user.id !== accountId)
-          throw new Error('Google 연결을 다시 로그인해 주세요.');
-        if (rejectedToken)
-          await step(generation, '만료된 토큰 정리', () =>
-            google.clearCachedAccessToken(rejectedToken),
-          );
-        const user = google.getCurrentUser();
-        if (!user || !hasDriveFileGrant(user.scopes))
-          throw new Error('Google Drive 선택 파일 권한으로 다시 연결해 주세요.');
-        const accessToken =
-          Platform.OS === 'android'
-            ? await step(generation, 'Drive 접근 토큰 발급', () =>
-                driveFileAccessToken(user.user.email),
-              )
-            : (await step(generation, 'Drive 접근 토큰 발급', () => google.getTokens()))
-                .accessToken;
-        check();
-        if (!accessToken)
-          throw new Error('Google Drive 접근 토큰을 발급받지 못했습니다. 다시 연결해 주세요.');
-        await saveAuth(
-          generation,
-          JSON.stringify({ ...get().account, scope: DRIVE_SCOPE, accessToken }),
-        );
-        cachedToken = { accountId, value: accessToken, generation, savedAt: Date.now() };
-        check();
-        return accessToken;
-      });
+      return exclusive(() => authentication.accessToken(generation, accountId, rejectedToken));
     },
     pickFiles: async () => {
       const account = get().account,
@@ -438,70 +279,39 @@ export const useGoogleDriveStore = create<State>((set, get) => {
       const isCurrent = () =>
         current(generation) && libraryRequest === request && !request.signal.aborted;
       try {
-        let missing = 0;
-        const songs = await loadDriveSongs(
+        enriching = await refreshDriveLibrary(
           account.id,
-          files.map((file) => file.id),
+          files,
           (rejected) => get().accessToken(account.id, rejected),
           request.signal,
-          (ids) => {
-            missing = ids.length;
-          },
-        );
-        if (isCurrent()) {
-          set({
-            songs,
-            loading: false,
-            metadataLoading: true,
-            error: missing
-              ? `${missing}개 음악 파일이 삭제되었거나 접근할 수 없습니다. 선택 목록을 편집하거나 Google에서 다시 선택해 주세요.`
-              : null,
-          });
-          enriching = true;
-          // Publish the file list first. Tag reads must not block browsing or playback.
-          void enrichDriveSongs(
-            songs,
-            (rejected) => get().accessToken(account.id, rejected),
-            request.signal,
-            (updated) => {
-              if (!isCurrent()) return;
-              set({ songs: updated });
-              const metadata = new Map(updated.map((song) => [song.id, song]));
-              // Refresh labels/artwork in the existing queue without reloading audio.
+          {
+            isCurrent,
+            onSongs: (songs, missing) =>
+              set({
+                songs,
+                loading: false,
+                metadataLoading: true,
+                error: missing
+                  ? `${missing}개 음악 파일이 삭제되었거나 접근할 수 없습니다. 선택 목록을 편집하거나 Google에서 다시 선택해 주세요.`
+                  : null,
+              }),
+            onMetadata: (songs) => {
+              set({ songs });
               usePlaybackStore.setState((state) => ({
-                queue: state.queue.map((song) => {
-                  const latest = metadata.get(song.id);
-                  if (!latest || song.source !== 'drive') return song;
-                  const key = metadataKey(latest, null);
-                  return applyMetadata(
-                    { ...latest, duration: latest.duration || song.duration },
-                    key ? useSongMetadataStore.getState().patches[key] : undefined,
-                  );
-                }),
+                queue: mergeDriveQueueMetadata(
+                  state.queue,
+                  songs,
+                  useSongMetadataStore.getState().patches,
+                ),
               }));
             },
-          )
-            .then((failures) => {
-              if (isCurrent() && failures)
-                set({
-                  metadataWarning:
-                    '일부 곡의 태그·앨범아트를 읽지 못했습니다. 음악 목록 다시 불러오기로 재시도할 수 있습니다.',
-                });
-            })
-            .catch(() => {
-              if (isCurrent())
-                set({
-                  metadataWarning:
-                    '태그·앨범아트를 읽지 못했습니다. 음악 목록 다시 불러오기로 재시도해 주세요.',
-                });
-            })
-            .finally(() => {
-              if (isCurrent()) {
-                libraryRequest = null;
-                set({ metadataLoading: false });
-              }
-            });
-        }
+            onWarning: (metadataWarning) => set({ metadataWarning }),
+            onSettled: () => {
+              libraryRequest = null;
+              set({ metadataLoading: false });
+            },
+          },
+        );
       } catch (error) {
         if (current(generation) && libraryRequest === request && !request.signal.aborted)
           set({ error: googleConnectionError(error) });

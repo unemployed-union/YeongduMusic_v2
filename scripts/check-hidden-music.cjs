@@ -6,7 +6,6 @@ const root = process.argv[2] ? path.resolve(process.argv[2]) : path.resolve(__di
 const projectRequire = createRequire(path.join(root, 'package.json'));
 const ts = projectRequire('typescript');
 const tanstack = projectRequire('@tanstack/react-query');
-const { create } = projectRequire('zustand');
 const clients = [];
 const observers = [];
 function load(file, overrides = {}) {

@@ -1,12 +1,12 @@
 import { usePlaybackStore } from '@/stores/playback';
-import type { ExpoAudioEngine } from './audio-engine';
+import type { AudioEngine } from './audio-engine';
 import { MIN_SECTION_SECONDS, validateSectionPoint, validateSectionRange } from './section-repeat';
 
 interface Runtime {
   getLoadedSongId(): string | null;
   getGeneration(): number;
   getPosition(): number;
-  getEngine(): ExpoAudioEngine | null;
+  getEngine(): AudioEngine | null;
   checkSleepTimer(fromEnd?: boolean): boolean;
 }
 

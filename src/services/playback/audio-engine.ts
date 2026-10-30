@@ -1,10 +1,23 @@
-import { createAudioPlayer, setAudioModeAsync, type AudioPlayer, type AudioSource, type AudioStatus } from 'expo-audio';
+import {
+  createAudioPlayer,
+  setAudioModeAsync,
+  type AudioPlayer,
+  type AudioSource,
+  type AudioStatus,
+} from 'expo-audio';
 import Constants, { AppOwnership } from 'expo-constants';
 import { Platform } from 'react-native';
 import type { Song } from '@/types/music';
 import { validatePlaybackRate } from './playback-rate';
 
-export type EngineStatus = { playing: boolean; buffering: boolean; position: number; duration: number; ended: boolean; error: string | null };
+export type EngineStatus = {
+  playing: boolean;
+  buffering: boolean;
+  position: number;
+  duration: number;
+  ended: boolean;
+  error: string | null;
+};
 export type RemoteTrackCommand = 'next' | 'previous';
 export interface AudioEngine {
   load(source: AudioSource, song: Song, initialPosition?: number): Promise<void>;
@@ -12,6 +25,8 @@ export interface AudioEngine {
   pause(forTrackTransition?: boolean): void;
   seek(seconds: number, precise?: boolean): Promise<void>;
   getPosition(): number;
+  getAudioSessionId(): number | null;
+  updateMetadata(song: Song): void;
   setPlaybackRate(rate: number): void;
   setPreservePitch(preserve: boolean): void;
   subscribe(listener: (status: EngineStatus) => void): () => void;
@@ -31,12 +46,24 @@ function withIosFlacType(source: AudioSource, song: Song): AudioSource {
   if (Platform.OS !== 'ios' || (song.source !== undefined && song.source !== 'nas')) return source;
   const codec = song.audioCodec?.trim().toLowerCase();
   if (codec ? codec !== 'flac' : !/\.flac$/i.test(song.path ?? song.title)) return source;
-  const uri = typeof source === 'string' ? source : source && typeof source === 'object' && source.assetId === undefined ? source.uri : undefined;
+  const uri =
+    typeof source === 'string'
+      ? source
+      : source && typeof source === 'object' && source.assetId === undefined
+        ? source.uri
+        : undefined;
   if (!uri) return source;
   try {
     const url = new URL(uri);
-    if (!['http:', 'https:'].includes(url.protocol) || url.searchParams.get('api') !== 'SYNO.AudioStation.Stream' || url.searchParams.get('method') !== 'stream') return source;
-  } catch { return source; }
+    if (
+      !['http:', 'https:'].includes(url.protocol) ||
+      url.searchParams.get('api') !== 'SYNO.AudioStation.Stream' ||
+      url.searchParams.get('method') !== 'stream'
+    )
+      return source;
+  } catch {
+    return source;
+  }
   return { ...(typeof source === 'object' ? source : { uri }), mimeType: 'audio/flac' };
 }
 
@@ -104,7 +131,12 @@ export class ExpoAudioEngine implements AudioEngine {
 
   private async setup(): Promise<AudioPlayer> {
     const lifecycle = this.lifecycle;
-    if (!this.configured) this.configured = setAudioModeAsync({ playsInSilentMode: true, shouldPlayInBackground: this.backgroundPlaybackAvailable, interruptionMode: 'doNotMix' });
+    if (!this.configured)
+      this.configured = setAudioModeAsync({
+        playsInSilentMode: true,
+        shouldPlayInBackground: this.backgroundPlaybackAvailable,
+        interruptionMode: 'doNotMix',
+      });
     await this.configured;
     if (lifecycle !== this.lifecycle) throw new Error('재생 요청이 취소되었습니다.');
     if (!this.player) {
@@ -113,7 +145,8 @@ export class ExpoAudioEngine implements AudioEngine {
         updateInterval: 1000,
         // iOS 57.0.5 applies this only to the constructor's initial AVPlayerItem,
         // not later replace() calls. This reusable player's improvement is Android-only.
-        preferredForwardBufferDuration: Platform.OS === 'android' ? ANDROID_FORWARD_BUFFER_SECONDS : 0,
+        preferredForwardBufferDuration:
+          Platform.OS === 'android' ? ANDROID_FORWARD_BUFFER_SECONDS : 0,
       });
       this.subscription = this.player.addListener('playbackStatusUpdate', (status: AudioStatus) => {
         this.observeBuffering(status);
@@ -134,11 +167,20 @@ export class ExpoAudioEngine implements AudioEngine {
     // Read the native clock without increasing status updates across the app.
     if (this.resume || this.starting || this.retryTimer !== null) return this.position;
     const position = this.player?.currentTime;
-    return typeof position === 'number' && Number.isFinite(position) && position >= 0 ? position : this.position;
+    return typeof position === 'number' && Number.isFinite(position) && position >= 0
+      ? position
+      : this.position;
   }
 
   private publish(playing: boolean, buffering: boolean, ended = false): void {
-    const status: EngineStatus = { playing, buffering, position: this.position, duration: this.duration, ended, error: this.failure };
+    const status: EngineStatus = {
+      playing,
+      buffering,
+      position: this.position,
+      duration: this.duration,
+      ended,
+      error: this.failure,
+    };
     this.listeners.forEach((listener) => listener(status));
   }
 
@@ -163,7 +205,8 @@ export class ExpoAudioEngine implements AudioEngine {
       this.clearRecoveryTimers();
       this.wantsPlayback = this.starting = false;
       this.resume = null;
-      this.failure = '로컬 음악을 재생할 수 없습니다. 파일 접근·오디오 포맷을 확인하고 다시 가져와 주세요.';
+      this.failure =
+        '로컬 음악을 재생할 수 없습니다. 파일 접근·오디오 포맷을 확인하고 다시 가져와 주세요.';
       this.player?.pause();
       this.publish(false, false);
       return;
@@ -190,8 +233,14 @@ export class ExpoAudioEngine implements AudioEngine {
       this.resume = { operation, position: this.position, seeking: false };
       this.starting = true;
       this.watchStall();
-      try { this.player.pause(); this.player.replace(this.source); this.applyPlaybackRate(this.player); }
-      catch { this.resume = null; this.scheduleRecovery(); }
+      try {
+        this.player.pause();
+        this.player.replace(this.source);
+        this.applyPlaybackRate(this.player);
+      } catch {
+        this.resume = null;
+        this.scheduleRecovery();
+      }
     }, delay);
     this.publish(true, true);
   }
@@ -206,7 +255,10 @@ export class ExpoAudioEngine implements AudioEngine {
       // current native item after that replacement finishes, before seeking.
       await Promise.resolve();
       if (resume.operation !== this.operation || !this.wantsPlayback) return;
-      if (!player.isLoaded) { resume.seeking = false; return; }
+      if (!player.isLoaded) {
+        resume.seeking = false;
+        return;
+      }
       if (resume.position > 0) await player.seekTo(resume.position, 0, 0);
       if (resume.operation !== this.operation || !this.wantsPlayback) return;
       this.resume = null;
@@ -219,7 +271,11 @@ export class ExpoAudioEngine implements AudioEngine {
   }
 
   private handleStatus(status: AudioStatus): void {
-    if (status.error) { this.scheduleRecovery(); this.publish(this.wantsPlayback, this.wantsPlayback); return; }
+    if (status.error) {
+      this.scheduleRecovery();
+      this.publish(this.wantsPlayback, this.wantsPlayback);
+      return;
+    }
     if (this.resume) {
       if (status.isLoaded) void this.resumePlayback();
       this.publish(this.wantsPlayback, this.wantsPlayback);
@@ -231,7 +287,12 @@ export class ExpoAudioEngine implements AudioEngine {
       return;
     }
     if (Number.isFinite(status.duration) && status.duration > 0) this.duration = status.duration;
-    if (Number.isFinite(status.currentTime) && (status.isLoaded || status.currentTime > 0) && !(this.failure && this.starting)) this.position = status.currentTime;
+    if (
+      Number.isFinite(status.currentTime) &&
+      (status.isLoaded || status.currentTime > 0) &&
+      !(this.failure && this.starting)
+    )
+      this.position = status.currentTime;
     if (status.didJustFinish) {
       this.wantsPlayback = this.starting = false;
       this.clearRecoveryTimers();
@@ -247,7 +308,12 @@ export class ExpoAudioEngine implements AudioEngine {
       // A brief successful resume must not create an unlimited retry loop.
       this.stableFrom ??= this.position;
       if (this.position - this.stableFrom >= 30) this.retries = 0;
-    } else if (!this.starting && !status.playing && status.isBuffering && status.timeControlStatus === 'paused') {
+    } else if (
+      !this.starting &&
+      !status.playing &&
+      status.isBuffering &&
+      status.timeControlStatus === 'paused'
+    ) {
       this.wantsPlayback = false;
       this.clearRecoveryTimers();
     } else if (status.isBuffering || this.starting || (!status.isLoaded && this.wantsPlayback)) {
@@ -258,7 +324,10 @@ export class ExpoAudioEngine implements AudioEngine {
       this.wantsPlayback = false;
       this.clearRecoveryTimers();
     }
-    this.publish(status.playing || (this.wantsPlayback && this.starting), this.wantsPlayback && (status.isBuffering || this.starting || !status.isLoaded));
+    this.publish(
+      status.playing || (this.wantsPlayback && this.starting),
+      this.wantsPlayback && (status.isBuffering || this.starting || !status.isLoaded),
+    );
   }
   private resetBufferingObservation(): void {
     this.hasPlayed = false;
@@ -267,17 +336,24 @@ export class ExpoAudioEngine implements AudioEngine {
 
   private observeBuffering(status: AudioStatus): void {
     if (!__DEV__) return;
-    if (status.error || status.didJustFinish) { this.resetBufferingObservation(); return; }
+    if (status.error || status.didJustFinish) {
+      this.resetBufferingObservation();
+      return;
+    }
     // Measure reported buffering after playback has begun, excluding initial loading.
     // Never log URLs, headers, IDs or track metadata from authenticated sources.
     if (status.isBuffering) {
       if (this.hasPlayed && this.bufferingSince === null) {
         this.bufferingSince = performance.now();
-        console.info('[Playback] Buffering started', { positionSeconds: Math.floor(status.currentTime) });
+        console.info('[Playback] Buffering started', {
+          positionSeconds: Math.floor(status.currentTime),
+        });
       }
     } else {
       if (this.bufferingSince !== null) {
-        console.info('[Playback] Buffering ended', { durationMs: Math.round(performance.now() - this.bufferingSince) });
+        console.info('[Playback] Buffering ended', {
+          durationMs: Math.round(performance.now() - this.bufferingSince),
+        });
         this.bufferingSince = null;
       }
       this.hasPlayed = status.playing && status.currentTime > 0;
@@ -309,13 +385,27 @@ export class ExpoAudioEngine implements AudioEngine {
       // Stock showSeek* options only move 10 seconds within the current song.
       if (this.lockScreenActive) this.updateMetadata(song);
       else {
-        player.setActiveForLockScreen(true,
-          { title: song.title, artist: song.artist, albumTitle: song.album, artworkUrl: song.artworkUrl },
+        player.setActiveForLockScreen(
+          true,
+          {
+            title: song.title,
+            artist: song.artist,
+            albumTitle: song.album,
+            artworkUrl: song.artworkUrl,
+          },
           Platform.OS === 'android'
-            ? { isLiveStream: false, showSkipPrevious: true, showSkipNext: true, showSeekBackward: false, showSeekForward: false }
-            // AVPlayer can report an indefinite duration while a NAS file is loading.
-            // Do not let that initial value permanently disable the system scrub bar.
-            : Platform.OS === 'ios' ? { isLiveStream: false, showSeekBackward: false, showSeekForward: false } : undefined
+            ? {
+                isLiveStream: false,
+                showSkipPrevious: true,
+                showSkipNext: true,
+                showSeekBackward: false,
+                showSeekForward: false,
+              }
+            : // AVPlayer can report an indefinite duration while a NAS file is loading.
+              // Do not let that initial value permanently disable the system scrub bar.
+              Platform.OS === 'ios'
+              ? { isLiveStream: false, showSeekBackward: false, showSeekForward: false }
+              : undefined,
         );
         this.lockScreenActive = true;
       }
@@ -324,9 +414,13 @@ export class ExpoAudioEngine implements AudioEngine {
     else player.play();
   }
   updateMetadata(song: Song): void {
-    if (this.backgroundPlaybackAvailable) this.player?.updateLockScreenMetadata({
-      title: song.title, artist: song.artist, albumTitle: song.album, artworkUrl: song.artworkUrl,
-    });
+    if (this.backgroundPlaybackAvailable)
+      this.player?.updateLockScreenMetadata({
+        title: song.title,
+        artist: song.artist,
+        albumTitle: song.album,
+        artworkUrl: song.artworkUrl,
+      });
   }
   getAudioSessionId(): number | null {
     // Android-only property supplied by our pinned expo-audio patch; absent in older binaries.
@@ -335,8 +429,14 @@ export class ExpoAudioEngine implements AudioEngine {
   }
   play(): void {
     this.wantsPlayback = true;
-    if (this.failure) { this.retries = 0; this.scheduleRecovery(); }
-    else { this.starting = true; this.watchStall(); this.player?.play(); }
+    if (this.failure) {
+      this.retries = 0;
+      this.scheduleRecovery();
+    } else {
+      this.starting = true;
+      this.watchStall();
+      this.player?.play();
+    }
   }
   pause(forTrackTransition = false): void {
     this.operation++;
@@ -361,11 +461,15 @@ export class ExpoAudioEngine implements AudioEngine {
   }
   subscribe(listener: (status: EngineStatus) => void): () => void {
     this.listeners.add(listener);
-    return () => { this.listeners.delete(listener); };
+    return () => {
+      this.listeners.delete(listener);
+    };
   }
   subscribeRemoteNavigation(listener: (command: RemoteTrackCommand) => void): () => void {
     this.remoteListeners.add(listener);
-    return () => { this.remoteListeners.delete(listener); };
+    return () => {
+      this.remoteListeners.delete(listener);
+    };
   }
   release(): void {
     this.lifecycle++;

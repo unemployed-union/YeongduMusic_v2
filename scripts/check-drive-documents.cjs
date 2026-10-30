@@ -100,7 +100,7 @@ async function checkExplicitDownload(h, song) {
   const downloader = load('src/services/offline-music/download.ts', {
     'react-native': { Platform: { OS: 'android' } },
     'expo-file-system/legacy': { cacheDirectory: 'file:///cache/', copyAsync: async copy => { copies.push(copy); }, getInfoAsync: async () => ({ exists: true, isDirectory: false, size: 1234 }), deleteAsync: async value => { deleted.push(value); } },
-    '@/services/cloud-music/source': { cloudStreamSource: h.source }, '@/services/music-source': load('src/services/music-source.ts'),
+    '@/services/cloud-music/source': { resolveCloudDownloadSource: h.source }, '@/services/music-source': load('src/services/music-source.ts'),
     './formats': load('src/services/offline-music/formats.ts'), '@/services/synology/api': {},
     '@/stores/auth': { useAuthStore: { getState: () => ({ mode: 'setup' }) } },
     '@/services/local-music/storage': { storeDownloadedSong: async (_, destination, extension) => { stored++; assert.equal(extension, 'mp3'); assert.equal(destination, copies[0].to); return { duplicate: false }; } },

@@ -13,22 +13,59 @@ import { useFolderExclusionStore } from '@/stores/folder-exclusions';
 import { useHiddenFeatureAccess } from '@/stores/hidden-feature-access';
 import { useHiddenMusicStore } from '@/stores/hidden-music';
 import { usePlaylistStore } from '@/stores/playlists';
-import { parseSettingsBackup, serializeSettingsBackup, type SettingsBackup } from '@/features/settings/backup-format';
+import {
+  parseSettingsBackup,
+  serializeSettingsBackup,
+  type SettingsBackup,
+} from '@/features/settings/backup-format';
 import { withBackupOperation as exclusive } from './backup-operation';
 
 async function prepare() {
-  await Promise.all([usePlaybackPreferences.getState().load(true), useDisplayPreferences.getState().load(true), useLibraryPreferences.getState().load(true), useMenuPreferences.getState().load(true),
-    useStreamingPreferences.getState().load(), useFolderExclusionStore.getState().load(true), useHiddenFeatureAccess.getState().load(true), useThemePreferences.getState().load(true), useLibraryDetailPreferences.getState().load(true), useHapticPreferences.getState().load(true), useFavoriteDisplayPreferences.getState().load(true), useBlurPreferences.getState().load(true), useAppearancePreferences.getState().load(true)]);
-  const states = [usePlaybackPreferences.getState(), useDisplayPreferences.getState(), useLibraryPreferences.getState(), useMenuPreferences.getState(), useStreamingPreferences.getState(), useFolderExclusionStore.getState(), useThemePreferences.getState(), useLibraryDetailPreferences.getState(), useHapticPreferences.getState(), useFavoriteDisplayPreferences.getState(), useBlurPreferences.getState(), useAppearancePreferences.getState()];
+  await Promise.all([
+    usePlaybackPreferences.getState().load(true),
+    useDisplayPreferences.getState().load(true),
+    useLibraryPreferences.getState().load(true),
+    useMenuPreferences.getState().load(true),
+    useStreamingPreferences.getState().load(),
+    useFolderExclusionStore.getState().load(true),
+    useHiddenFeatureAccess.getState().load(true),
+    useThemePreferences.getState().load(true),
+    useLibraryDetailPreferences.getState().load(true),
+    useHapticPreferences.getState().load(true),
+    useFavoriteDisplayPreferences.getState().load(true),
+    useBlurPreferences.getState().load(true),
+    useAppearancePreferences.getState().load(true),
+  ]);
+  const states = [
+    usePlaybackPreferences.getState(),
+    useDisplayPreferences.getState(),
+    useLibraryPreferences.getState(),
+    useMenuPreferences.getState(),
+    useStreamingPreferences.getState(),
+    useFolderExclusionStore.getState(),
+    useThemePreferences.getState(),
+    useLibraryDetailPreferences.getState(),
+    useHapticPreferences.getState(),
+    useFavoriteDisplayPreferences.getState(),
+    useBlurPreferences.getState(),
+    useAppearancePreferences.getState(),
+  ];
   for (const state of states) {
     if (!state.ready || state.error) throw new Error(state.error ?? '설정을 먼저 불러와 주세요.');
-    if (state.loading || state.saving) throw new Error('설정을 저장 중입니다. 잠시 후 다시 시도해 주세요.');
+    if (state.loading || state.saving)
+      throw new Error('설정을 저장 중입니다. 잠시 후 다시 시도해 주세요.');
   }
 }
 function accountReady(scope: string) {
-  const privacy = useHiddenMusicStore.getState(), playlists = usePlaylistStore.getState(), access = useHiddenFeatureAccess.getState();
-  if (!privacy.ready || !playlists.ready || privacy.scope !== scope || playlists.scope !== scope) throw new Error('현재 로그인한 NAS 계정의 백업을 선택해 주세요. 서버 주소와 계정이 같아야 합니다.');
-  if (privacy.busy || playlists.busy || access.busy) throw new Error('설정을 저장 중입니다. 잠시 후 다시 시도해 주세요.');
+  const privacy = useHiddenMusicStore.getState(),
+    playlists = usePlaylistStore.getState(),
+    access = useHiddenFeatureAccess.getState();
+  if (!privacy.ready || !playlists.ready || privacy.scope !== scope || playlists.scope !== scope)
+    throw new Error(
+      '현재 로그인한 NAS 계정의 백업을 선택해 주세요. 서버 주소와 계정이 같아야 합니다.',
+    );
+  if (privacy.busy || playlists.busy || access.busy)
+    throw new Error('설정을 저장 중입니다. 잠시 후 다시 시도해 주세요.');
   if (access.error) throw new Error(access.error);
 }
 async function authorize(scope: string) {
@@ -37,7 +74,8 @@ async function authorize(scope: string) {
   if (privacy.profile.biometricLock && !privacy.unlocked) {
     await privacy.unlock();
     accountReady(scope);
-    if (!useHiddenMusicStore.getState().unlocked) throw new Error('숨김 설정을 지문 또는 기기 암호로 먼저 열어 주세요.');
+    if (!useHiddenMusicStore.getState().unlocked)
+      throw new Error('숨김 설정을 지문 또는 기기 암호로 먼저 열어 주세요.');
   }
 }
 function snapshot(includeAccount: boolean): SettingsBackup {
@@ -53,17 +91,30 @@ function snapshot(includeAccount: boolean): SettingsBackup {
     favoriteDisplay: useFavoriteDisplayPreferences.getState().preferences,
     blurEnabled: useBlurPreferences.getState().enabled,
     appearance: useAppearancePreferences.getState().preferences,
-    blur: { enabled: useBlurPreferences.getState().enabled, areas: useBlurPreferences.getState().areas },
+    blur: {
+      enabled: useBlurPreferences.getState().enabled,
+      areas: useBlurPreferences.getState().areas,
+    },
     quality: useStreamingPreferences.getState().quality,
     excludedFolders: [...useFolderExclusionStore.getState().folders],
   };
-  const backup: SettingsBackup = { format: 'yeongdu-music-settings', version: 1, exportedAt: new Date().toISOString(), preferences };
+  const backup: SettingsBackup = {
+    format: 'yeongdu-music-settings',
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    preferences,
+  };
   if (includeAccount) {
-    const privacy = useHiddenMusicStore.getState(), access = useHiddenFeatureAccess.getState();
+    const privacy = useHiddenMusicStore.getState(),
+      access = useHiddenFeatureAccess.getState();
     if (!privacy.scope) throw new Error('프리셋을 백업할 NAS 계정에 먼저 로그인해 주세요.');
     accountReady(privacy.scope);
-    backup.account = { scope: privacy.scope, hidden: privacy.profile, playlists: usePlaylistStore.getState().profile,
-      access: { enabled: access.enabled, quickHideMode: access.quickHideMode } };
+    backup.account = {
+      scope: privacy.scope,
+      hidden: privacy.profile,
+      playlists: usePlaylistStore.getState().profile,
+      access: { enabled: access.enabled, quickHideMode: access.quickHideMode },
+    };
   }
   return parseSettingsBackup(serializeSettingsBackup(backup));
 }
@@ -72,14 +123,17 @@ export async function createSettingsBackup(includeAccount = false): Promise<stri
     try {
       await prepare();
       if (includeAccount) {
-        if (!useHiddenFeatureAccess.getState().enabled) throw new Error('기타 설정을 먼저 활성화해 주세요.');
+        if (!useHiddenFeatureAccess.getState().enabled)
+          throw new Error('기타 설정을 먼저 활성화해 주세요.');
         const scope = useHiddenMusicStore.getState().scope;
         if (!scope) throw new Error('NAS 계정에 먼저 로그인해 주세요.');
         await authorize(scope);
         accountReady(scope);
       }
       return serializeSettingsBackup(snapshot(includeAccount));
-    } finally { if (includeAccount) useHiddenMusicStore.getState().lock(); }
+    } finally {
+      if (includeAccount) useHiddenMusicStore.getState().lock();
+    }
   });
 }
 async function checked(operation: () => Promise<void>, error: () => string | null) {
@@ -88,15 +142,156 @@ async function checked(operation: () => Promise<void>, error: () => string | nul
   if (message) throw new Error(message);
 }
 
+async function applyBackupPreferences(
+  backup: SettingsBackup,
+  previous: SettingsBackup,
+  apply: (operation: () => Promise<void>, rollback: () => Promise<void>) => Promise<void>,
+): Promise<void> {
+  const display = useDisplayPreferences.getState(),
+    library = useLibraryPreferences.getState(),
+    streaming = useStreamingPreferences.getState(),
+    folders = useFolderExclusionStore.getState();
+  const hideArtwork = (value: boolean) =>
+    checked(
+      () => display.setHideArtwork(value),
+      () => useDisplayPreferences.getState().error,
+    );
+  const folderAlbums = (value: boolean) =>
+    checked(
+      () => library.setIncludeFolderAlbums(value),
+      () => useLibraryPreferences.getState().error,
+    );
+  await apply(
+    () => hideArtwork(backup.preferences.hideArtwork),
+    () => hideArtwork(previous.preferences.hideArtwork),
+  );
+  if (
+    backup.preferences.playOnSeek !== undefined &&
+    previous.preferences.playOnSeek !== undefined
+  ) {
+    const enabled = backup.preferences.playOnSeek,
+      original = previous.preferences.playOnSeek;
+    await apply(
+      () => usePlaybackPreferences.getState().setPlayOnSeek(enabled),
+      () => usePlaybackPreferences.getState().setPlayOnSeek(original),
+    );
+  }
+  await apply(
+    () => folderAlbums(backup.preferences.includeFolderAlbums),
+    () => folderAlbums(previous.preferences.includeFolderAlbums),
+  );
+  if (
+    backup.preferences.groupAlbumsByTitle !== undefined &&
+    previous.preferences.groupAlbumsByTitle !== undefined
+  ) {
+    const enabled = backup.preferences.groupAlbumsByTitle,
+      original = previous.preferences.groupAlbumsByTitle;
+    const grouping = (value: boolean) =>
+      checked(
+        () => library.setGroupAlbumsByTitle(value),
+        () => useLibraryPreferences.getState().error,
+      );
+    await apply(
+      () => grouping(enabled),
+      () => grouping(original),
+    );
+  }
+  if (backup.preferences.menus && previous.preferences.menus) {
+    const menus = backup.preferences.menus,
+      original = previous.preferences.menus;
+    const restoreMenus = (value: typeof menus) =>
+      checked(
+        () => useMenuPreferences.getState().restore(value),
+        () => useMenuPreferences.getState().error,
+      );
+    await apply(
+      () => restoreMenus(menus),
+      () => restoreMenus(original),
+    );
+  }
+  await apply(
+    () => streaming.setQuality(backup.preferences.quality),
+    () => streaming.setQuality(previous.preferences.quality),
+  );
+  await apply(
+    () => folders.setFolders(backup.preferences.excludedFolders),
+    () => folders.setFolders(previous.preferences.excludedFolders),
+  );
+  if (backup.preferences.themeMode !== undefined && previous.preferences.themeMode !== undefined) {
+    const mode = backup.preferences.themeMode,
+      original = previous.preferences.themeMode;
+    await apply(
+      () => useThemePreferences.getState().setMode(mode),
+      () => useThemePreferences.getState().setMode(original),
+    );
+  }
+  if (backup.preferences.libraryDetails && previous.preferences.libraryDetails) {
+    const preferences = backup.preferences.libraryDetails,
+      original = previous.preferences.libraryDetails;
+    await apply(
+      () => useLibraryDetailPreferences.getState().restore(preferences),
+      () => useLibraryDetailPreferences.getState().restore(original),
+    );
+  }
+  if (backup.preferences.haptics && previous.preferences.haptics) {
+    const preferences = backup.preferences.haptics,
+      original = previous.preferences.haptics;
+    await apply(
+      () => useHapticPreferences.getState().restore(preferences),
+      () => useHapticPreferences.getState().restore(original),
+    );
+  }
+  if (backup.preferences.favoriteDisplay && previous.preferences.favoriteDisplay) {
+    const preferences = backup.preferences.favoriteDisplay,
+      original = previous.preferences.favoriteDisplay;
+    await apply(
+      () => useFavoriteDisplayPreferences.getState().restore(preferences),
+      () => useFavoriteDisplayPreferences.getState().restore(original),
+    );
+  }
+  if (backup.preferences.blur && previous.preferences.blur) {
+    const preferences = backup.preferences.blur,
+      original = previous.preferences.blur;
+    await apply(
+      () => useBlurPreferences.getState().restore(preferences),
+      () => useBlurPreferences.getState().restore(original),
+    );
+  } else if (
+    backup.preferences.blurEnabled !== undefined &&
+    previous.preferences.blurEnabled !== undefined
+  ) {
+    const enabled = backup.preferences.blurEnabled,
+      original = previous.preferences.blurEnabled;
+    await apply(
+      () => useBlurPreferences.getState().setEnabled(enabled),
+      () => useBlurPreferences.getState().setEnabled(original),
+    );
+  }
+  if (backup.preferences.appearance && previous.preferences.appearance) {
+    const preferences = backup.preferences.appearance,
+      original = previous.preferences.appearance;
+    await apply(
+      () => useAppearancePreferences.getState().restore(preferences),
+      () => useAppearancePreferences.getState().restore(original),
+    );
+  }
+}
+
 /** Validate everything first, then compensate completed writes if a save fails. */
-export async function restoreSettingsBackup(input: SettingsBackup, includeAccount: boolean): Promise<void> {
+export async function restoreSettingsBackup(
+  input: SettingsBackup,
+  includeAccount: boolean,
+): Promise<void> {
   return exclusive(async () => {
     const backup = parseSettingsBackup(serializeSettingsBackup(input));
     const account = includeAccount ? backup.account : undefined;
     const undo: (() => Promise<void>)[] = [];
     try {
       await prepare();
-      if (account) { await authorize(account.scope); accountReady(account.scope); }
+      if (account) {
+        await authorize(account.scope);
+        accountReady(account.scope);
+      }
       const previous = snapshot(!!account);
       async function apply(operation: () => Promise<void>, rollback: () => Promise<void>) {
         undo.push(rollback);
@@ -106,69 +301,51 @@ export async function restoreSettingsBackup(input: SettingsBackup, includeAccoun
       if (account && previous.account) {
         const original = previous.account;
         // Authentication for enabling a new lock happens before the first profile write.
-        await apply(() => useHiddenMusicStore.getState().restoreProfile(account.hidden, account.scope), () => useHiddenMusicStore.getState().restoreProfile(original.hidden, original.scope));
-        await apply(() => usePlaylistStore.getState().restoreProfile(account.playlists, account.scope), () => usePlaylistStore.getState().restoreProfile(original.playlists, original.scope));
+        await apply(
+          () => useHiddenMusicStore.getState().restoreProfile(account.hidden, account.scope),
+          () => useHiddenMusicStore.getState().restoreProfile(original.hidden, original.scope),
+        );
+        await apply(
+          () => usePlaylistStore.getState().restoreProfile(account.playlists, account.scope),
+          () => usePlaylistStore.getState().restoreProfile(original.playlists, original.scope),
+        );
       }
-      const display = useDisplayPreferences.getState(), library = useLibraryPreferences.getState(), streaming = useStreamingPreferences.getState(), folders = useFolderExclusionStore.getState();
-      const hideArtwork = (value: boolean) => checked(() => display.setHideArtwork(value), () => useDisplayPreferences.getState().error);
-      const folderAlbums = (value: boolean) => checked(() => library.setIncludeFolderAlbums(value), () => useLibraryPreferences.getState().error);
-      await apply(() => hideArtwork(backup.preferences.hideArtwork), () => hideArtwork(previous.preferences.hideArtwork));
-      if (backup.preferences.playOnSeek !== undefined && previous.preferences.playOnSeek !== undefined) {
-        const enabled = backup.preferences.playOnSeek, original = previous.preferences.playOnSeek;
-        await apply(() => usePlaybackPreferences.getState().setPlayOnSeek(enabled), () => usePlaybackPreferences.getState().setPlayOnSeek(original));
-      }
-      await apply(() => folderAlbums(backup.preferences.includeFolderAlbums), () => folderAlbums(previous.preferences.includeFolderAlbums));
-      if (backup.preferences.groupAlbumsByTitle !== undefined && previous.preferences.groupAlbumsByTitle !== undefined) {
-        const enabled = backup.preferences.groupAlbumsByTitle, original = previous.preferences.groupAlbumsByTitle;
-        const grouping = (value: boolean) => checked(() => library.setGroupAlbumsByTitle(value), () => useLibraryPreferences.getState().error);
-        await apply(() => grouping(enabled), () => grouping(original));
-      }
-      if (backup.preferences.menus && previous.preferences.menus) {
-        const menus = backup.preferences.menus, original = previous.preferences.menus;
-        const restoreMenus = (value: typeof menus) => checked(() => useMenuPreferences.getState().restore(value), () => useMenuPreferences.getState().error);
-        await apply(() => restoreMenus(menus), () => restoreMenus(original));
-      }
-      await apply(() => streaming.setQuality(backup.preferences.quality), () => streaming.setQuality(previous.preferences.quality));
-      await apply(() => folders.setFolders(backup.preferences.excludedFolders), () => folders.setFolders(previous.preferences.excludedFolders));
-      if (backup.preferences.themeMode !== undefined && previous.preferences.themeMode !== undefined) {
-        const mode = backup.preferences.themeMode, original = previous.preferences.themeMode;
-        await apply(() => useThemePreferences.getState().setMode(mode), () => useThemePreferences.getState().setMode(original));
-      }
-      if (backup.preferences.libraryDetails && previous.preferences.libraryDetails) {
-        const preferences = backup.preferences.libraryDetails, original = previous.preferences.libraryDetails;
-        await apply(() => useLibraryDetailPreferences.getState().restore(preferences), () => useLibraryDetailPreferences.getState().restore(original));
-      }
-      if (backup.preferences.haptics && previous.preferences.haptics) {
-        const preferences = backup.preferences.haptics, original = previous.preferences.haptics;
-        await apply(() => useHapticPreferences.getState().restore(preferences), () => useHapticPreferences.getState().restore(original));
-      }
-      if (backup.preferences.favoriteDisplay && previous.preferences.favoriteDisplay) {
-        const preferences = backup.preferences.favoriteDisplay, original = previous.preferences.favoriteDisplay;
-        await apply(() => useFavoriteDisplayPreferences.getState().restore(preferences), () => useFavoriteDisplayPreferences.getState().restore(original));
-      }
-      if (backup.preferences.blur && previous.preferences.blur) {
-        const preferences = backup.preferences.blur, original = previous.preferences.blur;
-        await apply(() => useBlurPreferences.getState().restore(preferences), () => useBlurPreferences.getState().restore(original));
-      } else if (backup.preferences.blurEnabled !== undefined && previous.preferences.blurEnabled !== undefined) {
-        const enabled = backup.preferences.blurEnabled, original = previous.preferences.blurEnabled;
-        await apply(() => useBlurPreferences.getState().setEnabled(enabled), () => useBlurPreferences.getState().setEnabled(original));
-      }
-      if (backup.preferences.appearance && previous.preferences.appearance) {
-        const preferences = backup.preferences.appearance, original = previous.preferences.appearance;
-        await apply(() => useAppearancePreferences.getState().restore(preferences), () => useAppearancePreferences.getState().restore(original));
-      }
+      await applyBackupPreferences(backup, previous, apply);
       if (account && previous.account) {
-        const access = useHiddenFeatureAccess.getState(), original = previous.account.access;
-        const mode = (value: typeof original.quickHideMode) => checked(() => access.setQuickHideMode(value), () => useHiddenFeatureAccess.getState().error);
-        await apply(() => mode(account.access.quickHideMode), () => mode(original.quickHideMode));
-        await apply(() => access.restoreEnabled(account.access.enabled), () => access.restoreEnabled(original.enabled));
+        const access = useHiddenFeatureAccess.getState(),
+          original = previous.account.access;
+        const mode = (value: typeof original.quickHideMode) =>
+          checked(
+            () => access.setQuickHideMode(value),
+            () => useHiddenFeatureAccess.getState().error,
+          );
+        await apply(
+          () => mode(account.access.quickHideMode),
+          () => mode(original.quickHideMode),
+        );
+        await apply(
+          () => access.restoreEnabled(account.access.enabled),
+          () => access.restoreEnabled(original.enabled),
+        );
       }
     } catch (cause) {
       let failed = false;
-      for (const rollback of undo.reverse()) { try { await rollback(); } catch { failed = true; } }
+      for (const rollback of undo.reverse()) {
+        try {
+          await rollback();
+        } catch {
+          failed = true;
+        }
+      }
       const message = cause instanceof Error ? cause.message : '설정을 복구하지 못했습니다.';
-      if (failed) throw new Error(message + '\n일부 설정을 원래대로 되돌리지 못했습니다. 설정을 확인한 후 백업 파일로 다시 복구해 주세요.');
+      if (failed)
+        throw new Error(
+          message +
+            '\n일부 설정을 원래대로 되돌리지 못했습니다. 설정을 확인한 후 백업 파일로 다시 복구해 주세요.',
+        );
       throw new Error(message + (undo.length ? '\n기존 설정으로 되돌렸습니다.' : ''));
-    } finally { if (account) useHiddenMusicStore.getState().lock(); }
+    } finally {
+      if (account) useHiddenMusicStore.getState().lock();
+    }
   });
 }

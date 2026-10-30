@@ -51,3 +51,31 @@ Docs: https://docs.expo.dev/eas/index.md
 - Do not modify generated files to fix application bugs.
 - Fix problems in source files or project configuration instead.
 - Expo CLI commands may regenerate `.expo/` files as a side effect.
+
+## Code Quality
+
+- Prioritize human readability and maintainability.
+- Keep modules focused on a clear responsibility.
+- Prefer simple, explicit code over clever abstractions.
+- Split large modules only when responsibilities are distinct.
+- Consolidate duplicated behavior when semantics match.
+- Keep interfaces consistent across equivalent services.
+- Avoid unnecessary layers, wrappers, and abstractions.
+- Follow existing architectural boundaries and conventions.
+- Preserve existing behavior during refactoring.
+- Validate affected functionality after changes.
+
+## Human-Readable Code Style
+
+Write code for human readability, not minimum line count.
+
+- Prefer explicit, multi-line control flow.
+- Always use braces for if, else, and loops.
+- Avoid compressed one-line expressions.
+- Give complex conditions meaningful names.
+- Separate logical steps with blank lines.
+- Prefer clear intermediate variables.
+- Avoid clever or overly dense code.
+- Extract functions only for meaningful responsibilities.
+- Keep related code together when it improves readability.
+- Optimize for comprehension over brevity.

@@ -172,7 +172,6 @@ async function checkLibraryAndRecovery(s3) {
   playback.getState().setQueue([track], 0);
   let saved;
   const auth = { mode: 'setup', session: null };
-  const persistCallbacks = [];
   const persistence = load('src/services/playback/persistence.ts', {
     'react-native': { Platform: { OS: 'android' }, AppState: { addEventListener: () => ({ remove: () => {} }) } },
     '@/stores/s3': { useS3Store: s3 }, '@/stores/playback': { usePlaybackStore: playback },
@@ -183,8 +182,8 @@ async function checkLibraryAndRecovery(s3) {
     '@/features/hidden-music/rules': rules,
     '@/services/synology/api': { SynologyClient: class {} },
     'expo-sqlite/kv-store': { __esModule: true, default: { getItem: async () => saved, setItem: async (_key, value) => { saved = value; }, removeItem: async () => { saved = null; } } },
-  }, { setTimeout: callback => { persistCallbacks.push(callback); return callback; }, clearTimeout: () => {} });
-  const stop = persistence.startPlaybackPersistence(); persistCallbacks[0](); await until(() => !!saved); stop();
+  });
+  const stop = persistence.startPlaybackPersistence(); await until(() => !!saved); stop();
   assert.ok(!saved.includes('X-Amz')); assert.ok(!saved.includes(input.secretAccessKey)); assert.ok(!saved.includes(input.sessionToken));
   assert.equal((await persistence.readRestoredPlayback()).queue[0].id, track.id);
   const connection = s3.getState().connection;

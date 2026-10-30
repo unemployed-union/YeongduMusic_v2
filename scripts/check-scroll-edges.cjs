@@ -1,4 +1,4 @@
-﻿const assert = require('node:assert/strict');
+const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const root = process.argv[2] ? path.resolve(process.argv[2]) : path.resolve(__dirname, '..');

@@ -195,6 +195,6 @@ async function checkUI() {
   assert.equal(queryEnabled, true); nodes(screen).find(node => node.type === 'List').props.onScroll({}); assert.equal(scrolled, 'favorites');
 }
 (async () => {
-  checkIdentityAndVisibility(); await checkStorage(); await checkUI();
+  checkIdentityAndVisibility(); await checkStorage(); await checkDisplayStorage(); await checkUI();
   console.log('PASS: Android/iOS/web persistence and restart, account/source identities, ordered and idempotent writes, corruption/read/write recovery, hidden-song filtering, fresh metadata, favorite buttons, collection removal and playback queue. Native UI/storage are mocked.');
 })().catch(error => { console.error(error); process.exitCode = 1; });

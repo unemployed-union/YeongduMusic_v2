@@ -1,9 +1,27 @@
 export type StreamingQuality = 'original' | 'mp3';
 
 export type MusicSourceFilter = 'all' | 'nas' | 'local' | 'drive' | 's3' | 'mybox';
-export type LocalFile = { fileName: string; originalName: string; size: number; mimeType?: string; originalFolders?: string[]; downloadedFrom?: 'nas' | 'drive' | 's3' | 'mybox' };
-export type SongMetadata = { title: string; artist: string; album: string; albumArtist?: string; year?: number; trackNumber?: number; discNumber?: number };
-export type OriginalSongMetadata = SongMetadata & { albumId?: string; albumSource?: 'tag' | 'fallback' };
+export type LocalFile = {
+  fileName: string;
+  originalName: string;
+  size: number;
+  mimeType?: string;
+  originalFolders?: string[];
+  downloadedFrom?: 'nas' | 'drive' | 's3' | 'mybox';
+};
+export type SongMetadata = {
+  title: string;
+  artist: string;
+  album: string;
+  albumArtist?: string;
+  year?: number;
+  trackNumber?: number;
+  discNumber?: number;
+};
+export type OriginalSongMetadata = SongMetadata & {
+  albumId?: string;
+  albumSource?: 'tag' | 'fallback';
+};
 
 export type Song = {
   id: string;
@@ -27,11 +45,47 @@ export type Song = {
   /** Original display fields allow local edits to be removed from a queued song. */
   metadataOriginal?: OriginalSongMetadata;
   artworkOriginal?: { artworkUrl?: string; palette?: readonly [string, string] };
-} & ({ source?: 'nas'; nasId?: string; local?: never; drive?: never; s3?: never; mybox?: never }
+} & (
+  | { source?: 'nas'; nasId?: string; local?: never; drive?: never; s3?: never; mybox?: never }
   | { source: 'local'; local: LocalFile; drive?: never; s3?: never; mybox?: never }
-  | { source: 'drive'; drive: { fileId: string; accountId: string; mimeType: string; size?: number; modifiedTime?: string; documentUri?: string }; local?: never; nasId?: never; s3?: never; mybox?: never }
-  | { source: 's3'; s3: { connectionId: string; key: string; size: number; modifiedTime?: string }; local?: never; drive?: never; nasId?: never; mybox?: never }
-  | { source: 'mybox'; mybox: { connectionId: string; fileId: string; fileName: string; size: number; modifiedTime?: string }; local?: never; drive?: never; s3?: never; nasId?: never });
+  | {
+      source: 'drive';
+      drive: {
+        fileId: string;
+        accountId: string;
+        mimeType: string;
+        size?: number;
+        modifiedTime?: string;
+        documentUri?: string;
+      };
+      local?: never;
+      nasId?: never;
+      s3?: never;
+      mybox?: never;
+    }
+  | {
+      source: 's3';
+      s3: { connectionId: string; key: string; size: number; modifiedTime?: string };
+      local?: never;
+      drive?: never;
+      nasId?: never;
+      mybox?: never;
+    }
+  | {
+      source: 'mybox';
+      mybox: {
+        connectionId: string;
+        fileId: string;
+        fileName: string;
+        size: number;
+        modifiedTime?: string;
+      };
+      local?: never;
+      drive?: never;
+      s3?: never;
+      nasId?: never;
+    }
+);
 
 export type Album = {
   id: string;
@@ -46,10 +100,13 @@ export type Album = {
 export type Artist = { id: string; name: string; albumCount?: number };
 export type Page<T> = { items: T[]; total: number; stale?: boolean };
 export type PageRequest = { offset: number; limit: number; signal?: AbortSignal };
+export type UriSource = { uri: string; headers?: Record<string, string> };
+export type PlaybackSource = { uri?: string; assetId?: number; headers?: Record<string, string> };
+export type SourceRequest = { signal?: AbortSignal; refreshCredentials?: boolean };
 
 export interface MusicRepository {
   songs(page: PageRequest): Promise<Page<Song>>;
   albums(page: PageRequest): Promise<Page<Album>>;
   artists(page: PageRequest): Promise<Page<Artist>>;
-  streamSource(song: Song): Promise<{ uri?: string; assetId?: number; headers?: Record<string, string> }>;
+  streamSource(song: Song): Promise<PlaybackSource>;
 }

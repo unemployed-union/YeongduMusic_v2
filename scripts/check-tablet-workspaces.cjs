@@ -10,7 +10,6 @@ function read(file, modules = {}) {
   return exports;
 }
 const nodes = tree => Array.isArray(tree) ? tree.flatMap(nodes) : tree && typeof tree === 'object' ? [tree, ...nodes(tree.props?.children)] : [];
-const style = value => Object.assign({}, ...[value].flat(Infinity).filter(Boolean));
 const jsx = (type, props, key) => ({ type, props, key });
 const geometry = read('src/theme/layout.ts'), navigation = read('src/features/settings/settings-navigation.ts');
 let dimensions = { width: 1280, height: 800, fontScale: 1 }, extras = false;

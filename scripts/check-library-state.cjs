@@ -1,13 +1,8 @@
-/* global __dirname */
-const assert = require('node:assert/strict'), fs = require('node:fs'), path = require('node:path');
-const ts = require('typescript'), { create } = require('zustand');
+const assert = require('node:assert/strict');
+const { create } = require('zustand');
 const { QueryClient, QueryObserver } = require('@tanstack/react-query');
-const root = path.resolve(__dirname, '..');
 function load(file, modules = {}) {
-  const code = ts.transpileModule(fs.readFileSync(path.join(root, file), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
-  const exports = {};
-  new Function('require', 'exports', code)(name => { if (name in modules) return modules[name]; throw Error('Unexpected module ' + name); }, exports);
-  return exports;
+  return require('./test-source-loader.cjs').loadSource(file, modules);
 }
 function deferred() { let resolve, reject; const promise = new Promise((ok, no) => { resolve = ok; reject = no; }); return { promise, resolve, reject }; }
 const tick = async () => { for (let i = 0; i < 25; i++) await Promise.resolve(); };

@@ -20,8 +20,6 @@ const db = new DatabaseSync(':memory:');
 let failedWrite = false, authFailure = false, authDelay = null, authCalls = 0;
 const storage = load('src/services/hidden-music/storage.ts', {
   '@/components/text': { Text: 'Text' },
-  '@/components/text': { Text: 'Text' },
-  '@/components/text': { Text: 'Text' },
   'react-native': { Platform: { OS: 'android' } }, '@/features/hidden-music/rules': rules,
   'expo-sqlite': { openDatabaseAsync: async () => ({
     execAsync: async sql => db.exec(sql),
@@ -45,8 +43,6 @@ const jsx = (type, props) => ({ type, props });
 const uiModules = {
   react: { useState: initial => [initial, () => {}], useMemo: fn => fn(), useCallback: fn => fn, useEffect: () => {} },
   'react/jsx-runtime': { jsx, jsxs: jsx },
-  '@/components/text': { Text: 'Text' },
-  '@/components/text': { Text: 'Text' },
   '@/components/text': { Text: 'Text' },
   'react-native': { ...Object.fromEntries(nativeNames.map(name => [name, name])), Alert: { alert: () => {} }, Platform: { OS: 'android' }, StyleSheet: { create: x => x, absoluteFill: {}, hairlineWidth: 1 } },
   'expo-router': { Redirect: 'Redirect', router: { push: () => {}, replace: () => {} }, useLocalSearchParams: () => ({ id: 'private' }), useFocusEffect: fn => { cleanup = fn(); } },
@@ -126,8 +122,6 @@ async function main() {
   featureAccess.ready = true; featureAccess.enabled = true;
   const Settings = load('src/app/settings.tsx', {
     ...uiModules,
-    '@/components/text': { Text: 'Text' },
-  '@/components/text': { Text: 'Text' },
   '@/components/text': { Text: 'Text' },
   'react-native': { ...uiModules['react-native'], Keyboard: { dismiss: () => {} } },
     'react-native-keyboard-controller': { KeyboardAwareScrollView: 'KeyboardAwareScrollView' },
