@@ -1,3 +1,4 @@
+import { providerForSong } from '@/services/music-providers/registry';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Image, Platform, Pressable, StyleSheet, View } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -114,10 +115,8 @@ export function ArtworkEditor({
       (item) => metadataKey(item, scope) !== key && keys.includes(metadataKey(item, scope) ?? ''),
     ),
   ];
-  const fileTargets = targetSongs.filter(
-    (item) => item.source !== 'drive' && item.source !== 'mybox',
-  );
-  const cloudFileWriteBlocked = song.source === 'drive' || song.source === 'mybox';
+  const fileTargets = targetSongs.filter((item) => !!providerForSong(item).fileWrite);
+  const cloudFileWriteBlocked = !providerForSong(song).fileWrite;
   const fileUnavailable = cloudFileWriteBlocked
     ? fileWriteDescription(song)
     : (fileTargets
@@ -535,7 +534,7 @@ export function ArtworkEditor({
             {cloudFileWriteBlocked ? (
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel={`${song.source === 'mybox' ? 'MYBOX' : 'Google Drive'} 앨범아트 파일 직접 수정 안내`}
+                accessibilityLabel={`${providerForSong(song).name} 앨범아트 파일 직접 수정 안내`}
                 style={styles.button}
                 disabled={busy}
                 onPress={() => setToast({ message: fileWriteDescription(song) })}

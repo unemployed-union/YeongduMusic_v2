@@ -57,7 +57,7 @@ async function main() {
   );
 
   const failure = new Error('provider failure');
-  const sources = loadSource('src/services/playback/source.ts', {
+  const sourceModules = {
     '@/services/cloud-music/source': cloud,
     '@/services/local-music/storage': { localSource: async () => ({ uri: 'file:///local/audio' }) },
     '@/features/library/repository': {
@@ -68,6 +68,10 @@ async function main() {
         },
       }),
     },
+  };
+  const sources = loadSource('src/services/playback/source.ts', {
+    ...sourceModules,
+    ...require('./test-provider-fixtures.cjs').providerFixtures(sourceModules),
   });
   assert.deepEqual(await sources.resolvePlaybackSource({ source: 'local' }), {
     uri: 'file:///local/audio',

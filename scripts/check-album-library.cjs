@@ -146,11 +146,11 @@ async function main() {
   assert.equal(albums.getCurrentResult().data.items.find(item => item.id === compilation.id).songCount, 4);
   assert.deepEqual(detail.getCurrentResult().data.items.map(song => song.id), ['track1', 'track2', 'disc2', 'new-track']);
   assert.equal(client.getQueryState(['song-library', 'other-account']).isInvalidated, false);
-  const oldSid = state.session.sid;
-  state.session = { ...state.session, sid: 'different-account' };
+  const oldSession = state.session;
+  state.session = { ...state.session, account: 'different-account' };
   const other = new tanstack.QueryObserver(client, queries.useAlbums());
   assert.equal(other.getCurrentResult().data, undefined);
-  state.session.sid = oldSid;
+  state.session = oldSession;
 
   const mockLibrary = await metadata.loadSongLibrary(mockRepository, new AbortController().signal);
   const mockResult = albumHelpers.albumsFromSongs(mockLibrary);

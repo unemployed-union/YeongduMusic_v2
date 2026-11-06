@@ -2,7 +2,7 @@ const assert = require('node:assert/strict');
 const { create } = require('zustand');
 const { QueryClient, QueryObserver } = require('@tanstack/react-query');
 function load(file, modules = {}) {
-  return require('./test-source-loader.cjs').loadSource(file, modules);
+  return require('./test-source-loader.cjs').loadSource(file, { ...require('./test-cloud-fixtures.cjs').cloudFixtures({}, modules), ...modules });
 }
 function deferred() { let resolve, reject; const promise = new Promise((ok, no) => { resolve = ok; reject = no; }); return { promise, resolve, reject }; }
 const tick = async () => { for (let i = 0; i < 25; i++) await Promise.resolve(); };
@@ -46,7 +46,7 @@ function harness(source = 'all') {
 async function main() {
   {
     const h = harness('mybox'); await h.render().refresh();
-    assert.match(h.render().message, /MYBOX/); assert.equal(h.nasCalls, 0);
+    assert.match(h.render().message, /음악 목록/); assert.equal(h.nasCalls, 0);
     const gate = deferred(); h.mybox.setState({ refresh: () => gate.promise });
     const pending = h.render().refresh(); await tick(); h.mybox.setState({ generation: 2, connection: null });
     gate.resolve(); await pending; assert.equal(h.render().message, null, 'A disconnected MYBOX cannot publish a stale success notice');
@@ -85,7 +85,7 @@ async function main() {
   }
   {
     const h = harness('drive'); await h.render().refresh();
-    assert.equal(h.render().message, 'Google Drive 음악 목록을 불러왔습니다.');
+    assert.equal(h.render().message, '음악 목록을 불러왔습니다.');
     h.local.setState({ source: 'local' }); assert.equal(h.render().message, null);
     await h.render().refresh(); assert.equal(h.render().message, '음악 목록을 불러왔습니다.');
     h.unmount(); h.client.clear();
@@ -93,8 +93,8 @@ async function main() {
   {
     const h = harness('all'); h.drive.setState({ refresh: async () => { throw Error('Drive offline'); } }); h.s3.setState({ refresh: async () => { throw Error('S3 offline'); } });
     await h.render().refresh(); assert.equal(h.nasCalls, 1);
-    assert.ok(h.render().message.includes('S3 · Google Drive')); assert.ok(h.render().message.includes('Audio Station'));
-    assert.deepEqual(h.client.getQueryData(['songs', 'nas-fixture']).pages, [{ items: [], total: 0 }]);
+    assert.ok(h.render().message.includes('Google Drive · S3')); assert.ok(h.render().message.includes('사용 가능한 음악 목록'));
+    assert.equal(h.client.getQueryData(['songs', 'nas-fixture']), undefined, 'Provider refresh does not publish unobserved legacy pagination queries');
     h.unmount(); h.client.clear();
   }
   {

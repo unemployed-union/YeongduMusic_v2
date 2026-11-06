@@ -15,6 +15,17 @@ export const musicSourceLabels = {
   nas: 'NAS 음악',
   local: '이 기기 음악',
   drive: 'Google Drive',
-  s3: 'S3',
+  s3: 'S3 (베타)',
   mybox: '네이버 MYBOX',
+  jellyfin: 'Jellyfin (베타)',
+} as const;
+
+export const musicSourceIcons = {
+  all: 'musical-notes-outline',
+  nas: 'server-outline',
+  local: 'phone-portrait-outline',
+  drive: 'logo-google',
+  s3: 'file-tray-stacked-outline',
+  mybox: 'cloud-outline',
+  jellyfin: 'musical-note-outline',
 } as const;

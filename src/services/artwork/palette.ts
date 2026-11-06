@@ -2,6 +2,7 @@ import { Platform } from 'react-native';
 import { requireOptionalNativeModule } from 'expo';
 import type { ImageColorsResult } from 'react-native-image-colors';
 import { cloudRequest } from '@/services/cloud-music/request';
+import { resolveArtworkUri } from '@/services/artwork/source';
 import {
   EXTRACTION_FALLBACK,
   gradientFromImageColors,
@@ -31,7 +32,7 @@ function extractColors(uri: string) {
       if (!module || requestSignal.aborted) {
         return null;
       }
-      const result = await module.getColors(uri, {
+      const result = await module.getColors(await resolveArtworkUri(uri), {
         fallback: EXTRACTION_FALLBACK,
         quality: 'low',
         pixelSpacing: 10,

@@ -271,11 +271,12 @@ async function main() {
   const expired = [];
   const onlineTypes = runtime().exports;
   api.SynologyClient.prototype.lyrics = async () => { nasCalls++; if (nasFailure) throw nasFailure; return nasText; };
+  const lyricAuth = { mode: 'nas', session, generation: 7, expire: async (...args) => expired.push(args) };
   const loader = load('src/features/lyrics/load-lyrics.ts', {
     '@/services/lyrics/parse-lyrics': parser,
     '@/services/lyrics/lrclib': { LyricsRequestError: onlineTypes.LyricsRequestError, checkLyricsCancelled: (signal) => { if (signal?.aborted) { const error = new Error('cancelled'); error.name = 'AbortError'; throw error; } }, onlineLyrics: async () => { onlineCalls++; if (onlineFailure) throw onlineFailure; return onlineDocument; } },
     '@/services/synology/api': api,
-    '@/stores/auth': { useAuthStore: { getState: () => ({ expire: async (...args) => expired.push(args) }) } },
+    '@/stores/auth': { useAuthStore: { getState: () => lyricAuth } },
   });
   const request = { song, source: 'auto', mode: 'nas', session, generation: 7, duration: 120 };
   nasText = '[00:01]NAS synced';
@@ -296,7 +297,9 @@ async function main() {
   const beforeOnlineOnly = nasCalls;
   assert.equal((await loader.loadLyrics({ ...request, source: 'online' })).provider, 'lrclib'); assert.equal(nasCalls, beforeOnlineOnly);
   const beforeDemo = onlineCalls;
+  lyricAuth.mode = 'mock';
   assert.equal((await loader.loadLyrics({ ...request, mode: 'mock' })).provider, 'demo'); assert.equal(onlineCalls, beforeDemo); assert.equal(nasCalls, beforeOnlineOnly);
+  lyricAuth.mode = 'nas';
   nasFailure = new api.SessionExpiredError(106);
   await assert.rejects(loader.loadLyrics(request), api.SessionExpiredError);
   assert.deepEqual(expired[0], [session, 7], 'Pass the captured session/generation to the existing guarded expiry');
@@ -327,10 +330,11 @@ async function main() {
   assert.notDeepEqual(newQuery.queryKey, hook.useLyrics(song, 'nas', 120).queryKey, 'Provider selection isolates cache');
   assert.notDeepEqual(newQuery.queryKey, hook.useLyrics({ ...song, id: 'second-song' }, 'auto', 120).queryKey);
   const queryAbort = new AbortController();
-  await oldQuery.queryFn({ signal: queryAbort.signal });
+  await newQuery.queryFn({ signal: queryAbort.signal });
   assert.equal(lastRequest.signal, queryAbort.signal, 'Query cancellation reaches the loader');
-  assert.equal(lastRequest.session, session, 'The query retains its original session snapshot');
-  assert.equal(lastRequest.generation, 7);
+  assert.equal(lastRequest.session, undefined, 'Credentials stay inside the Provider');
+  assert.throws(() => oldQuery.queryFn({ signal: queryAbort.signal }), /취소/, 'Obsolete query cannot use the new session');
+  assert.equal(lastRequest.generation, undefined, 'The loader obtains the current Provider session internally');
   assert.equal(oldQuery.retry(0, new api.SessionExpiredError(106)), false);
   assert.equal(oldQuery.retry(0, new onlineTypes.LyricsRequestError('rate-limit', 'rate')), false);
   assert.equal(oldQuery.retry(0, new onlineTypes.LyricsRequestError('network', 'network')), true);

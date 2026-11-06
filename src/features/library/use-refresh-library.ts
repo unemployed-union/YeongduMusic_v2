@@ -1,12 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { useAuthStore } from '@/stores/auth';
-import { useS3Store } from '@/stores/s3';
-import { useMyboxStore } from '@/stores/mybox';
-import { useGoogleDriveStore } from '@/stores/google-drive';
-import { useDriveDocumentsStore } from '@/stores/drive-documents';
-import { useLocalMusicStore } from '@/stores/local-music';
 import { captureRefreshContext, refreshMusicLibrary } from './refresh-music-library';
+import { subscribeProviders } from '@/services/music-providers/registry';
+import { useLocalMusicStore } from '@/stores/local-music';
 
 export function useRefreshLibrary() {
   const queryClient = useQueryClient();
@@ -17,55 +13,22 @@ export function useRefreshLibrary() {
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   useEffect(() => {
-    revision.current++;
     mounted.current = true;
+    let context = captureRefreshContext();
     const changed = () => {
-      revision.current++;
-      setMessage(null);
-      setError(null);
+      if (!context.isCurrent()) {
+        revision.current++;
+        context = captureRefreshContext();
+        setMessage(null);
+        setError(null);
+      }
     };
-    const stops = [
-      useLocalMusicStore.subscribe((state, previous) => {
-        if (state.source !== previous.source) {
-          changed();
-        }
-      }),
-      useAuthStore.subscribe((state, previous) => {
-        if (state.generation !== previous.generation) {
-          changed();
-        }
-      }),
-      useGoogleDriveStore.subscribe((state, previous) => {
-        if (
-          state.generation !== previous.generation ||
-          state.account?.id !== previous.account?.id ||
-          state.files !== previous.files
-        ) {
-          changed();
-        }
-      }),
-      useDriveDocumentsStore.subscribe((state, previous) => {
-        if (state.revision !== previous.revision) {
-          changed();
-        }
-      }),
-      useS3Store.subscribe((state, previous) => {
-        if (state.generation !== previous.generation || state.connection !== previous.connection) {
-          changed();
-        }
-      }),
-      useMyboxStore.subscribe((state, previous) => {
-        if (state.generation !== previous.generation || state.connection !== previous.connection) {
-          changed();
-        }
-      }),
-    ];
+    const stops = [subscribeProviders(changed), useLocalMusicStore.subscribe(changed)];
     return () => {
       mounted.current = false;
       stops.forEach((stop) => stop());
     };
   }, []);
-
   const refresh = useCallback(async () => {
     if (running.current || !mounted.current) {
       return;

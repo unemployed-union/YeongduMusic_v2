@@ -1,18 +1,24 @@
-import { isCloudSong } from '@/services/music-source';
-import { resolveCloudPlaybackSource } from '@/services/cloud-music/source';
-import { musicRepository } from '@/features/library/repository';
+import { providerForSong } from '@/services/music-providers/registry';
 import type { Song, PlaybackSource, SourceRequest } from '@/types/music';
 
 export async function resolvePlaybackSource(
   song: Song,
-  { signal, refreshCredentials = false }: SourceRequest = {},
+  options: SourceRequest = {},
 ): Promise<PlaybackSource> {
-  if (song.source === 'local') {
-    const { localSource } = await import('@/services/local-music/storage');
-    return localSource(song);
+  const provider = providerForSong(song);
+  const state = provider.getState();
+  if (options.signal?.aborted) {
+    throw new Error('재생 요청이 취소되었습니다.');
   }
-  if (isCloudSong(song)) {
-    return resolveCloudPlaybackSource(song, { signal, refreshCredentials });
+  const source = await provider.streamSource(song, options);
+  const current = provider.getState();
+  if (
+    options.signal?.aborted ||
+    state.scope !== current.scope ||
+    state.generation !== current.generation
+  ) {
+    await source.release?.().catch(() => {});
+    throw new Error('재생 요청이 취소되었습니다.');
   }
-  return musicRepository().streamSource(song);
+  return source;
 }

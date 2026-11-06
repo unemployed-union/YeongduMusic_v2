@@ -204,6 +204,26 @@ function Navigation() {
           }}
         />
         <Stack.Screen
+          name="server-playlist"
+          options={{
+            headerShown: true,
+            title: '서버 플레이리스트',
+            headerBackTitle: '플레이리스트',
+            headerTintColor: colors.tint,
+            headerStyle: { backgroundColor: colors.background },
+          }}
+        />
+        <Stack.Screen
+          name="settings/cloud/jellyfin"
+          options={{
+            headerShown: !tablet,
+            title: 'Jellyfin (베타)',
+            headerBackTitle: '클라우드 연결',
+            headerTintColor: colors.tint,
+            headerStyle: { backgroundColor: colors.background },
+          }}
+        />
+        <Stack.Screen
           name="settings/cloud/google-drive"
           options={{
             headerShown: !tablet,
@@ -217,7 +237,7 @@ function Navigation() {
           name="settings/cloud/s3"
           options={{
             headerShown: !tablet,
-            title: 'S3 호환 저장소',
+            title: 'S3 호환 저장소 (베타)',
             headerBackTitle: '클라우드 연결',
             headerTintColor: colors.tint,
             headerStyle: { backgroundColor: colors.background },

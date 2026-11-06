@@ -1,10 +1,7 @@
-import { isNasSong } from '@/services/music-source';
 import { useQuery } from '@tanstack/react-query';
+import { providerForSong } from '@/services/music-providers/registry';
+import { useProviderStates } from '@/features/library/use-source-libraries';
 import { loadLyrics } from './load-lyrics';
-import { libraryIdentity } from '@/features/library/repository';
-import { LyricsRequestError } from '@/services/lyrics/lrclib';
-import { SynologyRequestError } from '@/services/synology/api';
-import { useAuthStore } from '@/stores/auth';
 import { usePlaybackVisibility } from '@/features/playback/use-playback-visibility';
 import type { LyricsSource } from '@/types/lyrics';
 import type { Song } from '@/types/music';
@@ -16,16 +13,18 @@ export function useLyrics(
   searchOnline = false,
 ) {
   const visible = usePlaybackVisibility();
-  const mode = useAuthStore((state) => state.mode);
-  const session = useAuthStore((state) => state.session);
-  const generation = useAuthStore((state) => state.generation);
+  useProviderStates();
+  const provider = providerForSong(song);
+  const state = provider.getState();
   const trackDuration = Math.round(duration || song.duration || 0);
+  const selectedSource = source === 'nas' && !provider.lyrics ? 'auto' : source;
   return useQuery({
     queryKey: [
       'lyrics',
-      libraryIdentity(mode, session),
-      generation,
-      source,
+      provider.id,
+      state.scope,
+      state.generation,
+      selectedSource,
       song.id,
       song.title,
       song.artist,
@@ -33,30 +32,38 @@ export function useLyrics(
       trackDuration,
       searchOnline,
     ],
-    queryFn: ({ signal }) =>
-      loadLyrics({
+    queryFn: ({ signal }) => {
+      const current = provider.getState();
+      if (
+        signal.aborted ||
+        current.scope !== state.scope ||
+        current.generation !== state.generation
+      ) {
+        throw new Error('가사 요청이 취소되었습니다.');
+      }
+      return loadLyrics({
         song,
-        source,
-        mode,
-        session,
-        generation,
+        source: selectedSource,
         signal,
         duration: trackDuration,
         searchOnline,
-      }),
-    enabled: visible && (!isNasSong(song) || mode === 'mock' || (mode === 'nas' && !!session)),
-    // A manual search must issue a fresh request even if a prior search was cached.
+      });
+    },
+    enabled: visible && (state.connected || !provider.lyrics),
     staleTime: searchOnline ? 0 : 60 * 60 * 1000,
     refetchOnWindowFocus: !searchOnline,
     refetchOnReconnect: !searchOnline,
     gcTime: 60 * 60 * 1000,
-    retry: (count, error) =>
-      count < 1 &&
-      (error instanceof LyricsRequestError || error instanceof SynologyRequestError) &&
-      (error.kind === 'network' ||
-        error.kind === 'timeout' ||
-        (error.kind === 'http' &&
-          (error instanceof LyricsRequestError ? (error.status ?? 0) : (error.httpStatus ?? 0)) >=
-            500)),
+    retry: (count, error) => {
+      if (count >= 1 || !('kind' in error)) {
+        return false;
+      }
+      const transient = error as Error & { kind?: string; status?: number; httpStatus?: number };
+      return (
+        transient.kind === 'network' ||
+        transient.kind === 'timeout' ||
+        (transient.kind === 'http' && (transient.status ?? transient.httpStatus ?? 0) >= 500)
+      );
+    },
   });
 }

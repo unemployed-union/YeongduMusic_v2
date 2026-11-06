@@ -1,3 +1,4 @@
+import { providerForSong } from '@/services/music-providers/registry';
 import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -76,7 +77,8 @@ export function MetadataEditorForm({
     onBusyChange?.(busy);
   }, [busy, onBusyChange]);
   const fileUnavailable = fileWriteUnavailable(song, auth.mode, Platform.OS);
-  const cloudFileWriteBlocked = song.source === 'drive' || song.source === 'mybox';
+  const cloudFileWriteBlocked = !providerForSong(song).fileWrite;
+  const providerName = providerForSong(song).name;
   const showDriveNotice = () => setToast({ message: fileWriteDescription(song) });
   const fileOption = (
     <>
@@ -198,7 +200,7 @@ export function MetadataEditorForm({
         >
           <Text style={[styles.note, { color: colors.muted }]}>
             {cloudFileWriteBlocked
-              ? `${song.source === 'mybox' ? 'MYBOX' : 'Google Drive'} 원본은 유지하고, 이 기기의 앱에 표시되는 곡 정보만 수정합니다.`
+              ? `${providerName} 원본은 유지하고, 이 기기의 앱에 표시되는 곡 정보만 수정합니다.`
               : '곡 정보를 이 기기의 앱에 저장합니다. 아래 옵션을 켜면 음악 파일의 태그에도 기록합니다.'}
           </Text>
           <MetadataWebOptions
@@ -243,7 +245,7 @@ export function MetadataEditorForm({
           {cloudFileWriteBlocked ? (
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel={`${song.source === 'mybox' ? 'MYBOX' : 'Google Drive'} 파일 직접 수정 안내`}
+              accessibilityLabel={`${providerName} 파일 직접 수정 안내`}
               disabled={busy || unavailable}
               onPress={showDriveNotice}
               style={styles.fileOption}
@@ -310,7 +312,7 @@ export function MetadataEditorForm({
               </Pressable>
               <Text style={[styles.note, { color: colors.muted }]}>
                 {cloudFileWriteBlocked
-                  ? `앱의 수정 내용만 지우고 ${song.source === 'mybox' ? 'MYBOX' : 'Drive'}에서 읽은 곡 정보로 돌아갑니다.`
+                  ? `앱의 수정 내용만 지우고 ${providerName}에서 읽은 곡 정보로 돌아갑니다.`
                   : '앱의 수정 내용만 지웁니다. 파일에 기록한 태그는 되돌리지 않습니다.'}
               </Text>
             </>

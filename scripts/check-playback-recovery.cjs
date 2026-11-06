@@ -36,7 +36,7 @@ const modules = {
 };
 const moduleExports = {};
 new Function('require', 'exports', 'setTimeout', 'clearTimeout', code)(name => {
-  Object.assign(modules, { ...require('./test-cloud-fixtures.cjs').cloudFixtures(), ...modules });
+  Object.assign(modules, { ...require('./test-cloud-fixtures.cjs').cloudFixtures({}, modules), ...modules });
   if (!(name in modules)) throw new Error(`Unexpected dependency: ${name}`);
   return modules[name];
 }, moduleExports, setTimeout, clearTimeout);

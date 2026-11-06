@@ -52,8 +52,11 @@ export function isLosslessSong(song: Song): boolean {
 /** Judge the loaded stream, never a setting that can change after loading it. */
 export function isLosslessPlayback(
   song: Song,
-  source: { uri?: string; assetId?: number },
+  source: { uri?: string; assetId?: number; lossless?: boolean },
 ): boolean {
+  if (source.lossless !== undefined) {
+    return source.lossless;
+  }
   if (!source.uri || source.assetId !== undefined) {
     return false;
   }

@@ -1,15 +1,39 @@
 import { Image, StyleSheet, View } from 'react-native';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { resolveArtworkUri } from '@/services/artwork/source';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useDisplayPreferences } from '@/stores/display-preferences';
 import type { Album, Song } from '@/types/music';
 import { fullArtworkUrl } from '@/services/artwork/image-url';
 
 type Props = { item: Album | Song; size: number; radius?: number; fullResolution?: boolean };
+function ProtectedArtworkImage({ uri }: { uri: string }) {
+  const [resolved, setResolved] = useState<{ source: string; uri: string } | null>(null);
+  useEffect(() => {
+    let active = true;
+    void resolveArtworkUri(uri)
+      .then((value) => {
+        if (active) {
+          setResolved({ source: uri, uri: value });
+        }
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, [uri]);
+  return resolved?.source === uri ? (
+    <ArtworkImage uri={resolved.uri} fullResolution={false} />
+  ) : null;
+}
+
 function ArtworkImage({ uri, fullResolution }: { uri: string; fullResolution: boolean }) {
   const [failed, setFailed] = useState<string | null>(null);
   const full = fullResolution ? fullArtworkUrl(uri) : uri;
   const source = failed === full ? uri : full;
+  if (source.startsWith('jellyfin-artwork:')) {
+    return <ProtectedArtworkImage uri={source} />;
+  }
   return (
     <Image
       source={{ uri: source }}

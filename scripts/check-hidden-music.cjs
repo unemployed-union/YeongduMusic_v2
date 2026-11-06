@@ -229,6 +229,14 @@ async function main() {
   await privacy.getState().load('another-account');
   assert.equal(playback.getState().queue.length, 0);
 
+  await privacy.getState().load('demo');
+  const localSong = { ...songs[2], id: 'local:remaining', source: 'local', local: { fileName: 'remaining.mp3' } };
+  playback.getState().setQueue([songs[2], localSong], 0);
+  playback.getState().setStatus({ playing: true });
+  await privacy.getState().load('another-account');
+  assert.deepEqual(playback.getState().queue.map(song => song.id), [localSong.id], 'NAS account changes preserve other providers in a mixed queue');
+  assert.equal(playback.getState().playing, false, 'Removing the current account song stops playback');
+
   // Native authentication options and failure paths, never actual biometrics.
   let options;
   let authResult = { success: true };

@@ -35,6 +35,7 @@ type State = {
   connect: () => Promise<void>;
   disconnect: () => Promise<void>;
   refresh: () => Promise<void>;
+  cancelLibrary: () => void;
   cancelConnection: () => void;
   accessToken: (accountId: string, rejectedToken?: string) => Promise<string>;
 };
@@ -141,11 +142,7 @@ export const useGoogleDriveStore = create<State>((set, get) => {
           set({ ready: true, busy: false, progress: null });
         }
       }
-      if (current(generation) && get().account) {
-        await get()
-          .refresh()
-          .catch(() => {});
-      }
+      // The selected Provider loads music after connection restoration.
     },
     connect: async () => {
       const generation = begin();
@@ -291,6 +288,11 @@ export const useGoogleDriveStore = create<State>((set, get) => {
           }
         }
       }
+    },
+    cancelLibrary: () => {
+      libraryRequest?.abort();
+      libraryRequest = null;
+      set({ loading: false, metadataLoading: false });
     },
     refresh: async () => {
       const { account, files } = get();

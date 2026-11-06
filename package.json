@@ -62,6 +62,7 @@
     "web": "expo start --web",
     "version:build": "node scripts/bump-build-version.cjs",
     "build:android": "node scripts/bump-build-version.cjs && expo run:android --variant release",
+    "build:android:local": "pnpm run build:android",
     "build:ios": "node scripts/bump-build-version.cjs && expo run:ios --configuration Release",
     "build:eas": "node scripts/bump-build-version.cjs && pnpm dlx eas-cli@latest build",
     "lint": "expo lint",

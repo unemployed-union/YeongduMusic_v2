@@ -35,7 +35,7 @@ async function main() {
     setTimeout: (callback, delay) => { const id = ++timerId; timers.set(id, { callback, at: now + delay }); return id; },
     clearTimeout: id => timers.delete(id),
   };
-  const persistence = loadSource('src/services/playback/persistence.ts', dependencies, globals);
+  const persistence = loadSource('src/services/playback/persistence.ts', { ...dependencies, ...require('./test-provider-fixtures.cjs').providerFixtures(dependencies, globals) }, globals);
   playback.getState().setQueue(queue, 0); playback.getState().setStatus({ position: 15, duration: 180, playing: true, buffering: false });
   const stop = persistence.startPlaybackPersistence();
   background(); await flush();

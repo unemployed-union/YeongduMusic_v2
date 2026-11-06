@@ -349,6 +349,35 @@ exports.cloudFixtures = (globals = {}, dependencies = {}) => {
     './mybox': { useMyboxStore },
   };
   const boundaries = { ...modules, ...dependencies };
+  boundaries.react = {
+    ...boundaries.react,
+    useSyncExternalStore:
+      boundaries.react?.useSyncExternalStore ?? ((subscribe, snapshot) => snapshot()),
+    useEffect: boundaries.react?.useEffect ?? (() => {}),
+  };
+  const providerModules = require('./test-provider-fixtures.cjs').providerFixtures(
+    boundaries,
+    globals,
+  );
+  Object.assign(modules, providerModules);
+  Object.assign(boundaries, providerModules);
+  modules['@/features/playlists/server-playlists'] = { ServerPlaylists: 'ServerPlaylists' };
+  modules['@/services/artwork/source'] = providerModules['@/services/artwork/source'];
+  modules['./source'] = providerModules['./source'];
+  const localState = { ready: true, songs: [], allSongs: [], source: 'all', load: async () => {} };
+  modules['@/stores/local-music'] = dependencies['@/stores/local-music'] ?? {
+    useLocalMusicStore: Object.assign((select) => (select ? select(localState) : localState), {
+      getState: () => localState,
+      subscribe: () => () => {},
+    }),
+  };
+  boundaries['@/stores/local-music'] ??= modules['@/stores/local-music'];
+  modules['@/stores/jellyfin'] = dependencies['@/stores/jellyfin'] ?? {
+    useJellyfinStore: Object.assign((select) => (select ? select(state) : state), {
+      getState: () => state,
+      subscribe: () => () => {},
+    }),
+  };
   const sourceCache = new Map();
   function lazySource(file) {
     let loaded;
@@ -360,17 +389,18 @@ exports.cloudFixtures = (globals = {}, dependencies = {}) => {
     });
   }
   for (const [name, file] of Object.entries({
-    './source': 'src/services/playback/source.ts',
     '@/features/startup/use-app-bootstrap': 'src/features/startup/use-app-bootstrap.ts',
     '@/features/startup/use-playback-recovery': 'src/features/startup/use-playback-recovery.ts',
     './refresh-source-libraries': 'src/features/library/refresh-source-libraries.ts',
     './song-library': 'src/features/library/song-library.ts',
     './use-source-libraries': 'src/features/library/use-source-libraries.ts',
+    '@/features/library/use-source-libraries': 'src/features/library/use-source-libraries.ts',
     '@/services/metadata/written-song': 'src/services/metadata/written-song.ts',
     './written-song': 'src/services/metadata/written-song.ts',
     './database': 'src/services/local-music/database.ts',
     './files': 'src/services/local-music/files.ts',
     './metadata-recovery': 'src/services/local-music/metadata-recovery.ts',
+    '@/services/music-providers/cache': 'src/services/music-providers/cache.ts',
   })) modules[name] = lazySource(file);
   return modules;
 };

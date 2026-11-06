@@ -136,7 +136,7 @@ async function main() {
     '@/stores/auth': { useAuthStore: select => select({ mode: 'setup', session: null }) },
     '@/stores/local-music': { useLocalMusicStore: select => select({ ready: true, source: selectedSource, songs: [] }) },
     '@/stores/google-drive': { useGoogleDriveStore: select => select({ songs: [], loading: false, error: null }) },
-    '@/stores/mybox': { useMyboxStore: select => select({ songs: [savedSong], loading: false, busy: false, error: null }) },
+    '@/stores/mybox': { useMyboxStore: select => select({ connection: { id: savedSong.mybox.connectionId, folder: '/Music/' }, songs: [savedSong], loading: false, busy: false, error: null }) },
     '@/stores/hidden-music': { useHiddenMusicStore: select => select({ ready: true, profile: { presets: [] } }) },
     '@/stores/library-preferences': { useLibraryPreferences: select => select({ ready: true, includeFolderAlbums: true }) },
     '../hidden-music/rules': { privacyScope: () => null, visibleSongs: library => library },

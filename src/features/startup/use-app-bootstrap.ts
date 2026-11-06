@@ -12,7 +12,7 @@ import { privacyScope } from '@/features/hidden-music/rules';
 import { checkSleepTimer, reconcilePlaybackVisibility } from '@/services/playback/controller';
 
 export function useAppBootstrap() {
-  const { ready, mode, session, bootstrap } = useAuthStore();
+  const { ready, mode, session } = useAuthStore();
   const displayReady = useDisplayPreferences((state) => state.ready);
   const loadDisplayPreferences = useDisplayPreferences((state) => state.load);
   useEffect(() => {
@@ -31,9 +31,6 @@ export function useAppBootstrap() {
   const loadPlaylists = usePlaylistStore((state) => state.load);
   const scope = privacyScope(mode, session);
   const sources = useMusicSourceBootstrap();
-  useEffect(() => {
-    void bootstrap();
-  }, [bootstrap]);
   useEffect(() => {
     if (ready && mode === 'setup') {
       reconcilePlaybackVisibility();

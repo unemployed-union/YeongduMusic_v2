@@ -7,6 +7,7 @@ interface Runtime {
   getGeneration(): number;
   getPosition(): number;
   getEngine(): AudioEngine | null;
+  seek?: (seconds: number) => Promise<void>;
   checkSleepTimer(fromEnd?: boolean): boolean;
 }
 
@@ -16,6 +17,7 @@ export function createSectionRepeatController({
   getGeneration,
   getPosition,
   getEngine,
+  seek,
   checkSleepTimer,
 }: Runtime) {
   let sectionTimeout: ReturnType<typeof setTimeout> | null = null;
@@ -151,8 +153,7 @@ export function createSectionRepeatController({
       clearTimeout(sectionTimeout);
     }
     sectionTimeout = null;
-    void currentEngine
-      .seek(repeat.start, true)
+    void (seek ? seek(repeat.start) : currentEngine.seek(repeat.start, true))
       .then(() => {
         const latest = usePlaybackStore.getState();
         if (

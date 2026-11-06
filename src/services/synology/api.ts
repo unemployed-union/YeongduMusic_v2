@@ -478,12 +478,8 @@ export class SynologyClient {
     const taggedAlbum = string(tags.album).trim();
     const album = taggedAlbum || string(item.album).trim() || '알 수 없는 앨범';
     return {
-      id:
-        id.startsWith('local:') || id.startsWith('drive:') || id.startsWith('s3:')
-          ? 'nas:' + id
-          : id,
-      nasId:
-        id.startsWith('local:') || id.startsWith('drive:') || id.startsWith('s3:') ? id : undefined,
+      id: /^(local|drive|s3|mybox|jellyfin):/.test(id) ? 'nas:' + id : id,
+      nasId: /^(local|drive|s3|mybox|jellyfin):/.test(id) ? id : undefined,
       source: 'nas',
       ...encoding,
       path: string(item.path) || undefined,

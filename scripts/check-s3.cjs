@@ -246,7 +246,9 @@ async function checkPlayback(s3) {
   await until(() => loaded.length === 4);
   assert.equal(nasChecks, 0); assert.equal(engines, 1, 'All sources share one engine');
   controller.reconcilePlaybackVisibility(song => song.source === 's3');
-  assert.equal(playback.getState().queue.length, 0, 'Disconnecting the active S3 source stops its queue');
+  assert.equal(playback.getState().playing, false, 'Disconnecting the active S3 source stops playback');
+  assert.equal(playback.getState().queue.length, 2, 'Other services remain in the paused queue');
+  assert(playback.getState().queue.every(song => song.source !== 's3'));
 }
 async function checkDownload(s3) {
   const track = s3.getState().songs[0], temporary = new Set(), saved = [];

@@ -1,4 +1,5 @@
 import { PlayerHeader } from './player-header';
+import { providerForSong } from '@/services/music-providers/registry';
 import { PlayerQueue } from './player-queue';
 import { PlayerSongDetails } from './player-song-details';
 import {
@@ -38,7 +39,6 @@ import { useLibraryPreferences } from '@/stores/library-preferences';
 import { usePlayerBackgroundStore } from '@/stores/player-background';
 import { AddToPlaylistDialog } from '@/features/playlists/dialogs';
 import { LyricsPanel } from '@/features/lyrics/lyrics-panel';
-import { useAuthStore } from '@/stores/auth';
 import { useOfflineMusicStore } from '@/stores/offline-music';
 import { DownloadStatus } from '@/features/offline-music/download-status';
 import type { LyricsSource } from '@/types/lyrics';
@@ -68,7 +68,6 @@ export function PlayerScreen() {
   const glass = useLiquidGlass();
   const song = queue[index];
   const section = usePlaybackStore((state) => state.sectionRepeat);
-  const mode = useAuthStore((state) => state.mode);
   const artist = song ? artistName(song.artist) : '';
   const insets = useSafeAreaInsets();
   const { width, height, fontScale } = useWindowDimensions();
@@ -422,10 +421,7 @@ export function PlayerScreen() {
           <PlayerMenu
             key={`${menu}-${song.id}`}
             canDownload={
-              song.source === 'mybox' ||
-              song.source === 's3' ||
-              song.source === 'drive' ||
-              (song.source !== 'local' && mode === 'nas')
+              !!providerForSong(song).download && providerForSong(song).getState().connected
             }
             localSong={song.source === 'local'}
             kind={menu ?? 'playback'}

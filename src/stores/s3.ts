@@ -28,6 +28,7 @@ type State = {
   connect: (input: S3Input) => Promise<void>;
   disconnect: () => Promise<void>;
   refresh: () => Promise<void>;
+  cancelLibrary: () => void;
   cancel: () => void;
   source: (song: Song) => Promise<{ uri: string }>;
   fileRequest: (
@@ -107,11 +108,7 @@ export const useS3Store = create<State>((set, get) => {
           set({ ready: true, busy: false });
         }
       }
-      if (current(generation) && get().connection) {
-        await get()
-          .refresh()
-          .catch(() => {});
-      }
+      // The selected Provider loads music after connection restoration.
     },
     connect: async (input) => {
       const { generation, signal } = begin();
@@ -182,6 +179,13 @@ export const useS3Store = create<State>((set, get) => {
         loading: false,
         error: 'S3 요청을 취소했습니다.',
       });
+    },
+    cancelLibrary: () => {
+      if (get().loading) {
+        request?.abort();
+        request = null;
+        set({ loading: false });
+      }
     },
     refresh: async () => {
       if (!credentials || get().busy) {

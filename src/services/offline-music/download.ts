@@ -1,10 +1,9 @@
-import { isCloudSong, isNasSong } from '@/services/music-source';
-import { resolveCloudDownloadSource } from '@/services/cloud-music/source';
+import { isNasSong } from '@/services/music-source';
+import { providerForSong } from '@/services/music-providers/registry';
 import { Platform } from 'react-native';
 import * as FileSystem from 'expo-file-system/legacy';
 import { audioExtension } from './formats';
 import { storeDownloadedSong } from '@/services/local-music/storage';
-import { SynologyClient } from '@/services/synology/api';
 import { useAuthStore } from '@/stores/auth';
 import type { Song } from '@/types/music';
 
@@ -23,6 +22,10 @@ export async function downloadSong(
     throw new Error('이미 이 기기에 저장된 음악입니다.');
   }
   const auth = useAuthStore.getState();
+  const download = providerForSong(song).download;
+  if (!download) {
+    throw new Error('이 서비스는 음악 다운로드를 지원하지 않습니다.');
+  }
   if (isNasSong(song) && (auth.mode !== 'nas' || !auth.session)) {
     throw new Error('NAS 연결 후 음악을 보관해 주세요.');
   }
@@ -36,9 +39,7 @@ export async function downloadSong(
   try {
     for (let attempt = 0; attempt < 2; attempt++) {
       check();
-      const source: { uri: string; headers?: Record<string, string> } = isCloudSong(song)
-        ? await resolveCloudDownloadSource(song, { refreshCredentials: attempt > 0, signal })
-        : new SynologyClient(auth.session!).streamSource(song, 'original');
+      const source = await download.source(song, { refreshCredentials: attempt > 0, signal });
       check();
       if (song.source === 'drive' && song.drive.documentUri) {
         // Only an explicit "기기에 보관" action copies a provider document.

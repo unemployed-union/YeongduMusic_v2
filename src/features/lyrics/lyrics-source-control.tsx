@@ -14,9 +14,11 @@ type SegmentLayout = { x: number; width: number };
 export function LyricsSourceControl({
   source,
   onChange,
+  serverAvailable = true,
 }: {
   source: LyricsSource;
   onChange: (source: LyricsSource) => void;
+  serverAvailable?: boolean;
 }) {
   const [layouts, setLayouts] = useState<Partial<Record<LyricsSource, SegmentLayout>>>({});
   const selectedLayout = layouts[source];
@@ -42,29 +44,31 @@ export function LyricsSourceControl({
         importantForAccessibility="no-hide-descendants"
         style={[styles.indicator, indicatorStyle]}
       />
-      {sources.map((option) => (
-        <Pressable
-          key={option.value}
-          accessibilityRole="button"
-          accessibilityLabel={`가사 출처 ${option.label}`}
-          accessibilityState={{ selected: source === option.value }}
-          hitSlop={{ top: 4, bottom: 4 }}
-          onLayout={(event) => {
-            const { x, width } = event.nativeEvent.layout;
-            setLayouts((previous) =>
-              previous[option.value]?.x === x && previous[option.value]?.width === width
-                ? previous
-                : { ...previous, [option.value]: { x, width } },
-            );
-          }}
-          onPress={() => onChange(option.value)}
-          style={styles.segment}
-        >
-          <Text style={[styles.label, source === option.value && styles.selectedLabel]}>
-            {option.label}
-          </Text>
-        </Pressable>
-      ))}
+      {sources
+        .filter((option) => option.value !== 'nas' || serverAvailable)
+        .map((option) => (
+          <Pressable
+            key={option.value}
+            accessibilityRole="button"
+            accessibilityLabel={`가사 출처 ${option.label}`}
+            accessibilityState={{ selected: source === option.value }}
+            hitSlop={{ top: 4, bottom: 4 }}
+            onLayout={(event) => {
+              const { x, width } = event.nativeEvent.layout;
+              setLayouts((previous) =>
+                previous[option.value]?.x === x && previous[option.value]?.width === width
+                  ? previous
+                  : { ...previous, [option.value]: { x, width } },
+              );
+            }}
+            onPress={() => onChange(option.value)}
+            style={styles.segment}
+          >
+            <Text style={[styles.label, source === option.value && styles.selectedLabel]}>
+              {option.label}
+            </Text>
+          </Pressable>
+        ))}
     </View>
   );
 }

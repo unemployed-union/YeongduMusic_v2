@@ -8,6 +8,7 @@ import { ScreenHeader } from '@/components/screen-header';
 import { ListLoading } from '@/components/list-loading';
 import { SettingsButton } from '@/components/settings-button';
 import { PlaylistNameDialog } from '@/features/playlists/dialogs';
+import { ServerPlaylists } from '@/features/playlists/server-playlists';
 import { visiblePlaylists } from '@/features/playlists/rules';
 import { usePlaylistStore } from '@/stores/playlists';
 import { useHiddenMusicStore } from '@/stores/hidden-music';
@@ -55,6 +56,7 @@ export default function PlaylistsScreen() {
               data={visiblePlaylists(store.profile.presets, privacy.profile.hiddenPlaylistIds)}
               keyExtractor={(item) => item.id}
               contentContainerStyle={styles.list}
+              ListFooterComponent={<ServerPlaylists />}
               ListHeaderComponent={
                 <View>
                   <Pressable

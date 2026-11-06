@@ -4,12 +4,10 @@ import { Platform } from 'react-native';
 import { privacyScope, hiddenMatcher } from '@/features/hidden-music/rules';
 import { useAuthStore } from '@/stores/auth';
 import { useGoogleDriveStore } from '@/stores/google-drive';
-import { useDriveDocumentsStore } from '@/stores/drive-documents';
 import { useHiddenMusicStore } from '@/stores/hidden-music';
-import { useLocalMusicStore } from '@/stores/local-music';
 import { usePlaybackStore, type RepeatMode } from '@/stores/playback';
 import type { Song } from '@/types/music';
-import { SynologyClient } from '@/services/synology/api';
+import { musicProviders, providerForSong } from '@/services/music-providers/registry';
 import { isPlaybackRate } from './playback-rate';
 import { applySongArtwork } from '@/features/artwork/rules';
 
@@ -32,6 +30,7 @@ type Snapshot = {
   driveAccountId: string | null;
   s3ConnectionId?: string | null;
   myboxConnectionId?: string | null;
+  providerScopes?: Record<string, string>;
   savedAt: number;
 };
 
@@ -80,7 +79,12 @@ function validSong(value: unknown): value is Song {
     typeof song.duration === 'number' &&
     Number.isFinite(song.duration) &&
     song.duration >= 0 &&
-    (song.source === 'nas' ||
+    ((song.source === 'jellyfin' &&
+      !!song.ref &&
+      song.ref.providerId === 'jellyfin' &&
+      typeof song.ref.accountScope === 'string' &&
+      typeof song.ref.remoteId === 'string') ||
+      song.source === 'nas' ||
       song.source === undefined ||
       (song.source === 'local' && !!song.local && typeof song.local.fileName === 'string') ||
       (song.source === 'drive' &&
@@ -156,92 +160,29 @@ export async function readRestoredPlayback(): Promise<RestoredPlayback | null> {
   }
   const auth = useAuthStore.getState();
   const privacy = useHiddenMusicStore.getState();
-  const local = useLocalMusicStore.getState();
-  const driveAccountId = useGoogleDriveStore.getState().account?.id ?? null;
-  const driveFiles = new Set(useGoogleDriveStore.getState().files.map((file) => file.id));
   const scope = privacyScope(auth.mode, auth.session);
-  const currentLocal = new Map(local.songs.map((song) => [song.id, song]));
-  const currentDrive = new Map(useGoogleDriveStore.getState().songs.map((song) => [song.id, song]));
-  const currentDocuments = new Map(
-    useDriveDocumentsStore.getState().songs.map((song) => [song.id, song]),
-  );
-  const currentS3 = new Map(useS3Store.getState().songs.map((song) => [song.id, song]));
-  const currentMybox = new Map(useMyboxStore.getState().songs.map((song) => [song.id, song]));
   const hidden = hiddenMatcher(privacy.profile.presets);
-  const nasClient = auth.mode === 'nas' && auth.session ? new SynologyClient(auth.session) : null;
   const selectedId = saved.queue[saved.index].id;
   const queue: Song[] = [];
   let index = -1;
   for (let i = 0; i < saved.queue.length; i++) {
     const { artworkOriginal: _original, ...song } = applySongArtwork(saved.queue[i], undefined, '');
     let restored: Song | null = null;
-    if (song.source === 'local') {
-      restored = currentLocal.get(song.id) ?? null;
-    } else if (song.source === 'drive') {
-      if (song.drive.documentUri) {
-        const current = currentDocuments.get(song.id);
-        restored =
-          current?.source === 'drive' && current.drive.documentUri === song.drive.documentUri
-            ? {
-                ...song,
-                drive: current.drive,
-                artworkUrl: current.artworkUrl,
-                palette: current.palette ?? song.palette,
-              }
-            : null;
-      } else {
-        const current = currentDrive.get(song.id);
-        restored =
-          song.drive.accountId === driveAccountId &&
-          saved.driveAccountId === driveAccountId &&
-          driveFiles.has(song.drive.fileId)
-            ? {
-                ...song,
-                artworkUrl: current?.artworkUrl,
-                palette: current?.palette ?? song.palette,
-              }
-            : null;
-      }
-    } else if (song.source === 's3') {
-      const connection = useS3Store.getState().connection;
-      const current = currentS3.get(song.id);
-      restored =
-        connection &&
-        saved.s3ConnectionId === connection.id &&
-        song.s3.connectionId === connection.id &&
-        song.s3.key.startsWith(connection.prefix)
-          ? { ...song, artworkUrl: current?.artworkUrl, palette: current?.palette ?? song.palette }
-          : null;
-    } else if (song.source === 'mybox') {
-      const connection = useMyboxStore.getState().connection;
-      const current = currentMybox.get(song.id);
-      restored =
-        connection &&
-        saved.myboxConnectionId === connection.id &&
-        song.mybox.connectionId === connection.id &&
-        song.path?.startsWith(connection.folder)
-          ? {
-              ...song,
-              ...(current?.source === 'mybox' ? { mybox: current.mybox, path: current.path } : {}),
-              artworkUrl: current?.artworkUrl,
-              palette: current?.palette ?? song.palette,
-            }
-          : null;
-    } else if (
-      saved.nasScope === scope &&
-      privacy.ready &&
-      privacy.scope === scope &&
-      !hidden(song)
-    ) {
-      let restoredNasSong: Song | null;
-      if (nasClient) {
-        restoredNasSong = { ...song, artworkUrl: nasClient.coverUrl(song.nasId ?? song.id) };
-      } else if (auth.mode === 'mock') {
-        restoredNasSong = song;
-      } else {
-        restoredNasSong = null;
-      }
-      restored = restoredNasSong;
+    const provider = providerForSong(song);
+    const legacyScopes: Record<string, string | null | undefined> = {
+      nas: saved.nasScope,
+      local: 'device',
+      drive: saved.driveAccountId ?? 'documents',
+      s3: saved.s3ConnectionId,
+      mybox: saved.myboxConnectionId,
+    };
+    const savedScope = saved.providerScopes?.[provider.id] ?? legacyScopes[provider.id];
+    const documentSong = song.source === 'drive' && !!song.drive.documentUri;
+    const sameAccount = documentSong || savedScope === provider.getState().scope;
+    const visible =
+      provider.id !== 'nas' || (privacy.ready && privacy.scope === scope && !hidden(song));
+    if (sameAccount && visible) {
+      restored = provider.restore(song);
     }
     if (!restored) {
       continue;
@@ -291,7 +232,12 @@ function snapshot(): string | null {
       if (index === state.index && Number.isFinite(state.duration) && state.duration > 0) {
         return { ...song, duration: state.duration } as Song;
       }
-      return song as Song;
+      return {
+        ...song,
+        ...(item.artworkUrl?.startsWith('jellyfin-artwork:')
+          ? { artworkUrl: item.artworkUrl }
+          : {}),
+      } as Song;
     }),
     index: state.index,
     position: 0,
@@ -304,6 +250,9 @@ function snapshot(): string | null {
     driveAccountId: useGoogleDriveStore.getState().account?.id ?? null,
     s3ConnectionId: useS3Store.getState().connection?.id ?? null,
     myboxConnectionId: useMyboxStore.getState().connection?.id ?? null,
+    providerScopes: Object.fromEntries(
+      musicProviders.map((provider) => [provider.id, provider.getState().scope]),
+    ),
     savedAt: Date.now(),
   };
   return JSON.stringify(current);

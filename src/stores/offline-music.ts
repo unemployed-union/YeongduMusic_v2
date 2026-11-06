@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { providerForSong } from '@/services/music-providers/registry';
 import { downloadSong, type DownloadProgress } from '@/services/offline-music/download';
 import { deleteLocalSong } from '@/services/local-music/storage';
 import { useLocalMusicStore } from './local-music';
@@ -45,6 +46,10 @@ export const useOfflineMusicStore = create<State>((set, get) => ({
     request.abort();
   },
   download: async (song) => {
+    if (!providerForSong(song).download) {
+      set({ error: '이 서비스는 음악 다운로드를 지원하지 않습니다.' });
+      return;
+    }
     if (get().busy || useLocalMusicStore.getState().busy) {
       set({ error: '다른 음악 저장 작업이 끝난 뒤 다시 시도해 주세요.' });
       return;

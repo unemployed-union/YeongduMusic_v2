@@ -1,4 +1,5 @@
 import type { Song } from '@/types/music';
+import { providerForSong } from '@/services/music-providers/registry';
 
 export const DRIVE_FILE_WRITE_BLOCKED_MESSAGE =
   'Google Drive 파일은 직접 수정할 수 없습니다. 앱에 표시되는 정보만 변경할 수 있습니다.';
@@ -10,6 +11,12 @@ export function fileTagFormat(name: string): 'mp3' | 'flac' | null {
   return extension === 'mp3' || extension === 'flac' ? extension : null;
 }
 export function fileWriteUnavailable(song: Song, mode: string, platform: string): string | null {
+  if (!providerForSong(song).fileWrite) {
+    return (
+      providerForSong(song).name +
+      ' 파일은 직접 수정할 수 없습니다. 앱에 표시되는 정보만 변경할 수 있습니다.'
+    );
+  }
   if (song.source === 'drive') {
     return DRIVE_FILE_WRITE_BLOCKED_MESSAGE;
   }
@@ -41,6 +48,12 @@ export function fileWriteUnavailable(song: Song, mode: string, platform: string)
     : '파일 저장은 MP3·FLAC 형식을 지원합니다. 다른 형식은 앱 표시 정보만 저장할 수 있습니다.';
 }
 export function fileWriteDescription(song: Song): string {
+  const provider = providerForSong(song);
+  if (!provider.fileWrite) {
+    return (
+      provider.name + ' 파일은 직접 수정할 수 없습니다. 앱에 표시되는 정보만 변경할 수 있습니다.'
+    );
+  }
   if (song.source === 'mybox') {
     return MYBOX_FILE_READ_ONLY_MESSAGE;
   }

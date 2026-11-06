@@ -182,6 +182,7 @@ async function main() {
   let pruned;
   const offline = load('src/stores/offline-music.ts', {
     '@/services/offline-music/download': downloader, '@/services/local-music/storage': storage,
+    '@/stores/auth': { useAuthStore: auth }, '@/stores/google-drive': driveModule, '@/stores/mybox': myboxModule,
     './local-music': localModule, './auth': { useAuthStore: auth }, './google-drive': driveModule,
     './mybox': myboxModule,
     '@/services/playback/controller': { reconcilePlaybackVisibility: match => { pruned = match; } },

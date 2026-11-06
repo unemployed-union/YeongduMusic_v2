@@ -2,7 +2,7 @@
 const assert = require('node:assert/strict'), fs = require('node:fs'), path = require('node:path'), ts = require('typescript');
 const { create } = require('zustand');
 function load(file, mocks = {}, globals = {}, extra = '') {
-  mocks = { '@/services/haptics': { playHaptic() {}, prepareHaptics() {} }, ...mocks };
+  mocks = { ...require('./test-cloud-fixtures.cjs').cloudFixtures(globals, mocks), '@/services/haptics': { playHaptic() {}, prepareHaptics() {} }, ...mocks };
   const code = ts.transpileModule(fs.readFileSync(path.join(__dirname, '..', file), 'utf8') + extra, {
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX },
   }).outputText, exports = {};

@@ -7,7 +7,7 @@ import {
 } from 'expo-audio';
 import Constants, { AppOwnership } from 'expo-constants';
 import { Platform } from 'react-native';
-import type { Song } from '@/types/music';
+import type { PlaybackSource, Song } from '@/types/music';
 import { validatePlaybackRate } from './playback-rate';
 
 export type EngineStatus = {
@@ -88,6 +88,9 @@ export class ExpoAudioEngine implements AudioEngine {
   private wantsPlayback = false;
   private starting = false;
   private position = 0;
+  private positionOffset = 0;
+  private reloadOnError = false;
+  private songDuration = 0;
   private duration = 0;
   private retries = 0;
   private stableFrom: number | null = null;
@@ -188,7 +191,7 @@ export class ExpoAudioEngine implements AudioEngine {
     }
     const position = this.player?.currentTime;
     return typeof position === 'number' && Number.isFinite(position) && position >= 0
-      ? position
+      ? position + this.positionOffset
       : this.position;
   }
 
@@ -228,6 +231,16 @@ export class ExpoAudioEngine implements AudioEngine {
   }
 
   private scheduleRecovery(): void {
+    if (this.reloadOnError) {
+      this.clearRecoveryTimers();
+      this.starting = false;
+      this.wantsPlayback = false;
+      this.resume = null;
+      this.failure = RECOVERY_ERROR;
+      this.player?.pause();
+      this.publish(false, false);
+      return;
+    }
     if (this.localSource) {
       this.clearRecoveryTimers();
       this.starting = false;
@@ -296,7 +309,7 @@ export class ExpoAudioEngine implements AudioEngine {
         return;
       }
       if (resume.position > 0) {
-        await player.seekTo(resume.position, 0, 0);
+        await player.seekTo(Math.max(0, resume.position - this.positionOffset), 0, 0);
       }
       if (resume.operation !== this.operation || !this.wantsPlayback) {
         return;
@@ -312,7 +325,15 @@ export class ExpoAudioEngine implements AudioEngine {
     }
   }
 
-  private handleStatus(status: AudioStatus): void {
+  private handleStatus(incoming: AudioStatus): void {
+    const status =
+      this.positionOffset > 0
+        ? {
+            ...incoming,
+            currentTime: incoming.currentTime + this.positionOffset,
+            duration: this.songDuration || incoming.duration + this.positionOffset,
+          }
+        : incoming;
     if (status.error) {
       this.scheduleRecovery();
       this.publish(this.wantsPlayback, this.wantsPlayback);
@@ -424,15 +445,32 @@ export class ExpoAudioEngine implements AudioEngine {
     this.stableFrom = null;
     this.position = Number.isFinite(initialPosition) ? Math.max(0, initialPosition) : 0;
     this.duration = song.duration;
+    const playback = source && typeof source === 'object' ? (source as PlaybackSource) : null;
+    this.positionOffset = playback?.positionOffset ?? 0;
+    this.reloadOnError = playback?.reloadOnError ?? false;
+    this.songDuration = song.duration;
     const player = await this.setup();
     if (lifecycle !== this.lifecycle || operation !== this.operation) {
       return;
     }
-    this.source = withIosFlacType(source, song);
+    const {
+      positionOffset: _offset,
+      seekMode: _seekMode,
+      lossless: _lossless,
+      reloadOnError: _reload,
+      release: _release,
+      ...nativeSource
+    } = playback ?? {};
+    const hasPlaybackOptions =
+      playback &&
+      ['positionOffset', 'seekMode', 'lossless', 'reloadOnError', 'release'].some(
+        (key) => key in playback,
+      );
+    this.source = withIosFlacType(hasPlaybackOptions ? nativeSource : source, song);
     this.localSource = song.source === 'local';
     this.resetBufferingObservation();
     this.watchStall();
-    if (this.position > 0) {
+    if (this.position > this.positionOffset) {
       this.resume = { operation, position: this.position, seeking: false };
     }
     player.replace(this.source);
@@ -529,9 +567,9 @@ export class ExpoAudioEngine implements AudioEngine {
       this.resume.position = seconds;
     } else if (!this.failure) {
       if (precise) {
-        await this.player?.seekTo(seconds, 0, 0);
+        await this.player?.seekTo(Math.max(0, seconds - this.positionOffset), 0, 0);
       } else {
-        await this.player?.seekTo(seconds);
+        await this.player?.seekTo(Math.max(0, seconds - this.positionOffset));
       }
     }
   }

@@ -86,11 +86,11 @@ tree = SettingsPage({ overview: true, children: sections });
 assert(!nodes(tree).some(node => node.props?.style?.flexWrap === 'wrap'), 'Narrower detail panes use one column');
 assert.deepEqual(nodes(tree).filter(node => node.type === 'Section').map(node => node.props.id), [1, 2, 3, 4]);
 
-const sourceLabels = read('src/services/music-source.ts').musicSourceLabels, menuRules = read('src/features/settings/menu-layout.ts');
+const sourceDefinitions = read('src/services/music-source.ts'), menuRules = read('src/features/settings/menu-layout.ts');
 let source = 'nas', selectedTab;
 let visibleSources = ['all', 'nas', 'local'];
 const { LibrarySidebar } = read('src/features/library/library-sidebar.tsx', { ...base,
-  '@/services/music-source': { musicSourceLabels: sourceLabels }, '@/features/settings/menu-layout': menuRules,
+  '@/services/music-source': sourceDefinitions, '@/features/settings/menu-layout': menuRules,
   '@/stores/local-music': { useLocalMusicStore: select => select({ source, setSource: value => { source = value; } }) },
   './use-music-sources': { useMusicSources: () => visibleSources },
 });

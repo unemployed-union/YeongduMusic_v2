@@ -25,7 +25,7 @@ exports.loadSource = function loadSource(file, mocks = {}, globals = {}, cache =
         : name.startsWith('.')
           ? path.resolve(path.dirname(absolute), name)
           : null;
-      if (!local) throw new Error('Unmocked native/package dependency: ' + name);
+      if (!local) throw new Error('Unmocked native/package dependency: ' + name + ' (from ' + file + ')');
       const resolved = [local + '.ts', local + '.tsx', local + '.json'].find((candidate) =>
         fs.existsSync(candidate),
       );

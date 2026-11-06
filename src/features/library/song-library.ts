@@ -2,7 +2,9 @@ import { applyMetadataLibrary, type MetadataPatches } from '@/features/metadata/
 import { applyArtworkLibrary, type ArtworkPatches } from '@/features/artwork/rules';
 import type { MusicSourceFilter, Page, Song } from '@/types/music';
 
-export type DeviceLibraries = Record<'local' | 'drive' | 's3' | 'mybox', Song[]>;
+export type DeviceLibraries = Partial<
+  Record<Exclude<MusicSourceFilter, 'all' | 'nas'>, readonly Song[]>
+>;
 export type LibraryEdits = {
   metadata: MetadataPatches;
   artwork: ArtworkPatches;
@@ -20,9 +22,9 @@ export function combineSongLibraries(
     return nas;
   }
   const items = includeNas ? [...nas.items] : [];
-  for (const kind of ['local', 'drive', 's3', 'mybox'] as const) {
+  for (const kind of Object.keys(libraries) as (keyof DeviceLibraries)[]) {
     if (source === 'all' || source === kind) {
-      items.push(...libraries[kind]);
+      items.push(...(libraries[kind] ?? []));
     }
   }
   return { ...nas, items, total: items.length };

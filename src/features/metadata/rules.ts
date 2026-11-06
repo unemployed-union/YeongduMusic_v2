@@ -14,6 +14,9 @@ export type MetadataPatches = Record<string, SongMetadata>;
 
 /** Scope stable source identities, never session IDs, URLs with tokens or filenames. */
 export function metadataKey(song: Song, nasScope: string | null): string | null {
+  if (song.source === 'jellyfin') {
+    return JSON.stringify(['jellyfin', song.ref.accountScope, song.ref.remoteId]);
+  }
   if (song.source === 'local') {
     return JSON.stringify(['local', song.id]);
   }
@@ -38,7 +41,7 @@ export function validateMetadataKey(key: string): void {
   }
   if (
     !Array.isArray(value) ||
-    !['nas', 'drive', 's3', 'mybox', 'local'].includes(value[0]) ||
+    !['nas', 'drive', 's3', 'mybox', 'local', 'jellyfin'].includes(value[0]) ||
     value.length !== (value[0] === 'local' ? 2 : 3) ||
     value.some((part) => typeof part !== 'string' || !part || part.length > 32768)
   ) {

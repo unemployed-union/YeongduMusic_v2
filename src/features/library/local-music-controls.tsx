@@ -6,7 +6,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { PlaylistSheet } from '@/features/playlists/dialogs';
 import { useS3Store } from '@/stores/s3';
 import { useMyboxStore } from '@/stores/mybox';
-import { musicSourceLabels } from '@/services/music-source';
+import { musicSourceLabels, musicSourceIcons as sourceIcons } from '@/services/music-source';
 import { useGoogleDriveStore } from '@/stores/google-drive';
 import { useDriveDocumentsStore } from '@/stores/drive-documents';
 import { useLocalMusicStore } from '@/stores/local-music';
@@ -21,14 +21,6 @@ import { glassControlStyles } from '@/components/glass-controls';
 import { useMusicSources } from './use-music-sources';
 
 const labels = musicSourceLabels;
-const sourceIcons = {
-  all: 'musical-notes-outline',
-  nas: 'server-outline',
-  local: 'phone-portrait-outline',
-  drive: 'logo-google',
-  s3: 'file-tray-stacked-outline',
-  mybox: 'cloud-outline',
-} as const;
 
 function SourceSection({ title, children }: { title: string; children: ReactNode }) {
   const glass = useLiquidGlass();
@@ -146,20 +138,7 @@ export function LocalMusicControls({
       void local.importFiles(kind);
     }
   }
-  let selectedSourceIcon: React.ComponentProps<typeof Ionicons>['name'];
-  if (local.source === 'drive') {
-    selectedSourceIcon = 'logo-google';
-  } else if (local.source === 'mybox') {
-    selectedSourceIcon = 'cloud-outline';
-  } else if (local.source === 's3') {
-    selectedSourceIcon = 'file-tray-stacked-outline';
-  } else if (local.source === 'local') {
-    selectedSourceIcon = 'phone-portrait-outline';
-  } else if (local.source === 'nas') {
-    selectedSourceIcon = 'server-outline';
-  } else {
-    selectedSourceIcon = 'musical-notes-outline';
-  }
+  const selectedSourceIcon = sourceIcons[local.source];
   return (
     <View style={styles.container}>
       <View style={styles.controlsRow}>
@@ -302,6 +281,14 @@ export function LocalMusicControls({
           )}
           <SourceSection title="연결 관리">
             <SourceOption
+              icon="server-outline"
+              label="Jellyfin 연결 관리 (베타)"
+              onPress={() => {
+                setOpen(false);
+                router.push('/settings/cloud/jellyfin');
+              }}
+            />
+            <SourceOption
               icon="logo-google"
               label="Google Drive 연결 관리"
               onPress={() => {
@@ -311,7 +298,7 @@ export function LocalMusicControls({
             />
             <SourceOption
               icon="file-tray-stacked-outline"
-              label="S3 연결 관리"
+              label="S3 연결 관리 (베타)"
               onPress={() => {
                 setOpen(false);
                 router.push('/settings/cloud/s3');

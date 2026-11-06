@@ -3,6 +3,7 @@ import { useAuthStore } from '@/stores/auth';
 import { useS3Store } from '@/stores/s3';
 import { useMyboxStore } from '@/stores/mybox';
 import { useGoogleDriveStore } from '@/stores/google-drive';
+import { useJellyfinStore } from '@/stores/jellyfin';
 
 export default function CloudSettingsScreen() {
   const mode = useAuthStore((state) => state.mode);
@@ -10,6 +11,7 @@ export default function CloudSettingsScreen() {
   const s3Connected = useS3Store((state) => !!state.connection);
   const myboxConnected = useMyboxStore((state) => !!state.connection);
   const driveConnected = useGoogleDriveStore((state) => !!state.account);
+  const jellyfinConnected = useJellyfinStore((state) => !!state.connection);
   let nasConnectionDescription: string;
   if (mode === 'mock') {
     nasConnectionDescription = '데모 모드 · NAS 연결 설정';
@@ -27,16 +29,28 @@ export default function CloudSettingsScreen() {
           icon="server-outline"
           href="/settings/cloud/synology"
         />
+      </SettingsSection>
+      <SettingsSection title="베타 서비스">
+        <SettingsLink
+          title="Jellyfin"
+          badge="베타"
+          description={
+            jellyfinConnected
+              ? '연결됨 · 계정과 음악 라이브러리 관리'
+              : 'Jellyfin 서버 연결 및 음악 라이브러리'
+          }
+          icon="musical-note-outline"
+          href="/settings/cloud/jellyfin"
+        />
         <SettingsLink
           title="S3 호환 저장소"
+          badge="베타"
           description={
             s3Connected ? '연결됨 · 버킷과 음악 경로 관리' : 'AWS S3 및 S3 호환 서비스 연결'
           }
           icon="file-tray-stacked-outline"
           href="/settings/cloud/s3"
         />
-      </SettingsSection>
-      <SettingsSection title="베타 서비스">
         <SettingsLink
           title="Google Drive"
           badge="베타"

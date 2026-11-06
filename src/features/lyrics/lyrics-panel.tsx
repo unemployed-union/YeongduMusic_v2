@@ -24,6 +24,7 @@ import { useLyricsTranslation } from './use-lyrics-translation';
 import { LyricsTranslationControls } from './lyrics-translation-controls';
 import { LyricsTimingControls } from './lyrics-timing-controls';
 import { LyricsSourceControl } from './lyrics-source-control';
+import { providerForSong } from '@/services/music-providers/registry';
 import { useLyricTiming } from './use-lyric-timing';
 import { lyricPlaybackTime } from './timing';
 import { playHaptic } from '@/services/haptics';
@@ -391,7 +392,11 @@ export function LyricsPanel({
             <Ionicons name="refresh-outline" size={20} color="white" />
           )}
         </Pressable>
-        <LyricsSourceControl source={source} onChange={changeSource} />
+        <LyricsSourceControl
+          source={source === 'nas' && !providerForSong(song).lyrics ? 'auto' : source}
+          serverAvailable={!!providerForSong(song).lyrics}
+          onChange={changeSource}
+        />
       </View>
       {data?.kind === 'synced' ? (
         <LyricsTimingControls key={timing.key} timing={timing} translation={translation} />

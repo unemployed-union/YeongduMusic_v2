@@ -54,7 +54,7 @@ const controls = read('src/features/library/local-music-controls.tsx', {
   '@/stores/s3': { useS3Store: () => ({}) }, '@/stores/mybox': { useMyboxStore: () => ({}) },
   '@/stores/auth': { useAuthStore: select => select({ mode: 'setup' }) },
   '@/stores/offline-music': { useOfflineMusicStore: select => select({ busy: false }) },
-  '@/services/music-source': { musicSourceLabels: { all: '전체 음악', nas: 'NAS', local: '기기', drive: 'Drive', s3: 'S3', mybox: 'MYBOX' } },
+  '@/services/music-source': read('src/services/music-source.ts', {}),
   '@/features/offline-music/download-status': { DownloadStatus: 'DownloadStatus' },
   '@/components/glass-controls': { glassControlStyles: { button: {} } },
   './use-music-sources': { useMusicSources: () => visibleSources },
@@ -65,11 +65,11 @@ glass = { supported: true, enabled: true };
 tree = render(); nodes(tree).find(n => n.props?.accessibilityLabel === '음악 소스 및 가져오기 메뉴').props.onPress(); tree = render();
 assert(nodes(tree).find(n => n.type === 'Sheet').props.glassSurface);
 assert(nodes(tree).find(n => n.type === 'Sheet').props.visible);
-assert(!button(tree, 'NAS') && !button(tree, 'Drive') && !button(tree, 'S3') && !button(tree, 'MYBOX'), 'Unconnected source filters are hidden');
+assert(!button(tree, 'NAS 음악') && !button(tree, 'Google Drive') && !button(tree, 'S3 (베타)') && !button(tree, '네이버 MYBOX'), 'Unconnected source filters are hidden');
 assert(button(tree, 'Google Drive 연결 관리'), 'Connection management remains available');
 visibleSources = ['all', 'nas', 'local', 'drive', 's3', 'mybox']; tree = render();
-assert(button(tree, 'NAS') && button(tree, 'Drive') && button(tree, 'S3') && button(tree, 'MYBOX'), 'Connected source filters appear');
-button(tree, '기기').props.onPress(); tree = render();
+assert(button(tree, 'NAS 음악') && button(tree, 'Google Drive') && button(tree, 'S3 (베타)') && button(tree, '네이버 MYBOX'), 'Connected source filters appear');
+button(tree, '이 기기 음악').props.onPress(); tree = render();
 assert.deepEqual(sources, ['local']); assert.equal(nodes(tree).find(n => n.type === 'Sheet').props.visible, false);
 button(tree, '파일 선택').props.onPress(); tree = render();
 assert.deepEqual(imports, [], 'iOS file picker waits for native modal dismissal');

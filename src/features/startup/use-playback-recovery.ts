@@ -14,6 +14,7 @@ type RecoveryReadiness = {
   driveAccountId?: string;
   s3Ready: boolean;
   myboxReady?: boolean;
+  jellyfinReady?: boolean;
 };
 
 export function usePlaybackRecovery({
@@ -26,6 +27,7 @@ export function usePlaybackRecovery({
   driveAccountId,
   s3Ready,
   myboxReady = true,
+  jellyfinReady = true,
 }: RecoveryReadiness) {
   const recoveryAttempted = useRef(false);
   useEffect(() => {
@@ -37,6 +39,7 @@ export function usePlaybackRecovery({
       !driveReady ||
       !s3Ready ||
       !myboxReady ||
+      !jellyfinReady ||
       recoveryAttempted.current
     ) {
       return;
@@ -92,5 +95,6 @@ export function usePlaybackRecovery({
     driveAccountId,
     s3Ready,
     myboxReady,
+    jellyfinReady,
   ]);
 }

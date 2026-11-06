@@ -5,7 +5,8 @@ import { useQuery } from '@tanstack/react-query';
 import { albumId, albumsFromSongs, songsForAlbum } from './album-library';
 import { artistName, loadSongLibrary, songsForArtist } from './load-song-library';
 import { searchSongs } from './search-songs';
-import { libraryIdentity, musicRepository } from './repository';
+import { libraryIdentity } from './repository';
+import { musicProvider } from '@/services/music-providers/registry';
 import { libraryResult } from './library-result';
 import { privacyScope, visibleSongs } from '../hidden-music/rules';
 import { useSongMetadataStore } from '@/stores/song-metadata';
@@ -30,22 +31,9 @@ function useSongLibrary<T>(
   const artworkPatches = useSongArtworkStore((state) => state.patches);
   const artworkReady = useSongArtworkStore((state) => state.ready);
   const artworkBaseUri = useSongArtworkStore((state) => state.baseUri);
-  const sources = useSourceLibraries();
-  const {
-    libraries,
-    driveLoading,
-    driveError,
-    documentError,
-    s3Loading,
-    s3Error,
-    myboxLoading,
-    myboxError,
-  } = sources;
-  const { local: localSongs, drive: driveSongs, s3: s3Songs, mybox: myboxSongs } = libraries;
+  const sources = useSourceLibraries(enabled && !nasOnly, sourceOverride);
+  const { libraries } = sources;
   const source = sourceOverride ?? sources.preferredSource;
-  const includeS3 = !nasOnly && (source === 'all' || source === 's3');
-  const includeMybox = !nasOnly && (source === 'all' || source === 'mybox');
-  const includeDrive = !nasOnly && (source === 'all' || source === 'drive');
   const identity = libraryIdentity(mode, session);
   const includeNas = nasOnly || ((source === 'nas' || source === 'all') && mode !== 'setup');
   const edits = useMemo(
@@ -57,16 +45,17 @@ function useSongLibrary<T>(
       const combined = nasOnly
         ? library
         : combineSongLibraries(library, libraries, source, includeNas);
-      return select(applyLibraryEdits(combined, edits));
+      const result = !nasOnly && sources.stale ? { ...combined, stale: true } : combined;
+      return select(applyLibraryEdits(result, edits));
     },
-    [select, nasOnly, source, includeNas, libraries, edits],
+    [select, nasOnly, source, includeNas, libraries, edits, sources.stale],
   );
   const query = useQuery({
     queryKey: includeNas ? ['song-library', identity] : ['local-library'],
     enabled: ready && metadataReady && artworkReady && (nasOnly || sources.ready) && enabled,
     queryFn: ({ signal }) =>
       includeNas && mode !== 'setup'
-        ? loadSongLibrary(musicRepository(), signal)
+        ? loadSongLibrary(musicProvider('nas'), signal)
         : Promise.resolve({ items: [] as Song[], total: 0 }),
     select: combined,
     retry: 2,
@@ -79,46 +68,23 @@ function useSongLibrary<T>(
       return undefined;
     }
 
-    const hasFallbackSongs =
-      localSongs.length || driveSongs.length || s3Songs.length || myboxSongs.length;
+    const hasFallbackSongs = Object.values(libraries).some((songs) => songs?.length);
     if (!hasFallbackSongs) {
       return undefined;
     }
 
     const fallbackLibrary = combineSongLibraries({ items: [], total: 0 }, libraries, 'all', false);
-    const editedLibrary = applyLibraryEdits(fallbackLibrary, edits);
+    const editedLibrary = applyLibraryEdits(
+      sources.stale ? { ...fallbackLibrary, stale: true } : fallbackLibrary,
+      edits,
+    );
     return select(editedLibrary);
-  }, [
-    nasOnly,
-    source,
-    query.isError,
-    query.data,
-    localSongs,
-    driveSongs,
-    s3Songs,
-    myboxSongs,
-    select,
-    libraries,
-    edits,
-  ]);
-  const cloudError = [
-    includeDrive && driveError,
-    includeDrive && documentError,
-    includeS3 && s3Error,
-    includeMybox && myboxError,
-  ]
-    .filter(Boolean)
-    .join('\n');
+  }, [nasOnly, source, query.isError, query.data, select, libraries, edits, sources.stale]);
   return libraryResult(query, {
     fallback,
-    cloudError,
-    cloudLoading:
-      (includeDrive && driveLoading) || (includeS3 && s3Loading) || (includeMybox && myboxLoading),
-    cloudPending:
-      !nasOnly &&
-      ((source === 's3' && s3Loading && !s3Songs.length) ||
-        (source === 'drive' && driveLoading && !driveSongs.length) ||
-        (source === 'mybox' && myboxLoading && !myboxSongs.length)),
+    cloudError: nasOnly ? undefined : sources.error,
+    cloudLoading: !nasOnly && sources.loading,
+    cloudPending: !nasOnly && sources.pending,
   });
 }
 

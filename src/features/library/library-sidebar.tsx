@@ -3,7 +3,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { Text } from '@/components/text';
 import { useColors } from '@/theme/tokens';
 import { useLocalMusicStore } from '@/stores/local-music';
-import { musicSourceLabels } from '@/services/music-source';
+import { musicSourceLabels, musicSourceIcons as sourceIcons } from '@/services/music-source';
 import { playHaptic } from '@/services/haptics';
 import { MENU_LABELS } from '@/features/settings/menu-layout';
 import type { LibraryTab } from './library-page';
@@ -15,14 +15,6 @@ const icons = {
   songs: 'musical-notes-outline',
   artists: 'person-outline',
   favorites: 'heart-outline',
-} as const;
-const sourceIcons = {
-  all: 'musical-notes-outline',
-  nas: 'server-outline',
-  local: 'phone-portrait-outline',
-  drive: 'logo-google',
-  s3: 'file-tray-stacked-outline',
-  mybox: 'cloud-outline',
 } as const;
 
 export function LibrarySidebar({

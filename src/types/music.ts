@@ -1,6 +1,14 @@
 export type StreamingQuality = 'original' | 'mp3';
 
-export type MusicSourceFilter = 'all' | 'nas' | 'local' | 'drive' | 's3' | 'mybox';
+export type MusicSourceFilter = 'all' | 'nas' | 'local' | 'drive' | 's3' | 'mybox' | 'jellyfin';
+export type MusicProviderId = Exclude<MusicSourceFilter, 'all'>;
+export type MusicEntityRef = {
+  providerId: MusicProviderId;
+  accountScope: string;
+  remoteId: string;
+};
+export type MusicLibrary = { id: string; name: string };
+export type ServerPlaylist = { id: string; name: string; ref: MusicEntityRef; songCount?: number };
 export type LocalFile = {
   fileName: string;
   originalName: string;
@@ -25,6 +33,7 @@ export type OriginalSongMetadata = SongMetadata & {
 
 export type Song = {
   id: string;
+  ref?: MusicEntityRef;
   path?: string;
   title: string;
   artist: string;
@@ -72,6 +81,15 @@ export type Song = {
       mybox?: never;
     }
   | {
+      source: 'jellyfin';
+      ref: MusicEntityRef;
+      local?: never;
+      drive?: never;
+      s3?: never;
+      mybox?: never;
+      nasId?: never;
+    }
+  | {
       source: 'mybox';
       mybox: {
         connectionId: string;
@@ -101,8 +119,21 @@ export type Artist = { id: string; name: string; albumCount?: number };
 export type Page<T> = { items: T[]; total: number; stale?: boolean };
 export type PageRequest = { offset: number; limit: number; signal?: AbortSignal };
 export type UriSource = { uri: string; headers?: Record<string, string> };
-export type PlaybackSource = { uri?: string; assetId?: number; headers?: Record<string, string> };
-export type SourceRequest = { signal?: AbortSignal; refreshCredentials?: boolean };
+export type PlaybackSource = {
+  uri?: string;
+  assetId?: number;
+  headers?: Record<string, string>;
+  positionOffset?: number;
+  seekMode?: 'native' | 'reload';
+  lossless?: boolean;
+  release?: () => Promise<void>;
+  reloadOnError?: boolean;
+};
+export type SourceRequest = {
+  signal?: AbortSignal;
+  refreshCredentials?: boolean;
+  position?: number;
+};
 
 export interface MusicRepository {
   songs(page: PageRequest): Promise<Page<Song>>;

@@ -1,5 +1,5 @@
 /* global __dirname */
-const assert = require('node:assert/strict'), fs = require('node:fs'), path = require('node:path'), ts = require('typescript');
+const assert = require('node:assert/strict');
 const auth = { mode: 'setup', session: null }, drive = { account: null, songs: [] }, documents = { songs: [] }, s3 = { connection: null, songs: [] }, mybox = { connection: null, songs: [] };
 const dependencies = {
   react: { useMemo: fn => fn() },
@@ -8,12 +8,14 @@ const dependencies = {
   '@/stores/drive-documents': { useDriveDocumentsStore: select => select(documents) },
   '@/stores/s3': { useS3Store: select => select(s3) },
   '@/stores/mybox': { useMyboxStore: select => select(mybox) },
+  '@/stores/local-music': { useLocalMusicStore: select => select({ songs: [], ready: true, source: 'all' }) },
 };
-const code = ts.transpileModule(fs.readFileSync(path.join(__dirname, '../src/features/library/use-music-sources.ts'), 'utf8'), {
-  compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
-}).outputText;
-const moduleExports = {};
-new Function('require', 'exports', code)(name => { assert(name in dependencies, name); return dependencies[name]; }, moduleExports);
+const { loadSource } = require('./test-source-loader.cjs');
+const modules = { ...require('./test-cloud-fixtures.cjs').cloudFixtures({}, dependencies), ...dependencies };
+const sourceHooks = loadSource('src/features/library/use-source-libraries.ts', {
+  ...modules, react: { ...dependencies.react, useSyncExternalStore: (subscribe, snapshot) => snapshot(), useEffect() {} },
+});
+const moduleExports = loadSource('src/features/library/use-music-sources.ts', { ...modules, './use-source-libraries': sourceHooks });
 const sources = moduleExports.useMusicSources;
 assert.deepEqual(sources(), ['all', 'local'], 'No unconnected external services');
 auth.mode = 'mock';
