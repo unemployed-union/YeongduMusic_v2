@@ -62,7 +62,7 @@ export async function readArtworkForTags(image: string, signal?: AbortSignal): P
   const handle = file.open(FileMode.ReadOnly);
   let bytes: Uint8Array;
   try {
-    bytes = handle.readBytes(file.size);
+    bytes = handle.readBytesSync(file.size);
   } finally {
     handle.close();
   }
@@ -96,7 +96,7 @@ async function persistNative(uri: string, signal?: AbortSignal): Promise<string>
   const handle = source.open();
   let format: ReturnType<typeof imageFormat>;
   try {
-    format = imageFormat(handle.readBytes(Math.min(32, source.size)));
+    format = imageFormat(handle.readBytesSync(Math.min(32, source.size)));
   } finally {
     handle.close();
   }

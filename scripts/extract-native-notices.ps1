@@ -1,5 +1,5 @@
 Add-Type -AssemblyName System.IO.Compression
-$auditDirectory = Join-Path (Split-Path -Parent $PSScriptRoot) '.expo'
+$auditDirectory = Join-Path (Split-Path -Parent $PSScriptRoot) 'dist/legal-audit'
 $inventory = Get-Content -Raw -Encoding utf8 (Join-Path $auditDirectory 'license-inventory.json') | ConvertFrom-Json
 $results = @()
 function Read-Notices($stream, $prefix) {

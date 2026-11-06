@@ -164,8 +164,8 @@ async function main() {
   assert.equal(h.events.filter(event => event[0] === 'mode').length, 1);
   const lockscreen = h.events.find(event => event[0] === 'lockscreen');
   assert.equal(lockscreen[3].isLiveStream, false, 'NAS songs are on-demand files, not live broadcasts');
-  assert.equal(lockscreen[3].showSkipPrevious, true);
-  assert.equal(lockscreen[3].showSkipNext, true);
+  assert.equal(lockscreen[3].showPreviousTrack, true);
+  assert.equal(lockscreen[3].showNextTrack, true);
 
   // Initial loading is not reported as an interruption after playback.
   h.emit({ isBuffering: true });

@@ -62,6 +62,9 @@
       "expo-secure-store",
       "expo-sqlite",
       "expo-system-ui",
+      "expo-font",
+      "expo-status-bar",
+      "expo-asset",
       [
         "expo-build-properties",
         {
@@ -87,15 +90,8 @@
           "isAccessMediaLocationEnabled": false
         }
       ],
-      [
-        "expo-build-properties",
-        {
-          "ios": {
-            "enableSceneSupport": true
-          }
-        }
-      ],
-      "./plugins/with-ios-system-settings"
+      "./plugins/with-ios-system-settings",
+      "./plugins/with-android-build-memory"
     ],
     "experiments": {
       "typedRoutes": true,

@@ -9,7 +9,7 @@ import Animated, {
   FadeOutDown,
   LinearTransition,
 } from 'react-native-reanimated';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View, type ViewInstance } from 'react-native';
 import { router } from 'expo-router';
 import { Text } from '@/components/text';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -41,7 +41,7 @@ interface Props {
   kind?: 'playback' | 'details';
   canDownload?: boolean;
   localSong?: boolean;
-  blurTarget: RefObject<View | null>;
+  blurTarget: RefObject<ViewInstance | null>;
   panel: 'artwork' | 'queue' | 'lyrics';
   bottom: number;
   maxHeight: number;

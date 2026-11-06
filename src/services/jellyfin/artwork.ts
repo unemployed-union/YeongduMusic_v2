@@ -89,6 +89,6 @@ async function downloadArtwork(uri: string, client: JellyfinClient): Promise<str
   for (const old of previous.slice(0, Math.max(0, previous.length - 127))) {
     await old.delete();
   }
-  file.write(bytes);
+  await file.write(bytes);
   return file.uri;
 }

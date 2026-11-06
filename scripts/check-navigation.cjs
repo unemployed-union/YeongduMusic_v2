@@ -7,6 +7,7 @@ const ts = require(path.join(root, 'node_modules/typescript'));
 const requireContext = require(path.join(root, 'node_modules/expo-router/build/testing-library/require-context-ponyfill.js')).default;
 const { getRoutes } = require(path.join(root, 'node_modules/expo-router/build/getRoutesCore.js'));
 const { getReactNavigationConfig } = require(path.join(root, 'node_modules/expo-router/build/getReactNavigationConfig.js'));
+const { getValidInitialRouteName } = require(path.join(root, 'node_modules/expo-router/build/RouteNode.js'));
 const routeFiles = requireContext(path.join(root, 'src/app'), true, /\.[jt]sx?$/).keys();
 // Discover the actual route files with Expo Router, without rendering native screens.
 const context = Object.assign(file => {
@@ -23,13 +24,13 @@ const context = Object.assign(file => {
 const tree = getRoutes(context, { platform: 'android', importMode: 'lazy', ignoreRequireErrors: true });
 const config = getReactNavigationConfig(tree, false);
 const library = config.screens['(tabs)'].screens['(library)'];
-assert.equal(library.initialRouteName, 'index');
+assert.equal(getValidInitialRouteName(library._route), 'index');
 assert.deepEqual(Object.keys(config.screens['(tabs)'].screens).sort(), ['(library)', '(playlists)', 'search']);
 assert.ok(config.screens.settings, 'Settings opens outside the tabs');
 assert.ok(library.screens['album/[id]']);
 assert.ok(library.screens['artist/[id]']);
 const playlists = config.screens['(tabs)'].screens['(playlists)'];
-assert.equal(playlists.initialRouteName, 'playlists/index');
+assert.equal(getValidInitialRouteName(playlists._route), 'playlists/index');
 assert.ok(playlists.screens['playlists/index']);
 assert.equal(playlists.screens['playlists/[id]'].path, 'playlists/:id');
 assert.equal(library.screens['playlists/index'], undefined);
@@ -80,7 +81,7 @@ const LibraryLayout = renderModule('src/app/(tabs)/(library)/_layout.tsx', {
   '@/theme/tokens': { useColors: () => ({ tint: '#f48', background: '#0c0d12' }) },
 }).default;
 const libraryLayout = LibraryLayout(), albumOptions = nodes(libraryLayout).find(node => node.props?.name === 'album/[id]').props.options;
-assert.equal(libraryLayout.props.screenOptions.freezeOnBlur, true, 'Covered library screens stop rendering during detail navigation');
+assert.equal(libraryLayout.props.activityEnabled, 1, 'Covered library screens stop rendering during detail navigation');
 assert.equal(albumOptions.headerTransparent, true, 'Album artwork can extend behind the native back button and title');
 assert.equal(albumOptions.headerStyle.backgroundColor, 'transparent', 'The shared stack surface must not override album transparency');
 assert.equal(albumOptions.headerShadowVisible, false);
@@ -119,7 +120,7 @@ menuLayout.bottom.reverse(); menuLayout.bottom[2].visible = false;
 const customizedTabs = TabsLayout();
 assert.deepEqual(nodes(customizedTabs).filter(node => node.type === 'TabScreen').map(node => node.props.name), ['search', '(playlists)', '(library)']);
 assert.equal(nodes(customizedTabs).find(node => node.type === 'TabScreen' && node.props.name === '(library)').props.options.href, null);
-assert.equal(customizedTabs.props.initialRouteName, 'search');
+assert.equal(customizedTabs.props.initialRouteName, undefined, 'SDK 58 derives initial navigation from hrefs');
 const tabMoves = [];
 const tabNavigation = { getState: () => ({ index: 0, routes: [{ name: '(library)' }] }), navigate: name => tabMoves.push(name) };
 const customizedLayout = customizedTabs.props.layout({ children: null, state: tabNavigation.getState(), navigation: tabNavigation });

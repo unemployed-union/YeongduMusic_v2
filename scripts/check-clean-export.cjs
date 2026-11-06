@@ -4,6 +4,7 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const { execFileSync, spawnSync } = require('node:child_process');
+const { sourceMapSources } = require('./source-map-sources.cjs');
 
 const root = path.resolve(__dirname, '..');
 const project = fs.mkdtempSync(path.join(os.tmpdir(), 'yeongdu-clean-export-'));
@@ -40,11 +41,12 @@ run(resolveLocal('typescript/bin/tsc'), ['--noEmit']);
 const metadata = JSON.parse(fs.readFileSync(path.join(project, 'dist/metadata.json'), 'utf8'));
 for (const platform of ['android', 'ios']) {
   const map = JSON.parse(fs.readFileSync(path.join(project, 'dist', metadata.fileMetadata[platform].bundle + '.map'), 'utf8'));
+  const sources = [...sourceMapSources(map)];
   for (const file of ['src/app/_layout.tsx', 'src/app/player.tsx', 'src/features/playback/player-screen.tsx', 'src/components/text.tsx']) {
-    const index = map.sources.findIndex(source => source.replaceAll('\\', '/').endsWith(file));
-    assert(index >= 0, platform + ' bundle must include the actual app screen: ' + file);
+    const entry = sources.find(({ source }) => source.replaceAll('\\', '/').endsWith(file));
+    assert(entry, platform + ' bundle must include the actual app screen: ' + file);
     const original = fs.readFileSync(path.join(project, file), 'utf8');
-    assert.equal(map.sourcesContent[index].replace(/\r\n/g, '\n'), original.replace(/\r\n/g, '\n'), platform + ' bundle must use the current source: ' + file);
+    assert.equal(entry.content.replace(/\r\n/g, '\n'), original.replace(/\r\n/g, '\n'), platform + ' bundle must use the current source: ' + file);
   }
 }
 console.log('PASS: Android/iOS production bundles contain the current application screens, with a clean lockfile install and typecheck, without pre-existing .expo files. Native APK/IPA compilation was not run.');

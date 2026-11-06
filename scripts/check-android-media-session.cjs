@@ -115,7 +115,7 @@ class AudioPlayer(val ref: Player) {
  val navigation = mutableListOf<String>()
  fun requestTrackNavigation(direction: String) { navigation.add(direction) }
 }
-class AudioLockScreenOptions(val isLiveStream: Boolean? = null, val showSkipNext: Boolean = false, val showSkipPrevious: Boolean = false)
+class AudioLockScreenOptions(val isLiveStream: Boolean? = null, val showNextTrack: Boolean = false, val showPreviousTrack: Boolean = false)
 `);
 const cases = write('Test.kt', `package expo.modules.audio.service
 import androidx.media3.common.*

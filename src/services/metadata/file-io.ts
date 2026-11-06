@@ -44,7 +44,7 @@ export async function rewriteTags(
         size,
         read: (offset, length) => {
           source.offset = offset;
-          return source.readBytes(length);
+          return source.readBytesSync(length);
         },
       },
       format,
@@ -58,18 +58,18 @@ export async function rewriteTags(
       for (const part of plan.parts) {
         if (part instanceof Uint8Array) {
           checkCancelled(signal);
-          destination.writeBytes(part);
+          destination.writeBytesSync(part);
           written += part.length;
         } else {
           for (let offset = 0; offset < part.length; ) {
             checkCancelled(signal);
             source.offset = part.offset + offset;
             const amount = Math.min(256 * 1024, part.length - offset);
-            const bytes = source.readBytes(amount);
+            const bytes = source.readBytesSync(amount);
             if (bytes.length !== amount) {
               throw new Error('음악 파일을 끝까지 읽지 못했습니다.');
             }
-            destination.writeBytes(bytes);
+            destination.writeBytesSync(bytes);
             offset += amount;
             written += amount;
             // Yield regularly so long lossless files do not freeze playback controls.
@@ -176,22 +176,22 @@ export async function uploadMultipartFile(
       body.create();
       const destination = body.open(FileMode.WriteOnly);
       try {
-        destination.writeBytes(prefix);
+        destination.writeBytesSync(prefix);
         for (let offset = 0; offset < size; ) {
           checkCancelled(signal);
           source.offset = offset;
           const length = Math.min(256 * 1024, size - offset);
-          const bytes = source.readBytes(length);
+          const bytes = source.readBytesSync(length);
           if (bytes.length !== length) {
             throw new Error('업로드할 파일을 끝까지 읽지 못했습니다.');
           }
-          destination.writeBytes(bytes);
+          destination.writeBytesSync(bytes);
           offset += bytes.length;
           progress(`업로드 요청 준비 중 · ${Math.floor((offset / size) * 100)}%`);
           await new Promise<void>((resolve) => setTimeout(resolve, 0));
         }
         checkCancelled(signal);
-        destination.writeBytes(ending);
+        destination.writeBytesSync(ending);
         if (destination.size !== prefix.length + size + ending.length) {
           throw new Error('파일 업로드 요청 크기가 일치하지 않습니다.');
         }

@@ -37,7 +37,7 @@ export async function saveBackupFile(text: string, prefix: string): Promise<stri
   }
   const file = directory.createFile(name, 'application/json');
   try {
-    file.write(text);
+    await file.write(text);
   } catch {
     try {
       file.delete();

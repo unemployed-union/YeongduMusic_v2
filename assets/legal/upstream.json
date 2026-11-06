@@ -58,10 +58,10 @@
   {
     "id": "expo",
     "name": "Expo",
-    "version": "57",
+    "version": "58",
     "license": "MIT",
     "file": "assets/legal/upstream/expo.txt",
-    "url": "https://raw.githubusercontent.com/expo/expo/sdk-57/LICENSE"
+    "url": "https://raw.githubusercontent.com/expo/expo/sdk-58/LICENSE"
   },
   {
     "id": "fast-float",
@@ -90,10 +90,10 @@
   {
     "id": "fresco",
     "name": "Fresco",
-    "version": "3.6.0",
+    "version": "3.7.0",
     "license": "MIT",
     "file": "assets/legal/upstream/fresco.txt",
-    "url": "https://raw.githubusercontent.com/facebook/fresco/v3.6.0/LICENSE"
+    "url": "https://raw.githubusercontent.com/facebook/fresco/v3.7.0/LICENSE"
   },
   {
     "id": "glog",
@@ -138,26 +138,26 @@
   {
     "id": "hermes",
     "name": "Hermes",
-    "version": "0.17.0",
+    "version": "260318099.0.5",
     "license": "MIT",
     "file": "assets/legal/upstream/hermes.txt",
-    "url": "https://raw.githubusercontent.com/facebook/hermes/hermes-v0.17.0/LICENSE"
+    "url": "https://raw.githubusercontent.com/facebook/hermes/hermes-v260318099.0.5/LICENSE"
   },
   {
     "id": "hermes-regex",
     "name": "Regular expression code (Hermes)",
-    "version": "0.17.0",
+    "version": "260318099.0.5",
     "license": "BSD-3-Clause",
     "file": "assets/legal/upstream/hermes-regex.txt",
-    "url": "https://raw.githubusercontent.com/facebook/hermes/hermes-v0.17.0/include/hermes/Regex/LICENSE.TXT"
+    "url": "https://raw.githubusercontent.com/facebook/hermes/hermes-v260318099.0.5/include/hermes/Regex/LICENSE.TXT"
   },
   {
     "id": "icu",
     "name": "ICU (Hermes)",
-    "version": "0.17.0",
+    "version": "260318099.0.5",
     "license": "Unicode / ICU",
     "file": "assets/legal/upstream/icu.txt",
-    "url": "https://raw.githubusercontent.com/facebook/hermes/hermes-v0.17.0/doc/icu_license.txt"
+    "url": "https://raw.githubusercontent.com/facebook/hermes/hermes-v260318099.0.5/doc/icu_license.txt"
   },
   {
     "id": "infer",
@@ -170,18 +170,18 @@
   {
     "id": "llvh",
     "name": "LLVM Support (Hermes)",
-    "version": "0.17.0",
+    "version": "260318099.0.5",
     "license": "Apache-2.0 WITH LLVM-exception / NCSA",
     "file": "assets/legal/upstream/llvh.txt",
-    "url": "https://raw.githubusercontent.com/facebook/hermes/hermes-v0.17.0/external/llvh/LICENSE.txt"
+    "url": "https://raw.githubusercontent.com/facebook/hermes/hermes-v260318099.0.5/external/llvh/LICENSE.txt"
   },
   {
     "id": "llvh-support",
     "name": "LLVM Support third-party code (Hermes)",
-    "version": "0.17.0",
+    "version": "260318099.0.5",
     "license": "BSD / MIT",
     "file": "assets/legal/upstream/llvh-support.txt",
-    "url": "https://raw.githubusercontent.com/facebook/hermes/hermes-v0.17.0/external/llvh/include/llvh/Support/LICENSE.TXT"
+    "url": "https://raw.githubusercontent.com/facebook/hermes/hermes-v260318099.0.5/external/llvh/include/llvh/Support/LICENSE.TXT"
   },
   {
     "id": "mpl-2",
@@ -194,10 +194,10 @@
   {
     "id": "pika",
     "name": "Pika",
-    "version": "0.3.2",
+    "version": "1.1.0",
     "license": "MIT",
     "file": "assets/legal/upstream/pika.txt",
-    "url": "https://raw.githubusercontent.com/lukmccall/pika/main/LICENSE.txt"
+    "url": "https://raw.githubusercontent.com/expo/pika/main/LICENSE.txt"
   },
   {
     "id": "promises",
@@ -242,9 +242,33 @@
   {
     "id": "yoga",
     "name": "Yoga",
-    "version": "1.19.0 / React Native 0.86.3",
+    "version": "1.19.0 / React Native 0.88.1",
     "license": "MIT",
     "file": "assets/legal/upstream/yoga.txt",
     "url": "https://raw.githubusercontent.com/facebook/yoga/v1.19.0/LICENSE"
+  },
+  {
+    "id": "metro",
+    "name": "Metro",
+    "version": "0.87.1",
+    "license": "MIT",
+    "file": "assets/legal/upstream/metro.txt",
+    "url": "https://raw.githubusercontent.com/facebook/metro/v0.87.1/LICENSE"
+  },
+  {
+    "id": "expo-modules-v2",
+    "name": "Expo Modules v2 Android",
+    "version": "0.2.7",
+    "license": "MIT",
+    "file": "assets/legal/upstream/expo-modules-v2.txt",
+    "url": "https://raw.githubusercontent.com/expo/expo-modules-v2-android/main/LICENSE.txt"
+  },
+  {
+    "id": "kolibri",
+    "name": "Kolibri",
+    "version": "0.2.4",
+    "license": "MIT",
+    "file": "assets/legal/upstream/kolibri.txt",
+    "url": "https://raw.githubusercontent.com/expo/kolibri/main/LICENSE.txt"
   }
 ]

@@ -301,7 +301,7 @@ async function checkFiles() {
     constructor(uri) { this.uri = uri; }
     get size() { return (files.get(this.uri) ?? '').length; }
     async text() { return files.get(this.uri); }
-    write(text) { if (failFileWrite) throw new Error('no space'); files.set(this.uri, text); }
+    async write(text) { await Promise.resolve(); if (failFileWrite) throw new Error('no space'); files.set(this.uri, text); }
     delete() { deleted.push(this.uri); files.delete(this.uri); }
   }
   const api = load('src/features/settings/backup-files.ts', {

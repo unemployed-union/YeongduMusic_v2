@@ -8,8 +8,8 @@ const { Buffer } = require('node:buffer');
 const root = path.resolve(__dirname, '..');
 const read = file => fs.readFileSync(path.resolve(root, file), 'utf8').replace(/^\uFEFF/, '');
 const json = file => JSON.parse(read(file));
-const inventory = json('.expo/license-inventory.json');
-const nativeNotices = json('.expo/native-notices.json');
+const inventory = json('dist/legal-audit/license-inventory.json');
+const nativeNotices = json('dist/legal-audit/native-notices.json');
 const upstream = json('assets/legal/upstream.json');
 const supplemental = new Map(upstream.map(item => [item.id, item]));
 const texts = {}, entries = [], excluded = [];
@@ -39,7 +39,7 @@ for (const name of [...Object.keys(project.dependencies), 'expo-keep-awake']) {
   const pkg = json(path.join(dir, 'package.json'));
   packages.set(pkg.name + '@' + pkg.version, { ...pkg, dir, files: fs.readdirSync(dir).filter(file => /^(license|licence|notice|copying)([.-]|$)/i.test(file)) });
 }
-const npmFallback = { '@nodable/entities': 'nodable-entities', 'expo-router': 'expo', '@expo/ui': 'expo', 'standard-navigation': 'standard-navigation', '@react-native-community/slider': 'slider' };
+const npmFallback = { '@nodable/entities': 'nodable-entities', 'expo-router': 'expo', '@expo/ui': 'expo', 'metro-runtime': 'metro', 'standard-navigation': 'standard-navigation', '@react-native-community/slider': 'slider' };
 for (const pkg of packages.values()) {
   const license = typeof pkg.license === 'object' ? pkg.license.type : pkg.license;
   if (/^(Unlicense|CC0-1.0|0BSD|Zlib|BSL-1.0)$/i.test(license)) { excluded.push({ name: pkg.name, license, reason: 'No binary attribution obligation' }); continue; }
@@ -94,8 +94,10 @@ for (const native of inventory.natives) {
       : native.name.startsWith('com.facebook.yoga:') ? 'yoga'
         : native.name.startsWith('com.facebook.hermes:') ? 'hermes'
           : native.name.startsWith('com.parse.bolts:') ? 'bolts'
-            : native.name.startsWith('io.github.lukmccall.pika:') ? 'pika'
-              : native.name === 'org.brotli:dec' ? 'brotli' : null;
+            : native.name.startsWith('io.github.lukmccall.pika:') || native.name.startsWith('io.github.expo.pika:') ? 'pika'
+              : native.name === 'io.github.expo:expo-modules-v2-react' ? 'expo-modules-v2'
+                : native.name.startsWith('io.github.expo.kolibri:') ? 'kolibri'
+                  : native.name === 'org.brotli:dec' ? 'brotli' : null;
   const content = notices.filter(item => !item.file.endsWith('.json')).map(item => item.text);
   let license;
   if (native.name.startsWith('com.facebook.react:')) { license = 'MIT'; content.push(read('node_modules/react-native/LICENSE')); }

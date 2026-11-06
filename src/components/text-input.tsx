@@ -5,12 +5,13 @@ import {
   TextInput as NativeTextInput,
   View,
   type TextInputProps,
+  type TextInputInstance,
   type ViewStyle,
 } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useColors } from '@/theme/tokens';
 
-export type TextInputHandle = NativeTextInput;
+export type TextInputHandle = TextInputInstance;
 const layoutKeys = [
   'flex',
   'flexGrow',
@@ -40,12 +41,12 @@ const layoutKeys = [
 ] as const;
 
 /** Keep field refs and submit behavior while offering the same clear control on every platform. */
-export const TextInput = forwardRef<NativeTextInput, TextInputProps>(function TextInput(
+export const TextInput = forwardRef<TextInputInstance, TextInputProps>(function TextInput(
   { style, value, defaultValue, onChangeText, editable, readOnly, accessibilityLabel, ...props },
   ref,
 ) {
   const colors = useColors();
-  const input = useRef<NativeTextInput>(null);
+  const input = useRef<TextInputInstance>(null);
   const [draft, setDraft] = useState(defaultValue ?? '');
   useImperativeHandle(ref, () => input.current!, []);
   const resolved = StyleSheet.flatten(style) ?? {};

@@ -106,7 +106,7 @@ async function checkFiles() {
   class File {
     constructor(...parts) { this.uri = uriOf(parts); }
     get exists() { return files.has(this.uri); } get size() { return files.get(this.uri)?.length ?? 0; }
-    open() { return { readBytes: count => new Uint8Array(files.get(this.uri).subarray(0, count)), close() {} }; }
+    open() { return { readBytesSync: count => new Uint8Array(files.get(this.uri).subarray(0, count)), close() {} }; }
     delete() { files.delete(this.uri); }
     static async downloadFileAsync(uri, target, options) {
       downloaded.push(uri); files.set(target.uri, jpeg); options.onProgress({ bytesWritten: 7, totalBytes: downloadOversize ? 9 * 1024 * 1024 : 7 });

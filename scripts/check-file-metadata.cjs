@@ -112,8 +112,8 @@ async function checkNativeIO() {
     create() { if (contents.has(this.uri)) throw Error('exists'); contents.set(this.uri, Buffer.alloc(0)); }
     open() { const file = this; let offset = 0;
       return { get offset() { return offset; }, set offset(value) { offset = value; }, get size() { return contents.get(file.uri).length; },
-        readBytes(length) { const bytes = contents.get(file.uri).subarray(offset, offset + length); offset += bytes.length; return new Uint8Array(bytes); },
-        writeBytes(bytes) { const old = contents.get(file.uri), next = Buffer.alloc(Math.max(old.length, offset + bytes.length)); old.copy(next); next.set(bytes, offset); contents.set(file.uri, next); offset += bytes.length; }, close() {} };
+        readBytesSync(length) { const bytes = contents.get(file.uri).subarray(offset, offset + length); offset += bytes.length; return new Uint8Array(bytes); },
+        writeBytesSync(bytes) { const old = contents.get(file.uri), next = Buffer.alloc(Math.max(old.length, offset + bytes.length)); old.copy(next); next.set(bytes, offset); contents.set(file.uri, next); offset += bytes.length; }, close() {} };
     }
   }
   const io = load('src/services/metadata/file-io.ts', { 'expo-file-system': { File, FileMode: {}, UploadType: { BINARY_CONTENT: 0 }, UploadTask: class {
@@ -288,8 +288,8 @@ async function checkSavePipeline() {
     async copy(file) { contents.set(file.uri, Buffer.from(contents.get(this.uri))); }
     create() { if (contents.has(this.uri)) throw Error('exists'); contents.set(this.uri, Buffer.alloc(0)); }
     open() { const file = this; let offset = 0; return { get offset() { return offset; }, set offset(value) { offset = value; }, get size() { return file.size; },
-      readBytes(length) { const bytes = contents.get(file.uri).subarray(offset, offset + length); offset += bytes.length; return new Uint8Array(bytes); },
-      writeBytes(bytes) { const old = contents.get(file.uri), next = Buffer.alloc(Math.max(old.length, offset + bytes.length)); old.copy(next); next.set(bytes, offset); contents.set(file.uri, next); offset += bytes.length; }, close() {} }; }
+      readBytesSync(length) { const bytes = contents.get(file.uri).subarray(offset, offset + length); offset += bytes.length; return new Uint8Array(bytes); },
+      writeBytesSync(bytes) { const old = contents.get(file.uri), next = Buffer.alloc(Math.max(old.length, offset + bytes.length)); old.copy(next); next.set(bytes, offset); contents.set(file.uri, next); offset += bytes.length; }, close() {} }; }
     static async downloadFileAsync(_, file, config) { if (gate) await gate.promise; if (config.signal.aborted) throw Error('cancelled'); contents.set(file.uri, source); return file; }
   }
   const filesystem = { File, Directory, FileMode: {}, Paths: { cache: { uri: 'file:///cache' }, availableDiskSpace: 1e10 } };

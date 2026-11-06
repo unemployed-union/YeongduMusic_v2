@@ -9,7 +9,7 @@ android {
   defaultConfig { versionCode 1; versionName '1.0.0' }
 }
 dependencies {
-  // 21.5 supports Picker and keeps the legacy Sign-In APIs used by the account SDK.
-  implementation 'com.google.android.gms:play-services-auth:21.5.0'
+  // Includes Google's ProGuard fix; keeps Picker and legacy Sign-In APIs.
+  implementation 'com.google.android.gms:play-services-auth:21.5.1'
   testImplementation 'junit:junit:4.13.2'
 }

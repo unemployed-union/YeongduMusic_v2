@@ -3,12 +3,13 @@ const fs = require('node:fs');
 const path = require('node:path');
 const os = require('node:os');
 const crypto = require('node:crypto');
+const { sourceMapSources } = require('./source-map-sources.cjs');
 const root = path.resolve(__dirname, '..');
 function walk(dir) { return fs.existsSync(dir) ? fs.readdirSync(dir, { withFileTypes: true }).flatMap(e => e.isDirectory() ? walk(path.join(dir,e.name)) : [path.join(dir,e.name)]) : []; }
 const packages = new Map();
-const maps = walk(path.join(root,'.expo/license-audit')).filter(f => f.endsWith('.map'));
+const maps = walk(path.join(root,'dist/legal-audit/bundles')).filter(f => f.endsWith('.map'));
 if (!maps.length) throw new Error('Release source maps are missing. Export current release bundles first.');
-for (const map of maps) for (const source of JSON.parse(fs.readFileSync(map)).sources) {
+for (const map of maps) for (const { source } of sourceMapSources(JSON.parse(fs.readFileSync(map)))) {
   const normalized = source.replaceAll('\\','/');
   const at = normalized.lastIndexOf('node_modules/');
   if (at < 0) continue;
@@ -21,7 +22,7 @@ for (const map of maps) for (const source of JSON.parse(fs.readFileSync(map)).so
   packages.set(pkg.name+'@'+pkg.version, { name: pkg.name, version: pkg.version, license: pkg.license, dir,
     files: fs.readdirSync(dir).filter(f=>/^(license|licence|notice|copying)([.-]|$)/i.test(f)) });
 }
-const reportBytes=fs.readFileSync(path.join(root,'.expo/license-gradle-dependencies.txt'));
+const reportBytes=fs.readFileSync(path.join(root,'dist/legal-audit/license-gradle-dependencies.txt'));
 const report=reportBytes.toString(reportBytes[0]===255 ? 'utf16le':'utf8');
 const coordinates=new Map();
 for (const match of report.matchAll(/(?:[+\\]---|\s)([\w.-]+):([\w.-]+):([^\s]+)(?: -> ([^\s]+))?/g)) {
@@ -38,6 +39,6 @@ const natives=[...coordinates.values()].map(({group,artifact,version})=>{
 }).filter(n=>n.files.some(f=>/\.(aar|jar)$/.test(f)));
 if (!natives.length) throw new Error('Android runtime artifacts are missing. Check the dependency report and GRADLE_USER_HOME before generating notices.');
 const sha = file => crypto.createHash('sha256').update(fs.readFileSync(path.join(root,file),'utf8').replace(/\r\n/g,'\n')).digest('hex');
-fs.writeFileSync(path.join(root,'.expo/license-inventory.json'),JSON.stringify({packageLockSha256:sha('pnpm-lock.yaml'),packageJsonSha256:sha('package.json'),packages:[...packages.values()].sort((a,b)=>a.name.localeCompare(b.name)),natives},null,2));
+fs.writeFileSync(path.join(root,'dist/legal-audit/license-inventory.json'),JSON.stringify({packageLockSha256:sha('pnpm-lock.yaml'),packageJsonSha256:sha('package.json'),packages:[...packages.values()].sort((a,b)=>a.name.localeCompare(b.name)),natives},null,2));
 console.log('JS packages:',packages.size,'Native artifacts:',natives.length);
 console.log('Missing JS license files:',[...packages.values()].filter(p=>!p.files.length).map(p=>p.name));

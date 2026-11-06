@@ -275,7 +275,7 @@ export default function AlbumScreen() {
                     )}
                   </View>
                 </View>
-              ) : null
+              ) : undefined
             }
             ListEmptyComponent={
               <Text

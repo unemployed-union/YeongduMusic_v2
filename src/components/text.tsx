@@ -1,5 +1,5 @@
 import { Children, forwardRef, isValidElement, useMemo, type ReactNode } from 'react';
-import { Platform, Text as NativeText, type TextProps, type TextStyle } from 'react-native';
+import { Platform, Text as NativeText, type TextInstance, type TextProps, type TextStyle } from 'react-native';
 import { characterWrap } from './character-wrap';
 
 const webWrap = { wordBreak: 'normal', overflowWrap: 'break-word' } as TextStyle;
@@ -18,7 +18,7 @@ function plainText(children: ReactNode): string {
 }
 
 /** Word wrapping with character breaks for Hangul, native refs and original spoken labels. */
-export const Text = forwardRef<NativeText, TextProps>(function Text(
+export const Text = forwardRef<TextInstance, TextProps>(function Text(
   { children, style, accessibilityLabel, numberOfLines, ...props },
   ref,
 ) {

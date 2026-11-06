@@ -17,6 +17,7 @@ import {
   ScrollView,
   View,
   useWindowDimensions,
+  type ViewInstance,
 } from 'react-native';
 import { Text } from '@/components/text';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -72,7 +73,7 @@ export function PlayerScreen() {
   const insets = useSafeAreaInsets();
   const { width, height, fontScale } = useWindowDimensions();
   const layout = playerLayout(width, height, insets, fontScale);
-  const controlsRef = useRef<View | null>(null);
+  const controlsRef = useRef<ViewInstance | null>(null);
   const [panel, setPanel] = useState<'artwork' | 'queue' | 'lyrics'>('artwork');
   const [lyricsSource, setLyricsSource] = useState<LyricsSource>('auto');
   const showQueue = panel === 'queue';
@@ -85,7 +86,7 @@ export function PlayerScreen() {
     }
   }
   const menuOpen = menu !== null;
-  const menuBlurTarget = useRef<View | null>(null);
+  const menuBlurTarget = useRef<ViewInstance | null>(null);
   const [screenHeight, setScreenHeight] = useState(height);
   const [controlsTop, setControlsTop] = useState(0);
   const [saveList, setSaveList] = useState<'song' | 'queue' | null>(null);

@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
 import { Redirect, useIsFocused, useSegments } from 'expo-router';
 import { NativeTabs } from 'expo-router/unstable-native-tabs';
-import { View, useWindowDimensions } from 'react-native';
+import { useWindowDimensions, type ViewInstance } from 'react-native';
 import { useKeyboardState } from 'react-native-keyboard-controller';
 import { useMenuPreferences } from '@/stores/menu-preferences';
 import {
@@ -48,7 +48,7 @@ export function SystemTabs() {
   const tablet = workspaceLayout(width, height, fontScale).expanded;
   const keyboardVisible = useKeyboardState((state) => state.isVisible);
   const hasSong = usePlaybackStore((state) => !!state.queue[state.index]);
-  const accessoryTarget = useRef<View | null>(null);
+  const accessoryTarget = useRef<ViewInstance | null>(null);
   const visible = visibleMenuIds(bottom);
   const current = segments.at(1);
   // Hidden native tabs cannot be selected, including after changing the menu in Settings.

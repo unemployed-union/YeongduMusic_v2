@@ -1,5 +1,5 @@
 import { useRef } from 'react';
-import { StyleSheet, View, useWindowDimensions } from 'react-native';
+import { StyleSheet, View, useWindowDimensions, type ViewInstance } from 'react-native';
 import { Tabs } from 'expo-router';
 import { BlurTargetView, BlurView } from 'expo-blur';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -9,7 +9,7 @@ import { MINI_PLAYER_INSET, MiniPlayer } from '@/components/mini-player';
 import { TAB_BAR_HEIGHT, TabBarInsetContext } from '@/components/tab-bar-inset';
 import { useAppColorScheme, useColors } from '@/theme/tokens';
 import { useMenuPreferences } from '@/stores/menu-preferences';
-import { BOTTOM_MENU_ROUTES, MENU_LABELS, visibleMenuIds } from '@/features/settings/menu-layout';
+import { BOTTOM_MENU_ROUTES, MENU_LABELS } from '@/features/settings/menu-layout';
 import { TabMenuSelection } from '@/features/settings/tab-menu-selection';
 import { ScreenBlurTargetContext } from '@/components/screen-blur-target';
 import { useBlurIntensity } from '@/stores/blur-preferences';
@@ -33,9 +33,9 @@ export default function LegacyTabsLayout() {
   const tabInset = tablet ? insets.bottom : TAB_BAR_HEIGHT + insets.bottom;
   const keyboardVisible = useKeyboardState((state) => state.isVisible);
   const bottom = useMenuPreferences((state) => state.layout.bottom);
-  const libraryTarget = useRef<View | null>(null);
-  const searchTarget = useRef<View | null>(null);
-  const playlistsTarget = useRef<View | null>(null);
+  const libraryTarget = useRef<ViewInstance | null>(null);
+  const searchTarget = useRef<ViewInstance | null>(null);
+  const playlistsTarget = useRef<ViewInstance | null>(null);
   const targetFor = (name: string) => {
     if (name === 'search') {
       return searchTarget;
@@ -48,7 +48,6 @@ export default function LegacyTabsLayout() {
 
   return (
     <Tabs
-      initialRouteName={BOTTOM_MENU_ROUTES[visibleMenuIds(bottom)[0]]}
       // Capture screen content only; both chrome surfaces share the active target.
       screenLayout={({ children, route }) => (
         <BlurTargetView ref={targetFor(route.name)} style={styles.content}>
@@ -157,7 +156,8 @@ export default function LegacyTabsLayout() {
               } else {
                 tabIcon = 'search-outline';
               }
-              return <Ionicons name={tabIcon} color={color} size={size} />;
+              const iconColor = color === null || typeof color === 'number' ? colors.tint : color;
+              return <Ionicons name={tabIcon} color={iconColor} size={size} />;
             },
           }}
         />

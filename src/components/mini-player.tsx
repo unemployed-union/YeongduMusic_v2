@@ -1,5 +1,5 @@
 import type { RefObject } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View, type ViewInstance } from 'react-native';
 import { Text } from '@/components/text';
 import { BlurView } from 'expo-blur';
 import Animated, { FadeInDown, SlideInDown } from 'react-native-reanimated';
@@ -36,7 +36,7 @@ export function MiniPlayer({
   blurTarget,
   embedded = false,
 }: {
-  blurTarget: RefObject<View | null>;
+  blurTarget: RefObject<ViewInstance | null>;
   embedded?: boolean;
 }) {
   const song = usePlaybackStore((state) => state.queue[state.index]);

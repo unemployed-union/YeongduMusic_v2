@@ -646,6 +646,7 @@ Android의 강제 중지·재부팅·배터리 관리에 의한 프로세스 종
 설정의 표시 버전은 한국 시간 기준 `YYYYMMDD` + 당일 빌드 순서 문자입니다. `A=1`, `B=2`, `C=3`, `Z=26`, `AA=27`이며 날짜가 바뀌면 A부터 시작합니다. 기존 빌드는 일별 횟수가 기록되지 않았으므로 새 기록은 `20261012A`부터 시작합니다. `build-version.json`을 Git에 함께 보관해 빌드 기록을 이어갑니다.
 
 - 이후 로컬 Release 빌드: `pnpm build:android` / `pnpm build:ios`(iOS는 macOS 필요).
+- 기기 설치 없이 Android Release APK만 생성: `pnpm build:apk`. 빌드 번호 증가와 Android prebuild 후 `android/app/build/outputs/apk/release/app-release.apk`를 생성합니다.
 - EAS 빌드: `pnpm build:eas --platform android --profile preview` 등. 로컬에서 버전 기록을 증가시킨 뒤 EAS로 전달합니다.
 - Gradle 또는 EAS를 직접 실행할 때는 먼저 `pnpm version:build`를 한 번 실행합니다. 동일 빌드에서 중복 실행하지 않습니다.
 - 위 빌드 명령은 빌드 시도마다 번호를 예약하므로 실패한 빌드도 횟수에 포함됩니다. 병렬 빌드는 하나의 기록을 동시에 증가시키지 않도록 순차 예약합니다.

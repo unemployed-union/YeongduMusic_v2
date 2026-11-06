@@ -1,5 +1,5 @@
 import { useContext, useRef } from 'react';
-import { StyleSheet, View, useWindowDimensions } from 'react-native';
+import { StyleSheet, View, useWindowDimensions, type ViewInstance } from 'react-native';
 import { BlurTargetView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useKeyboardState } from 'react-native-keyboard-controller';
@@ -21,7 +21,7 @@ export function NativeTabFrame(props: NativeTabFrameProps) {
 }
 
 function Frame({ children, active, detail }: NativeTabFrameProps) {
-  const target = useRef<View | null>(null);
+  const target = useRef<ViewInstance | null>(null);
   const insets = useSafeAreaInsets();
   const { width, height, fontScale } = useWindowDimensions();
   const workspace = workspaceLayout(width, height, fontScale);

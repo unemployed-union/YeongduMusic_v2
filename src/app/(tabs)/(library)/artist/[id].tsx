@@ -119,7 +119,7 @@ export default function ArtistScreen() {
                     </Pressable>
                   )}
                 </View>
-              ) : null
+              ) : undefined
             }
             ListEmptyComponent={
               <Text style={[styles.empty, { color: colors.muted }]}>

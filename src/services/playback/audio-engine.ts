@@ -34,7 +34,7 @@ export interface AudioEngine {
   release(): void;
 }
 
-// SDK 57 Android maps this to ExoPlayer's maximum forward buffer (seconds).
+// Android maps this to ExoPlayer's maximum forward buffer (seconds).
 // Its default maximum is 50 seconds; leave startup/rebuffer thresholds to Expo.
 const ANDROID_FORWARD_BUFFER_SECONDS = 120;
 const STALL_TIMEOUT_MS = 20_000;
@@ -476,8 +476,7 @@ export class ExpoAudioEngine implements AudioEngine {
     player.replace(this.source);
     this.applyPlaybackRate(player);
     if (this.backgroundPlaybackAvailable) {
-      // showSkip* and remoteTrackChange are provided by our pinned expo-audio pnpm patch.
-      // Stock showSeek* options only move 10 seconds within the current song.
+      // Standard track controls dispatch into the JS queue through our pinned audio patch.
       if (this.lockScreenActive) {
         this.updateMetadata(song);
       } else {
@@ -485,8 +484,8 @@ export class ExpoAudioEngine implements AudioEngine {
         if (Platform.OS === 'android') {
           lockScreenOptions = {
             isLiveStream: false,
-            showSkipPrevious: true,
-            showSkipNext: true,
+            showPreviousTrack: true,
+            showNextTrack: true,
             showSeekBackward: false,
             showSeekForward: false,
           };

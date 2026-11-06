@@ -4,7 +4,7 @@ import { useWindowDimensions } from 'react-native';
 import { workspaceLayout } from '@/theme/layout';
 import { NativeTabFrame } from '@/components/native-tab-frame';
 
-export const unstable_settings = { initialRouteName: 'index' };
+export const unstable_settings = { anchor: 'index' };
 
 export default function LibraryLayout() {
   const colors = useColors();
@@ -12,6 +12,7 @@ export default function LibraryLayout() {
   const tablet = workspaceLayout(width, height, fontScale).expanded;
   return (
     <Stack
+      activityEnabled={1}
       layout={({ children, state }) => (
         <NativeTabFrame active="library" detail={state.routes[state.index]}>
           {children}
@@ -25,7 +26,6 @@ export default function LibraryLayout() {
         headerBackTitle: '보관함',
         animation: tablet ? 'none' : 'slide_from_right',
         ...(tablet && { gestureEnabled: false }),
-        freezeOnBlur: true,
       }}
     >
       <Stack.Screen name="index" options={{ headerShown: false }} />

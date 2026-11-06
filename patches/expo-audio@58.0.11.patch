@@ -1,0 +1,639 @@
+diff --git a/android/src/main/java/expo/modules/audio/AudioModule.kt b/android/src/main/java/expo/modules/audio/AudioModule.kt
+index 6c81fce3dd518d3b82e3280940a001c7be84dd0a..00dda21e96e3651d90ef8d6c6c96ba4d6fe27ff4 100644
+--- a/android/src/main/java/expo/modules/audio/AudioModule.kt
++++ b/android/src/main/java/expo/modules/audio/AudioModule.kt
+@@ -577,6 +577,11 @@ class AudioModule : Module() {
+         player.id
+       }
+ 
++      // Expose this player's audio session to the existing system equalizer.
++      Property("audioSessionId") { player ->
++        runOnMain { player.ref.audioSessionId }
++      }
++
+       Property("isBuffering") { player ->
+         runOnMain {
+           player.ref.playbackState == Player.STATE_BUFFERING
+@@ -685,6 +690,10 @@ class AudioModule : Module() {
+         }
+       }
+ 
++      Function("finishTrackTransition") { player: AudioPlayer ->
++        runOnMain { player.finishTrackTransition() }
++      }
++
+       Function("replace") { player: AudioPlayer, source: AudioSource? ->
+         runOnMain {
+           if (player.ref.availableCommands.contains(Player.COMMAND_CHANGE_MEDIA_ITEMS)) {
+diff --git a/android/src/main/java/expo/modules/audio/AudioPlayer.kt b/android/src/main/java/expo/modules/audio/AudioPlayer.kt
+index fb2d0b57fb8718df04e5c073b70837b2658f2c16..45d7ae872e8cd987a606f619309c131569462b5f 100644
+--- a/android/src/main/java/expo/modules/audio/AudioPlayer.kt
++++ b/android/src/main/java/expo/modules/audio/AudioPlayer.kt
+@@ -84,6 +84,12 @@ class AudioPlayer(
+ 
+   private var samplingEnabled = false
+   private var visualizer: Visualizer? = null
++  private val trackTransitionWakeLock = TrackTransitionWakeLock(context)
++  private val trackTransitionListener = object : Player.Listener {
++    override fun onIsPlayingChanged(isPlaying: Boolean) {
++      if (isPlaying) finishTrackTransition()
++    }
++  }
+   private val context by lazy {
+     appContext.reactContext
+       ?: throw Exceptions.ReactContextLost()
+@@ -91,6 +97,7 @@ class AudioPlayer(
+ 
+   init {
+     installPlayerListeners()
++    ref.addListener(trackTransitionListener)
+     source?.let {
+       setMediaSource(source)
+     }
+@@ -114,6 +121,8 @@ class AudioPlayer(
+       "playbackState" to playbackStateToString(playbackState)
+     )
+     if (justFinished) {
++      // Keep the CPU awake while JS resolves the next authenticated stream.
++      if (isActiveForLockScreen) trackTransitionWakeLock.acquire()
+       updateMap["didJustFinish"] = true
+       updateMap["playing"] = false
+     }
+@@ -121,6 +130,7 @@ class AudioPlayer(
+   }
+ 
+   override fun onPlayerError(error: PlaybackException) {
++    finishTrackTransition()
+     sendStatusUpdate(
+       mapOf(
+         "error" to error.message
+@@ -200,6 +210,36 @@ class AudioPlayer(
+     )
+   }
+ 
++  // JS continues to own the mixed queue, shuffle and authenticated sources.
++  override val supportsNextTrack: Boolean
++    get() = lockScreenOptions?.showNextTrack == true
++
++  override val supportsPreviousTrack: Boolean
++    get() = lockScreenOptions?.showPreviousTrack == true
++
++  override fun nextTrack() = requestTrackNavigation("next")
++
++  override fun previousTrack() = requestTrackNavigation("previous")
++
++  internal fun requestTrackNavigation(direction: String) {
++    if (isActiveForLockScreen) trackTransitionWakeLock.acquire()
++    emit("remoteTrackChange", mapOf("direction" to direction))
++  }
++
++  internal fun finishTrackTransition() {
++    trackTransitionWakeLock.release()
++  }
++
++  override fun setActiveForLockScreen(active: Boolean, metadata: Metadata?, options: AudioLockScreenOptions?) {
++    if (!active) finishTrackTransition()
++    super.setActiveForLockScreen(active, metadata, options)
++  }
++
++  override fun clearLockScreenControls() {
++    finishTrackTransition()
++    super.clearLockScreenControls()
++  }
++
+   override fun assignBasicMediaSession() {
+     mediaSession.release()
+     mediaSession = buildBasicMediaSession(context, ref) { requestPlay() }
+@@ -258,6 +298,8 @@ class AudioPlayer(
+   }
+ 
+   override fun releasePlayer() {
++    finishTrackTransition()
++    ref.removeListener(trackTransitionListener)
+     mediaSession.release()
+     if (isActiveForLockScreen) {
+       serviceConnection.playbackServiceBinder?.service?.unregisterPlayable()
+diff --git a/android/src/main/java/expo/modules/audio/TrackTransitionWakeLock.kt b/android/src/main/java/expo/modules/audio/TrackTransitionWakeLock.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..35a12431d7aff418cc7431a637941369a207c518
+--- /dev/null
++++ b/android/src/main/java/expo/modules/audio/TrackTransitionWakeLock.kt
+@@ -0,0 +1,20 @@
++package expo.modules.audio
++
++import android.content.Context
++import android.os.PowerManager
++
++// ExoPlayer's own wake lock stops at STATE_ENDED. JS still needs time to
++// resolve the next authenticated/local source while the display stays off.
++internal class TrackTransitionWakeLock(context: Context) {
++  private val lock = (context.getSystemService(Context.POWER_SERVICE) as PowerManager)
++    .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "YeongduMusic:TrackTransition")
++    .apply { setReferenceCounted(false) }
++
++  fun acquire() {
++    lock.acquire(30_000L)
++  }
++
++  fun release() {
++    if (lock.isHeld) lock.release()
++  }
++}
+diff --git a/android/src/main/java/expo/modules/audio/service/AudioControlsService.kt b/android/src/main/java/expo/modules/audio/service/AudioControlsService.kt
+index 53c36f7e3c0a0bcb8b4de1f5e6d2d3e214d3fbf2..cd36db585505b3c878fff5bc186e3612de38c9aa 100644
+--- a/android/src/main/java/expo/modules/audio/service/AudioControlsService.kt
++++ b/android/src/main/java/expo/modules/audio/service/AudioControlsService.kt
+@@ -23,6 +23,7 @@ import androidx.media3.session.MediaSession
+ import androidx.media3.session.MediaSessionService
+ import androidx.media3.session.MediaStyleNotificationHelper
+ import androidx.media3.session.SessionCommand
++import expo.modules.audio.AudioPlayer
+ import expo.modules.audio.AudioLockScreenOptions
+ import expo.modules.audio.LockScreenPlayable
+ import expo.modules.audio.Metadata
+@@ -136,6 +137,17 @@ class AudioControlsService : MediaSessionService() {
+     createNotificationChannelIfNeeded()
+   }
+ 
++  // Keep active playback when the user dismisses the UI task.
++  override fun onTaskRemoved(rootIntent: Intent?) {
++    val player = currentPlayable?.player
++    if (player != null && player.playWhenReady &&
++      player.playbackState != Player.STATE_ENDED && player.playbackState != Player.STATE_IDLE) {
++      ensureForegroundNotification()
++      return
++    }
++    super.onTaskRemoved(rootIntent)
++  }
++
+   private fun shouldPlayInSilentMode(): Boolean {
+     return playsInSilentMode || audioManager.ringerMode == AudioManager.RINGER_MODE_NORMAL
+   }
+@@ -401,7 +413,12 @@ class AudioControlsService : MediaSessionService() {
+   }
+ 
+   private fun resolveSessionPlayer(playable: LockScreenPlayable, options: AudioLockScreenOptions?): Player {
+-    val player = PlayRequestingPlayer(playable.player) { playable.requestPlay() }
++    val nativePlayer = if (playable is AudioPlayer) {
++      TrackNavigationPlayer(playable, options)
++    } else {
++      playable.player
++    }
++    val player = PlayRequestingPlayer(nativePlayer) { playable.requestPlay() }
+     val isLive = options?.isLiveStream ?: playable.isLive
+     val forwardMs = seekIntervalMs(options?.seekForwardIntervalSeconds)
+     val backwardMs = seekIntervalMs(options?.seekBackwardIntervalSeconds)
+diff --git a/android/src/main/java/expo/modules/audio/service/ForwardingPlayerListener.java b/android/src/main/java/expo/modules/audio/service/ForwardingPlayerListener.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..9ddeed260dbb160527284bb43bf6dc3433fa9467
+--- /dev/null
++++ b/android/src/main/java/expo/modules/audio/service/ForwardingPlayerListener.java
+@@ -0,0 +1,165 @@
++package expo.modules.audio.service;
++
++import androidx.media3.common.Player;
++import androidx.media3.common.util.UnstableApi;
++
++// Kotlin 'Player.Listener by listener' does not delegate Java default methods.
++// Both session wrappers need all callbacks, including timeline and seek results.
++// Keep this forwarding list aligned with our pinned Media3 1.9.0 Player.Listener.
++@UnstableApi
++@SuppressWarnings("deprecation")
++abstract class ForwardingPlayerListener implements Player.Listener {
++  protected final Player.Listener listener;
++
++  ForwardingPlayerListener(Player.Listener listener) {
++    this.listener = listener;
++  }
++
++  @Override public void onEvents(androidx.media3.common.Player arg0, androidx.media3.common.Player.Events arg1) {
++    listener.onEvents(arg0, arg1);
++  }
++
++  @Override public void onTimelineChanged(androidx.media3.common.Timeline arg0, int arg1) {
++    listener.onTimelineChanged(arg0, arg1);
++  }
++
++  @Override public void onMediaItemTransition(androidx.media3.common.MediaItem arg0, int arg1) {
++    listener.onMediaItemTransition(arg0, arg1);
++  }
++
++  @Override public void onTracksChanged(androidx.media3.common.Tracks arg0) {
++    listener.onTracksChanged(arg0);
++  }
++
++  @Override public void onMediaMetadataChanged(androidx.media3.common.MediaMetadata arg0) {
++    listener.onMediaMetadataChanged(arg0);
++  }
++
++  @Override public void onPlaylistMetadataChanged(androidx.media3.common.MediaMetadata arg0) {
++    listener.onPlaylistMetadataChanged(arg0);
++  }
++
++  @Override public void onIsLoadingChanged(boolean arg0) {
++    listener.onIsLoadingChanged(arg0);
++  }
++
++  @Override public void onLoadingChanged(boolean arg0) {
++    listener.onLoadingChanged(arg0);
++  }
++
++  @Override public void onAvailableCommandsChanged(androidx.media3.common.Player.Commands arg0) {
++    listener.onAvailableCommandsChanged(arg0);
++  }
++
++  @Override public void onTrackSelectionParametersChanged(androidx.media3.common.TrackSelectionParameters arg0) {
++    listener.onTrackSelectionParametersChanged(arg0);
++  }
++
++  @Override public void onPlayerStateChanged(boolean arg0, int arg1) {
++    listener.onPlayerStateChanged(arg0, arg1);
++  }
++
++  @Override public void onPlaybackStateChanged(int arg0) {
++    listener.onPlaybackStateChanged(arg0);
++  }
++
++  @Override public void onPlayWhenReadyChanged(boolean arg0, int arg1) {
++    listener.onPlayWhenReadyChanged(arg0, arg1);
++  }
++
++  @Override public void onPlaybackSuppressionReasonChanged(int arg0) {
++    listener.onPlaybackSuppressionReasonChanged(arg0);
++  }
++
++  @Override public void onIsPlayingChanged(boolean arg0) {
++    listener.onIsPlayingChanged(arg0);
++  }
++
++  @Override public void onRepeatModeChanged(int arg0) {
++    listener.onRepeatModeChanged(arg0);
++  }
++
++  @Override public void onShuffleModeEnabledChanged(boolean arg0) {
++    listener.onShuffleModeEnabledChanged(arg0);
++  }
++
++  @Override public void onPlayerError(androidx.media3.common.PlaybackException arg0) {
++    listener.onPlayerError(arg0);
++  }
++
++  @Override public void onPlayerErrorChanged(androidx.media3.common.PlaybackException arg0) {
++    listener.onPlayerErrorChanged(arg0);
++  }
++
++  @Override public void onPositionDiscontinuity(int arg0) {
++    listener.onPositionDiscontinuity(arg0);
++  }
++
++  @Override public void onPositionDiscontinuity(androidx.media3.common.Player.PositionInfo arg0, androidx.media3.common.Player.PositionInfo arg1, int arg2) {
++    listener.onPositionDiscontinuity(arg0, arg1, arg2);
++  }
++
++  @Override public void onPlaybackParametersChanged(androidx.media3.common.PlaybackParameters arg0) {
++    listener.onPlaybackParametersChanged(arg0);
++  }
++
++  @Override public void onSeekBackIncrementChanged(long arg0) {
++    listener.onSeekBackIncrementChanged(arg0);
++  }
++
++  @Override public void onSeekForwardIncrementChanged(long arg0) {
++    listener.onSeekForwardIncrementChanged(arg0);
++  }
++
++  @Override public void onMaxSeekToPreviousPositionChanged(long arg0) {
++    listener.onMaxSeekToPreviousPositionChanged(arg0);
++  }
++
++  @Override public void onAudioSessionIdChanged(int arg0) {
++    listener.onAudioSessionIdChanged(arg0);
++  }
++
++  @Override public void onAudioAttributesChanged(androidx.media3.common.AudioAttributes arg0) {
++    listener.onAudioAttributesChanged(arg0);
++  }
++
++  @Override public void onVolumeChanged(float arg0) {
++    listener.onVolumeChanged(arg0);
++  }
++
++  @Override public void onSkipSilenceEnabledChanged(boolean arg0) {
++    listener.onSkipSilenceEnabledChanged(arg0);
++  }
++
++  @Override public void onDeviceInfoChanged(androidx.media3.common.DeviceInfo arg0) {
++    listener.onDeviceInfoChanged(arg0);
++  }
++
++  @Override public void onDeviceVolumeChanged(int arg0, boolean arg1) {
++    listener.onDeviceVolumeChanged(arg0, arg1);
++  }
++
++  @Override public void onVideoSizeChanged(androidx.media3.common.VideoSize arg0) {
++    listener.onVideoSizeChanged(arg0);
++  }
++
++  @Override public void onSurfaceSizeChanged(int arg0, int arg1) {
++    listener.onSurfaceSizeChanged(arg0, arg1);
++  }
++
++  @Override public void onRenderedFirstFrame() {
++    listener.onRenderedFirstFrame();
++  }
++
++  @Override public void onCues(java.util.List<androidx.media3.common.text.Cue> arg0) {
++    listener.onCues(arg0);
++  }
++
++  @Override public void onCues(androidx.media3.common.text.CueGroup arg0) {
++    listener.onCues(arg0);
++  }
++
++  @Override public void onMetadata(androidx.media3.common.Metadata arg0) {
++    listener.onMetadata(arg0);
++  }
++}
+diff --git a/android/src/main/java/expo/modules/audio/service/MetadataInjectingPlayer.kt b/android/src/main/java/expo/modules/audio/service/MetadataInjectingPlayer.kt
+index 18203a364d17dcf3de95d22a20175308e3363889..fd45ebe07d4b3b1b1cd79580a5cb22db790ac7c3 100644
+--- a/android/src/main/java/expo/modules/audio/service/MetadataInjectingPlayer.kt
++++ b/android/src/main/java/expo/modules/audio/service/MetadataInjectingPlayer.kt
+@@ -80,8 +80,8 @@ internal class MetadataInjectingPlayer(
+   }
+ 
+   private inner class MetadataForwardingListener(
+-    private val listener: Player.Listener
+-  ) : Player.Listener by listener {
++    listener: Player.Listener
++  ) : ForwardingPlayerListener(listener) {
+     override fun onMediaMetadataChanged(mediaMetadata: MediaMetadata) {
+       listener.onMediaMetadataChanged(this@MetadataInjectingPlayer.mediaMetadata)
+     }
+diff --git a/android/src/main/java/expo/modules/audio/service/TrackNavigationPlayer.kt b/android/src/main/java/expo/modules/audio/service/TrackNavigationPlayer.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..c0d709a38b9ab446e343fd328e3409823e09168f
+--- /dev/null
++++ b/android/src/main/java/expo/modules/audio/service/TrackNavigationPlayer.kt
+@@ -0,0 +1,102 @@
++package expo.modules.audio.service
++
++import androidx.media3.common.FlagSet
++import androidx.media3.common.ForwardingPlayer
++import androidx.media3.common.Player
++import androidx.media3.common.util.UnstableApi
++import expo.modules.audio.AudioLockScreenOptions
++import expo.modules.audio.AudioPlayer
++import java.util.IdentityHashMap
++
++// ExoPlayer holds one stream; JS owns authenticated queue navigation.
++@UnstableApi
++internal class TrackNavigationPlayer(
++  private val audioPlayer: AudioPlayer,
++  private val options: AudioLockScreenOptions?
++) : ForwardingPlayer(audioPlayer.ref) {
++  private val listeners = IdentityHashMap<Player.Listener, Player.Listener>()
++
++  private fun isLiveStream(): Boolean = options?.isLiveStream ?: audioPlayer.isLive
++
++  // App seekTo() already operates directly on this ExoPlayer. Expose the same
++  // operation for explicitly on-demand, finite music, even if its remote
++  // extractor omits the seek command. Never invent a duration or enable live/ad seek.
++  private fun canSeekOnDemand(): Boolean =
++    options?.isLiveStream == false &&
++      !audioPlayer.isLive &&
++      !super.isPlayingAd() &&
++      !super.getCurrentTimeline().isEmpty &&
++      super.getDuration() > 0
++
++  override fun getAvailableCommands(): Player.Commands {
++    val commands = super.getAvailableCommands().buildUpon()
++    if (isLiveStream()) {
++      commands.remove(Player.COMMAND_SEEK_IN_CURRENT_MEDIA_ITEM)
++    } else if (canSeekOnDemand()) {
++      commands.add(Player.COMMAND_SEEK_IN_CURRENT_MEDIA_ITEM)
++    }
++    if (options?.showNextTrack == true) {
++      commands.add(Player.COMMAND_SEEK_TO_NEXT).add(Player.COMMAND_SEEK_TO_NEXT_MEDIA_ITEM)
++    }
++    if (options?.showPreviousTrack == true) {
++      commands.add(Player.COMMAND_SEEK_TO_PREVIOUS).add(Player.COMMAND_SEEK_TO_PREVIOUS_MEDIA_ITEM)
++    }
++    return commands.build()
++  }
++
++  override fun isCommandAvailable(command: Int): Boolean = availableCommands.contains(command)
++
++  override fun seekToNext() {
++    if (options?.showNextTrack == true) audioPlayer.requestTrackNavigation("next") else super.seekToNext()
++  }
++
++  override fun seekToNextMediaItem() {
++    if (options?.showNextTrack == true) audioPlayer.requestTrackNavigation("next") else super.seekToNextMediaItem()
++  }
++
++  override fun seekToPrevious() {
++    if (options?.showPreviousTrack == true) audioPlayer.requestTrackNavigation("previous") else super.seekToPrevious()
++  }
++
++  override fun seekToPreviousMediaItem() {
++    if (options?.showPreviousTrack == true) audioPlayer.requestTrackNavigation("previous") else super.seekToPreviousMediaItem()
++  }
++
++  override fun addListener(listener: Player.Listener) {
++    var reportedCommands = availableCommands
++    var commandsChanged = false
++    fun notifyCommandsIfChanged() {
++      val current = availableCommands
++      if (current != reportedCommands) {
++        reportedCommands = current
++        commandsChanged = true
++        listener.onAvailableCommandsChanged(current)
++      }
++    }
++    val forwarding = object : ForwardingPlayerListener(listener) {
++      override fun onAvailableCommandsChanged(commands: Player.Commands) {
++        notifyCommandsIfChanged()
++      }
++      override fun onEvents(player: Player, events: Player.Events) {
++        // A network item may reveal its duration through a timeline event without
++        // changing ExoPlayer's original commands. MediaSession must observe ours.
++        notifyCommandsIfChanged()
++        val forwardedEvents = if (commandsChanged) {
++          val flags = FlagSet.Builder()
++          for (index in 0 until events.size()) flags.add(events.get(index))
++          flags.add(Player.EVENT_AVAILABLE_COMMANDS_CHANGED)
++          Player.Events(flags.build())
++        } else events
++        commandsChanged = false
++        listener.onEvents(this@TrackNavigationPlayer, forwardedEvents)
++      }
++    }
++    val previous = listeners.put(listener, forwarding)
++    if (previous != null) super.removeListener(previous)
++    super.addListener(forwarding)
++  }
++
++  override fun removeListener(listener: Player.Listener) {
++    super.removeListener(listeners.remove(listener) ?: listener)
++  }
++}
+diff --git a/build/Audio.types.d.ts b/build/Audio.types.d.ts
+index 332b0c2f38310616c6bff64cb86fc8d5688d1280..d185f34ea3a3377d8a22252b0c4c8e0f99a172af 100644
+--- a/build/Audio.types.d.ts
++++ b/build/Audio.types.d.ts
+@@ -29,6 +29,11 @@ export type AudioSource = string | number | null | {
+      * On web requires the `Access-Control-Allow-Origin` header returned by the server to include the current domain.
+      */
+     headers?: Record<string, string>;
++    /**
++     * Media format hint for iOS 17+ AVURLAsset. Preserves the remote stream and HTTP headers.
++     * Provided by YeongduMusic's pinned expo-audio patch.
++     */
++    mimeType?: string;
+     /**
+      * An optional display name for the audio source.
+      * Useful for showing track names in a queue or playlist UI.
+diff --git a/build/AudioModule.types.d.ts b/build/AudioModule.types.d.ts
+index 0d63c9b949cfae7a101902fc3bb70fcf46094f68..d346b2a7ae9f8cb913f4a3e8f565e9add2b3e2e7 100644
+--- a/build/AudioModule.types.d.ts
++++ b/build/AudioModule.types.d.ts
+@@ -22,6 +22,8 @@ export declare class NativeAudioModule extends NativeModule {
+     readonly AudioStream: typeof AudioStream;
+ }
+ export declare class AudioPlayer extends SharedObject<AudioEvents> {
++  /** YeongduMusic patch: current Android ExoPlayer session; absent on iOS/web. */
++  readonly audioSessionId?: number;
+     /**
+      * Initializes a new audio player instance with the given source.
+      * @hidden
+@@ -137,6 +139,9 @@ export declare class AudioPlayer extends SharedObject<AudioEvents> {
+      * Pauses the player.
+      */
+     pause(): void;
++
++    /** Android: release YeongduMusic's bounded track-handoff CPU lock. */
++    finishTrackTransition?: () => void;
+     /**
+      * Replaces the current audio source with a new one.
+      */
+@@ -218,6 +223,8 @@ export type AudioSampleChannel = {
+  * Use `player.addListener()` to subscribe to these events.
+  */
+ export type AudioEvents = {
++  /** Android: emitted by the YeongduMusic media-session queue navigation patch. */
++  remoteTrackChange(event: { direction: 'next' | 'previous' }): void;
+     /** Fired when the player's status changes (play/pause/seek/load and so on.). */
+     playbackStatusUpdate(status: AudioStatus): void;
+     /** Fired when audio sampling is enabled and new sample data is available. */
+diff --git a/ios/AudioSource.swift b/ios/AudioSource.swift
+index 0c8c2fede4b079f6d71217bafe07b5de55438821..a3634749f4167ec35ddf0d357bde6c1bf36ca37f 100644
+--- a/ios/AudioSource.swift
++++ b/ios/AudioSource.swift
+@@ -8,6 +8,9 @@ struct AudioSource: Record {
+   @Field
+   var headers: [String: String]?
+ 
++  @Field
++  var mimeType: String?
++
+   @Field
+   var name: String?
+ }
+diff --git a/ios/AudioUtils.swift b/ios/AudioUtils.swift
+index 41f63da33bd9acf0926944605fc9dfcc4721dd88..ae86dbf8c1ff0a7c23ff8f0561b67738b7585bfa 100644
+--- a/ios/AudioUtils.swift
++++ b/ios/AudioUtils.swift
+@@ -86,9 +86,14 @@ struct AudioUtils {
+       url
+     }
+ 
+-    var options: [String: Any]?
++    var options: [String: Any] = [:]
+     if let headers = source.headers {
+-      options = ["AVURLAssetHTTPHeaderFieldsKey": headers]
++      options["AVURLAssetHTTPHeaderFieldsKey"] = headers
++    }
++    // Some NAS servers label FLAC as audio/x-flac or application/octet-stream.
++    // AVPlayer rejects those responses even though the FLAC decoder supports the bytes.
++    if #available(iOS 17.0, tvOS 17.0, *), let mimeType = source.mimeType {
++      options[AVURLAssetOverrideMIMETypeKey] = mimeType
+     }
+ 
+     let asset = AVURLAsset(url: finalUrl, options: options)
+diff --git a/ios/MediaController.swift b/ios/MediaController.swift
+index 9b66e45411fab8e869144994c35c54c947626cf2..27b62e2959b2424055b01af6d745be6e2d37bf7d 100644
+--- a/ios/MediaController.swift
++++ b/ios/MediaController.swift
+@@ -184,9 +184,12 @@ class MediaController {
+     for playable: any LockScreenPlayable,
+     currentItemIdentifier: ObjectIdentifier?
+   ) {
++    // The dictionary starts with the previous Now Playing info. A NAS cover URL
++    // can exist even when the song has no image, so clear it while loading too.
++    info.removeValue(forKey: MPMediaItemPropertyArtwork)
++
+     guard let artworkUrl = metadata.artworkUrl else {
+       resetArtworkState()
+-      info.removeValue(forKey: MPMediaItemPropertyArtwork)
+       return
+     }
+ 
+@@ -217,7 +220,9 @@ class MediaController {
+ 
+       guard self.activePlayable?.id == playable.id,
+             self.currentArtworkUrl == artworkUrl,
+-            self.currentArtworkItemIdentifier == currentItemIdentifier else {
++            self.currentArtworkItemIdentifier == currentItemIdentifier,
++            player.ref.currentItem.map({ ObjectIdentifier($0) }) == currentItemIdentifier,
++            player.metadata?.artworkUrl == artworkUrl else {
+         return
+       }
+ 
+diff --git a/src/Audio.types.ts b/src/Audio.types.ts
+index fe5f5c3a08d2be39b0fdb1da6ae6b158931cac4c..ec3aa062da85b458a557a6912c981a01b2c93826 100644
+--- a/src/Audio.types.ts
++++ b/src/Audio.types.ts
+@@ -36,6 +36,11 @@ export type AudioSource =
+        * On web requires the `Access-Control-Allow-Origin` header returned by the server to include the current domain.
+        */
+       headers?: Record<string, string>;
++      /**
++       * Media format hint for iOS 17+ AVURLAsset. Preserves the remote stream and HTTP headers.
++       * Provided by YeongduMusic's pinned expo-audio patch.
++       */
++      mimeType?: string;
+       /**
+        * An optional display name for the audio source.
+        * Useful for showing track names in a queue or playlist UI.
+diff --git a/src/AudioModule.types.ts b/src/AudioModule.types.ts
+index 3194a8ebd1b91793d03a1692c563b5d2e83c2738..e04cf0e36ae33a9e1ffd11fa024205d44e9dcb3e 100644
+--- a/src/AudioModule.types.ts
++++ b/src/AudioModule.types.ts
+@@ -40,6 +40,8 @@ export declare class NativeAudioModule extends NativeModule {
+ }
+ 
+ export declare class AudioPlayer extends SharedObject<AudioEvents> {
++  /** YeongduMusic patch: current Android ExoPlayer session; absent on iOS/web. */
++  readonly audioSessionId?: number;
+   /**
+    * Initializes a new audio player instance with the given source.
+    * @hidden
+@@ -178,6 +180,9 @@ export declare class AudioPlayer extends SharedObject<AudioEvents> {
+    */
+   pause(): void;
+ 
++  /** Android: release YeongduMusic's bounded track-handoff CPU lock. */
++  finishTrackTransition?: () => void;
++
+   /**
+    * Replaces the current audio source with a new one.
+    */
+@@ -277,6 +282,8 @@ export type AudioSampleChannel = {
+  * Use `player.addListener()` to subscribe to these events.
+  */
+ export type AudioEvents = {
++  /** Android: emitted by the YeongduMusic media-session queue navigation patch. */
++  remoteTrackChange(event: { direction: 'next' | 'previous' }): void;
+   /** Fired when the player's status changes (play/pause/seek/load and so on.). */
+   playbackStatusUpdate(status: AudioStatus): void;
+   /** Fired when audio sampling is enabled and new sample data is available. */

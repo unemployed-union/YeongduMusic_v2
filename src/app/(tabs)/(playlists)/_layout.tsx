@@ -4,7 +4,7 @@ import { useWindowDimensions } from 'react-native';
 import { workspaceLayout } from '@/theme/layout';
 import { NativeTabFrame } from '@/components/native-tab-frame';
 
-export const unstable_settings = { initialRouteName: 'playlists/index' };
+export const unstable_settings = { anchor: 'playlists/index' };
 
 export default function PlaylistsLayout() {
   const colors = useColors();
