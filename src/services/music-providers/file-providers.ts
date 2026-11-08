@@ -6,6 +6,7 @@ import { useMyboxStore } from '@/stores/mybox';
 import { localSource } from '@/services/local-music/storage';
 import type { Song } from '@/types/music';
 import { memoSnapshot, storedPage, type MusicProvider } from './contracts';
+import { findStoredSong } from './stored-song-index';
 
 export const localProvider: MusicProvider = {
   id: 'local',
@@ -30,7 +31,7 @@ export const localProvider: MusicProvider = {
   streamSource: (song) => localSource(song),
   entityRef: (song) => ({ providerId: 'local', accountScope: 'device', remoteId: song.id }),
   restore: (song) =>
-    useLocalMusicStore.getState().songs.find((item) => item.id === song.id) ?? null,
+    findStoredSong(useLocalMusicStore.getState().songs, song.id) ?? null,
   fileWrite: {
     description:
       '앱에 보관된 음악 복사본의 태그를 변경합니다. 가져온 원본 파일은 변경하지 않습니다.',
@@ -98,7 +99,7 @@ export const driveProvider: MusicProvider = {
       return null;
     }
     const state = useGoogleDriveStore.getState();
-    const current = driveProvider.getState().songs.find((item) => item.id === song.id);
+    const current = findStoredSong(driveProvider.getState().songs, song.id);
     if (song.drive.documentUri) {
       return current?.source === 'drive' && current.drive.documentUri === song.drive.documentUri
         ? current
@@ -151,7 +152,7 @@ export const s3Provider: MusicProvider = {
     ) {
       return null;
     }
-    const current = useS3Store.getState().songs.find((item) => item.id === song.id);
+    const current = findStoredSong(useS3Store.getState().songs, song.id);
     return { ...song, artworkUrl: current?.artworkUrl, palette: current?.palette ?? song.palette };
   },
   download: { source: (song) => s3Source(song) },
@@ -203,7 +204,7 @@ export const myboxProvider: MusicProvider = {
     ) {
       return null;
     }
-    const current = useMyboxStore.getState().songs.find((item) => item.id === song.id);
+    const current = findStoredSong(useMyboxStore.getState().songs, song.id);
     return current ?? { ...song, artworkUrl: undefined };
   },
   download: { source: (song, options) => useMyboxStore.getState().source(song, options?.signal) },

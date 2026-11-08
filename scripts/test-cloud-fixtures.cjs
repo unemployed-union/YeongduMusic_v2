@@ -394,6 +394,7 @@ exports.cloudFixtures = (globals = {}, dependencies = {}) => {
     './refresh-source-libraries': 'src/features/library/refresh-source-libraries.ts',
     './song-library': 'src/features/library/song-library.ts',
     './use-source-libraries': 'src/features/library/use-source-libraries.ts',
+    './source-library-selection': 'src/features/library/source-library-selection.ts',
     '@/features/library/use-source-libraries': 'src/features/library/use-source-libraries.ts',
     '@/services/metadata/written-song': 'src/services/metadata/written-song.ts',
     './written-song': 'src/services/metadata/written-song.ts',

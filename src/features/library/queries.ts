@@ -155,8 +155,9 @@ export function useArtistSongs(artist: Artist) {
 }
 export function useSearch(term: string) {
   const presets = useHiddenMusicStore((state) => state.profile.presets);
-  return useSongLibrary(
-    (library) => searchSongs(visibleSongs(library, presets), term),
-    term.trim().length > 0,
+  const select = useCallback(
+    (library: Page<Song>) => searchSongs(visibleSongs(library, presets), term),
+    [presets, term],
   );
+  return useSongLibrary(select, term.trim().length > 0);
 }

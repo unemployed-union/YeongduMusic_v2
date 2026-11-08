@@ -5,7 +5,7 @@ import {
   subscribeProviders,
 } from '@/services/music-providers/registry';
 import { useLocalMusicStore } from '@/stores/local-music';
-import type { DeviceLibraries } from './song-library';
+import { createSourceLibrarySelection } from './source-library-selection';
 import type { MusicSourceFilter } from '@/types/music';
 import { acquireProviderLibraries } from '@/services/music-providers/library-tasks';
 
@@ -25,17 +25,8 @@ export function useSourceLibraries(enabled = true, sourceOverride?: MusicSourceF
       return acquireProviderLibraries(source);
     }
   }, [enabled, source, connectionKey]);
-  const libraries = useMemo(() => {
-    const result: DeviceLibraries = {};
-    musicProviders.forEach((provider, index) => {
-      if (provider.catalog === 'stored') {
-        result[provider.id as keyof DeviceLibraries] = states[index].connected
-          ? states[index].songs
-          : [];
-      }
-    });
-    return result;
-  }, [states]);
+  const selectLibraries = useMemo(() => createSourceLibrarySelection(musicProviders), []);
+  const libraries = selectLibraries(states, source);
   const selected = states.filter(
     (state, index) =>
       musicProviders[index].catalog === 'stored' &&
