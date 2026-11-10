@@ -266,6 +266,10 @@ async function checkLocalTransaction() {
   files.set(uri + '.metadata-backup', bytes); files.set(uri + '.metadata-journal', Buffer.from(JSON.stringify({ before: song, after: updated, digest: crypto.createHash('md5').update(files.get(uri)).digest('hex') }))); rows.set(id, JSON.stringify(song));
   storage = load('src/services/local-music/storage.ts', modules); assert.equal((await storage.readLocalSongs())[0].title, fields.title); assert.deepEqual(files.get(uri), bytes);
   assert.equal(files.has(uri + '.metadata-journal'), false); assert.equal(files.has(uri + '.metadata-backup'), false);
+  files.set(uri + '.metadata-backup', bytes);
+  files.set(uri + '.metadata-journal', Buffer.from(JSON.stringify({ before: song, after: updated, digest: crypto.createHash('md5').update(files.get(uri)).digest('hex') })));
+  assert.equal((await storage.readLocalSong(id)).title, fields.title, 'Single-row reads run the same crash recovery');
+  assert.deepEqual(files.get(uri), bytes); assert.equal(files.has(uri + '.metadata-journal'), false);
   files.set('file:///cover-edited', render(bytes, 'mp3', null, cover));
   const artUri = 'file:///app/album-art/art-' + 'a'.repeat(32) + '.jpg';
   const beforeArt = JSON.parse(rows.get(id));

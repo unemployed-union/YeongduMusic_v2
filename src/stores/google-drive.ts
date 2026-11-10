@@ -7,6 +7,8 @@ import {
   driveMediaUrl,
   readDriveFile,
   type DriveFile,
+  loadDriveSongs,
+  DriveRequestError,
 } from '@/services/google-drive/api';
 import type { Song } from '@/types/music';
 import { refreshDriveLibrary } from '@/services/google-drive/library';
@@ -16,6 +18,9 @@ import { useSongMetadataStore } from '@/stores/song-metadata';
 import { pickDriveFileIds } from '@/services/google-drive/picker';
 import { parseDriveSelection, saveDriveSelection } from '@/services/google-drive/selection';
 import { createDriveSession, type DriveAccount } from '@/services/google-drive/session';
+import { startDriveChanges, readDriveChanges } from '@/services/google-drive/changes';
+import { enrichDriveSongs } from '@/services/google-drive/metadata';
+import { reuseLibraryItems } from '@/services/music-providers/library-policy';
 type State = {
   ready: boolean;
   busy: boolean;
@@ -29,12 +34,18 @@ type State = {
   fileSaving: boolean;
   metadataLoading: boolean;
   metadataWarning: string | null;
+  stale: boolean;
+  validatedAt: number;
+  syncCursor?: string;
+  changesDisabled: boolean;
+  pendingMetadataIds: string[];
+  revalidate: (signal: AbortSignal) => Promise<'unchanged' | 'updated' | 'full-required'>;
   selectFiles: (files: DriveFile[]) => Promise<void>;
   pickFiles: () => Promise<void>;
   bootstrap: () => Promise<void>;
   connect: () => Promise<void>;
   disconnect: () => Promise<void>;
-  refresh: () => Promise<void>;
+  refresh: (signal?: AbortSignal) => Promise<void>;
   cancelLibrary: () => void;
   cancelConnection: () => void;
   accessToken: (accountId: string, rejectedToken?: string) => Promise<string>;
@@ -42,6 +53,7 @@ type State = {
 export const useGoogleDriveStore = create<State>((set, get) => {
   const { run: exclusive } = createSerialQueue();
   let libraryRequest: AbortController | null = null;
+  let fullRequest: Promise<void> | null = null;
   let fileRequest: AbortController | null = null;
   let attempt = new AbortController();
   const { step } = createConnectionTaskRunner({
@@ -58,6 +70,7 @@ export const useGoogleDriveStore = create<State>((set, get) => {
     attempt = new AbortController();
   }
   function begin() {
+    fullRequest = null;
     authentication.clearToken();
     invalidate();
     libraryRequest?.abort();
@@ -75,6 +88,11 @@ export const useGoogleDriveStore = create<State>((set, get) => {
       progress: '연결 준비',
       account: null,
       songs: [],
+      syncCursor: undefined,
+      changesDisabled: false,
+      pendingMetadataIds: [],
+      stale: false,
+      validatedAt: 0,
       error: null,
     });
     return generation;
@@ -100,12 +118,18 @@ export const useGoogleDriveStore = create<State>((set, get) => {
     generation: 0,
     metadataLoading: false,
     metadataWarning: null,
+    stale: false,
+    validatedAt: 0,
+    syncCursor: undefined,
+    changesDisabled: false,
+    pendingMetadataIds: [],
     cancelConnection: () => {
       if (!get().busy && !get().loading && !get().fileSaving && !get().metadataLoading) {
         return;
       }
       invalidate();
       libraryRequest?.abort();
+      fullRequest = null;
       fileRequest?.abort();
       set({
         generation: get().generation + 1,
@@ -264,12 +288,16 @@ export const useGoogleDriveStore = create<State>((set, get) => {
           }
           libraryRequest?.abort();
           libraryRequest = null;
+          fullRequest = null;
           set({
             files: selected,
             songs: [],
             loading: false,
             metadataLoading: false,
             metadataWarning: null,
+            syncCursor: undefined,
+            validatedAt: 0,
+            pendingMetadataIds: [],
           });
         });
         if (isCurrent()) {
@@ -292,68 +320,181 @@ export const useGoogleDriveStore = create<State>((set, get) => {
     cancelLibrary: () => {
       libraryRequest?.abort();
       libraryRequest = null;
+      fullRequest = null;
       set({ loading: false, metadataLoading: false });
     },
-    refresh: async () => {
-      const { account, files } = get();
-      if (!account) {
-        return;
+    refresh: (signal) => {
+      if (fullRequest) {
+        return fullRequest;
       }
-      if (!files.length) {
-        set({ songs: [], loading: false, metadataLoading: false, metadataWarning: null });
-        return;
+      const work = (async () => {
+        const { account, files } = get();
+        if (!account) {
+          return;
+        }
+        if (!files.length) {
+          set({ songs: [], loading: false, metadataLoading: false, metadataWarning: null });
+          return;
+        }
+        libraryRequest?.abort();
+        const request = new AbortController();
+        libraryRequest = request;
+        const cancel = () => request.abort();
+        signal?.addEventListener('abort', cancel, { once: true });
+        if (signal?.aborted) {
+          cancel();
+        }
+        const generation = get().generation;
+        set({ loading: true, error: null, metadataLoading: false, metadataWarning: null });
+        let enriching = false;
+        const isCurrent = () =>
+          current(generation) && libraryRequest === request && !request.signal.aborted;
+        try {
+          let cursor: string | undefined;
+          try {
+            cursor = await startDriveChanges((rejected) => get().accessToken(account.id, rejected), request.signal);
+          } catch (error) {
+            if (request.signal.aborted || (error instanceof DriveRequestError && error.status === 401)) {
+              throw error;
+            }
+          }
+          let warning = false;
+          const known = new Map(get().songs.map((song) => [song.id, song]));
+          enriching = await refreshDriveLibrary(
+            account.id,
+            files,
+            (rejected) => get().accessToken(account.id, rejected),
+            request.signal,
+            {
+              isCurrent,
+              onSongs: (songs, missing) =>
+                set({
+                  songs: reuseLibraryItems(get().songs, songs.map((song) => {
+                    const previous = known.get(song.id);
+                    return previous?.source === 'drive' && song.source === 'drive' &&
+                      previous.drive.modifiedTime === song.drive.modifiedTime && previous.drive.size === song.drive.size
+                      ? previous : song;
+                  })),
+                  loading: false,
+                  metadataLoading: true,
+                  error: missing
+                    ? `${missing}개 음악 파일이 삭제되었거나 접근할 수 없습니다. 선택 목록을 편집하거나 Google에서 다시 선택해 주세요.`
+                    : null,
+                }),
+              onMetadata: (songs) => {
+                set({ songs: reuseLibraryItems(get().songs, songs) });
+                usePlaybackStore.setState((state) => ({
+                  queue: mergeDriveQueueMetadata(
+                    state.queue,
+                    songs,
+                    useSongMetadataStore.getState().patches,
+                  ),
+                }));
+              },
+              onWarning: (metadataWarning) => {
+                warning = true;
+                set({ metadataWarning });
+              },
+              onSettled: () => {
+                set({ metadataLoading: false });
+              },
+            },
+            true,
+          );
+          if (isCurrent()) {
+            set({ syncCursor: cursor, changesDisabled: !cursor, stale: false, validatedAt: Date.now(),
+              pendingMetadataIds: warning ? files.map((file) => file.id) : [] });
+          }
+        } catch (error) {
+          if (current(generation) && libraryRequest === request && !request.signal.aborted) {
+            set({ error: googleConnectionError(error) });
+          }
+          if (!request.signal.aborted) {
+            throw error;
+          }
+        } finally {
+          signal?.removeEventListener('abort', cancel);
+          if (!enriching && current(generation) && libraryRequest === request) {
+            libraryRequest = null;
+            set({ loading: false });
+          }
+        }
+      })();
+      fullRequest = work;
+      void work.finally(() => {
+        if (fullRequest === work) {
+          fullRequest = null;
+        }
+      }).catch(() => {});
+      return work;
+    },
+    revalidate: async (signal) => {
+      const { account, files, syncCursor, changesDisabled, pendingMetadataIds } = get();
+      if (!account || changesDisabled) {
+        return 'unchanged';
       }
-      libraryRequest?.abort();
-      const request = new AbortController();
-      libraryRequest = request;
+      if (!syncCursor) {
+        return 'full-required';
+      }
       const generation = get().generation;
-      set({ loading: true, error: null, metadataLoading: false, metadataWarning: null });
-      let enriching = false;
-      const isCurrent = () =>
-        current(generation) && libraryRequest === request && !request.signal.aborted;
+      const controller = new AbortController();
+      libraryRequest?.abort();
+      libraryRequest = controller;
+      const cancel = () => controller.abort();
+      signal.addEventListener('abort', cancel, { once: true });
+      if (signal.aborted) {
+        cancel();
+      }
+      const currentRequest = () => current(generation) && get().files === files &&
+        libraryRequest === controller && !controller.signal.aborted;
+      const token = (rejected?: string) => get().accessToken(account.id, rejected);
+      set({ loading: true, error: null });
       try {
-        enriching = await refreshDriveLibrary(
-          account.id,
-          files,
-          (rejected) => get().accessToken(account.id, rejected),
-          request.signal,
-          {
-            isCurrent,
-            onSongs: (songs, missing) =>
-              set({
-                songs,
-                loading: false,
-                metadataLoading: true,
-                error: missing
-                  ? `${missing}개 음악 파일이 삭제되었거나 접근할 수 없습니다. 선택 목록을 편집하거나 Google에서 다시 선택해 주세요.`
-                  : null,
-              }),
-            onMetadata: (songs) => {
-              set({ songs });
-              usePlaybackStore.setState((state) => ({
-                queue: mergeDriveQueueMetadata(
-                  state.queue,
-                  songs,
-                  useSongMetadataStore.getState().patches,
-                ),
-              }));
-            },
-            onWarning: (metadataWarning) => set({ metadataWarning }),
-            onSettled: () => {
-              libraryRequest = null;
-              set({ metadataLoading: false });
-            },
-          },
-        );
+        const selected = new Set(files.map((file) => file.id));
+        const delta = await readDriveChanges(syncCursor, selected, token, controller.signal);
+        const changed = new Set([...delta.changed, ...pendingMetadataIds].filter((id) => selected.has(id) && !delta.removed.has(id)));
+        const byId = new Map(get().songs.filter((song) => song.source === 'drive').map((song) => [song.drive.fileId, song]));
+        delta.removed.forEach((id) => byId.delete(id));
+        let pending: string[] = [];
+        if (changed.size) {
+          const loaded = await loadDriveSongs(account.id, [...changed], token, controller.signal, (ids) => ids.forEach((id) => byId.delete(id)));
+          let enriched = loaded;
+          const failures = await enrichDriveSongs(loaded, token, controller.signal, (songs) => {
+            enriched = songs;
+          });
+          if (failures) {
+            pending = [...changed];
+          }
+          enriched.forEach((song) => {
+            if (song.source === 'drive') {
+              byId.set(song.drive.fileId, song);
+            }
+          });
+        }
+        if (!currentRequest()) {
+          throw new Error('Google Drive 음악 목록 요청이 취소되었습니다.');
+        }
+        const songs = files.flatMap((file) => byId.get(file.id) ?? []);
+        const reused = reuseLibraryItems(get().songs, songs);
+        const updated = reused !== get().songs;
+        set({ songs: reused, syncCursor: delta.cursor, pendingMetadataIds: pending, stale: false });
+        return updated ? 'updated' : 'unchanged';
       } catch (error) {
-        if (current(generation) && libraryRequest === request && !request.signal.aborted) {
-          set({ error: googleConnectionError(error) });
+        if (currentRequest()) {
+          if (error instanceof DriveRequestError && error.status === 403) {
+            set({ changesDisabled: true, syncCursor: undefined });
+            return 'unchanged';
+          }
+          if (error instanceof DriveRequestError && (error.status === 410 || error.status === 400)) {
+            set({ syncCursor: undefined });
+            return 'full-required';
+          }
+          set({ error: googleConnectionError(error), stale: true });
         }
-        if (!request.signal.aborted) {
-          throw error;
-        }
+        throw error;
       } finally {
-        if (!enriching && current(generation) && libraryRequest === request) {
+        signal.removeEventListener('abort', cancel);
+        if (libraryRequest === controller) {
           libraryRequest = null;
           set({ loading: false });
         }

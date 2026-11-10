@@ -110,7 +110,7 @@ async function checkPlayback(metadata) {
 function checkQueries(store) {
   const album = load('src/features/library/album-library.ts'), search = load('src/features/library/search-songs.ts');
   const query = load('src/features/library/queries.ts', {
-    react: { useMemo: fn => fn(), useCallback: fn => fn }, '@tanstack/react-query': { useQuery: options => options },
+    react: { useMemo: fn => fn(), useCallback: fn => fn, useEffect() {} }, '@tanstack/react-query': { useQuery: options => options, useQueryClient: () => ({}) },
     '@/stores/song-metadata': { useSongMetadataStore: selector => selector(store.getState()) }, '../metadata/rules': rules,
     '@/stores/auth': { useAuthStore: selector => selector({ mode: 'mock', session: null }) },
     '@/stores/hidden-music': { useHiddenMusicStore: selector => selector({ ready: true, profile: { presets: [] } }) },

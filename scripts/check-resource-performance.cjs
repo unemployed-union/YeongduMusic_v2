@@ -168,6 +168,7 @@ let privacySelections = 0;
 const queries = loadSource(source('src/features/library/queries.ts'), {
   react,
   '@tanstack/react-query': {
+    useQueryClient: () => client,
     useQuery(options) {
       let observer = observers.get(activeHook);
       if (!observer) {
@@ -180,6 +181,11 @@ const queries = loadSource(source('src/features/library/queries.ts'), {
     },
   },
   './use-source-libraries': sourceHook,
+  './use-library-activity': { useLibraryActivity: (enabled) => enabled },
+  './nas-library-cache': {},
+  './refresh-music-library': {},
+  '@/services/music-providers/nas-library-task': { acquireNasLibrary: () => () => {} },
+  '@/services/music-providers/library-policy': loadSource('src/services/music-providers/library-policy.ts'),
   './song-library': loadSource('src/features/library/song-library.ts'),
   './load-song-library': loadSource('src/features/library/load-song-library.ts'),
   './search-songs': { searchSongs },

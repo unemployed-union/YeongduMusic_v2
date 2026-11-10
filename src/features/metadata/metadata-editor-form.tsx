@@ -146,6 +146,13 @@ export function MetadataEditorForm({
             }
           });
           fileMessage = result.message;
+          const { markStoredLibraryDirty } = await import('@/services/music-providers/stored-library-task');
+          if (!song.source || song.source === 'nas') {
+            const { markNasLibraryDirty } = await import('@/services/music-providers/nas-library-task');
+            markNasLibraryDirty();
+          } else {
+            markStoredLibraryDirty(song.source);
+          }
           const latestAuth = useAuthStore.getState();
           if (
             metadataKey(song, privacyScope(latestAuth.mode, latestAuth.session)) !== originalKey

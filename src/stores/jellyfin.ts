@@ -14,6 +14,7 @@ import {
 import { collectJellyfinItems, mapJellyfinSongs } from '@/services/jellyfin/library';
 import type { MusicLibrary, Song } from '@/types/music';
 import { cachePage, cachedPage } from '@/services/music-providers/cache';
+import { reuseLibraryItems } from '@/services/music-providers/library-policy';
 
 const KEY = 'yeongdu-jellyfin-session-v1';
 type Connection = Omit<JellyfinSession, 'token' | 'deviceId'>;
@@ -28,6 +29,7 @@ type State = {
   selectedLibraries: string[] | null;
   songs: Song[];
   stale: boolean;
+  validatedAt: number;
   error: string | null;
   bootstrap: () => Promise<void>;
   connect: (
@@ -109,7 +111,7 @@ export const useJellyfinStore = create<State>((set, get) => {
     }
     credentials = session;
     const { token: _token, deviceId: _device, ...connection } = session;
-    set({ connection, selectedLibraries, songs: [], libraries: [], loaded: false, stale: false });
+    set({ connection, selectedLibraries, songs: [], libraries: [], loaded: false, stale: false, validatedAt: 0 });
     const cached = await cachedPage<Song>(
       'jellyfin:' + JSON.stringify([jellyfinScope(session), selectedLibraries]),
     ).catch(() => null);
@@ -135,6 +137,7 @@ export const useJellyfinStore = create<State>((set, get) => {
     selectedLibraries: null,
     songs: [],
     stale: false,
+    validatedAt: 0,
     error: null,
     client: (scope) => {
       if (!credentials || (scope && jellyfinScope(credentials) !== scope)) {
@@ -281,7 +284,7 @@ export const useJellyfinStore = create<State>((set, get) => {
           }
         });
         if (current(generation)) {
-          set({ selectedLibraries: ids, songs: [], loaded: false, stale: false });
+          set({ selectedLibraries: ids, songs: [], loaded: false, stale: false, validatedAt: 0 });
         }
       } catch (error) {
         if (current(generation)) {
@@ -331,8 +334,8 @@ export const useJellyfinStore = create<State>((set, get) => {
             }
           }
           if (current(generation) && !controller.signal.aborted && credentials === client.session) {
-            const items = [...songs.values()];
-            set({ libraries, songs: items, loaded: true, stale: false });
+            const items = reuseLibraryItems(get().songs, [...songs.values()]);
+            set({ libraries, songs: items, loaded: true, stale: false, validatedAt: Date.now() });
             await cachePage(
               'jellyfin:' + JSON.stringify([jellyfinScope(client.session), selected]),
               { items, total: items.length },

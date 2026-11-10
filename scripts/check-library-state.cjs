@@ -25,6 +25,8 @@ function harness(source = 'all') {
     '@/stores/mybox': { useMyboxStore: mybox },
     './repository': { libraryIdentity: () => 'nas-fixture', musicRepository: () => repository },
     './refresh-library': load('src/features/library/refresh-library.ts'),
+    '@/services/music-providers/library-tasks': { refreshStoredLibrary: (provider) => provider.refresh() },
+    '@/services/music-providers/nas-library-task': { refreshNasTask: () => repository.songs({ offset: 0, limit: 100 }) },
   };
   const service = load('src/features/library/refresh-music-library.ts', modules);
   // Preserve hooks across renders and execute subscription cleanup on unmount.

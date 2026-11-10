@@ -27,39 +27,56 @@ export async function readLocalSongs(): Promise<Song[]> {
   const rows = await db.getAllAsync<{ value: string }>(
     'SELECT value FROM local_tracks ORDER BY rowid',
   );
-  return Promise.all(
-    rows.map(async (row) => {
-      const song = JSON.parse(row.value) as Song;
-      if (
-        !song ||
-        song.source !== 'local' ||
-        typeof song.title !== 'string' ||
-        typeof song.artist !== 'string' ||
-        typeof song.album !== 'string' ||
-        !Number.isFinite(song.duration) ||
-        song.duration < 0 ||
-        !Number.isFinite(song.local?.size) ||
-        song.local.size <= 0 ||
-        !/^local:[a-f0-9]{32}:\d+$/.test(song.id) ||
-        !/^[a-f0-9]{32}-\d+\.(mp3|m4a|flac|wav|aac|aiff|aif|ogg|opus|alac)$/.test(
-          song.local?.fileName ?? '',
-        )
-      ) {
-        throw new Error('저장된 로컬 음악 목록 형식을 확인할 수 없습니다.');
-      }
-      if (
-        song.local.originalFolders !== undefined &&
-        (!Array.isArray(song.local.originalFolders) ||
-          song.local.originalFolders.some(
-            (folder) => typeof folder !== 'string' || !folder || localFolderKey(folder) !== folder,
-          ))
-      ) {
-        throw new Error('저장된 원본 폴더 정보를 확인할 수 없습니다.');
-      }
-      const recovered = await recoverLocalMetadata(song);
-      return { ...recovered, albumSource: recovered.albumSource ?? 'fallback' };
-    }),
+  return Promise.all(rows.map((row) => decodeLocalSong(row.value)));
+}
+
+/** Use the same validation and journal recovery as a full library load. */
+export async function readLocalSong(id: string): Promise<Song | null> {
+  if (Platform.OS === 'web') {
+    return null;
+  }
+  const db = await openLocalDatabase();
+  const row = await db.getFirstAsync<{ value: string }>(
+    'SELECT value FROM local_tracks WHERE id = ?',
+    id,
   );
+  if (!row) {
+    return null;
+  }
+  return decodeLocalSong(row.value, id);
+}
+
+async function decodeLocalSong(value: string, expectedId?: string): Promise<Song> {
+  const song = JSON.parse(value) as Song;
+  if (
+    !song ||
+    song.source !== 'local' ||
+    typeof song.title !== 'string' ||
+    typeof song.artist !== 'string' ||
+    typeof song.album !== 'string' ||
+    !Number.isFinite(song.duration) ||
+    song.duration < 0 ||
+    !Number.isFinite(song.local?.size) ||
+    song.local.size <= 0 ||
+    !/^local:[a-f0-9]{32}:\d+$/.test(song.id) ||
+    (expectedId !== undefined && song.id !== expectedId) ||
+    !/^[a-f0-9]{32}-\d+\.(mp3|m4a|flac|wav|aac|aiff|aif|ogg|opus|alac)$/.test(
+      song.local?.fileName ?? '',
+    )
+  ) {
+    throw new Error('저장된 로컬 음악 목록 형식을 확인할 수 없습니다.');
+  }
+  if (
+    song.local.originalFolders !== undefined &&
+    (!Array.isArray(song.local.originalFolders) ||
+      song.local.originalFolders.some(
+        (folder) => typeof folder !== 'string' || !folder || localFolderKey(folder) !== folder,
+      ))
+  ) {
+    throw new Error('저장된 원본 폴더 정보를 확인할 수 없습니다.');
+  }
+  const recovered = await recoverLocalMetadata(song);
+  return { ...recovered, albumSource: recovered.albumSource ?? 'fallback' };
 }
 export function replaceLocalMetadataFile(
   id: string,
@@ -70,7 +87,7 @@ export function replaceLocalMetadataFile(
 ): Promise<Song> {
   return mutationQueue.run(async () => {
     check();
-    const before = (await readLocalSongs()).find((song) => song.id === id);
+    const before = await readLocalSong(id);
     if (!before || before.source !== 'local') {
       throw new Error('앱에 보관된 음악 파일을 찾을 수 없습니다.');
     }
@@ -167,7 +184,7 @@ export function storeDownloadedSong(
     }
     const info = await fingerprintFile(uri, '내려받은 음악 파일을 확인할 수 없습니다.');
     const { digest, id } = info;
-    const previous = (await readLocalSongs()).find((song) => song.id === id);
+    const previous = await readLocalSong(id);
     check();
     if (previous) {
       try {
@@ -242,11 +259,11 @@ export function storeDownloadedSong(
 }
 export function deleteLocalSong(id: string): Promise<void> {
   return mutationQueue.run(async () => {
-    const song = (await readLocalSongs()).find((song) => song.id === id);
+    const song = await readLocalSong(id);
     if (!song || song.source !== 'local') {
       throw new Error('저장된 음악을 찾을 수 없습니다.');
     }
-    // Filename validation in readLocalSongs keeps deletion within the app-owned localMusicDirectory.
+    // Shared validation keeps deletion within the app-owned localMusicDirectory.
     await FileSystem.deleteAsync(localMusicDirectory() + song.local.fileName, { idempotent: true });
     await (await openLocalDatabase()).runAsync('DELETE FROM local_tracks WHERE id = ?', id);
   });

@@ -78,6 +78,7 @@ modules['@/components/settings-button'] = { SettingsButton: 'SettingsButton' };
 modules['@/features/library/library-page'] = { LIBRARY_TABS: ['albums', 'songs', 'artists'], LibraryPage: 'LibraryPage' };
 modules['@/features/library/library-pager'] = { LibraryPager: 'LibraryPager' };
 modules['@/features/library/local-music-controls'] = { LocalMusicControls: 'LocalMusicControls' };
+modules['@/features/library/library-load-status'] = { LibraryLoadStatus: 'LibraryLoadStatus' };
 modules['@/features/library/library-sort-control'] = { LibrarySortControl: 'LibrarySortControl' };
 modules['@/features/library/queries'] = { useAlbums: () => ({}), useSongs: () => ({}), useArtists: () => ({}) };
 modules['@/features/library/use-refresh-library'] = { useRefreshLibrary: () => ({ refresh: async () => {} }) };

@@ -74,10 +74,11 @@ const localFixture = { songs: [], ready: true, source: 'nas' };
 const libraryPreferences = { ready: true, includeFolderAlbums: true, groupAlbumsByTitle: false };
 const queries = load('src/features/library/queries.ts', {
   '@/stores/library-preferences': { useLibraryPreferences: selector => selector(libraryPreferences) },
-  react: { useMemo: factory => factory(), useCallback: callback => callback },
+  react: { useMemo: factory => factory(), useCallback: callback => callback, useEffect() {} },
   '@/stores/google-drive': { useGoogleDriveStore: selector => selector({ songs: [], loading: false, error: null }) },
   '@/stores/local-music': { useLocalMusicStore: selector => selector(localFixture) },
-  '@tanstack/react-query': { ...tanstack, useQuery: options => options },
+  '@tanstack/react-query': { ...tanstack, useQuery: options => options, useQueryClient: () => ({}) },
+  './nas-library-cache': { readNasLibrary: (signal) => metadata.loadSongLibrary(repository(), signal) },
   '../hidden-music/rules': { privacyScope: () => 'demo', visibleSongs: library => library },
   '@/stores/hidden-music': { useHiddenMusicStore: selector => selector({ ready: true, profile: { presets: [] } }) },
   './album-library': albumHelpers, './load-song-library': metadata, './search-songs': search,
@@ -233,6 +234,16 @@ async function main() {
   assert.deepEqual(mapped.items.map(item => item.artist), [unknownName, 'Tag Artist', unknownName, unknownName]);
   records.splice(fixtureOffset);
   console.log('PASS: empty/whitespace/missing NAS artist mapping, song-tag fallback, old cached unknown-artist grouping with nonempty route IDs and matching detail songs; known artists unchanged.');
+
+  const discOffset = records.length;
+  records.push(
+    record('fractional-tags', 'Multi Disk', 'Artist', '', '2/3', '01/12'),
+    { ...record('track-fallback', 'Multi Disk', 'Artist', '', '1', '3/12'), track: 'invalid' },
+    record('invalid-position', 'Multi Disk', 'Artist', '', '-2', '1.5'),
+  );
+  const discSongs = await repository().songs({ offset: discOffset, limit: 3 });
+  records.splice(discOffset);
+  assert.deepEqual(discSongs.items.map(song => [song.discNumber, song.trackNumber]), [[2, 1], [1, 3], [undefined, undefined]], 'NAS n/total disk and track tags remain usable, with invalid positions safely omitted');
 
   const abort = new AbortController();
   let calls = 0;

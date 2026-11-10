@@ -34,10 +34,21 @@ export function hiddenMatcher(presets: readonly HiddenPreset[]): (song: Song) =>
         folders.some((folder) => normalizeFolder(song.path!).startsWith(folder + '/'))));
 }
 
+const visibleLibraries = new WeakMap<
+  Page<Song>,
+  { presets: readonly HiddenPreset[]; result: Page<Song> }
+>();
+
 export function visibleSongs(library: Page<Song>, presets: readonly HiddenPreset[]): Page<Song> {
+  const previous = visibleLibraries.get(library);
+  if (previous?.presets === presets) {
+    return previous.result;
+  }
   const hidden = hiddenMatcher(presets);
   const items = library.items.filter((song) => !hidden(song));
-  return { items, total: items.length, stale: library.stale };
+  const result = { items, total: items.length, stale: library.stale };
+  visibleLibraries.set(library, { presets, result });
+  return result;
 }
 
 export function foldersForSongs(songs: readonly Song[]): { path: string; count: number }[] {

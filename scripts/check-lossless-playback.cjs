@@ -79,6 +79,10 @@ async function checkController() {
   let resolve;
   source = () => new Promise(done => { resolve = done; });
   const pending = controller.playQueue([song]); assert.equal(playback.getState().lossless, false);
+  for (let i = 0; i < 20 && !resolve; i++) await Promise.resolve();
+  assert.equal(typeof resolve, 'function', 'Wait until source resolution has begun before replacing the queue');
+  for (let i = 0; i < 20 && !resolve; i++) await Promise.resolve();
+  assert.equal(typeof resolve, 'function', 'Wait until source resolution has begun before replacing the queue');
   source = async item => client.streamSource(item);
   const lossy = { ...song, id: 'lossy', path: '/music/song.mp3' };
   await controller.playQueue([lossy]); resolve(client.streamSource(song)); await pending;

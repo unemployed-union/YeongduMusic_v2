@@ -11,7 +11,7 @@ const code = ts.transpileModule(fs.readFileSync(file, 'utf8'), {
 }).outputText;
 const values = new Map();
 const storage = { getItem: async key => values.get(key) ?? null, setItem: async (key, value) => { values.set(key, value); }, removeItem: async key => { values.delete(key); } };
-const auth = create(() => ({ mode: 'nas', session: { baseUrl: 'https://example.invalid', account: 'tester' } }));
+const auth = create(() => ({ mode: 'nas', session: { baseUrl: 'https://example.invalid', account: 'tester', apis: { 'SYNO.AudioStation.Cover': { path: 'cover.cgi', minVersion: 1, maxVersion: 3 } } } }));
 const privacy = create(() => ({ ready: true, scope: 'https://example.invalid:tester', profile: { presets: [] } }));
 const local = create(() => ({ songs: [] }));
 const drive = create(() => ({ account: { id: 'drive-account' }, files: [{ id: 'file-id' }], songs: [] }));

@@ -1,9 +1,15 @@
 import type { QueryClient } from '@tanstack/react-query';
 import { musicProviders } from '@/services/music-providers/registry';
 import { useLocalMusicStore } from '@/stores/local-music';
+import type { MusicSourceFilter } from '@/types/music';
+import { libraryIdentity } from './repository';
+import { useAuthStore } from '@/stores/auth';
+import { refreshStoredLibrary } from '@/services/music-providers/library-tasks';
+import { refreshNasTask } from '@/services/music-providers/nas-library-task';
 
-export function captureRefreshContext() {
-  const source = useLocalMusicStore.getState().source;
+export function captureRefreshContext(override?: MusicSourceFilter) {
+  const preferredSource = useLocalMusicStore.getState().source;
+  const source = override ?? preferredSource;
   const providers = musicProviders.map((provider) => {
     const state = provider.getState();
     return { provider, state };
@@ -12,7 +18,7 @@ export function captureRefreshContext() {
     source,
     providers,
     isCurrent: () =>
-      useLocalMusicStore.getState().source === source &&
+      useLocalMusicStore.getState().source === preferredSource &&
       providers.every(({ provider, state }) => {
         const current = provider.getState();
         return (
@@ -38,16 +44,18 @@ export async function refreshMusicLibrary(
     ({ provider, state }) =>
       (context.source === 'all' || context.source === provider.id) && state.connected,
   );
-  const results = await Promise.allSettled(selected.map(({ provider }) => provider.refresh()));
+  const results = await Promise.allSettled(selected.map(({ provider }) => {
+    if (provider.id === 'nas') {
+      const auth = useAuthStore.getState();
+      return refreshNasTask(queryClient, libraryIdentity(auth.mode, auth.session));
+    }
+    return provider.id === 'local' ? provider.refresh() : refreshStoredLibrary(provider);
+  }));
   if (!isActive()) {
     return null;
   }
-  await queryClient.invalidateQueries({
-    predicate: (query) =>
-      ['song-library', 'local-library', 'provider-playlists', 'provider-playlist-songs'].includes(
-        String(query.queryKey[0]),
-      ),
-  });
+  // Provider stores and the NAS Query publish their own completed catalogs.
+  // No global invalidation: a library refresh must not refetch unrelated playlists/accounts.
   if (!isActive()) {
     return null;
   }

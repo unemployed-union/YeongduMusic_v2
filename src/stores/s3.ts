@@ -13,6 +13,7 @@ import {
   type S3PublicConnection,
 } from '@/services/s3/api';
 import type { Song } from '@/types/music';
+import { reuseLibraryItems } from '@/services/music-providers/library-policy';
 
 const KEY = 'yeongdu-s3-connection-v1';
 type State = {
@@ -21,6 +22,8 @@ type State = {
   loading: boolean;
   connection: S3PublicConnection | null;
   songs: Song[];
+  stale: boolean;
+  validatedAt: number;
   error: string | null;
   scanned: number;
   generation: number;
@@ -41,6 +44,7 @@ type State = {
 export const useS3Store = create<State>((set, get) => {
   let credentials: S3Connection | null = null;
   let request: AbortController | null = null;
+  let fullRequest: Promise<void> | null = null;
   const { run: exclusive } = createSerialQueue();
   const current = (generation: number) => get().generation === generation;
   const supported = () => {
@@ -49,6 +53,7 @@ export const useS3Store = create<State>((set, get) => {
     }
   };
   function begin() {
+    fullRequest = null;
     request?.abort();
     request = new AbortController();
     credentials = null;
@@ -61,6 +66,7 @@ export const useS3Store = create<State>((set, get) => {
       scanned: 0,
       connection: null,
       songs: [],
+      validatedAt: 0,
       error: null,
     });
     return { generation, signal: request.signal };
@@ -75,6 +81,8 @@ export const useS3Store = create<State>((set, get) => {
     loading: false,
     connection: null,
     songs: [],
+    stale: false,
+    validatedAt: 0,
     error: null,
     scanned: 0,
     generation: 0,
@@ -184,39 +192,52 @@ export const useS3Store = create<State>((set, get) => {
       if (get().loading) {
         request?.abort();
         request = null;
+        fullRequest = null;
         set({ loading: false });
       }
     },
-    refresh: async () => {
-      if (!credentials || get().busy) {
-        return;
+    refresh: () => {
+      if (fullRequest) {
+        return fullRequest;
       }
-      const connection = credentials;
-      const generation = get().generation;
-      request?.abort();
-      const task = new AbortController();
-      request = task;
-      set({ loading: true, scanned: 0, error: null });
-      try {
-        const songs = await loadS3Songs(connection, task.signal, (scanned) => {
-          if (current(generation) && request === task) {
-            set({ scanned });
+      const work = (async () => {
+        if (!credentials || get().busy) {
+          return;
+        }
+        const connection = credentials;
+        const generation = get().generation;
+        request?.abort();
+        const task = new AbortController();
+        request = task;
+        set({ loading: true, scanned: 0, error: null });
+        try {
+          const songs = await loadS3Songs(connection, task.signal, (scanned) => {
+            if (current(generation) && request === task) {
+              set({ scanned });
+            }
+          });
+          if (current(generation) && request === task && !task.signal.aborted) {
+            set({ songs: reuseLibraryItems(get().songs, songs), validatedAt: Date.now(), stale: false });
           }
-        });
-        if (current(generation) && request === task && !task.signal.aborted) {
-          set({ songs });
+        } catch (error) {
+          if (current(generation) && request === task && !task.signal.aborted) {
+            set({ error: message(error) });
+            throw error;
+          }
+        } finally {
+          if (current(generation) && request === task) {
+            request = null;
+            set({ loading: false });
+          }
         }
-      } catch (error) {
-        if (current(generation) && request === task && !task.signal.aborted) {
-          set({ error: message(error) });
-          throw error;
+      })();
+      fullRequest = work;
+      void work.finally(() => {
+        if (fullRequest === work) {
+          fullRequest = null;
         }
-      } finally {
-        if (current(generation) && request === task) {
-          request = null;
-          set({ loading: false });
-        }
-      }
+      }).catch(() => {});
+      return work;
     },
     recordWrittenSong: (song) => {
       if (song.source !== 's3' || get().connection?.id !== song.s3.connectionId) {

@@ -48,10 +48,11 @@ const auth = { mode: 'mock', session: null };
 const localFixture = { songs: [], ready: true, source: 'nas' };
 const queries = load('src/features/library/queries.ts', {
   '@/stores/library-preferences': { useLibraryPreferences: selector => selector({ ready: true, includeFolderAlbums: true }) },
-  react: { useMemo: factory => factory(), useCallback: callback => callback },
+  react: { useMemo: factory => factory(), useCallback: callback => callback, useEffect() {} },
   '@/stores/google-drive': { useGoogleDriveStore: selector => selector({ songs: [], loading: false, error: null }) },
   '@/stores/local-music': { useLocalMusicStore: selector => selector(localFixture) },
-  '@tanstack/react-query': { useQuery: options => options },
+  '@tanstack/react-query': { useQuery: options => options, useQueryClient: () => ({}) },
+  './nas-library-cache': { readNasLibrary: signal => metadata.loadSongLibrary({ songs: async page => ({ items: songs.slice(page.offset, page.offset + page.limit), total: songs.length }) }, signal) },
   './album-library': albumHelpers, './load-song-library': metadata, './search-songs': searchHelpers,
   './repository': { libraryIdentity: () => 'demo-query', musicRepository: () => ({ songs: async page => ({ items: songs.slice(page.offset, page.offset + page.limit), total: songs.length }) }) },
   '../hidden-music/rules': rules,

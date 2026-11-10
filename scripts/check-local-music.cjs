@@ -211,8 +211,8 @@ async function main() {
   let queryResult = null;
   const hooks = load('src/features/library/queries.ts', {
     '@/stores/library-preferences': { useLibraryPreferences: selector => selector(libraryPreferences) },
-    react: { useCallback: fn => fn, useMemo: fn => fn() },
-    '@tanstack/react-query': { useQuery: options => queryResult ?? options },
+    react: { useCallback: fn => fn, useMemo: fn => fn(), useEffect() {} },
+    '@tanstack/react-query': { useQuery: options => queryResult ?? options, useQueryClient: () => ({}) },
     '@/stores/google-drive': { useGoogleDriveStore: selector => selector({ songs: [], loading: false, error: null }) },
     '@/stores/local-music': { useLocalMusicStore: selector => selector(localState) },
     '@/stores/auth': { useAuthStore: selector => selector(auth) },

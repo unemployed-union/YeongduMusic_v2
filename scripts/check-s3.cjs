@@ -148,8 +148,8 @@ async function checkLibraryAndRecovery(s3) {
   const state = { songs: [local], ready: true };
   const rules = load('src/features/hidden-music/rules.ts');
   const library = load('src/features/library/queries.ts', {
-    react: { useCallback: fn => fn, useMemo: fn => fn() },
-    '@tanstack/react-query': { useQuery: options => { queryOptions = options; return { data: nasFailure ? undefined : options.select({ items: [], total: 0 }), isError: nasFailure, isPending: false, error: nasFailure ? Error('NAS fixture unavailable') : null }; } },
+    react: { useCallback: fn => fn, useMemo: fn => fn(), useEffect() {} },
+    '@tanstack/react-query': { useQueryClient: () => ({}), useQuery: options => { queryOptions = options; return { data: nasFailure ? undefined : options.select({ items: [], total: 0 }), isError: nasFailure, isPending: false, error: nasFailure ? Error('NAS fixture unavailable') : null }; } },
     '@/stores/s3': { useS3Store: select => select(s3.getState()) },
     '@/stores/google-drive': { useGoogleDriveStore: select => select({ songs: [], loading: false, error: null }) },
     '@/stores/local-music': { useLocalMusicStore: select => select({ ...state, source }) },

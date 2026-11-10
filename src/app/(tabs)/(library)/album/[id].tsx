@@ -21,6 +21,7 @@ import { mockAlbums } from '@/features/library/mock-repository';
 import { playAndOpenPlayer } from '@/features/playback/play-and-open-player';
 import { useAlbumSongs } from '@/features/library/queries';
 import { albumArtistLabel, albumTitleFromId } from '@/features/library/album-library';
+import { albumDiscLayout, type AlbumTrackRow } from '@/features/library/album-disc-layout';
 import { useAppColorScheme, useColors } from '@/theme/tokens';
 import type { Album, Song } from '@/types/music';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -70,6 +71,7 @@ export default function AlbumScreen() {
   );
   const query = useAlbumSongs(album);
   const songs = query.data?.items ?? EMPTY_SONGS;
+  const discLayout = useMemo(() => albumDiscLayout(songs, columns), [songs, columns]);
   const artist = useMemo(
     () =>
       albumTitleFromId(album.id) !== null && songs.length ? albumArtistLabel(songs) : album.artist,
@@ -117,17 +119,28 @@ export default function AlbumScreen() {
     [songs],
   );
   const renderSong = useCallback(
-    ({ item, index }: { item: Song; index: number }) => (
-      <View style={[styles.song, { backgroundColor: colors.background, width: width / columns }]}>
-        <SongRow
-          song={item}
-          index={index}
-          favoriteLocation="album"
-          onPress={() => void play(index)}
-        />
+    ({ item }: { item: AlbumTrackRow }) => (
+      <View style={{ backgroundColor: colors.background }}>
+        {item.showDiscHeading && (
+          <Text accessibilityRole="header" style={[styles.discHeading, { color: colors.muted }]}>
+            DISC {item.discNumber}
+          </Text>
+        )}
+        <View style={styles.trackRow}>
+          {item.tracks.map((track) => (
+            <View key={track.song.id} style={[styles.song, { width: width / columns }]}>
+              <SongRow
+                song={track.song}
+                index={track.trackNumber - 1}
+                favoriteLocation="album"
+                onPress={() => void play(track.queueIndex)}
+              />
+            </View>
+          ))}
+        </View>
       </View>
     ),
-    [colors.background, play, width, columns],
+    [colors.background, colors.muted, play, width, columns],
   );
   return (
     <View style={[styles.screen, { backgroundColor: colors.background }]}>
@@ -159,9 +172,8 @@ export default function AlbumScreen() {
         <TabScrollEdgeFade topEnabled={false}>
           <FlatList
             key={`${album.id}-${columns}`}
-            numColumns={columns}
-            data={songs}
-            keyExtractor={(song) => song.id}
+            data={discLayout.rows}
+            keyExtractor={(row) => row.key}
             contentContainerStyle={styles.list}
             alwaysBounceVertical
             contentInsetAdjustmentBehavior="never"
@@ -230,6 +242,7 @@ export default function AlbumScreen() {
                         {artist}
                       </Text>
                       <Text style={[styles.count, { color: decorated ? '#E5E5EB' : colors.muted }]}>
+                        {discLayout.showDiscs ? `${discLayout.discCount}개 디스크 · ` : ''}
                         {query.data?.total ?? 0}곡
                       </Text>
                     </View>
@@ -349,6 +362,8 @@ const styles = StyleSheet.create({
   hero: { alignItems: 'center', paddingBottom: 23, paddingHorizontal: 22 },
   actions: { alignItems: 'center', paddingHorizontal: 22, paddingTop: 15, paddingBottom: 19 },
   song: { paddingHorizontal: 22 },
+  trackRow: { flexDirection: 'row' },
+  discHeading: { paddingHorizontal: 22, paddingTop: 20, paddingBottom: 8, fontSize: 14, fontWeight: '700' },
   footer: { flexGrow: 1 },
   title: { fontSize: 26, fontWeight: '800', marginTop: 20, textAlign: 'center' },
   artist: { fontSize: 16, fontWeight: '600', marginTop: 5, textAlign: 'center' },

@@ -41,7 +41,7 @@ export function AutomaticMetadata() {
   }, []);
   const permitted =
     ready && enabled && active && privacyReady && privacyAccount === scope && mode !== 'mock';
-  const { data } = useSongs(permitted);
+  const { data } = useSongs(permitted, undefined, true);
   useEffect(() => {
     songs.current = permitted ? (data?.items ?? []) : [];
   }, [data?.items, permitted]);

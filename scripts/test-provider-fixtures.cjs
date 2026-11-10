@@ -19,6 +19,7 @@ exports.providerFixtures = (dependencies = {}, globals = {}) => {
     session: null,
     mode: 'setup',
     bootstrap: async () => {},
+    ensureApis: async () => {},
     load: async () => {},
   };
   const boundaries = { ...dependencies };

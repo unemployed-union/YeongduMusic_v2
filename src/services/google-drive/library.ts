@@ -17,6 +17,7 @@ export async function refreshDriveLibrary(
   token: TokenProvider,
   signal: AbortSignal,
   observer: LibraryObserver,
+  waitForMetadata = false,
 ): Promise<boolean> {
   let missing = 0;
   const songs = await loadDriveSongs(
@@ -32,7 +33,7 @@ export async function refreshDriveLibrary(
     return false;
   }
   observer.onSongs(songs, missing);
-  void enrichDriveSongs(songs, token, signal, (updated) => {
+  const enrichment = enrichDriveSongs(songs, token, signal, (updated) => {
     if (observer.isCurrent()) {
       observer.onMetadata(updated);
     }
@@ -56,5 +57,9 @@ export async function refreshDriveLibrary(
         observer.onSettled();
       }
     });
+  if (waitForMetadata) {
+    await enrichment;
+    return false;
+  }
   return true;
 }

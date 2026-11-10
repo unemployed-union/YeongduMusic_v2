@@ -22,6 +22,7 @@ export type ProviderState = {
   loading: boolean;
   error: string | null;
   stale?: boolean;
+  validatedAt?: number;
   selection?: unknown;
   documentsRevision?: number;
 };
@@ -37,6 +38,15 @@ export interface MusicProvider {
   songs(page: PageRequest): Promise<Page<Song>>;
   refresh(signal?: AbortSignal): Promise<void>;
   cancelLibrary?(): void;
+  cache?: {
+    restore(songs: Song[], stale: boolean): void;
+    metadata?(): import('./library-snapshots').LibrarySnapshot['metadata'];
+    restoreMetadata?(metadata: import('./library-snapshots').LibrarySnapshot['metadata']): void;
+    fail?(message: string): void;
+  };
+  sync?: {
+    revalidate(options: { signal: AbortSignal }): Promise<'unchanged' | 'updated' | 'full-required'>;
+  };
   streamSource(song: Song, options?: SourceRequest): Promise<PlaybackSource>;
   entityRef(song: Song): MusicEntityRef;
   restore(song: Song): Song | null;

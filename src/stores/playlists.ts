@@ -130,7 +130,8 @@ export const usePlaylistStore = create<State>((set, get) => {
     moveSong: (id, songId, direction, visibleOrder) =>
       edit(id, (item) => {
         const songIds = [...item.songIds];
-        const order = visibleOrder ? songIds.filter((id) => visibleOrder.includes(id)) : songIds;
+          const visible = visibleOrder ? new Set(visibleOrder) : null;
+          const order = visible ? songIds.filter((id) => visible.has(id)) : songIds;
         const index = order.indexOf(songId);
         const target = order[index + direction];
         const from = songIds.indexOf(songId);

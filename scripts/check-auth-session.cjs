@@ -68,6 +68,25 @@ function assertAccount(h, account) {
 }
 async function test(name, run) { await run(); console.log('PASS: ' + name); }
 async function main() {
+  await test('offline bootstrap preserves saved NAS credentials and publishes its scope before discovery settles', async () => {
+    const h = harness(fixture('offline'));
+    const discovery = deferred();
+    h.discover = () => discovery.promise;
+    const bootstrap = h.auth.getState().bootstrap();
+    await until(() => h.auth.getState().ready);
+    assertAccount(h, 'offline');
+    discovery.reject(new api.SynologyRequestError('network', 'offline'));
+    await bootstrap;
+    assertAccount(h, 'offline');
+    assert(!h.calls.includes('delete'));
+  });
+  await test('confirmed expired NAS authentication still clears the saved session', async () => {
+    const h = harness(fixture('expired'));
+    h.check = async () => { throw new api.SessionExpiredError(106); };
+    await h.auth.getState().bootstrap();
+    assert.equal(h.value, null);
+    assert.equal(h.auth.getState().mode, 'setup');
+  });
   await test('normal login, saved-session bootstrap and logout', async () => {
     const h = harness(fixture('restored'));
     await h.auth.getState().bootstrap();
@@ -195,8 +214,16 @@ async function main() {
       '@/stores/player-background': { usePlayerBackgroundStore: { getState: () => ({ selectArtwork() {}, reset() {} }) } },
     });
     await controller.playQueue([{ id: 'fixture', title: 'fixture', artist: 'fixture', album: 'fixture', duration: 1 }]);
-    const check = deferred(); h.check = session => session.account === 'old' ? check.promise : Promise.resolve();
+    let checking = false;
+    const check = deferred(); h.check = session => {
+      if (session.account === 'old') {
+        checking = true;
+        return check.promise;
+      }
+      return Promise.resolve();
+    };
     listener({ playing: false, buffering: false, position: 0, duration: 1, error: 'fixture playback error' });
+    await until(() => checking);
     await h.connect('new'); check.reject(new api.SessionExpiredError(106)); await tick();
     assertAccount(h, 'new'); controller.stopPlayback();
   });

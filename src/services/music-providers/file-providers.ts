@@ -7,6 +7,7 @@ import { localSource } from '@/services/local-music/storage';
 import type { Song } from '@/types/music';
 import { memoSnapshot, storedPage, type MusicProvider } from './contracts';
 import { findStoredSong } from './stored-song-index';
+import { reuseLibraryItems } from './library-policy';
 
 export const localProvider: MusicProvider = {
   id: 'local',
@@ -52,7 +53,7 @@ export const driveProvider: MusicProvider = {
     if (driveItems !== state.songs || documentItems !== documents.songs) {
       driveItems = state.songs;
       documentItems = documents.songs;
-      combinedDrive = [...state.songs, ...documents.songs];
+      combinedDrive = documents.songs.length ? [...state.songs, ...documents.songs] : state.songs;
     }
     return {
       ready: state.ready && documents.ready,
@@ -63,6 +64,8 @@ export const driveProvider: MusicProvider = {
       documentsRevision: documents.revision,
       songs: combinedDrive,
       loading: state.loading || state.metadataLoading,
+      stale: state.stale,
+      validatedAt: state.validatedAt,
       error: [state.error, documents.error].filter(Boolean).join('\n') || null,
     };
   }),
@@ -81,12 +84,32 @@ export const driveProvider: MusicProvider = {
       useDriveDocumentsStore.getState().load(),
     ]);
   },
-  refresh: async () => {
+  refresh: async (signal) => {
     await useDriveDocumentsStore.getState().load();
     if (useGoogleDriveStore.getState().account) {
-      await useGoogleDriveStore.getState().refresh();
+      await useGoogleDriveStore.getState().refresh(signal);
     }
   },
+  cache: {
+    fail: (error) => useGoogleDriveStore.setState({ error, stale: true }),
+    restore: (songs, stale) => {
+      const state = useGoogleDriveStore.getState();
+      const selected = new Set(state.files.map((file) => file.id));
+      const valid = songs.filter((song) => song.source === 'drive' &&
+        song.drive.accountId === state.account?.id && selected.has(song.drive.fileId));
+      useGoogleDriveStore.setState({ songs: reuseLibraryItems(state.songs, valid), stale });
+    },
+    metadata: () => {
+      const state = useGoogleDriveStore.getState();
+      return { cursor: state.syncCursor, changesDisabled: state.changesDisabled, pendingIds: state.pendingMetadataIds };
+    },
+    restoreMetadata: (metadata) => useGoogleDriveStore.setState({
+      syncCursor: metadata?.cursor,
+      changesDisabled: metadata?.changesDisabled ?? false,
+      pendingMetadataIds: metadata?.pendingIds ?? [],
+    }),
+  },
+  sync: { revalidate: ({ signal }) => useGoogleDriveStore.getState().revalidate(signal) },
   streamSource: (song, options) => driveSource(song, options?.refreshCredentials),
   entityRef: (song) => {
     if (song.source !== 'drive') {
@@ -128,6 +151,8 @@ export const s3Provider: MusicProvider = {
       selection: state.connection,
       songs: state.songs,
       loading: state.loading,
+      stale: state.stale,
+      validatedAt: state.validatedAt,
       error: state.error,
     };
   }),
@@ -135,6 +160,12 @@ export const s3Provider: MusicProvider = {
   bootstrap: () => useS3Store.getState().bootstrap(),
   songs: async (page) => storedPage(useS3Store.getState().songs, page),
   cancelLibrary: () => useS3Store.getState().cancelLibrary(),
+  cache: { restore: (songs, stale) => {
+    const connection = useS3Store.getState().connection;
+    const valid = songs.filter((song) => song.source === 's3' &&
+      song.s3.connectionId === connection?.id && song.s3.key.startsWith(connection.prefix));
+    useS3Store.setState({ songs: reuseLibraryItems(useS3Store.getState().songs, valid), stale });
+  }, fail: (error) => useS3Store.setState({ error, stale: true }) },
   refresh: () => useS3Store.getState().refresh(),
   streamSource: (song) => s3Source(song),
   entityRef: (song) => {
@@ -176,6 +207,8 @@ export const myboxProvider: MusicProvider = {
       selection: state.connection,
       songs: state.songs,
       loading: state.loading || state.busy,
+      stale: state.stale,
+      validatedAt: state.validatedAt,
       error: state.error,
     };
   }),
@@ -183,6 +216,12 @@ export const myboxProvider: MusicProvider = {
   bootstrap: () => useMyboxStore.getState().bootstrap(),
   songs: async (page) => storedPage(useMyboxStore.getState().songs, page),
   cancelLibrary: () => useMyboxStore.getState().cancelLibrary(),
+  cache: { restore: (songs, stale) => {
+    const connection = useMyboxStore.getState().connection;
+    const valid = songs.filter((song) => song.source === 'mybox' &&
+      song.mybox.connectionId === connection?.id && !!song.path?.startsWith(connection.folder));
+    useMyboxStore.setState({ songs: reuseLibraryItems(useMyboxStore.getState().songs, valid), stale });
+  }, fail: (error) => useMyboxStore.setState({ error, stale: true }) },
   refresh: () => useMyboxStore.getState().refresh(),
   streamSource: (song, options) => useMyboxStore.getState().playbackSource(song, options?.signal),
   entityRef: (song) => {

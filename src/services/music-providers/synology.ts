@@ -31,7 +31,10 @@ export const synologyProvider: MusicProvider = {
   refresh: async (signal) => {
     await musicRepository({ allowCachedFallback: false }).songs({ offset: 0, limit: 1, signal });
   },
-  streamSource: (song) => musicRepository().streamSource(song),
+  streamSource: async (song) => {
+    await useAuthStore.getState().ensureApis();
+    return musicRepository().streamSource(song);
+  },
   entityRef: (song) => ({
     providerId: 'nas',
     accountScope: synologyProvider.getState().scope,
@@ -45,13 +48,14 @@ export const synologyProvider: MusicProvider = {
     return session
       ? {
           ...song,
-          artworkUrl: new SynologyClient(session).coverUrl(
+          artworkUrl: session.apis?.['SYNO.AudioStation.Cover'] ? new SynologyClient(session).coverUrl(
             ('nasId' in song && song.nasId) || song.id,
-          ),
+          ) : undefined,
         }
       : null;
   },
   checkSession: async () => {
+    await useAuthStore.getState().ensureApis();
     const { mode, session, generation, expire } = useAuthStore.getState();
     if (mode !== 'nas' || !session) {
       return;

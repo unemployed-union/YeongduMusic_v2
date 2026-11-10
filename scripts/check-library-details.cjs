@@ -229,6 +229,7 @@ async function checkAlbumColors() {
 }
 function checkAlbumScreen(store) {
   const h = hooks(); let hidden = false, enabled, colorsReady = true;
+  const played = [];
   const albumHelpers = load('src/features/library/album-library.ts'), params = { id: 'album', title: 'Album', artist: 'Artist' };
   const header = headerModule(h);
   store.setState({ ready: true, loadError: false, preferences: { artistPhotos: true, albumColors: true } });
@@ -236,6 +237,7 @@ function checkAlbumScreen(store) {
   const Screen = load('src/app/(tabs)/(library)/album/[id].tsx', { ...uiMocks, react: h.react,
     'expo-router': { Stack: { Screen: 'StackScreen' }, useIsFocused: () => true, useLocalSearchParams: () => params },
     '@/features/library/album-library': albumHelpers,
+    '@/features/library/album-disc-layout': load('src/features/library/album-disc-layout.ts'),
     'expo-router/react-navigation': { useHeaderHeight: () => 96 },
     'expo-status-bar': { StatusBar: 'StatusBar' },
     'react-native-reanimated': { __esModule: true, default: { View: 'AnimatedView' } },
@@ -243,7 +245,7 @@ function checkAlbumScreen(store) {
     'expo-linear-gradient': { LinearGradient: 'Gradient' }, '@/components/tab-scroll-edge-fade': { TabScrollEdgeFade: 'ScrollFade' }, '@/components/artwork': { Artwork: 'Artwork' },
     '@/components/async-state': { AsyncState: 'Async' }, '@/components/song-row': { SongRow: 'Song' }, '@/features/library/mock-repository': { mockAlbums: [] },
     '@/features/artwork/album-artwork-editor': { AlbumArtworkEditor: 'AlbumArtworkEditor' },
-    '@/features/library/queries': { useAlbumSongs: () => ({ data: { items: songs, total: 1 } }) }, '@/features/playback/play-and-open-player': { playAndOpenPlayer: async () => {} },
+    '@/features/library/queries': { useAlbumSongs: () => ({ data: { items: songs, total: songs.length } }) }, '@/features/playback/play-and-open-player': { playAndOpenPlayer: async (queue, index) => { played.push({ queue, index }); } },
     '@/stores/library-detail-preferences': { useLibraryDetailPreferences: () => store.getState() }, '@/stores/display-preferences': { useDisplayPreferences: selector => selector({ hideArtwork: hidden }) },
     '@/features/library/use-album-colors': { useAlbumColors: (uri, p, value) => { enabled = value; return { colors: palette.DEFAULT_PLAYER_COLORS, ready: colorsReady }; } },
     '@/features/library/use-album-header': header.module,
@@ -280,9 +282,9 @@ function checkAlbumScreen(store) {
   const updates = header.changes.length; scroll(460); scroll(470); assert.equal(header.changes.length, updates, 'Scrolling only updates React when the header color boundary is crossed');
   scroll(-60); assert.equal(gradientOpacity(tree), 0, 'Return to top and pull-to-refresh restore full transparency');
   assert(nodes(list.props.ListHeaderComponent).some(node => node.type === 'Artwork'), 'Artwork scrolls in the same virtualized list');
-  assert.equal(style(list.props.renderItem({ item: songs[0], index: 0 }).props.style).backgroundColor, colors.background, 'Full-width song surface covers the fixed gradient');
+  assert.equal(style(list.props.renderItem({ item: list.props.data[0], index: 0 }).props.style).backgroundColor, colors.background, 'Full-width song surface covers the fixed gradient');
   assert.equal(list.props.ListFooterComponent.props.style.backgroundColor, colors.background, 'Short albums and bottom spacing never expose the hero behind the list');
-  assert.equal(nodes(list.props.renderItem({ item: songs[0], index: 0 })).find(node => node.type === 'Song').props.favoriteLocation, 'album', 'Album rows use the independent album favorite display setting');
+  assert.equal(nodes(list.props.renderItem({ item: list.props.data[0], index: 0 })).find(node => node.type === 'Song').props.favoriteLocation, 'album', 'Album rows use the independent album favorite display setting');
   const selectImage = nodes(list.props.ListHeaderComponent).find(node => node.props?.accessibilityLabel === '앨범 이미지 선택');
   selectImage.props.onLongPress();
   const editor = nodes(render()).find(node => node.type === 'AlbumArtworkEditor');
@@ -299,6 +301,21 @@ function checkAlbumScreen(store) {
   params.id = albumHelpers.albumId({ album: 'Album' }, true);
   list = nodes(render()).find(node => node.type === 'List');
   assert(nodes(list.props.ListHeaderComponent).some(node => node.type === 'Text' && node.props.children === '여러 아티스트'), 'Merged album headers describe all the artists, including entry from the player');
+  songs.splice(0, songs.length,
+    { id: 'disc-1-track-1', discNumber: 1, trackNumber: 1 },
+    { id: 'disc-1-track-3', discNumber: 1, trackNumber: 3 },
+    { id: 'disc-2-track-1', discNumber: 2, trackNumber: 1 },
+  );
+  list = nodes(render()).find(node => node.type === 'List');
+  const headings = list.props.data.map((item) => nodes(list.props.renderItem({ item })).find(node => node.props?.accessibilityRole === 'header')).filter(Boolean);
+  assert.deepEqual(headings.map(node => node.props.children), [['DISC ', 1], ['DISC ', 2]], 'Disk headings appear once per disk');
+  const secondDisc = list.props.renderItem({ item: list.props.data[2] });
+  const secondDiscSong = nodes(secondDisc).find(node => node.type === 'Song');
+  assert.equal(secondDiscSong.props.index, 0, 'Track numbers restart on the second disk');
+  secondDiscSong.props.onPress();
+  assert.equal(played.at(-1).index, 2, 'Selecting disk 2 retains its index in the complete album queue');
+  assert.equal(played.at(-1).queue, songs);
+  assert.equal(nodes(list.props.renderItem({ item: list.props.data[1] })).find(node => node.type === 'Song').props.index, 2, 'Actual track tags retain gaps instead of being renumbered');
 }
 function checkAlbumEditor() {
   const h = hooks(), songs = [{ id: 'drive', source: 'drive' }, { id: 'nas', source: 'nas' }]; let closed = 0;

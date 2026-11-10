@@ -105,7 +105,7 @@ async function main() {
   const libraryProvider = {
     id: 'jellyfin',
     catalog: 'stored',
-    getState: () => ({ generation, scope, ready: true, connected: true, loading: true }),
+    getState: () => ({ generation, scope, ready: true, connected: true, loading: true, songs: [] }),
     refresh: (signal) => {
       const task = deferred();
       requests.push({ signal, task });
@@ -117,9 +117,11 @@ async function main() {
   };
   const tasks = loadSource('src/services/music-providers/library-tasks.ts', {
     './registry': { musicProviders: [libraryProvider] },
+    './library-snapshots': { librarySnapshotKey: (...parts) => JSON.stringify(parts), readLibrarySnapshot: async () => null, writeLibrarySnapshot: async () => {} },
   });
   const stopFirst = tasks.acquireProviderLibraries('all');
   const stopSecond = tasks.acquireProviderLibraries('jellyfin');
+  for (let i = 0; i < 10; i++) await Promise.resolve();
   assert.equal(requests.length, 1, 'Mounted pages share a selected library request');
   stopFirst();
   assert.equal(requests[0].signal.aborted, false);
@@ -127,9 +129,11 @@ async function main() {
   assert.equal(requests[0].signal.aborted, true);
   assert.equal(cancellations, 1, 'Only the final consumer cancels the library');
   const stopOld = tasks.acquireProviderLibraries('jellyfin');
+  for (let i = 0; i < 10; i++) await Promise.resolve();
   scope = 'account-b';
   generation++;
   const stopNew = tasks.acquireProviderLibraries('jellyfin');
+  for (let i = 0; i < 10; i++) await Promise.resolve();
   assert.equal(requests[1].signal.aborted, true, 'Changing accounts cancels the old request');
   stopOld();
   assert.equal(requests[2].signal.aborted, false, 'An old page cannot cancel the newer account');

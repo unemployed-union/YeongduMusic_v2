@@ -132,7 +132,7 @@ async function main() {
   assert(load('src/services/playback/lossless.ts').isLosslessPlayback(savedSong, { uri: 'file:///cache/song.flac' }));
   let selectedSource = 'all';
   const query = load('src/features/library/queries.ts', {
-    react: { useMemo: fn => fn(), useCallback: fn => fn }, '@tanstack/react-query': { useQuery: options => options },
+    react: { useMemo: fn => fn(), useCallback: fn => fn, useEffect() {} }, '@tanstack/react-query': { useQuery: options => options, useQueryClient: () => ({}) },
     '@/stores/auth': { useAuthStore: select => select({ mode: 'setup', session: null }) },
     '@/stores/local-music': { useLocalMusicStore: select => select({ ready: true, source: selectedSource, songs: [] }) },
     '@/stores/google-drive': { useGoogleDriveStore: select => select({ songs: [], loading: false, error: null }) },

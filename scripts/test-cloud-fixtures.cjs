@@ -349,6 +349,8 @@ exports.cloudFixtures = (globals = {}, dependencies = {}) => {
     './mybox': { useMyboxStore },
   };
   const boundaries = { ...modules, ...dependencies };
+  boundaries['react-native'] = { ...boundaries['react-native'], Platform: boundaries['react-native']?.Platform ?? { OS: 'web' } };
+  boundaries['expo-sqlite'] ??= {};
   boundaries.react = {
     ...boundaries.react,
     useSyncExternalStore:
@@ -379,6 +381,9 @@ exports.cloudFixtures = (globals = {}, dependencies = {}) => {
     }),
   };
   const sourceCache = new Map();
+  modules['@/services/music-providers/library-policy'] = read('src/services/music-providers/library-policy.ts', globals);
+  modules['./use-library-activity'] = { useLibraryActivity: (enabled = true) => enabled };
+  modules['@/features/library/use-library-activity'] = modules['./use-library-activity'];
   function lazySource(file) {
     let loaded;
     return new Proxy({}, {
@@ -395,6 +400,14 @@ exports.cloudFixtures = (globals = {}, dependencies = {}) => {
     './song-library': 'src/features/library/song-library.ts',
     './use-source-libraries': 'src/features/library/use-source-libraries.ts',
     './source-library-selection': 'src/features/library/source-library-selection.ts',
+    './load-progress': 'src/features/library/load-progress.ts',
+    './nas-library-cache': 'src/features/library/nas-library-cache.ts',
+    './refresh-music-library': 'src/features/library/refresh-music-library.ts',
+    '@/services/music-providers/library-tasks': 'src/services/music-providers/library-tasks.ts',
+    '@/services/music-providers/stored-library-task': 'src/services/music-providers/stored-library-task.ts',
+    '@/services/music-providers/nas-library-task': 'src/services/music-providers/nas-library-task.ts',
+    '@/services/google-drive/changes': 'src/services/google-drive/changes.ts',
+    '@/services/synology/discovery-cache': 'src/services/synology/discovery-cache.ts',
     '@/features/library/use-source-libraries': 'src/features/library/use-source-libraries.ts',
     '@/services/metadata/written-song': 'src/services/metadata/written-song.ts',
     './written-song': 'src/services/metadata/written-song.ts',

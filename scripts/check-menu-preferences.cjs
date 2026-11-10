@@ -165,6 +165,7 @@ function checkLibraryPager() {
     '@/features/favorites/liked-songs-screen': { LikedSongsScreen: 'LikedSongsScreen' },
     '@/features/library/library-page': { LibraryPage: 'LibraryPage' }, '@/features/library/local-music-controls': { LocalMusicControls: 'Controls' },
     '@/features/library/library-pager': { LibraryPager: 'LibraryPager' },
+    '@/features/library/library-load-status': { LibraryLoadStatus: 'LibraryLoadStatus' },
     '@/features/library/library-segments': { LibrarySegments: 'LibrarySegments' },
     '@/features/library/library-sort-control': { LibrarySortControl: 'Sort' }, '@/features/library/queries': {
       useAlbums: enabled => { queryActive.albums = enabled; return query; },

@@ -249,6 +249,13 @@ export function ArtworkEditor({
             () => allowed() && targetsVisible(),
           );
           written++;
+          if (!target.source || target.source === 'nas') {
+            const { markNasLibraryDirty } = await import('@/services/music-providers/nas-library-task');
+            markNasLibraryDirty();
+          } else {
+            const { markStoredLibraryDirty } = await import('@/services/music-providers/stored-library-task');
+            markStoredLibraryDirty(target.source);
+          }
           if (!allowed()) {
             throw new Error('파일 저장 적용이 취소되었습니다.');
           }

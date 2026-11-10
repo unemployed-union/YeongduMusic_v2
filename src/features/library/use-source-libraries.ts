@@ -18,7 +18,7 @@ export function useSourceLibraries(enabled = true, sourceOverride?: MusicSourceF
   const states = useProviderStates();
   const source = sourceOverride ?? preferredSource;
   const connectionKey = JSON.stringify(
-    states.map((state) => [state.ready, state.connected, state.scope, state.generation]),
+    states.map((state) => [state.ready, state.connected, state.scope, state.generation, state.selection]),
   );
   useEffect(() => {
     if (enabled) {
@@ -34,6 +34,7 @@ export function useSourceLibraries(enabled = true, sourceOverride?: MusicSourceF
   );
   return {
     preferredSource,
+    accountKey: connectionKey,
     libraries,
     ready: states.some(
       (state, index) => (source === 'all' || source === musicProviders[index].id) && state.ready,

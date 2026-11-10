@@ -263,9 +263,22 @@ export function startPlaybackPersistence(): () => void {
   if (persistenceStop) {
     return persistenceStop;
   }
-  const persist = () => {
+  let pending = false;
+  const flush = () => {
+    if (!pending) {
+      return;
+    }
+    pending = false;
     const value = snapshot();
     writeTail = writeTail.then(() => write(value)).catch(() => {});
+  };
+  const persist = () => {
+    if (pending) {
+      return;
+    }
+    pending = true;
+    // Several synchronous queue/status updates represent one final transport state.
+    void Promise.resolve().then(flush);
   };
   const unsubscribe = usePlaybackStore.subscribe((state, previous) => {
     const changed =
@@ -289,6 +302,7 @@ export function startPlaybackPersistence(): () => void {
     if (persistenceStop !== stop) {
       return;
     }
+    flush();
     unsubscribe();
     persistenceStop = null;
   };

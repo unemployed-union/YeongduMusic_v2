@@ -15,6 +15,7 @@ import {
 } from '@/services/mybox/api';
 import { clearMyboxPlaybackCache, prepareMyboxPlayback } from '@/services/mybox/playback-cache';
 import type { Song } from '@/types/music';
+import { reuseLibraryItems } from '@/services/music-providers/library-policy';
 
 const KEY = 'yeongdu-mybox-connection-v1';
 type State = {
@@ -23,6 +24,8 @@ type State = {
   loading: boolean;
   connection: MyboxPublicConnection | null;
   songs: Song[];
+  stale: boolean;
+  validatedAt: number;
   error: string | null;
   scanned: number;
   generation: number;
@@ -38,6 +41,7 @@ type State = {
 export const useMyboxStore = create<State>((set, get) => {
   let credentials: MyboxConnection | null = null;
   let request: AbortController | null = null;
+  let fullRequest: Promise<void> | null = null;
   const media = new Set<AbortController>();
   const { run: exclusive } = createSerialQueue();
   const current = (generation: number) => get().generation === generation;
@@ -51,6 +55,7 @@ export const useMyboxStore = create<State>((set, get) => {
       ? error.message
       : 'MYBOX 연결 정보를 저장하거나 읽지 못했습니다. 다시 시도해 주세요.';
   function begin() {
+    fullRequest = null;
     request?.abort();
     request = new AbortController();
     credentials = null;
@@ -65,6 +70,7 @@ export const useMyboxStore = create<State>((set, get) => {
       scanned: 0,
       connection: null,
       songs: [],
+      validatedAt: 0,
       error: null,
     });
     return { generation, signal: request.signal };
@@ -92,6 +98,8 @@ export const useMyboxStore = create<State>((set, get) => {
     loading: false,
     connection: null,
     songs: [],
+    stale: false,
+    validatedAt: 0,
     error: null,
     scanned: 0,
     generation: 0,
@@ -203,39 +211,52 @@ export const useMyboxStore = create<State>((set, get) => {
       if (get().loading) {
         request?.abort();
         request = null;
+        fullRequest = null;
         set({ loading: false });
       }
     },
-    refresh: async () => {
-      if (!credentials || get().busy) {
-        return;
+    refresh: () => {
+      if (fullRequest) {
+        return fullRequest;
       }
-      const connection = credentials;
-      const generation = get().generation;
-      request?.abort();
-      const task = new AbortController();
-      request = task;
-      set({ loading: true, scanned: 0, error: null });
-      try {
-        const songs = await loadMyboxSongs(connection, task.signal, (scanned) => {
-          if (current(generation) && request === task) {
-            set({ scanned });
+      const work = (async () => {
+        if (!credentials || get().busy) {
+          return;
+        }
+        const connection = credentials;
+        const generation = get().generation;
+        request?.abort();
+        const task = new AbortController();
+        request = task;
+        set({ loading: true, scanned: 0, error: null });
+        try {
+          const songs = await loadMyboxSongs(connection, task.signal, (scanned) => {
+            if (current(generation) && request === task) {
+              set({ scanned });
+            }
+          });
+          if (current(generation) && request === task && !task.signal.aborted) {
+            set({ songs: reuseLibraryItems(get().songs, songs), validatedAt: Date.now(), stale: false });
           }
-        });
-        if (current(generation) && request === task && !task.signal.aborted) {
-          set({ songs });
+        } catch (error) {
+          if (current(generation) && request === task && !task.signal.aborted) {
+            set({ error: message(error) });
+            throw error;
+          }
+        } finally {
+          if (current(generation) && request === task) {
+            request = null;
+            set({ loading: false });
+          }
         }
-      } catch (error) {
-        if (current(generation) && request === task && !task.signal.aborted) {
-          set({ error: message(error) });
-          throw error;
+      })();
+      fullRequest = work;
+      void work.finally(() => {
+        if (fullRequest === work) {
+          fullRequest = null;
         }
-      } finally {
-        if (current(generation) && request === task) {
-          request = null;
-          set({ loading: false });
-        }
-      }
+      }).catch(() => {});
+      return work;
     },
     source,
     playbackSource: async (song, signal) => {

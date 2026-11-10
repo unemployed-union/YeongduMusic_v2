@@ -11,6 +11,7 @@ import { LibrarySortControl } from '@/features/library/library-sort-control';
 import type { LibrarySortOrder } from '@/features/library/sort-library';
 import { useAlbums, useArtists, useSongs } from '@/features/library/queries';
 import { useRefreshLibrary } from '@/features/library/use-refresh-library';
+import { LibraryLoadStatus } from '@/features/library/library-load-status';
 import { useColors } from '@/theme/tokens';
 import Animated from 'react-native-reanimated';
 import { useLibraryControls } from '@/features/library/use-library-controls';
@@ -55,9 +56,9 @@ export default function LibraryScreen() {
   const selectPage = controls.selectPage;
   const refreshState = useRefreshLibrary();
   const queries = {
-    albums: useAlbums(focused && tab === 'albums' && !refreshState.refreshing),
-    songs: useSongs(focused && tab === 'songs' && !refreshState.refreshing),
-    artists: useArtists(focused && tab === 'artists' && !refreshState.refreshing),
+    albums: useAlbums(focused && tab === 'albums'),
+    songs: useSongs(focused && tab === 'songs'),
+    artists: useArtists(focused && tab === 'artists'),
   };
 
   useEffect(() => {
@@ -97,14 +98,6 @@ export default function LibraryScreen() {
       }
     />
   );
-  let refreshNotice: string | null;
-  if (refreshState.refreshing) {
-    refreshNotice = '가져오는 중...';
-  } else if (refreshState.error) {
-    refreshNotice = refreshState.error + ' · 다시 시도';
-  } else {
-    refreshNotice = refreshState.message;
-  }
   return (
     <View
       style={[
@@ -212,34 +205,16 @@ export default function LibraryScreen() {
                       </View>
                     }
                   />
-                  {(refreshState.refreshing || refreshState.error || refreshState.message) && (
-                    <Pressable
-                      accessibilityRole="button"
-                      disabled={!refreshState.error || refreshState.refreshing}
-                      onPress={() => void refreshState.refresh()}
-                      style={styles.refreshNotice}
-                    >
-                      <Text style={{ color: refreshState.error ? colors.tint : colors.muted }}>
-                        {refreshNotice}
-                      </Text>
-                    </Pressable>
-                  )}
                 </Animated.View>
               </Animated.View>
             )}
-            {workspace.expanded &&
-              (refreshState.refreshing || refreshState.error || refreshState.message) && (
-                <Pressable
-                  accessibilityRole="button"
-                  disabled={!refreshState.error || refreshState.refreshing}
-                  onPress={() => void refreshState.refresh()}
-                  style={styles.refreshNotice}
-                >
-                  <Text style={{ color: refreshState.error ? colors.tint : colors.muted }}>
-                    {refreshNotice}
-                  </Text>
-                </Pressable>
-              )}
+            <LibraryLoadStatus
+              active={focused}
+              refreshing={refreshState.refreshing}
+              error={refreshState.error}
+              message={refreshState.message}
+              onRetry={refreshState.refresh}
+            />
             <LibraryPager
               width={pageWidth}
               pageCount={tabs.length}
@@ -297,5 +272,4 @@ const styles = StyleSheet.create({
   compactSegments: { gap: 6 },
   segment: { borderWidth: 1, borderRadius: 18, paddingHorizontal: 18, paddingVertical: 8 },
   compactSegment: { flex: 1, paddingHorizontal: 2, alignItems: 'center' },
-  refreshNotice: { paddingHorizontal: 22, paddingBottom: 4 },
 });

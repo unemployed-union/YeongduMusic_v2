@@ -1,11 +1,11 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useSongMetadataStore } from '@/stores/song-metadata';
 import { useSongArtworkStore } from '@/stores/song-artwork';
 import { useHiddenMusicStore } from '@/stores/hidden-music';
 import { applyLibraryEdits } from '@/features/library/song-library';
 import { FlatList, Pressable, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useQueries, useQuery } from '@tanstack/react-query';
+import { useQueries, useQuery, useQueryClient } from '@tanstack/react-query';
 import { musicProviders } from '@/services/music-providers/registry';
 import { useProviderStates } from '@/features/library/use-source-libraries';
 import { Text } from '@/components/text';
@@ -14,17 +14,35 @@ import { ListLoading } from '@/components/list-loading';
 import { playAndOpenPlayer } from '@/features/playback/play-and-open-player';
 import { useColors } from '@/theme/tokens';
 import type { ServerPlaylist } from '@/types/music';
+import { useLibraryActivity } from '@/features/library/use-library-activity';
+import { LIBRARY_GC_MS } from '@/services/music-providers/library-policy';
+import { acquireLibraryQuery } from '@/services/music-providers/query-library-task';
 
 export function ServerPlaylists() {
+  const active = useLibraryActivity();
+  const queryClient = useQueryClient();
   const colors = useColors();
   const states = useProviderStates();
   const providers = musicProviders.filter((provider) => !!provider.playlists);
+  const resourceKeys = JSON.stringify(providers.filter((provider) => provider.getState().ready && provider.getState().connected)
+    .map((provider) => ['provider-playlists', provider.id, provider.getState().scope, provider.getState().generation]));
+  useEffect(() => {
+    if (active) {
+      const keys: unknown[][] = JSON.parse(resourceKeys);
+      const releases = keys.map((key) => acquireLibraryQuery(queryClient, key));
+      return () => releases.forEach((release) => release());
+    }
+  }, [active, queryClient, resourceKeys]);
   const queries = useQueries({
     queries: providers.map((provider) => {
       const state = states[musicProviders.indexOf(provider)];
       return {
         queryKey: ['provider-playlists', provider.id, state.scope, state.generation],
-        enabled: state.ready && state.connected,
+        enabled: active && state.ready && state.connected,
+        staleTime: Infinity,
+        gcTime: LIBRARY_GC_MS,
+        refetchOnWindowFocus: false,
+        refetchOnReconnect: false,
         queryFn: ({ signal }: { signal: AbortSignal }) => provider.playlists!.list(signal),
         retry: false,
       };
@@ -86,6 +104,8 @@ export function ServerPlaylists() {
 }
 
 export function ServerPlaylistScreen() {
+  const active = useLibraryActivity();
+  const queryClient = useQueryClient();
   const params = useLocalSearchParams<{
     provider?: string;
     scope?: string;
@@ -111,9 +131,19 @@ export function ServerPlaylistScreen() {
       remoteId: params.id ?? '',
     },
   };
+  const resourceKey = JSON.stringify(['provider-playlist-songs', provider?.id, params.scope, params.id, state?.generation]);
+  useEffect(() => {
+    if (active && available) {
+      return acquireLibraryQuery(queryClient, JSON.parse(resourceKey));
+    }
+  }, [active, available, queryClient, resourceKey]);
   const query = useQuery({
     queryKey: ['provider-playlist-songs', provider?.id, params.scope, params.id, state?.generation],
-    enabled: available,
+    enabled: available && active,
+    staleTime: Infinity,
+    gcTime: LIBRARY_GC_MS,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
     queryFn: ({ signal }) => provider!.playlists!.songs(playlist, signal),
     retry: false,
   });
@@ -138,7 +168,7 @@ export function ServerPlaylistScreen() {
     );
   } else if (query.isPending) {
     content = <ListLoading />;
-  } else if (query.isError) {
+  } else if (query.isError && !query.data) {
     content = (
       <Pressable
         accessibilityRole="button"
@@ -173,6 +203,11 @@ export function ServerPlaylistScreen() {
           {playlist.name}
         </Text>
         <Text style={{ color: colors.muted }}>서버 목록 · 읽기 전용</Text>
+        {query.isError && query.data && (
+          <Pressable disabled={query.isFetching} onPress={() => void query.refetch()}>
+            <Text style={{ color: colors.tint }}>{query.error.message} · 다시 시도</Text>
+          </Pressable>
+        )}
         <Pressable
           accessibilityRole="button"
           disabled={!songs.length}

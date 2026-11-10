@@ -1,13 +1,17 @@
 import { useSourceLibraries } from './use-source-libraries';
-import { applyLibraryEdits, combineSongLibraries } from './song-library';
-import { useCallback, useMemo } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { prepareSongLibrary } from './song-library';
+import { useCallback, useEffect, useMemo } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { albumId, albumsFromSongs, songsForAlbum } from './album-library';
-import { artistName, loadSongLibrary, songsForArtist } from './load-song-library';
+import { artistName, songsForArtist } from './load-song-library';
 import { searchSongs } from './search-songs';
 import { libraryIdentity } from './repository';
-import { musicProvider } from '@/services/music-providers/registry';
 import { libraryResult } from './library-result';
+import { readNasLibrary } from './nas-library-cache';
+import { acquireNasLibrary } from '@/services/music-providers/nas-library-task';
+import { LIBRARY_GC_MS } from '@/services/music-providers/library-policy';
+import { useLibraryActivity } from './use-library-activity';
+import { captureRefreshContext, refreshMusicLibrary } from './refresh-music-library';
 import { privacyScope, visibleSongs } from '../hidden-music/rules';
 import { useSongMetadataStore } from '@/stores/song-metadata';
 import { useSongArtworkStore } from '@/stores/song-artwork';
@@ -21,7 +25,10 @@ function useSongLibrary<T>(
   enabled = true,
   nasOnly = false,
   sourceOverride?: MusicSourceFilter,
+  cachedOnly = false,
 ) {
+  const queryClient = useQueryClient();
+  const active = useLibraryActivity(enabled && !cachedOnly);
   const mode = useAuthStore((state) => state.mode);
   const session = useAuthStore((state) => state.session);
   const ready = useHiddenMusicStore((state) => state.ready);
@@ -31,34 +38,50 @@ function useSongLibrary<T>(
   const artworkPatches = useSongArtworkStore((state) => state.patches);
   const artworkReady = useSongArtworkStore((state) => state.ready);
   const artworkBaseUri = useSongArtworkStore((state) => state.baseUri);
-  const sources = useSourceLibraries(enabled && !nasOnly, sourceOverride);
+  const sources = useSourceLibraries(active && !nasOnly, sourceOverride);
   const { libraries } = sources;
   const source = sourceOverride ?? sources.preferredSource;
   const identity = libraryIdentity(mode, session);
   const includeNas = nasOnly || ((source === 'nas' || source === 'all') && mode !== 'setup');
+  const canLoad = ready && metadataReady && artworkReady && (nasOnly || sources.ready) && active;
+  useEffect(() => {
+    if (canLoad && includeNas && mode !== 'setup') {
+      return acquireNasLibrary(queryClient, identity);
+    }
+  }, [canLoad, includeNas, mode, queryClient, identity]);
   const edits = useMemo(
     () => ({ metadata: patches, artwork: artworkPatches, scope: metadataScope, artworkBaseUri }),
     [patches, artworkPatches, metadataScope, artworkBaseUri],
   );
+  const preparation = useMemo(
+    () => ({
+      libraries,
+      source,
+      includeNas,
+      nasOnly,
+      edits,
+      stale: sources.stale,
+      accountKey: JSON.stringify([identity, sources.accountKey]),
+    }),
+    [libraries, source, includeNas, nasOnly, edits, sources.stale, sources.accountKey, identity],
+  );
   const combined = useCallback(
-    (library: Page<Song>) => {
-      const combined = nasOnly
-        ? library
-        : combineSongLibraries(library, libraries, source, includeNas);
-      const result = !nasOnly && sources.stale ? { ...combined, stale: true } : combined;
-      return select(applyLibraryEdits(result, edits));
-    },
-    [select, nasOnly, source, includeNas, libraries, edits, sources.stale],
+    (library: Page<Song>) => select(prepareSongLibrary(library, preparation)),
+    [select, preparation],
   );
   const query = useQuery({
     queryKey: includeNas ? ['song-library', identity] : ['local-library'],
-    enabled: ready && metadataReady && artworkReady && (nasOnly || sources.ready) && enabled,
+    enabled: canLoad,
     queryFn: ({ signal }) =>
       includeNas && mode !== 'setup'
-        ? loadSongLibrary(musicProvider('nas'), signal)
+        ? readNasLibrary(signal)
         : Promise.resolve({ items: [] as Song[], total: 0 }),
     select: combined,
-    retry: 2,
+    staleTime: Infinity,
+    gcTime: LIBRARY_GC_MS,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+    retry: false,
   });
   // Keep local files usable when NAS is unreachable, without publishing a
   // partial library as a successful NAS query or suppressing its retry notice.
@@ -73,14 +96,12 @@ function useSongLibrary<T>(
       return undefined;
     }
 
-    const fallbackLibrary = combineSongLibraries({ items: [], total: 0 }, libraries, 'all', false);
-    const editedLibrary = applyLibraryEdits(
-      sources.stale ? { ...fallbackLibrary, stale: true } : fallbackLibrary,
-      edits,
+    return select(
+      prepareSongLibrary({ items: [], total: 0 }, { ...preparation, includeNas: false }),
     );
-    return select(editedLibrary);
-  }, [nasOnly, source, query.isError, query.data, select, libraries, edits, sources.stale]);
-  return libraryResult(query, {
+  }, [nasOnly, source, query.isError, query.data, select, libraries, preparation]);
+  return libraryResult({ ...query, refetch: () =>
+    refreshMusicLibrary(queryClient, captureRefreshContext(source)) }, {
     fallback,
     cloudError: nasOnly ? undefined : sources.error,
     cloudLoading: !nasOnly && sources.loading,
@@ -92,10 +113,10 @@ function useSongLibrary<T>(
 export function useRawSongLibrary(enabled = true) {
   return useSongLibrary((library) => library, enabled, true);
 }
-export function useSongs(enabled = true, sourceOverride?: MusicSourceFilter) {
+export function useSongs(enabled = true, sourceOverride?: MusicSourceFilter, cachedOnly = false) {
   const presets = useHiddenMusicStore((state) => state.profile.presets);
   const select = useCallback((library: Page<Song>) => visibleSongs(library, presets), [presets]);
-  return useSongLibrary(select, enabled, false, sourceOverride);
+  return useSongLibrary(select, enabled, false, sourceOverride, cachedOnly);
 }
 export function useAlbums(enabled = true) {
   const presets = useHiddenMusicStore((state) => state.profile.presets);

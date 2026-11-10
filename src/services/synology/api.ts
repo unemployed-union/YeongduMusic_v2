@@ -104,6 +104,15 @@ function number(value: unknown, fallback = 0): number {
   const n = Number(value);
   return Number.isFinite(n) ? n : fallback;
 }
+function tagPosition(value: unknown): number | undefined {
+  const text = typeof value === 'number' ? String(value) : value;
+  if (typeof text !== 'string' || !/^\s*\d+(?:\s*\/\s*\d+)?\s*$/.test(text)) {
+    return undefined;
+  }
+
+  const position = Number(text.split('/')[0].trim());
+  return Number.isSafeInteger(position) && position > 0 ? position : undefined;
+}
 function parseEnvelope(value: unknown): unknown {
   const envelope = object(value) as ApiEnvelope;
   if (typeof envelope.success !== 'boolean') {
@@ -254,6 +263,11 @@ export async function discover(baseUrl: string, signal?: AbortSignal): Promise<A
   const data = object(
     parseEnvelope(await fetchJson(`${baseUrl}/webapi/entry.cgi?${params}`, { signal })),
   );
+  return parseApiInfo(data);
+}
+
+export function parseApiInfo(value: unknown): ApiInfo {
+  const data = object(value);
   const result: ApiInfo = {};
   for (const [name, raw] of Object.entries(data)) {
     if (!raw || typeof raw !== 'object') {
@@ -488,10 +502,10 @@ export class SynologyClient {
       album,
       albumSource: taggedAlbum ? 'tag' : 'fallback',
       albumArtist: string(tags.album_artist) || undefined,
-      discNumber: number(tags.disc) || undefined,
+      discNumber: tagPosition(tags.disc),
       year: number(tags.year) || undefined,
       duration: number(item.duration),
-      trackNumber: number(item.track, number(tags.track)) || undefined,
+      trackNumber: tagPosition(item.track) ?? tagPosition(tags.track),
       artworkUrl: this.coverUrl(id),
     };
   }

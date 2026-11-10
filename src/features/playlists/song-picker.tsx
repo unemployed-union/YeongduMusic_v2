@@ -45,10 +45,13 @@ export function PlaylistSongPicker({
       return [];
     }
   }, [query.data, term]);
-  const eligible =
-    query.data?.items
-      .filter((song) => selected.has(song.id) && !existing.has(song.id))
-      .map((song) => song.id) ?? [];
+  const eligible = useMemo(
+    () =>
+      query.data?.items
+        .filter((song) => selected.has(song.id) && !existing.has(song.id))
+        .map((song) => song.id) ?? [],
+    [query.data, selected, existing],
+  );
   async function save() {
     if (!eligible.length || store.busy) {
       return;

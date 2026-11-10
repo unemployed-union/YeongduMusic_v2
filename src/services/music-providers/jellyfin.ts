@@ -8,6 +8,7 @@ import {
   mapJellyfinSongs,
 } from '@/services/jellyfin/library';
 import { memoSnapshot, storedPage, type MusicProvider } from './contracts';
+import { reuseLibraryItems } from './library-policy';
 
 async function readSession<T>(
   scope: string | undefined,
@@ -42,10 +43,12 @@ export const jellyfinProvider: MusicProvider = {
       connected: !!state.connection,
       scope: state.connection ? jellyfinScope(state.connection) : '',
       generation: state.generation,
+      selection: state.selectedLibraries,
       songs: state.songs,
       loading: state.loading || state.busy,
       error: state.error,
       stale: state.stale,
+      validatedAt: state.validatedAt,
     };
   }),
   subscribe: (listener) => useJellyfinStore.subscribe(listener),
@@ -62,6 +65,11 @@ export const jellyfinProvider: MusicProvider = {
   },
   refresh: (signal) => useJellyfinStore.getState().refresh(signal),
   cancelLibrary: () => useJellyfinStore.getState().cancelLibrary(),
+  cache: { restore: (songs, stale) => {
+    const scope = jellyfinProvider.getState().scope;
+    const valid = songs.filter((song) => song.source === 'jellyfin' && song.ref.accountScope === scope);
+    useJellyfinStore.setState({ songs: reuseLibraryItems(useJellyfinStore.getState().songs, valid), loaded: true, stale });
+  }, fail: (error) => useJellyfinStore.setState({ error, stale: true }) },
   streamSource: async (song, options = {}) => {
     const state = useJellyfinStore.getState();
     const client = state.client(song.ref?.accountScope);

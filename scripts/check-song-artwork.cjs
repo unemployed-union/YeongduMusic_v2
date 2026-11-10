@@ -180,7 +180,7 @@ async function checkPlayback(artwork) {
 async function checkQueries(store) {
   await store.getState().save([nextKey], image);
   const queries = load('src/features/library/queries.ts', {
-    react: { useMemo: fn => fn(), useCallback: fn => fn }, '@tanstack/react-query': { useQuery: options => options },
+    react: { useMemo: fn => fn(), useCallback: fn => fn, useEffect() {} }, '@tanstack/react-query': { useQuery: options => options, useQueryClient: () => ({}) },
     '@/stores/song-artwork': { useSongArtworkStore: selector => selector(store.getState()) }, '../artwork/rules': rules,
     '@/stores/auth': { useAuthStore: selector => selector({ mode: 'mock', session: null }) },
     '@/stores/hidden-music': { useHiddenMusicStore: selector => selector({ ready: true, profile: { presets: [] } }) },

@@ -6,8 +6,10 @@ import {
   login,
   SessionExpiredError,
   SynologyClient,
+  SynologyRequestError,
   type Session,
 } from '@/services/synology/api';
+import { cacheNasApis, readCachedNasApis } from '@/services/synology/discovery-cache';
 
 const STORAGE_KEY = 'synology-music-session-v1';
 type AuthState = {
@@ -18,6 +20,7 @@ type AuthState = {
   notice: string | null;
   preferredAddress: string | null;
   bootstrap: () => Promise<void>;
+  ensureApis: () => Promise<void>;
   connect: (
     address: string,
     account: string,
@@ -31,6 +34,7 @@ type AuthState = {
 };
 
 export const useAuthStore = create<AuthState>((set, get) => {
+  let discovery: { generation: number; work: Promise<void> } | undefined;
   const { run: storageTask } = createSerialQueue();
   function begin(): number {
     const generation = get().generation + 1;
@@ -80,12 +84,38 @@ export const useAuthStore = create<AuthState>((set, get) => {
     generation: 0,
     notice: null,
     preferredAddress: null,
+    ensureApis: async () => {
+      const { session, generation } = get();
+      if (!session || session.apis['SYNO.AudioStation.Song']) {
+        return;
+      }
+      if (discovery?.generation === generation) {
+        return discovery.work;
+      }
+      const work = (async () => {
+        const apis = await discover(session.baseUrl);
+        if (!isCurrent(generation) || get().session !== session) {
+          throw new Error('NAS 연결 확인이 취소되었습니다.');
+        }
+        set({ session: { ...session, apis } });
+        await cacheNasApis(session.baseUrl, apis).catch(() => {});
+      })();
+      discovery = { generation, work };
+      try {
+        await work;
+      } finally {
+        if (discovery?.work === work) {
+          discovery = undefined;
+        }
+      }
+    },
     bootstrap: async () => {
       if (get().ready) {
         return;
       }
       const generation = begin();
       let savedAddress: string | null = null;
+      let restored: Session | null = null;
       try {
         const stored = await storageTask(() => SecureStore.getItemAsync(STORAGE_KEY));
         if (!isCurrent(generation)) {
@@ -104,11 +134,17 @@ export const useAuthStore = create<AuthState>((set, get) => {
           throw new Error('Invalid stored session');
         }
         savedAddress = saved.baseUrl;
-        const apis = await discover(saved.baseUrl);
+        const apis = await readCachedNasApis(saved.baseUrl).catch(() => null);
         if (!isCurrent(generation)) {
           return;
         }
-        const session = { ...saved, apis };
+        restored = { ...saved, apis: apis ?? {} };
+        set({ ready: true, mode: 'nas', session: restored, notice: null, preferredAddress: saved.baseUrl });
+        await get().ensureApis();
+        if (!isCurrent(generation) || !get().session) {
+          return;
+        }
+        const session = get().session!;
         await new SynologyClient(session).checkSession();
         if (isCurrent(generation)) {
           set({
@@ -121,6 +157,12 @@ export const useAuthStore = create<AuthState>((set, get) => {
         }
       } catch (error) {
         if (!isCurrent(generation)) {
+          return;
+        }
+        const expired = error instanceof SessionExpiredError ||
+          (error instanceof SynologyRequestError && error.httpStatus === 401);
+        if (restored && !expired) {
+          set({ ready: true, notice: 'NAS 연결을 확인하지 못했습니다. 저장된 음악을 사용하며 다시 연결을 시도할 수 있습니다.' });
           return;
         }
         await replaceStored(generation, null).catch(() => {});
@@ -170,6 +212,8 @@ export const useAuthStore = create<AuthState>((set, get) => {
           });
         },
       );
+      assertCurrent(generation);
+      await cacheNasApis(session.baseUrl, session.apis).catch(() => {});
       assertCurrent(generation);
     },
     useMock: () => {

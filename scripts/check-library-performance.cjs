@@ -41,10 +41,10 @@ const editRules = load(path.join(root, 'src/features/metadata/rules.ts'));
 const queries = load(process.argv[2] || path.join(root, 'src/features/library/queries.ts'), {
   '@/stores/song-metadata': { useSongMetadataStore: selector => selector(displayMetadata) },
   '@/stores/library-preferences': { useLibraryPreferences: selector => selector({ ready: true, includeFolderAlbums: true }) },
-  react: { useMemo: memoized, useCallback: (callback, dependencies) => memoized(() => callback, dependencies) },
+  react: { useMemo: memoized, useCallback: (callback, dependencies) => memoized(() => callback, dependencies), useEffect() {} },
   '@/stores/google-drive': { useGoogleDriveStore: selector => selector({ songs: EMPTY_DRIVE_SONGS, loading: false, error: null }) },
   '@/stores/local-music': { useLocalMusicStore: selector => selector(localFixture) },
-  '@tanstack/react-query': { useQuery: options => options },
+  '@tanstack/react-query': { useQuery: options => options, useQueryClient: () => ({}) },
   './album-library': helpers,
   './load-song-library': metadata,
   './search-songs': search,
