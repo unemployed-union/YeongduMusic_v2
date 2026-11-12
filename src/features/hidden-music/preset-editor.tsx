@@ -1,85 +1,32 @@
-import { ScrollEdgeFade } from '@/components/scroll-edge-fade';
-import { useMemo, useState } from 'react';
-import { ActivityIndicator, FlatList, Pressable, StyleSheet, View } from 'react-native';
-import { TextInput } from '@/components/text-input';
-import { Text } from '@/components/text';
-import Ionicons from '@expo/vector-icons/Ionicons';
 import { Artwork } from '@/components/artwork';
-import { foldersForSongs, normalizeFolder } from './rules';
-import { buildFolderTree, visibleFolderRows, type FolderTreeRow } from './folder-tree';
+import { ScrollEdgeFade } from '@/components/scroll-edge-fade';
+import { Text } from '@/components/text';
+import { TextInput } from '@/components/text-input';
 import { useColors } from '@/theme/tokens';
-import type { HiddenPreset } from '@/types/hidden-music';
-import type { Song } from '@/types/music';
+import Ionicons from '@expo/vector-icons/Ionicons';
+import { ActivityIndicator, FlatList, Pressable, StyleSheet, View } from 'react-native';
+import { usePresetEditor, type PresetEditorProps } from './use-preset-editor';
 
-type Choice = ({ kind: 'folder' } & FolderTreeRow) | { kind: 'song'; song: Song };
-type Props = {
-  preset: HiddenPreset;
-  songs: Song[];
-  busy: boolean;
-  error: string | null;
-  onCancel: () => void;
-  onSave: (preset: HiddenPreset) => void;
-};
-
-export function PresetEditor({ preset, songs, busy, error, onCancel, onSave }: Props) {
+export function PresetEditor({ preset, songs, busy, error, onCancel, onSave }: PresetEditorProps) {
   const colors = useColors();
-  const [name, setName] = useState(preset.name);
-  const [songIds, setSongIds] = useState(preset.songIds);
-  const [folders, setFolders] = useState(() => preset.folders.map(normalizeFolder));
-  const [expanded, setExpanded] = useState<Set<string>>(() => new Set());
-  const [tab, setTab] = useState<'folder' | 'song'>('folder');
-  const [term, setTerm] = useState('');
-  const [selectedOnly, setSelectedOnly] = useState(false);
-  const selectedSongs = useMemo(() => new Set(songIds), [songIds]);
-  const selectedFolders = useMemo(() => new Set(folders), [folders]);
-  const folderList = useMemo(() => foldersForSongs(songs), [songs]);
-  const tree = useMemo(() => buildFolderTree(folderList, folders), [folderList, folders]);
-  const filtering = !!term.trim() || selectedOnly;
-  const choices = useMemo<Choice[]>(() => {
-    if (tab === 'folder') {
-      return visibleFolderRows(tree, expanded, selectedFolders, term, selectedOnly).map(
-        (folder) => ({ kind: 'folder', ...folder }),
-      );
-    }
-    const match = term.trim().normalize('NFKC').toLocaleLowerCase();
-    return songs
-      .filter(
-        (song) =>
-          (!selectedOnly || selectedSongs.has(song.id)) &&
-          [song.title, song.artist, song.album, song.path ?? '']
-            .join(' ')
-            .normalize('NFKC')
-            .toLocaleLowerCase()
-            .includes(match),
-      )
-      .map((song) => ({ kind: 'song', song }));
-  }, [tree, expanded, songs, tab, term, selectedOnly, selectedFolders, selectedSongs]);
-  function toggle(choice: Choice) {
-    if (choice.kind === 'folder') {
-      setFolders((current) =>
-        current.includes(choice.path)
-          ? current.filter((item) => item !== choice.path)
-          : [...current, choice.path],
-      );
-    } else {
-      setSongIds((current) =>
-        current.includes(choice.song.id)
-          ? current.filter((item) => item !== choice.song.id)
-          : [...current, choice.song.id],
-      );
-    }
-  }
-  function toggleExpanded(path: string) {
-    setExpanded((current) => {
-      const next = new Set(current);
-      if (next.has(path)) {
-        next.delete(path);
-      } else {
-        next.add(path);
-      }
-      return next;
-    });
-  }
+  const {
+    name,
+    setName,
+    songIds,
+    folders,
+    tab,
+    setTab,
+    term,
+    setTerm,
+    selectedOnly,
+    setSelectedOnly,
+    selectedSongs,
+    selectedFolders,
+    choices,
+    filtering,
+    toggle,
+    toggleExpanded,
+  } = usePresetEditor(preset, songs);
   return (
     <View style={styles.screen}>
       <View style={styles.headingRow}>

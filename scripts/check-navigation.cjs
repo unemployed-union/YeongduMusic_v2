@@ -26,7 +26,10 @@ const config = getReactNavigationConfig(tree, false);
 const library = config.screens['(tabs)'].screens['(library)'];
 assert.equal(getValidInitialRouteName(library._route), 'index');
 assert.deepEqual(Object.keys(config.screens['(tabs)'].screens).sort(), ['(library)', '(playlists)', 'search']);
-assert.ok(config.screens.settings, 'Settings opens outside the tabs');
+const settingsGroup = config.screens['(settings)'];
+assert.ok(settingsGroup, 'Settings opens outside the tabs as one nested navigator');
+assert.equal(getValidInitialRouteName(settingsGroup._route), 'settings/index');
+assert.equal(settingsGroup.screens['settings/index'].path, 'settings');
 assert.ok(library.screens['album/[id]']);
 assert.ok(library.screens['artist/[id]']);
 const playlists = config.screens['(tabs)'].screens['(playlists)'];
@@ -41,12 +44,21 @@ assert.equal(config.screens['album/[id]'], undefined);
 assert.equal(config.screens['artist/[id]'], undefined);
 assert.ok(config.screens.player, 'Player remains outside tabs as a full-screen modal');
 for (const route of ['settings/cloud', 'settings/cloud/synology', 'settings/cloud/google-drive', 'settings/playback', 'settings/library', 'settings/bottom-menu', 'settings/player-menu', 'settings/other', 'settings/playlist-backup']) {
-  assert.equal(config.screens[route].path, route, 'Settings destinations resolve through the real route tree');
+  assert.equal(settingsGroup.screens[route].path, route, 'Settings destinations resolve through the real route tree');
 }
 
+for (const name of ['hidden-music', 'hidden-playlists']) {
+  assert.equal(settingsGroup.screens[name].path, name, 'Hidden settings retain public URLs inside the same navigator');
+}
 // Render actual tab layout and settings button against native view stubs.
 const jsx = (type, props) => ({ type, props });
 function renderModule(file, mocks) {
+  mocks = {
+    '@/features/settings/settings-descriptions': require('./test-source-loader.cjs').loadSource(
+      'src/features/settings/settings-descriptions.ts',
+    ),
+    ...mocks,
+  };
   mocks = { ...require('./test-cloud-fixtures.cjs').cloudFixtures({}, mocks), ...mocks };
   mocks['react-native'] = { useWindowDimensions: () => ({ width: 400, height: 800, fontScale: 1 }), ...mocks['react-native'] };
   const code = ts.transpileModule(fs.readFileSync(path.join(root, file), 'utf8'), { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText;
@@ -165,9 +177,9 @@ const settingsMocks = { ...ui,
   '@/features/metadata/web-metadata-settings': { WebMetadataSettings: 'WebMetadataSettings' },
   '@/stores/hidden-feature-access': { useHiddenFeatureAccess: selector => selector({ ready: true, enabled: extrasEnabled }) },
 };
-const Settings = renderModule('src/app/settings.tsx', settingsMocks).default;
+const Settings = renderModule('src/app/(settings)/settings/index.tsx', settingsMocks).default;
 let settingsToast = null;
-const ToastSettings = renderModule('src/app/settings.tsx', { ...settingsMocks, react: { ...settingsMocks.react,
+const ToastSettings = renderModule('src/app/(settings)/settings/index.tsx', { ...settingsMocks, react: { ...settingsMocks.react,
   useState: () => [settingsToast, value => { settingsToast = value; }] } }).default;
 nodes(ToastSettings()).find(node => node.type === 'VersionSettings').props.onToast('숨김 설정 열림');
 const toastedPage = ToastSettings(); assert.equal(toastedPage.props.overlay.type, 'ToastNotice'); assert.equal(toastedPage.props.overlay.props.message, '숨김 설정 열림');
@@ -181,7 +193,7 @@ assert.ok(nodes(Settings()).find(node => node.type === 'SettingsLink' && node.pr
 extrasEnabled = true;
 assert.deepEqual(links(Settings()).find(([title]) => title === '기타'), ['기타', '/settings/other']);
 assert.ok(nodes(Settings()).some(node => node.type === 'VersionSettings'), 'Version activation stays on the main settings page');
-const CloudSettings = renderModule('src/app/settings/cloud.tsx', { ...settingsMocks,
+const CloudSettings = renderModule('src/app/(settings)/settings/cloud.tsx', { ...settingsMocks,
   '@/stores/auth': { useAuthStore: select => select({ mode: 'setup', session: null }) },
   '@/stores/google-drive': { useGoogleDriveStore: select => select({ account: null }) },
 }).default;
@@ -200,13 +212,13 @@ for (const [title, href] of [...links(Settings()), ...links(CloudSettings())]) {
   assert.equal(openedSettings.at(-1), href, 'Settings rows open their advertised screen');
 }
 for (const [file, modulePath, component] of [
-  ['src/app/settings/cloud/synology.tsx', '@/features/settings/synology-settings', 'SynologySettings'],
-  ['src/app/settings/cloud/google-drive.tsx', '@/features/google-drive/settings', 'GoogleDriveSettings'],
-  ['src/app/settings/library.tsx', '@/features/library/folder-exclusion-settings', 'FolderExclusionSettings'],
+  ['src/app/(settings)/settings/cloud/synology.tsx', '@/features/settings/synology-settings', 'SynologySettings'],
+  ['src/app/(settings)/settings/cloud/google-drive.tsx', '@/features/google-drive/settings', 'GoogleDriveSettings'],
+  ['src/app/(settings)/settings/library.tsx', '@/features/library/folder-exclusion-settings', 'FolderExclusionSettings'],
 ]) {
   const Screen = renderModule(file, { ...settingsMocks, '@/features/library/detail-display-settings': { DetailDisplaySettings: 'DetailDisplaySettings' }, '@/features/favorites/favorite-display-settings': { FavoriteDisplaySettings: 'FavoriteDisplaySettings' }, [modulePath]: { [component]: component } }).default;
   assert.ok(nodes(Screen()).some(node => node.type === component), 'Detailed settings reuse the existing controls');
-  if (file === 'src/app/settings/library.tsx') assert(nodes(Screen()).some(node => node.type === 'FavoriteDisplaySettings'), 'Library settings expose the favorite display controls');
+  if (file === 'src/app/(settings)/settings/library.tsx') assert(nodes(Screen()).some(node => node.type === 'FavoriteDisplaySettings'), 'Library settings expose the favorite display controls');
 }
 
 let state = { queue: [], index: -1 }, calls = [], navigation = [], finish;

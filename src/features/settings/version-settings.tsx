@@ -1,11 +1,6 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { Text } from '@/components/text';
-import { useFocusEffect } from 'expo-router';
-import Constants from 'expo-constants';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { useHiddenFeatureAccess } from '@/stores/hidden-feature-access';
-import { useHiddenMusicStore } from '@/stores/hidden-music';
 import { useColors } from '@/theme/tokens';
 import {
   SETTINGS_MENU_ICON_INSET,
@@ -13,58 +8,13 @@ import {
   useSettingsMenuIconStyle,
 } from './settings-menu-layout';
 import { CreatorDialog } from './creator-dialog';
+import { useVersionSettings } from './use-version-settings';
 
 export function VersionSettings({ onToast }: { onToast: (message: string) => void }) {
   const colors = useColors();
   const iconStyle = useSettingsMenuIconStyle(colors.tint);
-  const { ready, busy, error, load, tapVersion, resetTaps } = useHiddenFeatureAccess();
-  const [creatorOpen, setCreatorOpen] = useState(false);
-  const creatorTaps = useRef({ count: 0, lastTap: 0 });
-  useEffect(() => {
-    void load();
-  }, [load]);
-  useFocusEffect(
-    useCallback(
-      () => () => {
-        resetTaps();
-        creatorTaps.current = { count: 0, lastTap: 0 };
-        setCreatorOpen(false);
-      },
-      [resetTaps],
-    ),
-  );
-  const configuredVersion: unknown = Constants.expoConfig?.extra?.buildVersion;
-  const version =
-    typeof configuredVersion === 'string'
-      ? configuredVersion
-      : (Constants.expoConfig?.version ?? '알 수 없음');
-  async function onPress() {
-    const enabled = await tapVersion();
-    if (enabled === null) {
-      return;
-    }
-    if (!enabled) {
-      useHiddenMusicStore.getState().lock();
-    }
-    onToast(enabled ? '숨김 설정 열림' : '숨김 설정 닫힘');
-  }
-  function tapCreator() {
-    if (creatorOpen) {
-      return;
-    }
-    const now = Date.now();
-    const previous = creatorTaps.current;
-    const count = now - previous.lastTap > 3000 ? 1 : previous.count + 1;
-    creatorTaps.current = { count, lastTap: now };
-    if (count === 7) {
-      creatorTaps.current = { count: 0, lastTap: 0 };
-      setCreatorOpen(true);
-    }
-  }
-  function closeCreator() {
-    creatorTaps.current = { count: 0, lastTap: 0 };
-    setCreatorOpen(false);
-  }
+  const { ready, busy, error, version, creatorOpen, activateVersion, tapCreator, closeCreator } =
+    useVersionSettings(onToast);
   return (
     <View>
       <Pressable accessible={false} onPress={tapCreator} style={styles.row}>
@@ -76,7 +26,7 @@ export function VersionSettings({ onToast }: { onToast: (message: string) => voi
           onPress={(event) => {
             event.stopPropagation();
             if (ready && !busy) {
-              void onPress();
+              void activateVersion();
             }
           }}
           style={iconStyle}

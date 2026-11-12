@@ -30,7 +30,7 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     paddingHorizontal: 6,
     paddingVertical: 2,
-    marginTop: 7,
+    marginTop: 4,
     backgroundColor: '#FFFFFF0A',
   },
   label: { fontSize: 10, lineHeight: 14, fontWeight: '700', letterSpacing: 0.2 },

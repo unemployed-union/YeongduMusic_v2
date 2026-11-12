@@ -30,6 +30,7 @@ class MPMediaItemArtwork {
   let image: UIImage
   init(boundsSize: CGSize, requestHandler: (CGSize) -> UIImage) { image = requestHandler(boundsSize) }
 }
+typealias CMTimeScale = Int32
 struct CMTime {
   var seconds: Double
   init(seconds: Double, preferredTimescale: Int32) { self.seconds = seconds }
@@ -41,7 +42,7 @@ enum CommonKey { case commonKeyTitle, commonKeyArtist, commonKeyAlbumName, commo
 struct AssetMetadata { var commonKey: CommonKey?; var stringValue: String?; var dataValue: Data? }
 class AVURLAsset { var commonMetadata: [AssetMetadata] = [] }
 class PlayerItem { var asset: Any = AVURLAsset() }
-class PlayerReference {
+class AVPlayer {
   var currentItem: PlayerItem? = PlayerItem()
   var rate: Float = 1
   func pause() { rate = 0 }
@@ -50,28 +51,37 @@ class PlayerReference {
   func seek(to: CMTime, toleranceBefore: CMTime, toleranceAfter: CMTime) {}
 }
 struct Metadata { var title: String?; var artist: String?; var albumTitle: String?; var artworkUrl: URL? }
-struct LockScreenOptions { var isLiveStream: Bool? = false; var showSeekForward = false; var showSeekBackward = false }
-class AudioPlayer {
+struct LockScreenOptions {
+  var isLiveStream: Bool? = false
+  var showSeekForward = false, showSeekBackward = false
+  var showNextTrack = false, showPreviousTrack = false
+  var seekForwardIntervalSeconds: Double?, seekBackwardIntervalSeconds: Double?
+}
+class AudioPlayer: LockScreenPlayable {
   let id = UUID().uuidString
-  var ref = PlayerReference(), metadata: Metadata?
+  var ref = AVPlayer(), metadata: Metadata?
+  var lockScreenPlayer: AVPlayer { ref }
   var isActiveForLockScreen = false, isLive = false, isPlaying = true
-  var duration: Double = 180, currentTime: Double = 10, currentRate: Double = 1
+  var duration: Double = 180, currentTime: Double = 10
+  var currentRate: Float = 1
   func play(at: Float) { ref.rate = at }
+  func pause() { ref.pause() }
 }
 enum MPRemoteCommandHandlerStatus { case success, commandFailed }
 class MPRemoteCommandEvent {}
 class MPChangePlaybackPositionCommandEvent: MPRemoteCommandEvent { var positionTime: Double = 0 }
 class MPSkipIntervalCommandEvent: MPRemoteCommandEvent { var interval: Double = 10 }
-class RemoteCommand {
-  var isEnabled = false, preferredIntervals: [Double] = []
-  func addTarget(_ handler: @escaping (MPRemoteCommandEvent) -> MPRemoteCommandHandlerStatus) {}
+class MPRemoteCommand {
+  var isEnabled = false, preferredIntervals: [NSNumber] = []
+  func addTarget(_ handler: @escaping (MPRemoteCommandEvent) -> MPRemoteCommandHandlerStatus) -> Any { UUID() }
   func removeTarget(_ target: Any?) {}
 }
 class MPRemoteCommandCenter {
   static let instance = MPRemoteCommandCenter()
   static func shared() -> MPRemoteCommandCenter { instance }
-  let playCommand = RemoteCommand(), pauseCommand = RemoteCommand(), togglePlayPauseCommand = RemoteCommand()
-  let changePlaybackPositionCommand = RemoteCommand(), skipForwardCommand = RemoteCommand(), skipBackwardCommand = RemoteCommand()
+  let playCommand = MPRemoteCommand(), pauseCommand = MPRemoteCommand(), togglePlayPauseCommand = MPRemoteCommand()
+  let changePlaybackPositionCommand = MPRemoteCommand(), skipForwardCommand = MPRemoteCommand(), skipBackwardCommand = MPRemoteCommand()
+  let nextTrackCommand = MPRemoteCommand(), previousTrackCommand = MPRemoteCommand()
 }
 class URLSession {
   static let shared = URLSession()
@@ -84,6 +94,9 @@ class URLSession {
 }
 `;
 const scenarios = String.raw`
+// Keep fixture players local: a global named "player" would hide invalid
+// references to that name inside the production controller.
+func runScenarios() -> Int32 {
 var failures = 0
 func check(_ value: @autoclosure () -> Bool, _ label: String) { if !value() { failures += 1; print("FAIL: \(label)") } }
 func artwork() -> String? { (MPNowPlayingInfoCenter.shared.nowPlayingInfo?[MPMediaItemPropertyArtwork] as? MPMediaItemArtwork)?.image.name }
@@ -98,7 +111,7 @@ func complete(_ image: String?) {
 }
 let center = MediaController.shared, player = AudioPlayer()
 player.metadata = metadata("A", "cover-A")
-center.setActivePlayer(player); complete("A")
+center.setActivePlayable(player); complete("A")
 check(artwork() == "A", "First song displays its artwork")
 let cachedRequests = URLSession.shared.requests.count
 center.updateNowPlayingInfo(for: player)
@@ -137,13 +150,17 @@ center.updateNowPlayingInfo(for: player)
 
 player.metadata = metadata("I pending", "I"); center.updateNowPlayingInfo(for: player)
 let replacement = AudioPlayer(); replacement.metadata = metadata("J no URL", nil)
-center.setActivePlayer(replacement); complete("I")
+center.setActivePlayable(replacement); complete("I")
 check(artwork() == nil && !player.isActiveForLockScreen, "Switching players invalidates old requests")
+replacement.metadata = metadata("J with cover", "J"); center.updateNowPlayingInfo(for: replacement); complete("J")
+check(artwork() == "J", "Artwork completion reads the active replacement playable")
 replacement.metadata = metadata("K pending", "K"); center.updateNowPlayingInfo(for: replacement)
-center.setActivePlayer(nil); complete("K")
+center.setActivePlayable(nil); complete("K")
 check(MPNowPlayingInfoCenter.shared.nowPlayingInfo == nil, "Releasing the media session cannot resurrect artwork")
 if failures == 0 { print("PASS: production iOS MediaController artwork clearing, pending/failing cover URLs, cached covers, metadata/item/player races and released sessions; playback labels/duration retained. System UI is mocked.") }
-exit(failures == 0 ? 0 : 1)
+return failures == 0 ? 0 : 1
+}
+exit(runScenarios())
 `;
 const swift = path.join(directory, 'main.swift'), executable = path.join(directory, 'check-artwork');
 fs.writeFileSync(swift, boundaries.replaceAll('\\`', '`') + '\n' + source + '\n' + scenarios);

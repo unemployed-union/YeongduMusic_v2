@@ -1,26 +1,14 @@
-import { useState } from 'react';
-import { ActivityIndicator, FlatList, Pressable, StyleSheet, View } from 'react-native';
-import { Text } from '@/components/text';
 import { AnimatedSwitch as Switch } from '@/components/animated-switch';
-import Ionicons from '@expo/vector-icons/Ionicons';
 import { ScrollEdgeFade } from '@/components/scroll-edge-fade';
-import { useHiddenMusicStore } from '@/stores/hidden-music';
-import { usePlaylistStore } from '@/stores/playlists';
+import { Text } from '@/components/text';
 import { useColors } from '@/theme/tokens';
+import Ionicons from '@expo/vector-icons/Ionicons';
+import { ActivityIndicator, FlatList, Pressable, StyleSheet, View } from 'react-native';
+import { useHiddenPlaylistManager } from './use-hidden-playlist-manager';
 
 export function HiddenPlaylistManager() {
   const colors = useColors();
-  const privacy = useHiddenMusicStore();
-  const store = usePlaylistStore();
-  const [error, setError] = useState<string | null>(null);
-  async function run(action: () => Promise<void>) {
-    setError(null);
-    try {
-      await action();
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : '변경하지 못했습니다. 다시 시도해 주세요.');
-    }
-  }
+  const { privacy, store, error, run } = useHiddenPlaylistManager();
   if (!store.ready || store.scope !== privacy.scope) {
     return (
       <View style={styles.center}>

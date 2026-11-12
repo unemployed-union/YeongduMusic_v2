@@ -15,6 +15,7 @@ type HiddenFeatureAccess = {
   error: string | null;
   load: (force?: boolean) => Promise<void>;
   tapVersion: () => Promise<boolean | null>;
+  tapCreatorName: () => Promise<boolean | null>;
   disable: () => Promise<boolean>;
   setQuickHideEnabled: (enabled: boolean) => Promise<void>;
   setQuickHideMode: (mode: QuickHideMode) => Promise<void>;
@@ -62,6 +63,23 @@ export const useHiddenFeatureAccess = create<HiddenFeatureAccess>((set, get) => 
     } finally {
       set({ busy: false });
     }
+  }
+  async function tapAccess(openCount: number, closeCount: number): Promise<boolean | null> {
+    await get().load();
+    if (get().busy) {
+      return null;
+    }
+    const now = Date.now();
+    if (now - lastTap > TAP_GAP_MS) {
+      taps = 0;
+    }
+    lastTap = now;
+    taps++;
+    const requiredTaps = get().enabled ? closeCount : openCount;
+    if (taps < requiredTaps) {
+      return null;
+    }
+    return saveEnabled(!get().enabled);
   }
   return {
     enabled: false,
@@ -114,20 +132,16 @@ export const useHiddenFeatureAccess = create<HiddenFeatureAccess>((set, get) => 
       return loading;
     },
     tapVersion: async () => {
-      await get().load();
-      if (get().busy) {
+      if (Platform.OS === 'ios') {
         return null;
       }
-      const now = Date.now();
-      if (now - lastTap > TAP_GAP_MS) {
-        taps = 0;
-      }
-      lastTap = now;
-      taps++;
-      if (taps < (get().enabled ? 5 : 15)) {
+      return tapAccess(15, 5);
+    },
+    tapCreatorName: async () => {
+      if (Platform.OS !== 'ios') {
         return null;
       }
-      return saveEnabled(!get().enabled);
+      return tapAccess(10, 10);
     },
     disable: async () => {
       await get().load();

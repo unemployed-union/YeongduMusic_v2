@@ -72,9 +72,10 @@ async function main() {
     const toasts = [];
     const creatorTaps = { current: { count: 0, lastTap: 0 } };
     const hook = () => store.getState();
-    const VersionComponent = load('src/features/settings/version-settings.tsx', {
+    const VersionComponent = require('./test-source-loader.cjs').loadSource('src/features/settings/version-settings.tsx', {
+      '@/components/text': { Text: 'Text' },
       react: { useEffect: () => {}, useCallback: fn => fn, useState: () => [creatorOpen, value => { creatorOpen = value; }], useRef: () => creatorTaps }, 'react/jsx-runtime': { jsx, jsxs: jsx },
-      'react-native': { View: 'View', Text: 'Text', Pressable: 'Pressable', Alert: { alert: () => { alerts++; } }, StyleSheet: { create: x => x, hairlineWidth: 1 } },
+      'react-native': { Platform: { OS: 'android' }, View: 'View', Text: 'Text', Pressable: 'Pressable', Alert: { alert: () => { alerts++; } }, StyleSheet: { create: x => x, hairlineWidth: 1 } },
       'expo-router': { useFocusEffect: fn => { cleanup = fn(); } },
       'expo-constants': { __esModule: true, default: { expoConfig: { version: '1.0.0', extra: { buildVersion: '20261012C' } } } },
       '@expo/vector-icons/Ionicons': { __esModule: true, default: 'Icon' },
@@ -153,7 +154,8 @@ async function main() {
 }
 function checkCreatorDialog() {
   let opened, closed = 0;
-  const creator = load('src/features/settings/creator-dialog.tsx', {
+  const creator = require('./test-source-loader.cjs').loadSource('src/features/settings/creator-dialog.tsx', {
+    '@/components/text': { Text: 'Text' },
     react: { useState: () => [null, () => {}] }, 'react/jsx-runtime': { jsx, jsxs: jsx },
     'react-native': { Image: 'Image', Modal: 'Modal', Pressable: 'Button', ScrollView: 'Scroll', View: 'View', StyleSheet: { create: value => value, hairlineWidth: 1 } },
     'expo-linking': { openURL: url => { opened = url; return Promise.resolve(); } },

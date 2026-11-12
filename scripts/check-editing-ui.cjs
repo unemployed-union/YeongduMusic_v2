@@ -19,7 +19,7 @@ function hooks() {
 }
 const nodes = value => Array.isArray(value) ? value.flatMap(nodes) : value && typeof value === 'object' ? [value, ...nodes(value.props?.children)] : [];
 const style = value => Object.assign({}, ...[value].flat(Infinity).filter(Boolean));
-const palette = load('src/theme/tokens.ts', { 'react-native': {}, '@/stores/theme-preferences': {}, './mode': {} }).palette;
+const palette = load('src/theme/tokens.shared.ts', { 'react-native': {}, '@/stores/theme-preferences': {}, './mode': {} }).palette;
 let scheme = 'light', blurEnabled = true, blurArea, blurStrength = 32; const timers = new Map(); let id = 0;
 const native = { Platform: { OS: 'android' }, View: 'View', Pressable: 'Button', Modal: 'Modal', ScrollView: 'Scroll', Keyboard: { dismiss() {} }, StyleSheet: { create: value => value, hairlineWidth: 1 }, useWindowDimensions: () => ({ width: 390, height: 800 }) };
 const ui = { 'react/jsx-runtime': { jsx, jsxs: jsx }, 'react-native': native, '@/components/text': { Text: 'Text' }, './text': { Text: 'Text' },
@@ -64,6 +64,21 @@ native.Platform.OS = 'android';
     blurStrength = 57; assert.equal(nodes(render()).find(node => node.type === 'BlurView').props.intensity, 57); blurStrength = 32;
   }
 }
+// iOS content menus use semantic colors and opaque surfaces in either theme.
+native.Platform.OS = 'ios';
+for (const mode of ['light', 'dark']) {
+  scheme = mode;
+  const h = hooks(), menu = menuModule(h);
+  let picked;
+  const tree = h.render(() => menu.ActionMenu({ title: 'Song', anchor: { x: 150, y: 300 }, visible: true, onDismiss() {}, onClose() {}, onSelect: value => { picked = value; }, items: [{ id: 'metadata', label: '메타데이터 수정', icon: 'create-outline' }] }));
+  assert(!nodes(tree).some(node => node.type === 'Icon'));
+  const row = nodes(tree).find(node => node.type === 'Button' && !node.props.accessibilityLabel);
+  assert.equal(nodes(row).find(node => node.type === 'Text').props.style[1].color, palette[mode].text);
+  assert(!nodes(tree).some(node => node.type === 'BlurView' || node.type === 'GlassBackdrop'), 'iOS content does not stack translucent materials');
+  row.props.onPress();
+  assert.equal(picked, 'metadata');
+}
+native.Platform.OS = 'android';
 {
   const h = hooks(); let closed = 0;
   const Editor = load('src/features/metadata/metadata-editor.tsx', { ...ui, react: h.react, '@/features/playlists/dialogs': { PlaylistSheet: 'Sheet' },
@@ -114,7 +129,7 @@ for (const mode of ['light', 'dark']) {
   const animation = { duration: () => animation, easing: () => animation, withInitialValues: () => animation, withTargetValues: () => animation };
   const PlayerMenu = load('src/features/playback/player-menu.tsx', { ...ui,
     react: { useState: value => [typeof value === 'function' ? value() : value, () => {}], useEffect() {} },
-    'react-native-reanimated': { __esModule: true, default: { View: 'AnimatedView' }, Easing: { out: value => value, in: value => value }, FadeIn: animation, FadeOut: animation, FadeInDown: animation, FadeOutDown: animation },
+    'react-native-reanimated': { useReducedMotion: () => false, __esModule: true, default: { View: 'AnimatedView' }, Easing: { out: value => value, in: value => value }, FadeIn: animation, FadeOut: animation, FadeInDown: animation, FadeOutDown: animation },
     'expo-blur': { BlurView: 'Blur' }, 'expo-router': {},
     '@/stores/playback': { usePlaybackStore: select => select({ sleepTimer: null, sectionRepeat: null, playbackRate: 1 }) },
     '@/stores/offline-music': { useOfflineMusicStore: select => select({ busy: false }) },

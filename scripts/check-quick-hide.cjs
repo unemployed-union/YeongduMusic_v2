@@ -238,7 +238,7 @@ async function main() {
   const playlistState = { ready: true, busy: false, scope: 'demo', profile: { presets: [{ id: 'ui-list', name: 'UI playlist', songIds: ['public'] }] } };
   const selectPrivacy = Object.assign(() => privacy.getState(), { getState: privacy.getState });
   const selectPlaylists = Object.assign(() => playlistState, { getState: () => playlistState });
-  const QuickHidePresetSettings = load('src/features/settings/quick-hide-preset-settings.tsx', {
+  const QuickHidePresetSettings = require('./test-source-loader.cjs').loadSource('src/features/settings/quick-hide-preset-settings.tsx', {
     ...ui, react: { ...ui.react, useMemo: fn => fn() }, '@/components/text': { Text: 'Text' },
   'react-native': { ...ui['react-native'], FlatList: 'FlatList' },
     '@/stores/hidden-music': { useHiddenMusicStore: selectPrivacy }, '@/stores/playlists': { usePlaylistStore: selectPlaylists },
@@ -297,7 +297,7 @@ async function main() {
     },
   });
   let scheme = 'light';
-  const themes = load('src/theme/tokens.ts', { 'react-native': { useColorScheme: () => scheme } });
+  const themes = load('src/theme/tokens.shared.ts', { 'react-native': { useColorScheme: () => scheme } });
   for (scheme of ['light', 'dark']) {
     palette = themes.useColors();
     for (const value of [false, true]) {

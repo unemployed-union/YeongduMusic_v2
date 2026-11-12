@@ -1,37 +1,26 @@
-import { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
-import { TextInput } from '@/components/text-input';
 import { AnimatedSwitch } from '@/components/animated-switch';
 import { Text } from '@/components/text';
+import { TextInput } from '@/components/text-input';
 import { useColors } from '@/theme/tokens';
-import { useWebMetadataStore } from '@/stores/web-metadata';
-import { useAuthStore } from '@/stores/auth';
-import { useSongs } from '@/features/library/queries';
-import { privacyScope } from '@/features/hidden-music/rules';
+import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
 import { metadataKey } from './rules';
-import { normalizeMetadataText } from './web-rules';
+import { useWebMetadataSettings } from './use-web-metadata-settings';
 
 export function WebMetadataSettings() {
   const colors = useColors();
-  const preferences = useWebMetadataStore();
-  const [expanded, setExpanded] = useState(false);
-  const [search, setSearch] = useState('');
-  const mode = useAuthStore((state) => state.mode);
-  const session = useAuthStore((state) => state.session);
-  const scope = privacyScope(mode, session);
-  const { data, isPending, error } = useSongs(expanded);
-  const load = preferences.load;
-  useEffect(() => {
-    void load();
-  }, [load]);
-  const matching = useMemo(() => {
-    const term = normalizeMetadataText(search);
-    return (data?.items ?? []).filter(
-      (song) =>
-        !term || normalizeMetadataText(`${song.title} ${song.artist} ${song.album}`).includes(term),
-    );
-  }, [data?.items, search]);
-  const disabled = !preferences.ready || preferences.loading || preferences.loadError;
+  const {
+    preferences,
+    expanded,
+    setExpanded,
+    search,
+    setSearch,
+    scope,
+    isPending,
+    error,
+    matching,
+    disabled,
+    load,
+  } = useWebMetadataSettings();
   return (
     <View style={styles.body}>
       <View style={styles.row}>

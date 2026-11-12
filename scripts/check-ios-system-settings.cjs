@@ -2,6 +2,12 @@
 const assert = require('node:assert/strict'), fs = require('node:fs'), path = require('node:path'), ts = require('typescript');
 const root = path.resolve(__dirname, '..');
 function read(file, mocks = {}) {
+  mocks = {
+    '@/features/settings/settings-descriptions': require('./test-source-loader.cjs').loadSource(
+      'src/features/settings/settings-descriptions.ts',
+    ),
+    ...mocks,
+  };
   const exports = {}, source = fs.readFileSync(path.join(root, file), 'utf8');
   const code = ts.transpileModule(source, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX, esModuleInterop: true } }).outputText;
   new Function('require', 'exports', code)(name => { if (['@/services/preferences/persistence', '@/services/preferences/storage', '@/services/async/serial-queue'].includes(name)) return require('./test-source-loader.cjs').loadSource('src/' + name.slice(2) + '.ts', mocks); assert(name in mocks, name); return mocks[name]; }, exports);
@@ -115,11 +121,11 @@ function checkMenus() {
       '@/features/settings/blur-settings': { BlurSettings: 'Blur' }, '@/features/playback/streaming-quality-settings': { StreamingQualitySettings: 'Quality' },
       '@/features/playback/playback-options-settings': { PlaybackOptionsSettings: 'Options' }, '@/features/lyrics/translation-settings': { LyricsTranslationSettings: 'Lyrics' } };
     mocks['@/features/playback/seek-playback-settings'] = { SeekPlaybackSettings: 'SeekPlaybackSettings' };
-    const rootMenu = nodes(read('src/app/settings.tsx', mocks).default());
+    const rootMenu = nodes(read('src/app/(settings)/settings/index.tsx', mocks).default());
     assert.equal(rootMenu.some(node => node.type === 'SystemLink'), available);
     assert.equal(rootMenu.some(node => node.props?.href === '/settings/haptics'), !available);
     for (const href of ['/settings/cloud', '/settings/library', '/settings/backup']) assert(rootMenu.some(node => node.props?.href === href));
-    const playback = nodes(read('src/app/settings/playback.tsx', mocks).default());
+    const playback = nodes(read('src/app/(settings)/settings/playback.tsx', mocks).default());
     assert(playback.some(node => node.type === 'SeekPlaybackSettings'), 'Seek playback remains configurable in-app with old and new iOS binaries');
     assert.equal(playback.some(node => node.type === 'Theme'), !available); assert.equal(playback.some(node => node.type === 'Quality'), !available);
     assert.equal(playback.some(node => node.type === 'Blur'), !available); assert.equal(playback.some(node => node.type === 'Options'), !available);

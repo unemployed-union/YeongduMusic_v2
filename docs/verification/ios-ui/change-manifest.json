@@ -1,0 +1,266 @@
+[
+  {
+    "path": "src/app/(tabs)/search/_layout.tsx",
+    "baselineSHA256": null,
+    "currentSHA256": "bd3cd97fff7ba174a9817275dbe2a9a6ea23459902bcf7d6ca282301152a0b01"
+  },
+  {
+    "path": "src/app/(tabs)/search/index.tsx",
+    "baselineSHA256": null,
+    "currentSHA256": "e71c20fa4a1cffc5d5f3617bcfddc8485f2802b91812bacd4640d42aa582bf7e"
+  },
+  {
+    "path": "src/app/_layout.tsx",
+    "baselineSHA256": "be805d7b742bf5fc6912e2b0a36726c2d53049a1e4256470453a7892654445f0",
+    "currentSHA256": "b9d0c4424f2580c0b7e465771934bfe9a3ec5fb9a132c12a080d244249007cff"
+  },
+  {
+    "path": "src/components/action-menu.tsx",
+    "baselineSHA256": "e825542226d34aa9fc80a3d5b463756ae06a2ec5ee66f977ddd1625106d899a7",
+    "currentSHA256": "2207b0021b6e179c8b99263757b87d5f9a69f3efd40c6b7f8c18d4a5864a44f1"
+  },
+  {
+    "path": "src/components/async-state.tsx",
+    "baselineSHA256": "1a58a62106023c64f7685275af3a255084b1ddf5402daf970f942e69094f200c",
+    "currentSHA256": "89dff1d8776675b1b32fe2e0bc4c740b4cb293bd1b1ce5190330ebf8c5d75fae"
+  },
+  {
+    "path": "src/components/screen-header.ios.tsx",
+    "baselineSHA256": null,
+    "currentSHA256": "d5c08899a2c0484b220d92ff2b5676fc1b7a7ce5a87faafd569408006c3aa9a9"
+  },
+  {
+    "path": "src/components/settings-button.tsx",
+    "baselineSHA256": "d94947856befb16fba20db7f4ee9f50d3d951a206cb47faecd5cadef121150b3",
+    "currentSHA256": "0eb360e799eea187606fdebb3a7990acc83461d2fbad11c9545eb0998d061b59"
+  },
+  {
+    "path": "src/components/song-row.tsx",
+    "baselineSHA256": "6c0c0ef5367ee4c234a2f5ff65b8d61300e0baf701d43db3a8916c2bf8597070",
+    "currentSHA256": "214ec42bf8cfd8f373b296274c2b1c09001a2946167f32fe14016b90cf82388f"
+  },
+  {
+    "path": "src/components/text.tsx",
+    "baselineSHA256": "929f0290fe8ef54cd7052c2d07e056e289274e4d20dfaed5822de615087691b6",
+    "currentSHA256": "d4bb3aceb7028c9ae73660c74d77358d3436760c58466108f9f6032075de3c3a"
+  },
+  {
+    "path": "src/features/hidden-music/settings-gate.ios.tsx",
+    "baselineSHA256": "9ec9e07c4eff62ad5c8d51a3200a10c81ef1aceeeee515b1ee9f310fda1367c9",
+    "currentSHA256": "96d63854314121fd3400fe36a2826c6494ab0706236b9d2992231873b076c82c"
+  },
+  {
+    "path": "src/features/library/library-page.tsx",
+    "baselineSHA256": "cd57626e9473d613c10eb0c188d271bb624c209f128bc49a3dccbb615f842b88",
+    "currentSHA256": "6c295e187d9f9c3d6e9e7a680a38c1cfa38193029cc565aa76c984081e1e45e6"
+  },
+  {
+    "path": "src/features/library/library-segments.ios.tsx",
+    "baselineSHA256": "da2376c1e916192914c752bb2f15c40dc40c4dc2cf9019ebcfc308c0f8c883c7",
+    "currentSHA256": "7927a03df7c5189a7bba55e77e7f356a50ab7672eddcb8ec3b866a91d88b4f55"
+  },
+  {
+    "path": "src/features/library/library-sheet.ios.tsx",
+    "baselineSHA256": "c85bb374ad18fb3c0510e300559f8cdfefd16363c1b260d39a62456121eadc4c",
+    "currentSHA256": "6a781e950e2823beaa86a4e86515e4561ccf72d821d1f491e3d5e4a59e1a3012"
+  },
+  {
+    "path": "src/features/library/library-sort-control.ios.tsx",
+    "baselineSHA256": "274b713057d943a1015fa03c5d7c1c77581a0b7552db4a0cf85221765a6dbe4b",
+    "currentSHA256": "d3bd8754278df7d7e7c0aeb1aca4ac16dae1229ebf0335d60b17998f4b439799"
+  },
+  {
+    "path": "src/features/library/music-source-menu-content.ios.tsx",
+    "baselineSHA256": "1503b774ad295cdb51f03e2fab36fb10b6ae22029d95d216a554f222934fa67d",
+    "currentSHA256": "880ea37e3eb106050d606e3a62203bcc0c3fb1fa3475559d75fd3803e080b326"
+  },
+  {
+    "path": "src/features/library/music-source-trigger.ios.tsx",
+    "baselineSHA256": "68e5a098d09f38ede996b0dbbde07a599a2083b6417b00a6eaf0843311d588ec",
+    "currentSHA256": "baf81845c51abcf2d4711a2ae6a3718dd584bb22b2d79fc97a7c7335d80a1a10"
+  },
+  {
+    "path": "src/features/library/search-screen.tsx",
+    "baselineSHA256": null,
+    "currentSHA256": "6078caa2cc8c139553ee6bccc7af2d8586e7bb1bdf12cc717410d8985d34381d"
+  },
+  {
+    "path": "src/features/playback/player-menu.tsx",
+    "baselineSHA256": "6ba47614022f93dac6231695df8ea5d7ec54a8fbca7062572f50d38f341b1947",
+    "currentSHA256": "a3a800b134465722fa333084709f3db7a48a485c57a1ab2cc36038d3fca42a11"
+  },
+  {
+    "path": "src/features/playback/player-queue.tsx",
+    "baselineSHA256": "b54417e3eb24aeb25200ec2ddf2b7246f99ab9828a54d9ece0b2c820d1525c69",
+    "currentSHA256": "568a157caeba44891805a708ce8eee67f18d0fa1aed9fee546db17fdf91d4312"
+  },
+  {
+    "path": "src/features/playback/player-screen.tsx",
+    "baselineSHA256": "57eb140370fbf721d1e0a211786bcc580b8f08ec0368bf6cff3f9da1819b109e",
+    "currentSHA256": "8ccfe4815179b351d9c7680ff7ce637c9e3fbccb5b31e16e58271cc485c1f9bf"
+  },
+  {
+    "path": "src/features/playback/player-song-details.tsx",
+    "baselineSHA256": "c8f05b6bb27390f7b5b8a1827e8b3833501e3f2136fc7b296f39f1a84905ba99",
+    "currentSHA256": "0c6b4944e9fde8bf0ab8f6d2ea9f493b7c14476cdf4130c21b6c2f3ee1282ed2"
+  },
+  {
+    "path": "src/features/playback/use-artwork-swipe.ts",
+    "baselineSHA256": "b8d59c2676de22714e073a75c11f8130ace636c9e82155a8fe0aeb70d1bed28a",
+    "currentSHA256": "c9936e3d25456f9d3873d380f17d66dd01edba0d3e5faedb9eac57838926fce6"
+  },
+  {
+    "path": "src/features/playback/use-player-dismiss.ts",
+    "baselineSHA256": "7af08d09083df349e32052876bfcec1f143efeaedbdfb8e627bfb765167e016d",
+    "currentSHA256": "b4d1b3f4c9643c47dfe2095b5f79f80a8cf2fc8a97c6cd94fbdb0bcdadcd3e8f"
+  },
+  {
+    "path": "src/features/playlists/dialogs.tsx",
+    "baselineSHA256": "93c1c52b50416a166e2b38eb68c1ce30c6372cf40249e1c70b2555eb19e8820e",
+    "currentSHA256": "87ff13e78a52d4f81ef4b383523c42953e62429aaac93a5146e5507ed2df3c26"
+  },
+  {
+    "path": "src/features/settings/blur-settings.ios.tsx",
+    "baselineSHA256": "94a121d2b8331476fdf0b190eba120737daef337f8e00deb7661eebf666f4ca8",
+    "currentSHA256": "35b76e5e2c42f5963e6fed7dca9f0b34e863e62dd4be1cc701562dd254339022"
+  },
+  {
+    "path": "src/features/settings/creator-dialog.ios.tsx",
+    "baselineSHA256": "3e542ad776dae331eb09bf9bc0d13719ebeb4c65dac1f9c950b4c726428ea331",
+    "currentSHA256": "ffb4ea2835f08b6641c6b836d24701a363e872561039c1e010f4964e98032970"
+  },
+  {
+    "path": "src/features/settings/ios-system-settings-link.ios.tsx",
+    "baselineSHA256": "440f4192e264379f759a6925c1463017d3341d3312adf0374476a117f82a81a2",
+    "currentSHA256": "ae1a8534443bc0e63e501a67689132590b7ad20898f970fcfca0451a3ab54df2"
+  },
+  {
+    "path": "src/features/settings/settings-navigator.ios.tsx",
+    "baselineSHA256": "24c31a82e0863ae610fa0a363d7c29e5dfb7cf51a030480d2f9f15c6bbf86058",
+    "currentSHA256": "4a1d6bc3c5436d1f7f5b0c4e9989246c71875bcdd998ebaa9da5f65d990954b7"
+  },
+  {
+    "path": "src/features/settings/settings-ui.ios.tsx",
+    "baselineSHA256": "25d201934752f2542689adfadecd712ba781a0e56ed85069523a9f1085cf29e5",
+    "currentSHA256": "e242bfe4a9efc55fad6c00fdcf83dcf35960918387f31e1674f7265d25a8da64"
+  },
+  {
+    "path": "src/features/settings/version-settings.ios.tsx",
+    "baselineSHA256": "e425a518bcb2f07c90af5bcc454f23be7e924d201448eb2bdc2b098898721df2",
+    "currentSHA256": "03299cd93d41df3e7ec1e8d4932b51ea9b75349932fecde5219033be92e5b112"
+  },
+  {
+    "path": "src/theme/tokens.ios.ts",
+    "baselineSHA256": null,
+    "currentSHA256": "7117b4fcca1cb14f08b0f15fe56c13b38dd13b8d80407964a9251a8ba58b65ff"
+  },
+  {
+    "path": "src/theme/tokens.shared.ts",
+    "baselineSHA256": null,
+    "currentSHA256": "315b338a057a7e269581f1c9ea94a83e8f0a939ac4ec3b03e711326eb483db0a"
+  },
+  {
+    "path": "src/theme/tokens.ts",
+    "baselineSHA256": "315b338a057a7e269581f1c9ea94a83e8f0a939ac4ec3b03e711326eb483db0a",
+    "currentSHA256": "74dc78264b1c7bef2abe0d0ae0a94ac448327689e0c3c5961260b3686bed192f"
+  },
+  {
+    "path": "scripts/check-appearance.cjs",
+    "baselineSHA256": "ee6d144a2bd53485ad98e35355be4aef0c9e3aab8f676b90b035ec5c3f583600",
+    "currentSHA256": "8cd5a7a58861855251f87e388e8e29c167fe4981ea2a130d2a9b62f11de9de05"
+  },
+  {
+    "path": "scripts/check-blur-preferences.cjs",
+    "baselineSHA256": "e4da365a0066c2f5db5219426d7527260dac1e2f10620ec21b644863a3143aa9",
+    "currentSHA256": "d270d442006f7f082eaf845362f79223067a7dadae5f11d78fafb70d50a32bc6"
+  },
+  {
+    "path": "scripts/check-editing-ui.cjs",
+    "baselineSHA256": "522bf877f3d6fe986175b4e1255d883e213001746193e4e6c673280ead9f6899",
+    "currentSHA256": "e6b3b92d961a1c28c3b55e89b446715e47320481824a164ae24a76fcca8b37f1"
+  },
+  {
+    "path": "scripts/check-favorites.cjs",
+    "baselineSHA256": "180df742b3623c1bbb016bc60a1ffec4ac5029708ad2d8469922cca60df6e11e",
+    "currentSHA256": "821e2d3c9901311e7e6ab9a0eb2e6a80d205b83f453da50b372a1569838ccc7b"
+  },
+  {
+    "path": "scripts/check-ios-search.cjs",
+    "baselineSHA256": null,
+    "currentSHA256": "2eb25a6a908699d57638863bb9da492f279af0d8976bd359928d8dac841bc42c"
+  },
+  {
+    "path": "scripts/check-ios-ui-foundation.cjs",
+    "baselineSHA256": null,
+    "currentSHA256": "1d44d2f575dce3bc01a437c1b11397d2517a5e15c34f005cc8d9cbdd42520424"
+  },
+  {
+    "path": "scripts/check-ios-ui-preview.cjs",
+    "baselineSHA256": null,
+    "currentSHA256": "1acb7c94b68d72b2e486b098284d932843a2a49ce64a653872fb366b625ba22e"
+  },
+  {
+    "path": "scripts/check-library-glass.cjs",
+    "baselineSHA256": "e24d27df2e76c15341d0b31abf230ae1ac1cf04266599b668e045680e05f25f3",
+    "currentSHA256": "822a81ea109a524c16769701d9f3a465e42a2448bf41cac550547d98e7110150"
+  },
+  {
+    "path": "scripts/check-library-sort.cjs",
+    "baselineSHA256": "7206fc7d45d0b6e33872501c9010fb2ec4022c79b070c2cacc0b9b809fdb2510",
+    "currentSHA256": "137d0cec44c9ec331d804c1a3dafc0de206c04a2dcbf06299041724a3f298e95"
+  },
+  {
+    "path": "scripts/check-mini-player-content.cjs",
+    "baselineSHA256": "2276aa722a0366669e054da6485a3920cbbc23972f6c0bf25004ab3907039331",
+    "currentSHA256": "d239bb8ad72c653facaa1e795484cfbab750c2277efe85c11c2c31d9dba81acd"
+  },
+  {
+    "path": "scripts/check-music-source-sheet.cjs",
+    "baselineSHA256": "7e72e87ad5fb5cff73b645808a264dc7e847a1485f6b8fc307e054096d4cf0dc",
+    "currentSHA256": "c56cd6ec499c41edf84ea6c90d6d9574fc701c29068cf178b4cc720bf48b375e"
+  },
+  {
+    "path": "scripts/check-native-settings.cjs",
+    "baselineSHA256": "b10e11968260d79e8c2de0a5d3445cb05606ef8d4f328ef16664ec6aa72acff4",
+    "currentSHA256": "3462dd9aef93ee6086a84bcc4fa98c8ef3510eb1b06d80206174c01bee57437a"
+  },
+  {
+    "path": "scripts/check-playback-recovery.cjs",
+    "baselineSHA256": "d84457a10c338fcf82c88891d025526e3b5131709292c06c7ccc97a1ff2253de",
+    "currentSHA256": "c7945cd0b4a5e718fbf8546696d135ebe81c84ebb8ac1f64197ad917b95c1e90"
+  },
+  {
+    "path": "scripts/check-player-gestures.cjs",
+    "baselineSHA256": "59ed4a326460963e34bf7c0eab0f4e35c6bc114766ee409af37d8d69b3626e1b",
+    "currentSHA256": "1344ce80970b5c18017216c7d306e21da671b6637268b5e3457282ab4522ace0"
+  },
+  {
+    "path": "scripts/check-quick-hide.cjs",
+    "baselineSHA256": "34a7aac29b12c511ac245b846e5aae8a1591d9ce301d9550aeee572e33dd7762",
+    "currentSHA256": "44fe0f6027e4fb8e14d87fd1380bfa111d66ab194f2f8dfdbb6510725eb5f496"
+  },
+  {
+    "path": "scripts/check-responsive-layout.cjs",
+    "baselineSHA256": "cc7289ed5057ccd010a4628340c546d26a9ab9cac475f0a8b7b7fee2d2e47318",
+    "currentSHA256": "65a86a2875b07c6587e689c2a9071570bfc27b094803cabf9126f71f254bf81e"
+  },
+  {
+    "path": "scripts/check-song-artwork.cjs",
+    "baselineSHA256": "d296b7aa75d0f0014636cc5d26e713c6f44732eef05acdfdf0b9c3e9cd94720c",
+    "currentSHA256": "f861bdd01c234a124bec098660cd3f1110bca0718cee89cf89b3d85d0d92bd16"
+  },
+  {
+    "path": "scripts/check-theme-preferences.cjs",
+    "baselineSHA256": "b8d3a584f89f4380e58cb07c6f2674b882faa518fc384fcc32f2cba2c5933b65",
+    "currentSHA256": "05d8c7b298060005f45ef0e70b177d51a25dd98755db79cc62e26ef6fd6946eb"
+  },
+  {
+    "path": "scripts/prepare-ios-ui-preview.cjs",
+    "baselineSHA256": null,
+    "currentSHA256": "c589472e24e12c2eb51bc94627d1231ab3df86477d169950cd927688d89424f4"
+  },
+  {
+    "path": "src/app/(tabs)/search.tsx",
+    "deletedOrMoved": true
+  }
+]

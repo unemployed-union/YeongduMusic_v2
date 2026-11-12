@@ -1,5 +1,5 @@
-import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
-import { ActivityIndicator, Pressable, View, useWindowDimensions } from 'react-native';
+import { DarkTheme, DefaultTheme, Stack, ThemeProvider, useSegments } from 'expo-router';
+import { ActivityIndicator, Platform, Pressable, View, useWindowDimensions } from 'react-native';
 import { Text } from '@/components/text';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -19,11 +19,11 @@ import { useFavoritesStore } from '@/stores/favorites';
 import { useFavoriteDisplayPreferences } from '@/stores/favorite-display-preferences';
 import { useBlurPreferences } from '@/stores/blur-preferences';
 import { useAppearancePreferences } from '@/stores/appearance-preferences';
-import { SettingsWorkspace } from '@/features/settings/settings-workspace';
 import { workspaceLayout } from '@/theme/layout';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useIosSystemSettingsReady } from '@/features/settings/ios-system-settings';
 import { LiquidGlassProvider } from '@/theme/liquid-glass';
+import { settingsPresentationOptions } from '@/features/settings/settings-presentation';
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { staleTime: 30000, retry: 2 } },
@@ -61,6 +61,9 @@ function Navigation() {
   const { ready, displayReady, privacy, scope, ...recovery } = useAppBootstrap();
   const colors = useColors();
   const scheme = useAppColorScheme();
+  const segments = useSegments();
+  const lightStatusBar = scheme === 'dark' || (Platform.OS === 'ios' && segments[0] === 'player');
+  const statusBarStyle = lightStatusBar ? 'light' : 'dark';
   const navigationTheme = useMemo(() => {
     const base = scheme === 'dark' ? DarkTheme : DefaultTheme;
     return customTheme
@@ -151,21 +154,13 @@ function Navigation() {
   return (
     <ThemeProvider value={navigationTheme}>
       <AutomaticMetadata />
-      <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
+      <StatusBar style={statusBarStyle} />
       <Stack
-        screenLayout={({ children, route }) =>
-          route.name === 'settings' ||
-          route.name.startsWith('settings/') ||
-          route.name === 'hidden-music' ||
-          route.name === 'hidden-playlists' ? (
-            <SettingsWorkspace routeName={route.name}>{children}</SettingsWorkspace>
-          ) : (
-            children
-          )
-        }
         screenOptions={{
           headerShown: false,
           contentStyle: { backgroundColor: colors.background },
+          // Over-full-screen player presentation leaves status-bar ownership with its presenter.
+          ...(Platform.OS === 'ios' && { statusBarStyle }),
           animation: tablet ? 'none' : 'slide_from_right',
           ...(tablet && { gestureEnabled: false }),
         }}
@@ -174,34 +169,8 @@ function Navigation() {
         <Stack.Screen name="connect" />
         <Stack.Screen name="(tabs)" />
         <Stack.Screen
-          name="settings"
-          options={{
-            headerShown: !tablet,
-            title: '설정',
-            headerBackTitle: '뒤로',
-            headerTintColor: colors.tint,
-            headerStyle: { backgroundColor: colors.background },
-          }}
-        />
-        <Stack.Screen
-          name="settings/cloud"
-          options={{
-            headerShown: !tablet,
-            title: '클라우드 연결',
-            headerBackTitle: '설정',
-            headerTintColor: colors.tint,
-            headerStyle: { backgroundColor: colors.background },
-          }}
-        />
-        <Stack.Screen
-          name="settings/cloud/synology"
-          options={{
-            headerShown: !tablet,
-            title: 'Synology',
-            headerBackTitle: '클라우드 연결',
-            headerTintColor: colors.tint,
-            headerStyle: { backgroundColor: colors.background },
-          }}
+          name="(settings)"
+          options={{ headerShown: false, ...settingsPresentationOptions() }}
         />
         <Stack.Screen
           name="server-playlist"
@@ -214,179 +183,10 @@ function Navigation() {
           }}
         />
         <Stack.Screen
-          name="settings/cloud/jellyfin"
-          options={{
-            headerShown: !tablet,
-            title: 'Jellyfin (베타)',
-            headerBackTitle: '클라우드 연결',
-            headerTintColor: colors.tint,
-            headerStyle: { backgroundColor: colors.background },
-          }}
-        />
-        <Stack.Screen
-          name="settings/cloud/google-drive"
-          options={{
-            headerShown: !tablet,
-            title: 'Google Drive',
-            headerBackTitle: '클라우드 연결',
-            headerTintColor: colors.tint,
-            headerStyle: { backgroundColor: colors.background },
-          }}
-        />
-        <Stack.Screen
-          name="settings/cloud/s3"
-          options={{
-            headerShown: !tablet,
-            title: 'S3 호환 저장소 (베타)',
-            headerBackTitle: '클라우드 연결',
-            headerTintColor: colors.tint,
-            headerStyle: { backgroundColor: colors.background },
-          }}
-        />
-        <Stack.Screen
-          name="settings/cloud/mybox"
-          options={{
-            headerShown: !tablet,
-            title: '네이버 MYBOX',
-            headerBackTitle: '클라우드 연결',
-            headerTintColor: colors.tint,
-            headerStyle: { backgroundColor: colors.background },
-          }}
-        />
-        <Stack.Screen
-          name="settings/playback"
-          options={{
-            headerShown: !tablet,
-            title: '재생 및 화면',
-            headerBackTitle: '설정',
-            headerTintColor: colors.tint,
-            headerStyle: { backgroundColor: colors.background },
-          }}
-        />
-        <Stack.Screen
-          name="settings/colors"
-          options={{
-            headerShown: !tablet,
-            title: '색상 설정',
-            headerBackTitle: '재생 및 화면',
-            headerTintColor: colors.tint,
-            headerStyle: { backgroundColor: colors.background },
-          }}
-        />
-        <Stack.Screen
-          name="settings/haptics"
-          options={{
-            headerShown: !tablet,
-            title: '햅틱 피드백',
-            headerBackTitle: '설정',
-            headerTintColor: colors.tint,
-            headerStyle: { backgroundColor: colors.background },
-          }}
-        />
-        <Stack.Screen
-          name="settings/library"
-          options={{
-            headerShown: !tablet,
-            title: '보관함 설정',
-            headerBackTitle: '설정',
-            headerTintColor: colors.tint,
-            headerStyle: { backgroundColor: colors.background },
-          }}
-        />
-        <Stack.Screen
-          name="settings/bottom-menu"
-          options={{
-            headerShown: !tablet,
-            title: '하단 메뉴 설정',
-            headerBackTitle: '설정',
-            headerTintColor: colors.tint,
-            headerStyle: { backgroundColor: colors.background },
-          }}
-        />
-        <Stack.Screen
-          name="settings/player-menu"
-          options={{
-            headerShown: !tablet,
-            title: '재생 화면 메뉴 설정',
-            headerBackTitle: '설정',
-            headerTintColor: colors.tint,
-            headerStyle: { backgroundColor: colors.background },
-          }}
-        />
-        <Stack.Screen
-          name="settings/backup"
-          options={{
-            headerShown: !tablet,
-            title: '설정 백업 및 복구',
-            headerBackTitle: '설정',
-            headerTintColor: colors.tint,
-            headerStyle: { backgroundColor: colors.background },
-          }}
-        />
-        <Stack.Screen
-          name="settings/playlist-backup"
-          options={{
-            headerShown: !tablet,
-            title: '플레이리스트 백업 및 복구',
-            headerBackTitle: '뒤로',
-            headerTintColor: colors.tint,
-            headerStyle: { backgroundColor: colors.background },
-          }}
-        />
-        <Stack.Screen
-          name="settings/licenses"
-          options={{
-            headerShown: !tablet,
-            title: '오픈소스 라이선스',
-            headerBackTitle: '설정',
-            headerTintColor: colors.tint,
-            headerStyle: { backgroundColor: colors.background },
-          }}
-        />
-        <Stack.Screen
-          name="settings/other"
-          options={{
-            headerShown: !tablet,
-            title: '기타',
-            headerBackTitle: '설정',
-            headerTintColor: colors.tint,
-            headerStyle: { backgroundColor: colors.background },
-          }}
-        />
-        <Stack.Screen
-          name="settings/quick-hide-preset"
-          options={{
-            headerShown: !tablet,
-            title: '빠른 숨기기 대상',
-            headerBackTitle: '기타',
-            headerTintColor: colors.tint,
-            headerStyle: { backgroundColor: colors.background },
-          }}
-        />
-        <Stack.Screen
-          name="hidden-music"
-          options={{
-            headerShown: !tablet,
-            title: '음악 숨기기',
-            headerBackTitle: '기타',
-            headerTintColor: colors.tint,
-            headerStyle: { backgroundColor: colors.background },
-          }}
-        />
-        <Stack.Screen
-          name="hidden-playlists"
-          options={{
-            headerShown: !tablet,
-            title: '플레이리스트 숨기기',
-            headerBackTitle: '기타',
-            headerTintColor: colors.tint,
-            headerStyle: { backgroundColor: colors.background },
-          }}
-        />
-        <Stack.Screen
           name="player"
           options={{
             presentation: 'transparentModal',
+            ...(Platform.OS === 'ios' && { statusBarStyle: 'light' as const }),
             animation: 'none',
             gestureEnabled: false,
             contentStyle: { backgroundColor: 'transparent' },

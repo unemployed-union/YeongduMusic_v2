@@ -5,7 +5,13 @@ const path = require('node:path');
 const ts = require('typescript');
 const root = path.resolve(__dirname, '..');
 
-exports.loadSource = function loadSource(file, mocks = {}, globals = {}, cache = new Map()) {
+exports.loadSource = function loadSource(
+  file,
+  mocks = {},
+  globals = {},
+  cache = new Map(),
+  platform,
+) {
   const absolute = path.resolve(root, file);
   if (cache.has(absolute)) return cache.get(absolute);
   const exports = {};
@@ -25,14 +31,17 @@ exports.loadSource = function loadSource(file, mocks = {}, globals = {}, cache =
         : name.startsWith('.')
           ? path.resolve(path.dirname(absolute), name)
           : null;
-      if (!local) throw new Error('Unmocked native/package dependency: ' + name + ' (from ' + file + ')');
-      const resolved = [local + '.ts', local + '.tsx', local + '.json'].find((candidate) =>
-        fs.existsSync(candidate),
-      );
+      if (!local)
+        throw new Error('Unmocked native/package dependency: ' + name + ' (from ' + file + ')');
+      const candidates = platform
+        ? [local + '.' + platform + '.ts', local + '.' + platform + '.tsx']
+        : [];
+      candidates.push(local + '.ts', local + '.tsx', local + '.json');
+      const resolved = candidates.find((candidate) => fs.existsSync(candidate));
       if (!resolved) throw new Error('Unresolved source dependency: ' + name);
       return resolved.endsWith('.json')
         ? JSON.parse(fs.readFileSync(resolved, 'utf8'))
-        : loadSource(resolved, mocks, globals, cache);
+        : loadSource(resolved, mocks, globals, cache, platform);
     },
     exports,
     ...Object.values(globals),

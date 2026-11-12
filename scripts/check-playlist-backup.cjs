@@ -225,7 +225,7 @@ async function checkFiles(text) {
 async function checkUI(backup, privateBackup) {
   const jsx = (type, props) => ({ type, props }), states = [], refs = [];
   let stateIndex = 0, refIndex = 0, nextFile, readFailure = false, restoreCount = 0, exportCount = 0;
-  const screen = load('src/features/playlists/backup-settings.tsx', {
+  const screen = require('./test-source-loader.cjs').loadSource('src/features/playlists/backup-settings.tsx', {
     react: { useEffect: () => {}, useRef: value => refs[refIndex++] ??= { current: value }, useState: initial => {
       const index = stateIndex++; if (!(index in states)) states[index] = initial;
       return [states[index], value => { states[index] = value; }];

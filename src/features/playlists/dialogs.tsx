@@ -44,11 +44,17 @@ export function PlaylistSheet({
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const glass = useLiquidGlass();
+  const ios = Platform.OS === 'ios';
+  const contentGlass = !ios && glass.enabled;
   const separateBody = glassSurface && glass.supported;
+  let closeColor = separateBody ? colors.text : colors.muted;
+  if (ios) {
+    closeColor = colors.tint;
+  }
   let dialogBackgroundColor: string;
   if (separateBody) {
     dialogBackgroundColor = colors.surface;
-  } else if (glass.enabled) {
+  } else if (contentGlass) {
     dialogBackgroundColor = 'transparent';
   } else {
     dialogBackgroundColor = colors.background;
@@ -71,12 +77,12 @@ export function PlaylistSheet({
           style={[
             styles.sheet,
             {
-              backgroundColor: glassSurface && glass.enabled ? 'transparent' : colors.surface,
+              backgroundColor: glassSurface && contentGlass ? 'transparent' : colors.surface,
               paddingBottom: Math.max(insets.bottom, 16),
               maxHeight: '85%',
             },
             glass.supported && {
-              borderRadius: 30,
+              borderRadius: 20,
               marginHorizontal: insets.left + 12,
               marginRight: insets.right + 12,
               marginBottom: Math.max(insets.bottom, 12),
@@ -84,8 +90,8 @@ export function PlaylistSheet({
             },
           ]}
         >
-          {glassSurface && glass.enabled && <GlassBackdrop style={{ borderRadius: 30 }} />}
-          {glass.supported && (
+          {glassSurface && contentGlass && <GlassBackdrop style={{ borderRadius: 30 }} />}
+          {!ios && glass.supported && (
             <View
               accessible={false}
               style={{
@@ -126,17 +132,13 @@ export function PlaylistSheet({
                   marginRight: 0,
                   alignItems: 'center',
                   justifyContent: 'center',
-                  backgroundColor: dialogBackgroundColor,
+                  backgroundColor: ios ? 'transparent' : dialogBackgroundColor,
                 },
                 separateBody && { marginLeft: 12, flexShrink: 0 },
               ]}
             >
-              {glass.enabled && !glassSurface && <GlassBackdrop style={{ borderRadius: 22 }} />}
-              <Ionicons
-                name="close"
-                size={glass.supported ? 20 : 24}
-                color={separateBody ? colors.text : colors.muted}
-              />
+              {contentGlass && !glassSurface && <GlassBackdrop style={{ borderRadius: 22 }} />}
+              <Ionicons name="close" size={ios ? 20 : 24} color={closeColor} />
             </Pressable>
           </View>
           {separateBody ? (

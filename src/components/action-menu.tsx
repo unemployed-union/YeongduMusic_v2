@@ -72,21 +72,26 @@ export function ActionMenu<T extends string>({
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const viewport = useWindowDimensions();
-  const light = useAppColorScheme() === 'light';
+  const scheme = useAppColorScheme();
+  const ios = Platform.OS === 'ios';
+  const light = scheme === 'light';
+  const textColor = colors.text;
+  const titleColor = colors.muted;
   const glass = useLiquidGlass('libraryMenu');
+  const glassEnabled = !ios && glass.enabled;
   const blurIntensity = useBlurIntensity('libraryMenu');
-  const blurEnabled = blurIntensity > 0 && !glass.reduceTransparency;
+  const blurEnabled = !ios && blurIntensity > 0 && !glass.reduceTransparency;
   const blurTarget = useContext(ScreenBlurTargetContext);
   const [cardHeight, setCardHeight] = useState(0);
   const position = getActionMenuPosition(anchor, viewport, insets, cardHeight);
   let modalAnimation: 'none' | 'fade';
-  if (glass.enabled) {
+  if (glassEnabled) {
     modalAnimation = 'none';
   } else {
     modalAnimation = 'fade';
   }
   let menuBackgroundColor: string;
-  if (glass.enabled) {
+  if (glassEnabled) {
     menuBackgroundColor = 'transparent';
   } else if (blurEnabled) {
     if (light) {
@@ -124,14 +129,14 @@ export function ActionMenu<T extends string>({
               backgroundColor: menuBackgroundColor,
               borderColor: colors.separator,
             },
-            glass.supported && { borderRadius: 26, borderWidth: 0 },
-            glass.enabled
+            ios && { borderRadius: 14, borderWidth: 0, shadowOpacity: 0.12 },
+            glassEnabled
               ? !cardHeight && { transform: [{ translateX: viewport.width * 2 }] }
               : { opacity: cardHeight ? 1 : 0 },
           ]}
         >
-          {glass.enabled ? (
-            <GlassBackdrop style={{ borderRadius: 26 }} />
+          {glassEnabled ? (
+            <GlassBackdrop dark={ios} style={{ borderRadius: 26 }} />
           ) : (
             <>
               {blurEnabled && (
@@ -156,7 +161,7 @@ export function ActionMenu<T extends string>({
             </>
           )}
           <ScrollView bounces={false} contentContainerStyle={styles.content}>
-            <Text numberOfLines={2} style={[styles.title, { color: colors.muted }]}>
+            <Text numberOfLines={2} style={[styles.title, { color: titleColor }]}>
               {title}
             </Text>
             {items.map((item) => (
@@ -174,11 +179,11 @@ export function ActionMenu<T extends string>({
                 style={({ pressed }) => [
                   styles.item,
                   { opacity: item.disabled ? 0.45 : 1 },
-                  pressed && { backgroundColor: colors.separator },
+                  pressed && { backgroundColor: colors.rowPressed },
                 ]}
               >
-                <Ionicons name={item.icon} size={23} color={colors.text} />
-                <Text style={[styles.label, { color: colors.text }]}>{item.label}</Text>
+                {!ios && <Ionicons name={item.icon} size={23} color={colors.text} />}
+                <Text style={[styles.label, { color: textColor }]}>{item.label}</Text>
               </Pressable>
             ))}
             {!!error && (

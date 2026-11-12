@@ -9,40 +9,24 @@ import type { LibrarySortOrder } from './sort-library';
 import { useLiquidGlass } from '@/theme/liquid-glass';
 import { GlassBackdrop } from '@/components/glass-backdrop';
 import { glassControlStyles } from '@/components/glass-controls';
+import {
+  SORT_LABELS as labels,
+  SORT_TAB_LABELS as tabLabels,
+  SORT_ORDERS as orders,
+  librarySortFieldLabel,
+} from './library-sort-options';
 
-const labels: Record<LibrarySortOrder, string> = {
-  default: '기본',
-  ascending: '오름차순',
-  descending: '내림차순',
-};
-const tabLabels: Record<LibraryTab, string> = {
-  songs: '노래',
-  albums: '앨범',
-  artists: '아티스트',
-  favorites: '좋아요',
-};
-const orders: LibrarySortOrder[] = ['default', 'ascending', 'descending'];
-
-export function LibrarySortControl({
-  tab,
-  order,
-  onChange,
-}: {
+export type LibrarySortControlProps = {
   tab: LibraryTab;
   order: LibrarySortOrder;
   onChange: (order: LibrarySortOrder) => void;
-}) {
+};
+
+export function LibrarySortControl({ tab, order, onChange }: LibrarySortControlProps) {
   const colors = useColors();
   const glass = useLiquidGlass();
   const [open, setOpen] = useState(false);
-  let sortFieldLabel: string;
-  if (tab === 'artists') {
-    sortFieldLabel = '아티스트 이름';
-  } else if (tab === 'albums') {
-    sortFieldLabel = '앨범 제목';
-  } else {
-    sortFieldLabel = '노래 제목';
-  }
+  const sortFieldLabel = librarySortFieldLabel(tab);
   return (
     <>
       <Pressable

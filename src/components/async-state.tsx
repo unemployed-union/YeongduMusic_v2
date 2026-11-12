@@ -1,4 +1,4 @@
-import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Platform, Pressable, StyleSheet, View } from 'react-native';
 import { Text } from '@/components/text';
 import { useColors } from '@/theme/tokens';
 
@@ -16,6 +16,7 @@ export function AsyncState({
   children: React.ReactNode;
 }) {
   const colors = useColors();
+  const ios = Platform.OS === 'ios';
   if (loading) {
     return (
       <View style={styles.center}>
@@ -27,10 +28,25 @@ export function AsyncState({
   if (error) {
     return (
       <View style={styles.center}>
-        <Text style={[styles.message, { color: colors.text }]}>{error}</Text>
-        <Pressable onPress={retry} style={[styles.retry, { backgroundColor: colors.tint }]}>
-          <Text style={styles.retryText}>다시 시도</Text>
-        </Pressable>
+        <Text
+          accessibilityRole={ios ? 'alert' : undefined}
+          style={[styles.message, { color: colors.text }]}
+        >
+          {error}
+        </Text>
+        {(!ios || retry) && (
+          <Pressable
+            accessibilityRole="button"
+            onPress={retry}
+            style={[
+              styles.retry,
+              ios && { minHeight: 44, justifyContent: 'center' },
+              { backgroundColor: colors.tint },
+            ]}
+          >
+            <Text style={styles.retryText}>다시 시도</Text>
+          </Pressable>
+        )}
       </View>
     );
   }

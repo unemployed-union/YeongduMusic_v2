@@ -30,3 +30,21 @@ export function parseTranslationOptions(value: unknown): TranslationOptions {
   }
   return { source: options.source, target: options.target };
 }
+
+/** Changing the source to the current target swaps languages rather than selecting an invalid pair. */
+export function withTranslationLanguage(
+  options: TranslationOptions,
+  field: keyof TranslationOptions,
+  language: TranslationLanguage,
+): TranslationOptions {
+  if (field === 'source') {
+    return {
+      source: language,
+      target: language === options.target ? options.source : options.target,
+    };
+  }
+  if (language === options.source) {
+    return options;
+  }
+  return { ...options, target: language };
+}

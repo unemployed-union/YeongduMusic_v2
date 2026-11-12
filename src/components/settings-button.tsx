@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef } from 'react';
-import { Alert, Keyboard, Pressable, StyleSheet } from 'react-native';
+import { Alert, Keyboard, Platform, Pressable, StyleSheet } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useColors } from '@/theme/tokens';
@@ -7,16 +7,10 @@ import { useHiddenFeatureAccess } from '@/stores/hidden-feature-access';
 import { quickHide } from '@/features/hidden-music/quick-hide';
 import { Text } from '@/components/text';
 import { useLiquidGlass } from '@/theme/liquid-glass';
-import { GlassBackdrop } from './glass-backdrop';
 
 export const SETTINGS_TAP_GAP_MS = 400;
 
-export function SettingsButton({
-  label = false,
-  onOpen,
-}: { label?: boolean; onOpen?: () => void } = {}) {
-  const colors = useColors();
-  const glass = useLiquidGlass();
+export function useSettingsAction(onOpen?: () => void) {
   const access = useHiddenFeatureAccess();
   const load = access.load;
   const sequence = useRef({
@@ -78,6 +72,16 @@ export function SettingsButton({
       }, SETTINGS_TAP_GAP_MS);
     }
   }
+  return onPress;
+}
+
+export function SettingsButton({
+  label = false,
+  onOpen,
+}: { label?: boolean; onOpen?: () => void } = {}) {
+  const colors = useColors();
+  const glass = useLiquidGlass();
+  const onPress = useSettingsAction(onOpen);
   return (
     <Pressable
       accessibilityRole="button"
@@ -89,7 +93,7 @@ export function SettingsButton({
           !label && {
             borderRadius: 22,
             marginRight: 0,
-            backgroundColor: glass.enabled ? 'transparent' : colors.surface,
+            backgroundColor: Platform.OS === 'ios' ? 'transparent' : colors.surface,
           },
         label && {
           width: '100%',
@@ -101,11 +105,10 @@ export function SettingsButton({
           paddingHorizontal: 12,
           justifyContent: 'flex-start',
         },
-        { opacity: pressed && !glass.enabled ? 0.55 : 1 },
-        pressed && glass.enabled && { transform: [{ scale: 0.95 }] },
+        { opacity: pressed && (!glass.enabled || Platform.OS === 'ios') ? 0.55 : 1 },
+        pressed && glass.enabled && Platform.OS !== 'ios' && { transform: [{ scale: 0.95 }] },
       ]}
     >
-      {glass.enabled && !label && <GlassBackdrop style={{ borderRadius: 22 }} interactive />}
       <Ionicons
         name="settings-outline"
         size={glass.supported && !label ? 22 : 25}

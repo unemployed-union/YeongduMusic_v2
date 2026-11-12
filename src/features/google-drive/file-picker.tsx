@@ -1,40 +1,15 @@
-import { useRef, useState } from 'react';
-import { ActivityIndicator, FlatList, Pressable, View } from 'react-native';
 import { Text } from '@/components/text';
-import Ionicons from '@expo/vector-icons/Ionicons';
 import { PlaylistSheet } from '@/features/playlists/dialogs';
-import { useGoogleDriveStore } from '@/stores/google-drive';
 import { useColors } from '@/theme/tokens';
+import Ionicons from '@expo/vector-icons/Ionicons';
+import { ActivityIndicator, FlatList, Pressable, View } from 'react-native';
+import { useDriveFilePicker } from './use-drive-file-picker';
 
 /** Edit app membership; granting access happens only in Google's native Picker. */
 export function DriveFilePicker({ onClose }: { onClose: () => void }) {
   const colors = useColors();
-  const files = useGoogleDriveStore((state) => state.files);
-  const saving = useGoogleDriveStore((state) => state.fileSaving);
-  const [ids, setIds] = useState(() => new Set(files.map((file) => file.id)));
-  const [error, setError] = useState<string | null>(null);
-  const pending = useRef(false);
-  const changed = files.some((file) => !ids.has(file.id));
-  const close = () => {
-    if (!pending.current) {
-      onClose();
-    }
-  };
-  async function save() {
-    if (pending.current || saving || !changed) {
-      return;
-    }
-    pending.current = true;
-    setError(null);
-    try {
-      await useGoogleDriveStore.getState().selectFiles(files.filter((file) => ids.has(file.id)));
-      onClose();
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : '선택 목록을 저장하지 못했습니다.');
-    } finally {
-      pending.current = false;
-    }
-  }
+  const { files, saving, ids, setIds, error, setError, changed, close, save } =
+    useDriveFilePicker(onClose);
   return (
     <PlaylistSheet title="Google Drive 음악 선택 목록" onClose={close}>
       <View style={{ padding: 22, gap: 14, flexShrink: 1 }}>

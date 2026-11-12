@@ -4,9 +4,11 @@ import * as SecureStore from 'expo-secure-store';
 import { create } from 'zustand';
 import {
   defaultMenuLayout,
+  moveMenuItems,
   parseMenuLayout,
   type MenuGroup,
   type MenuId,
+  type MenuItem,
   type MenuLayout,
 } from '@/features/settings/menu-layout';
 
@@ -20,6 +22,7 @@ type MenuPreferences = {
   load: (force?: boolean) => Promise<void>;
   setVisible: (group: MenuGroup, id: MenuId, visible: boolean) => Promise<void>;
   move: (group: MenuGroup, id: MenuId, direction: -1 | 1) => Promise<void>;
+  reorder: (group: MenuGroup, ids: MenuId[]) => Promise<void>;
   restore: (layout: MenuLayout) => Promise<void>;
 };
 
@@ -113,13 +116,24 @@ export const useMenuPreferences = create<MenuPreferences>((set, get) => {
       })),
     move: (group, id, direction) =>
       update((layout) => {
-        const items = [...layout[group]];
-        const index = items.findIndex((item) => item.id === id);
-        const next = index + direction;
-        if (index >= 0 && next >= 0 && next < items.length) {
-          [items[index], items[next]] = [items[next], items[index]];
-        }
+        const index = layout[group].findIndex((item) => item.id === id);
+        const destination = direction === 1 ? index + 2 : index - 1;
+        const items = moveMenuItems<MenuItem>(layout[group], [index], destination);
         return { ...layout, [group]: items };
+      }),
+    reorder: (group, ids) =>
+      update((layout) => {
+        const items = layout[group];
+        const byId = new Map<MenuId, (typeof items)[number]>(items.map((item) => [item.id, item]));
+        const validOrder =
+          ids.length === items.length &&
+          new Set(ids).size === items.length &&
+          ids.every((id) => byId.has(id));
+        if (!validOrder) {
+          throw new Error('메뉴 순서가 변경되었습니다. 다시 시도해 주세요.');
+        }
+        // Resolve IDs against the last successful write so visibility changes are preserved.
+        return { ...layout, [group]: ids.map((id) => byId.get(id)!) };
       }),
     restore: (layout) => {
       const copy = parseMenuLayout(layout);

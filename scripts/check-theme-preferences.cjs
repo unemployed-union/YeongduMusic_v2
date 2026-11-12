@@ -47,7 +47,7 @@ async function main() {
   disk.set(key, 'broken'); await preferences.getState().load(true); assert.equal(preferences.getState().mode, 'auto'); assert(preferences.getState().error);
   await preferences.getState().setMode('light'); assert.equal(preferences.getState().error, null, 'A damaged preference can be replaced from the settings UI');
   let system = 'dark';
-  const colors = load('src/theme/tokens.ts', { 'react-native': { useColorScheme: () => system },
+  const colors = load('src/theme/tokens.shared.ts', { 'react-native': { useColorScheme: () => system },
     '@/stores/theme-preferences': { useThemePreferences: selector => selector(preferences.getState()) }, './mode': rules });
   assert.equal(colors.useAppColorScheme(), 'light'); assert.equal(colors.useColors(), colors.palette.light, 'White stays selected on a dark device');
   await preferences.getState().setMode('dark'); system = 'light'; assert.equal(colors.useColors(), colors.palette.dark);

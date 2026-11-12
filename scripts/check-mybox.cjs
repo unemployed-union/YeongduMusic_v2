@@ -154,7 +154,7 @@ async function main() {
   const nodes = tree => Array.isArray(tree) ? tree.flatMap(nodes) : tree && typeof tree === 'object' ? [tree, ...nodes(tree.props?.children)] : [];
   const slots = []; let index = 0, connectedInput;
   const uiState = { ready: true, busy: false, loading: false, connection: null, error: null, connect: async input => { connectedInput = input; } };
-  const Settings = load('src/features/mybox/settings.tsx', {
+  const Settings = require('./test-source-loader.cjs').loadSource('src/features/mybox/settings.tsx', {
     react: { useState: initial => { const slot = index++; if (!(slot in slots)) slots[slot] = initial; return [slots[slot], value => { slots[slot] = value; }]; } },
     'react/jsx-runtime': { jsx, jsxs: jsx },
     'react-native': { View: 'View', Pressable: 'Button', StyleSheet: { create: value => value }, Platform: { OS: 'android' }, Keyboard: { dismiss() {} } },

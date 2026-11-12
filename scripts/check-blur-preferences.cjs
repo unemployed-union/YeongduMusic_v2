@@ -65,7 +65,7 @@ async function checkStorage() {
 async function checkUI() {
   const r = runtime('android'), state = r.useBlurPreferences.getState;
   const useBlurPreferences = select => select ? select(state()) : state();
-  const palette = load('src/theme/tokens.ts', { 'react-native': {}, '@/stores/theme-preferences': {}, './mode': {} }).palette;
+  const palette = load('src/theme/tokens.shared.ts', { 'react-native': {}, '@/stores/theme-preferences': {}, './mode': {} }).palette;
   let scheme = 'light', cursor = 0; const slots = [];
   const ui = { react: { useEffect: fn => fn(), useState: initial => { const i = cursor++; if (!(i in slots)) slots[i] = initial; return [slots[i], value => { slots[i] = value; }]; } }, 'react/jsx-runtime': { jsx, jsxs: jsx },
     'react-native': { View: 'View', Pressable: 'Button', ActivityIndicator: 'Spinner', StyleSheet: { create: value => value, absoluteFill: {} } },
@@ -102,26 +102,29 @@ async function checkUI() {
   const opening = [], paused = { queue: [{ id: 'one', title: 'Song', artist: 'Artist' }], index: 0, position: 20, duration: 100, playing: false };
   const usePlaybackStore = selector => selector(paused);
   usePlaybackStore.getState = () => paused;
-  const MiniPlayer = load('src/components/mini-player.tsx', { ...ui,
+  const playerModules = { ...ui,
     'expo-blur': { BlurView: 'Blur' }, 'expo-router': { router: { push: route => opening.push(['navigate', route]) } },
-    'react-native-reanimated': { __esModule: true, default: { View: 'AnimatedView' }, FadeInDown: { duration: () => ({}) } },
+    'react-native-reanimated': { __esModule: true, default: { View: 'AnimatedView' }, FadeInDown: { duration: () => ({}) }, useReducedMotion: () => false },
     'react-native-gesture-handler': { Gesture: { Pan: () => gesture }, GestureDetector: 'Gesture' },
-    './artwork': { Artwork: 'Artwork' }, './playback-glyph': { PlaybackGlyph: 'PlaybackGlyph' }, './marquee-text': { MarqueeText: 'Marquee' }, '@/services/haptics': { playHaptic() {} },
+    './text': { Text: 'Text' }, './artwork': { Artwork: 'Artwork' }, './playback-glyph': { PlaybackGlyph: 'PlaybackGlyph' }, './marquee-text': { MarqueeText: 'Marquee' }, '@/services/haptics': { playHaptic() {} },
     '@/services/playback/controller': {}, '@/stores/playback': { usePlaybackStore },
     '@/stores/player-background': { usePlayerBackgroundStore: { getState: () => ({ selectArtwork: (song, options) => opening.push(['prepare', song.id, options]) }) } },
-  }).MiniPlayer;
-  nodes(MiniPlayer({ blurTarget: { current: null } })).find(node => node.props.accessibilityHint).props.onPress();
+  };
+  const content = load('src/components/mini-player-content.tsx', playerModules);
+  const MiniPlayer = load('src/components/mini-player.tsx', { ...playerModules, './mini-player-content': content }).MiniPlayer;
+  const renderMini = () => nodes(expand(MiniPlayer({ blurTarget: { current: null } })));
+  renderMini().find(node => node.props.accessibilityHint).props.onPress();
   assert.deepEqual(opening, [['prepare', 'one', { immediate: true }], ['navigate', '/player']], 'Paused mini-player prepares the current cover before opening the screen');
   assert.equal(paused.playing, false);
   for (scheme of ['light', 'dark']) for (const enabled of [false, true]) {
     await state().setEnabled(enabled);
-    const tree = nodes(MiniPlayer({ blurTarget: { current: null } }));
+    const tree = renderMini();
     assert.equal(tree.some(node => node.type === 'Blur'), enabled);
     if (enabled) assert.equal(tree.find(node => node.type === 'Blur').props.intensity, 61, 'The mini player receives its configured strength');
     assert(tree.some(node => node.type === 'View' && style(node.props.style).backgroundColor === (enabled ? palette[scheme].mini : palette[scheme].surface)));
     assert(tree.some(node => node.type === 'Marquee'), 'Toggling blur retains playback content');
   }
   await state().setAreaEnabled('miniPlayer', false);
-  assert(!nodes(MiniPlayer({ blurTarget: { current: null } })).some(node => node.type === 'Blur'), 'An area can be disabled while the master stays enabled');
+  assert(!renderMini().some(node => node.type === 'Blur'), 'An area can be disabled while the master stays enabled');
 }
 (async () => { await checkStorage(); await checkUI(); console.log('PASS: Android/iOS/web blur defaults, persistence/restart, ordered writes, failure recovery, switch busy appearance, and light/dark mini-player opaque/blurred surfaces. Native rendering/storage are mocked.'); })().catch(error => { console.error(error); process.exitCode = 1; });

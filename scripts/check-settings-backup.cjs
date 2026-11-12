@@ -349,7 +349,7 @@ async function checkUI(privateBackup) {
   const states = [], refs = [];
   let stateIndex = 0, refIndex = 0, nextFile = null, readFailure = false, restoreCount = 0;
   const exported = [], imported = [];
-  const BackupSettings = load('src/features/settings/backup-settings.tsx', {
+  const BackupSettings = require('./test-source-loader.cjs').loadSource('src/features/settings/backup-settings.tsx', {
     './menu-layout': menuRules,
     react: { useEffect: () => {}, useRef: value => refs[refIndex++] ??= { current: value },
       useState: initial => { const index = stateIndex++; states[index] ??= initial; return [states[index], value => { states[index] = value; }]; } },

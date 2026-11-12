@@ -27,6 +27,7 @@ export function PlayerTransportControls({
   onCycleRepeat,
 }: Props) {
   const ios = Platform.OS === 'ios';
+  const repeatLabel = { off: '끔', one: '한 곡', all: '전체' }[repeat];
   let playbackIndicator: React.ReactNode;
   if (buffering) {
     playbackIndicator = (
@@ -47,7 +48,10 @@ export function PlayerTransportControls({
   return (
     <View style={styles.controls}>
       <Pressable
+        accessibilityRole="button"
         accessibilityLabel="셔플"
+        accessibilityState={{ selected: shuffle }}
+        style={ios && styles.secondaryControl}
         onPress={() => {
           playHaptic('selection');
           onToggleShuffle();
@@ -56,7 +60,9 @@ export function PlayerTransportControls({
         <Ionicons name="shuffle" size={24} color={shuffle ? colors.accent : '#FFFFFF88'} />
       </Pressable>
       <Pressable
+        accessibilityRole="button"
         accessibilityLabel="이전 곡"
+        style={ios && styles.secondaryControl}
         onPress={() => {
           playHaptic('playback');
           void previous();
@@ -65,7 +71,9 @@ export function PlayerTransportControls({
         <Ionicons name="play-skip-back" size={30} color="white" />
       </Pressable>
       <Pressable
+        accessibilityRole="button"
         accessibilityLabel={playing ? '일시정지' : '재생'}
+        accessibilityState={{ busy: buffering }}
         onPress={() => {
           playHaptic('playback');
           togglePlayback();
@@ -86,7 +94,9 @@ export function PlayerTransportControls({
         {playbackIndicator}
       </Pressable>
       <Pressable
+        accessibilityRole="button"
         accessibilityLabel="다음 곡"
+        style={ios && styles.secondaryControl}
         onPress={() => {
           playHaptic('playback');
           void next();
@@ -95,7 +105,10 @@ export function PlayerTransportControls({
         <Ionicons name="play-skip-forward" size={30} color="white" />
       </Pressable>
       <Pressable
-        accessibilityLabel={`반복 ${repeat}`}
+        accessibilityRole="button"
+        accessibilityLabel={`반복 ${repeatLabel}`}
+        accessibilityState={{ selected: repeat !== 'off' }}
+        style={ios && styles.secondaryControl}
         onPress={() => {
           playHaptic('selection');
           onCycleRepeat();
@@ -112,6 +125,7 @@ export function PlayerTransportControls({
   );
 }
 export const styles = StyleSheet.create({
+  secondaryControl: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   controls: {
     flexDirection: 'row',
     justifyContent: 'space-between',

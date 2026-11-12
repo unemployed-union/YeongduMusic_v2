@@ -1,0 +1,177 @@
+[
+  {
+    "name": "ios-ui-foundation",
+    "exitCode": 0,
+    "output": "PASS: iOS semantic theme and custom preferences, stable palette identities, native phone headers, iPad sidebar ownership and unchanged playback/auth/security boundaries. Rendering is checked separately.\n"
+  },
+  {
+    "name": "ios-search",
+    "exitCode": 0,
+    "output": "PASS: native iPhone search, single input, 350ms debounce, cancellation/query clearing, iPad sidebar and Android presentation. Native keyboard interaction is checked separately.\n"
+  },
+  {
+    "name": "native-settings",
+    "exitCode": 0,
+    "output": "PASS: NAS login replaces the settings sheet in the installed SDK 58 stack router; the old partial reset is rejected.\nPASS: SwiftUI Form/Section/semantic native rows and system grouped surfaces, preserved routes and disabled/busy states, custom editor sizing/context, overlays, UIKit switches and haptics. Native rendering is mocked.\nPASS: native system-settings row and shared sync-before-open, busy, error and retry behavior. Linking/storage are mocked.\n"
+  },
+  {
+    "name": "ios-settings-controls",
+    "exitCode": 0,
+    "output": "PASS: actual iOS playback/library native Form rows, language swapping and invalid-pair guards, menu visibility/order, explicit color commit/reset, native secure-field clearing, connection busy guard, and protected settings unlock/relock. Native views/network/storage are mocked.\n"
+  },
+  {
+    "name": "music-source-sheet",
+    "exitCode": 0,
+    "output": "PASS: native music-source/sort sheet composition, resize and dismissal, all sort modes/tab labels, live accent colors on both triggers, connected-source filtering, deferred source actions, busy/error states and platform fallback. Native rendering is mocked.\n"
+  },
+  {
+    "name": "library-sort",
+    "exitCode": 0,
+    "output": "PASS: default/order restoration, Korean/numeric names, stable ties, immutable mixed sources, memo reuse, refreshed data, displayed playback queue and sort menu handlers. Native layout is mocked.\n"
+  },
+  {
+    "name": "library-glass",
+    "exitCode": 0,
+    "output": "PASS: native segmented tags/selection/visibility, theme, opaque fallback and Android isolation; source glass surface, source selection and iOS import-after-dismiss sequencing. Rendering is mocked.\n"
+  },
+  {
+    "name": "navigation",
+    "exitCode": 0,
+    "output": "PASS: actual Expo Router library/playlist stacks, retained detail links and initial routes; library/playlist/search tab order, selected-tab mini player and blur targets; top-right settings action/keyboard dismissal and root settings route; song/queue selection and stale playback guards. Native rendering and playback are not exercised.\n"
+  },
+  {
+    "name": "native-tabs",
+    "exitCode": 0,
+    "output": "PASS: real native-tab selection, platform fallback, SF Symbols, visibility/order/hidden-route recovery, UIKit safe areas, mini-player targets, keyboard hiding and iPad sidebars. UIKit motion must also be verified on iOS.\n"
+  },
+  {
+    "name": "mini-player-content",
+    "exitCode": 0,
+    "output": "PASS: simultaneous accessory placements, shared snapshots, single playback commands, sibling touch targets, long titles, large text, buffering, next/open/swipe controls, standalone fallback and plain iOS header/options buttons. Native layout/rendering is not simulated.\n"
+  },
+  {
+    "name": "player-gestures",
+    "exitCode": 0,
+    "output": "PASS: focused Android back animates before dismissing, repeated back is consumed, blur/unmount cleanup, vertical drag and snap-back.\nPASS: interrupted close watchdog, lock-during-close recovery, one navigation despite late completion and queued callback/unmount guards.\nPASS: artwork tracks finger position, threshold/flick navigation, short/cancelled drags, snap-back, duplicate suppression and closing/unmount guards.\nPASS: canceled dismisses, partial drag cleanup, inactive gesture/back-handler release, skipped queued background swipes and foreground re-enabling.\nPASS: swipe moves directly to previous track after 3 seconds, existing previous-button restart and repeat wrapping preserved. Native gesture/animation rendering remains unverified.\n"
+  },
+  {
+    "name": "player-background",
+    "exitCode": 0,
+    "output": "PASS: interrupted crossfade/lock recovery, opaque first resume frame and completed-layer remount, stale animation callbacks, foreground-only palette downloads, latest-track resume, cache limits and stale-result guards. Native gradient rendering, image extraction and UI-thread animation are mocked.\n"
+  },
+  {
+    "name": "player-options",
+    "exitCode": 0,
+    "output": "PASS: artwork preference persistence/restart, coalesced reads, ordered writes, corrupt value, visible failures and retry. SecureStore is mocked.\nPASS: shared Artwork suppresses image requests and private palette in hidden mode, restores original artwork when shown.\nPASS: player-only larger NAS artwork, unchanged thumbnails/custom artwork, preserved authentication, bounded error fallback and track-change recovery. NAS response dimensions are checked separately on device.\nPASS: official equalizer action/package/int extras, active/no-session cases, duplicate launch guard, unsupported platforms and missing-panel sound-settings fallback; existing player session getter validation. Native UI is mocked.\nPASS: manual re-search switches strategy, repeated/NAS retries refetch, cached missing results show loading and retry errors. React/native rendering is mocked.\n"
+  },
+  {
+    "name": "appearance",
+    "exitCode": 0,
+    "output": "PASS: color validation, light/dark readable accents and backgrounds, stable tokens, independent mini-player colors, Android/iOS/web persistence and failure recovery, presets/custom hex/reset UI, and fixed/artwork player backgrounds. Native rendering/storage are mocked.\n"
+  },
+  {
+    "name": "blur-preferences",
+    "exitCode": 0,
+    "output": "PASS: Android/iOS/web blur defaults, persistence/restart, ordered writes, failure recovery, switch busy appearance, and light/dark mini-player opaque/blurred surfaces. Native rendering/storage are mocked.\n"
+  },
+  {
+    "name": "quick-hide",
+    "exitCode": 0,
+    "output": "PASS: five-tap all/selected conceal, mutually exclusive settings, target picker, legacy migration and restart persistence, account isolation/switch during conceal, deleted targets, protected selection and locked conceal, preserved other presets/playlists, single/four taps, focus cleanup, duplicate taps and storage failure/retry. Native UI/biometrics are mocked.\n"
+  },
+  {
+    "name": "hidden-music-ios-ui",
+    "exitCode": 0,
+    "output": "PASS: iOS hidden music native header, separate selection/expansion, filters, empty/search states, save/cancel and immutable draft payloads. Native rendering is checked separately.\n"
+  },
+  {
+    "name": "tablet-navigation",
+    "exitCode": 0,
+    "output": "PASS: content-only tablet transitions, cancellation on route/focus changes, reduced motion, retained children, hidden horizontal bars, sidebar back/fallback, custom menus, detail navigation, mini-player insets and phone restoration. Native rendering is mocked.\n"
+  },
+  {
+    "name": "tablet-workspaces",
+    "exitCode": 0,
+    "output": "PASS: responsive library/settings sidebars, pane widths, source filters, favorite scope, hidden menu protection, nested route selection, card columns and selection/sort retention across resizing. Native rendering is mocked.\n"
+  },
+  {
+    "name": "library-performance",
+    "exitCode": 0,
+    "output": "PASS: 10,000-song fixture, 12 tab and detail rerenders with zero extra selections, album/artist route and privacy invalidation, metadata updates, account isolation, empty/offline lists and all-source favorites. Hook callbacks are mocked; native frame rates are not measured.\n"
+  },
+  {
+    "name": "library-state",
+    "exitCode": 0,
+    "output": "PASS: refresh source/account/folder/generation changes, source ABA, stale NAS cache publication, cloud failure isolation, normal refresh and unmount cleanup.\nPASS: actual QueryObserver pending/success states, cloud error/loading consistency, empty lists, refreshing flags and NAS offline fallback.\n"
+  },
+  {
+    "name": "editing-ui",
+    "exitCode": 0,
+    "output": "PASS: Android/iOS modal handoff, local-only deletion menu, confirmation/cancel, busy and double-tap guards, failure/retry, editors and light/dark themes. Native presentation is mocked.\n"
+  },
+  {
+    "name": "connect-screen",
+    "exitCode": 0,
+    "output": "PASS: native login form, saved address, secure fields, accent, validation, single requests, busy states, HTTP consent, OTP challenges/autofill/secret clearing, failures, cancel/demo and Android presentation. Native rendering/network are mocked.\n"
+  },
+  {
+    "name": "favorites",
+    "exitCode": 0,
+    "output": "PASS: Android/iOS/web persistence and restart, account/source identities, ordered and idempotent writes, corruption/read/write recovery, hidden-song filtering, fresh metadata, favorite buttons, collection removal and playback queue. Native UI/storage are mocked.\n"
+  },
+  {
+    "name": "song-artwork",
+    "exitCode": 0,
+    "output": "PASS: artwork lookup/escaping/shared throttle, validated image import/download/cleanup, persistent scoped song/album edits/reset, storage failures/races, explicit preview/apply UI and live queue/lock-screen updates without audio reload/seek. Native files, rendering and network are mocked.\n"
+  },
+  {
+    "name": "theme-preferences",
+    "exitCode": 0,
+    "output": "PASS: explicit dark/white/auto themes, live automatic system resolution, native override/reset, persistence/restart, queued saves, read/write/native failures, corrupt-value recovery, web storage and settings selection/feedback. Appearance/storage/UI are mocked.\n"
+  },
+  {
+    "name": "hidden-music",
+    "exitCode": 0,
+    "output": "PASS: folder boundaries/descendants/future songs, multiple presets, per-song selection, account/NAS persistence, storage failures and corrupt profiles, protected mutations, cancelled/late biometrics, relocking, stale load isolation, shared-cache filtering across all library screens, queue pruning/current playback stop, native setup cancellation, SQLite parameter binding, and demo folders. Biometrics, audio engine and SQLite are mocked; actual NAS/device behavior remains unverified.\n"
+  },
+  {
+    "name": "hidden-playlists",
+    "exitCode": 0,
+    "output": "PASS: playlist hide/unhide, SQLite restart/account persistence, legacy profile migration, corrupt data and disk failures; shared lock/cancel/late authentication, manager relocking, list/add-dialog filtering and hidden direct-route protection. Native biometrics/UI and NAS are mocked.\n"
+  },
+  {
+    "name": "hidden-feature-access",
+    "exitCode": 0,
+    "output": "PASS: concealed features default off, independent icon 15/5 and creator 7 taps, propagation isolation, pause/focus reset, creator photo/message/link/dismissal, restart persistence, concurrent taps, storage failure, version UI/relocking; Seoul build labels and read-only Expo config. Native storage/UI are mocked.\n"
+  },
+  {
+    "name": "folder-tree",
+    "exitCode": 0,
+    "output": "PASS: tree hierarchy/counts, expansion/collapse, unchanged hidden selections, ancestor-preserving search/selected view, inherited hiding/path boundaries, missing saved folders, relative paths, empty and large trees. Native UI is not exercised.\n"
+  },
+  {
+    "name": "playback-recovery",
+    "exitCode": 0,
+    "output": "Playback recovery checks passed.\n"
+  },
+  {
+    "name": "playback-buffer",
+    "exitCode": 0,
+    "output": "PASS: iOS NAS original FLAC MIME hint, unchanged authenticated URL/headers, reconnect retention, codec/extension detection, MP3/local/cloud/Android/web isolation. Native MIME handling needs the matching patched build.\nPASS: player reuse, short buffering without restart, bounded stream recovery at the saved position, pause/track-change/release cancellation, persistent failure, native interruption, diagnostics, remote navigation, and platform behavior. Actual background NAS/device playback remains unverified.\n"
+  },
+  {
+    "name": "playback-energy",
+    "exitCode": 0,
+    "output": "PASS: no foreground/background progress writes or save timers, zero-position records, prompt pause/queue metadata persistence, cleanup and route/AppState visibility. Battery consumption and device rendering are not measured.\n"
+  },
+  {
+    "name": "responsive-layout",
+    "exitCode": 0,
+    "output": "PASS: tablet/phone/notch/split-screen geometry, responsive grids, queue switching, iOS seek-bar alignment, always-hidden iOS thumb, drag preview/cancel/focus reset, balanced footer and unchanged Android layout. Native rendering is not exercised.\nPASS: seek completion retention and stale seek protection while scrubbing.\n"
+  },
+  {
+    "name": "marquee",
+    "exitCode": 0,
+    "output": "PASS: full/mini marquee, seamless leftward loop, optional hardware alpha/CSS edge masks, accessible title and short/reduced-motion/background guards. Native masking and UI-thread rendering are mocked.\n"
+  }
+]

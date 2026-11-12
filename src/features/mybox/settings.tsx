@@ -1,35 +1,21 @@
-import { useState } from 'react';
+import { Text } from '@/components/text';
+import { TextInput } from '@/components/text-input';
+import { SettingsPage, SettingsSection } from '@/features/settings/settings-ui';
+import { useColors } from '@/theme/tokens';
 import {
   ActivityIndicator,
   Alert,
-  Keyboard,
   Linking,
   Platform,
   Pressable,
   StyleSheet,
   View,
 } from 'react-native';
-import { Text } from '@/components/text';
-import { TextInput } from '@/components/text-input';
-import { SettingsPage, SettingsSection } from '@/features/settings/settings-ui';
-import { useMyboxStore } from '@/stores/mybox';
-import { useColors } from '@/theme/tokens';
+import { useMyboxSettings } from './use-mybox-settings';
 
 export function MyboxSettings() {
   const colors = useColors();
-  const store = useMyboxStore();
-  const [token, setToken] = useState('');
-  const [folder, setFolder] = useState(store.connection?.folder ?? '/');
-  const disabled = !store.ready || store.busy || store.loading || Platform.OS === 'web';
-  async function connect() {
-    if (disabled || !token.trim()) {
-      return;
-    }
-    Keyboard.dismiss();
-    const input = { token, folder };
-    setToken('');
-    await store.connect(input);
-  }
+  const { store, token, setToken, folder, setFolder, disabled, connect } = useMyboxSettings();
   return (
     <SettingsPage>
       <Text style={[styles.note, { color: colors.muted }]}>

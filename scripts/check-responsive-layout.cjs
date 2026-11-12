@@ -115,6 +115,19 @@ const bottom = tree => nodes(tree).find(node => node.props?.ref && node.props.on
 assert.equal(flatten(bottom(tree).props.style).paddingBottom, 90, 'Android retains its original vertical layout');
 platform = 'ios'; tree = render();
 assert.equal(flatten(bottom(tree).props.style).paddingBottom, 56, 'iOS lifts the controls below the artwork another 12pt while retaining the compact layout override');
+const originalDimensions = dimensions;
+dimensions = { width: 390, height: 900, fontScale: 1.4 };
+tree = render();
+assert(nodes(tree).some(node => node.type === 'ScrollView'), 'iOS large text can scroll art and controls even in a tall phone window');
+assert.equal(nodes(tree).filter(node => node.type === 'FavoriteButton').length, 1, 'Large text does not duplicate playback controls');
+assert(!nodes(tree).some(node => node.type === 'MarqueeText'), 'Large song titles use static multiline text');
+assert.equal(state.queue, queue, 'Changing text size preserves the active queue');
+platform = 'android';
+tree = render();
+assert(!nodes(tree).some(node => node.type === 'ScrollView'), 'Android retains its original tall-window layout');
+platform = 'ios';
+dimensions = originalDimensions;
+tree = render();
 const progress = nodes(tree).find(node => typeof node.type === 'function' && node.type.name === 'PlayerProgress');
 const progressSlots = [];
 const progressView = (active = true) => {

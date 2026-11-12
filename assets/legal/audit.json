@@ -1,6 +1,6 @@
 {
-  "packageLockSha256": "c627f24a7c053baef6f7c67ddbf51ce36ea718cb503c487969eddd44487a260d",
-  "packageJsonSha256": "7a5b4a04584c6c3adecf107ec65e82f978594c3fc61e0da8dae491b3770958c8",
+  "packageLockSha256": "10c761b942c3e820dcf5f09a94fb07bd9738a6640a71bd3c15407dcb3af0714e",
+  "packageJsonSha256": "7670329100244c53632ba943f437582e9f93d64ff788415fc7224e7ff11157fc",
   "nativeCoordinates": [
     "androidx.activity:activity-compose:1.11.0",
     "androidx.activity:activity-ktx:1.11.0",

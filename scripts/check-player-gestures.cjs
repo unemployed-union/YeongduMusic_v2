@@ -26,7 +26,7 @@ function shared(value) {
     finish() { const animation = this.animation; this.animation = null; if (animation) { this.value = animation.value; animation.callback?.(true); } },
   };
 }
-function environment() {
+function environment({ reducedMotion = false, os = 'ios' } = {}) {
   const effects = [], cleanup = new Map(), rnTasks = [], values = [], slots = [];
   const timers = new Map(); let timerId = 0;
   let focused, back, removed = 0, cursor = 0;
@@ -45,12 +45,13 @@ function environment() {
       slots[slot] = deps;
     } },
     'expo-router': { useFocusEffect: fn => { focused = fn; } },
-    'react-native': { BackHandler: { addEventListener: (event, listener) => {
+    'react-native': { Platform: { OS: os }, BackHandler: { addEventListener: (event, listener) => {
       assert.equal(event, 'hardwareBackPress'); back = listener;
       return { remove: () => { back = null; removed++; } };
     } } },
     'react-native-gesture-handler': { Gesture: { Pan: pan } },
     'react-native-reanimated': {
+      useReducedMotion: () => reducedMotion,
       useSharedValue: value => { const slot = cursor++; if (!slots[slot]) { slots[slot] = shared(value); values.push(slots[slot]); } return slots[slot]; },
       useAnimatedStyle: fn => fn,
       withTiming: (value, config, callback) => ({ animation: true, value, config, callback }),
@@ -80,6 +81,23 @@ async function main() {
   const animation = env.values[0].animation; assert.equal(env.back(), true); assert.equal(env.values[0].animation, animation);
   env.values[0].finish(); env.flushRN(); assert.equal(dismissals, 1); assert.equal(env.timers.size, 0);
   blur(); assert.equal(env.back, null); assert.equal(env.removed, 1); env.unmount();
+
+  const reduced = environment({ reducedMotion: true });
+  let reducedDismissals = 0;
+  const reducedPlayer = load('src/features/playback/use-player-dismiss.ts', reduced.modules).usePlayerDismiss(900, () => reducedDismissals++);
+  reduced.mount();
+  assert.equal(reduced.values[0].animation.config.duration, 120);
+  reduced.values[0].finish();
+  assert.equal(reducedPlayer.animatedStyle().transform, undefined, 'Reduce Motion replaces full-screen movement with opacity');
+  assert.equal(reducedPlayer.animatedStyle().opacity, 1);
+  reducedPlayer.close(); reduced.values[0].finish(); reduced.flushRN();
+  assert.equal(reducedDismissals, 1);
+  reduced.unmount();
+  const androidReduced = environment({ reducedMotion: true, os: 'android' });
+  load('src/features/playback/use-player-dismiss.ts', androidReduced.modules).usePlayerDismiss(900, () => {});
+  androidReduced.mount();
+  assert.equal(androidReduced.values[0].animation.config.duration, 260, 'Android retains its original animation behavior');
+  androidReduced.unmount();
 
   const cancelled = environment();
   const cancelDismiss = load('src/features/playback/use-player-dismiss.ts', cancelled.modules).usePlayerDismiss(900, () => { dismissals++; });

@@ -1,0 +1,3297 @@
+[
+  {
+    "path": "app.json",
+    "bytes": 2882,
+    "sha256": "f9dddb3fa3cda3d578a26071cc00d7e7578e236e55dd0edb507b932df25d471e"
+  },
+  {
+    "path": "assets/YeongduMusic.icon/Assets/01-background.png",
+    "bytes": 466905,
+    "sha256": "be8b0079149951b16aa637c016a06c5c0613a047b4f4ac3d77a7bea35eebfc6a"
+  },
+  {
+    "path": "assets/YeongduMusic.icon/Assets/02-cloud.png",
+    "bytes": 202561,
+    "sha256": "9b463d045e8350dfde8ac232547bf643eeceb26d4417452843cc192272f7a1e4"
+  },
+  {
+    "path": "assets/YeongduMusic.icon/Assets/03-music-note.png",
+    "bytes": 110767,
+    "sha256": "aeb5c3b11a32bfc7b66142c0160e1dff7918f7da564bcb8fe66597c6ca511c7d"
+  },
+  {
+    "path": "assets/YeongduMusic.icon/icon.json",
+    "bytes": 736,
+    "sha256": "55d0bc57381abe2d0f518ca37e8a4761bafd1ebe4b2d6f6590ab312df9547c49"
+  },
+  {
+    "path": "assets/audio/mock-tone.wav",
+    "bytes": 768044,
+    "sha256": "c3ce446fe174a3f3f29e08766bfebe49eedb0a00d74f09135be3e4a1110494de"
+  },
+  {
+    "path": "assets/branding/LICENSE",
+    "bytes": 1099,
+    "sha256": "c89dabc60b2e4e1a04b33bd7010b5a56bb4725ffe8c00d793a5ae009fbbfebd8"
+  },
+  {
+    "path": "assets/branding/app-logo.png",
+    "bytes": 1628308,
+    "sha256": "8c7bba94307d5ea99b71072231a959468161f97d5c04f8b7321280c0d158e53b"
+  },
+  {
+    "path": "assets/branding/musical-notes.json",
+    "bytes": 2834,
+    "sha256": "ed376cf5fbb6881bc38d0bddff358c82ff3d48399b16682f5a5fe77af331ab42"
+  },
+  {
+    "path": "assets/expo.icon/Assets/expo-symbol 2.svg",
+    "bytes": 608,
+    "sha256": "ad117d20fd819f4ec71876ce09c0e8b9275b1f20c5ec3c9d7d1914977ceffec6"
+  },
+  {
+    "path": "assets/expo.icon/Assets/grid.png",
+    "bytes": 53681,
+    "sha256": "8247d79a2b31328fe4e330a973e6fae16924ed9aebd72c64d464d6856ab18c72"
+  },
+  {
+    "path": "assets/expo.icon/icon.json",
+    "bytes": 780,
+    "sha256": "747c56e178222a6255c6dd61c5de011b286cdc935febe89f04d1b191c3d076fe"
+  },
+  {
+    "path": "assets/images/android-icon-background.png",
+    "bytes": 17549,
+    "sha256": "fb139c2dee362ebf2070e23b96da6fc0d43f8492de38b8af1fd7223e19b5861d"
+  },
+  {
+    "path": "assets/images/android-icon-foreground.png",
+    "bytes": 78796,
+    "sha256": "9e3d0315a33c6799de601dd34cd8bf8cc3a8d16f3bf75592baec2ceb7240b391"
+  },
+  {
+    "path": "assets/images/android-icon-monochrome.png",
+    "bytes": 4140,
+    "sha256": "6371fc2c12e33ad2215a86c281db3d682a81bebe7c957a842c13b8bf00cceb83"
+  },
+  {
+    "path": "assets/images/app-icon-background.png",
+    "bytes": 5862,
+    "sha256": "693bea2b3ba99ca372bb63ae88465dfe1c944a3ee2b663006ad99edd5a981c6b"
+  },
+  {
+    "path": "assets/images/app-icon-foreground.png",
+    "bytes": 598007,
+    "sha256": "7aff8340050fff6e0c164de46f5a23bd16f758ba23670407a275c031fde25d1a"
+  },
+  {
+    "path": "assets/images/creator-profile.png",
+    "bytes": 147563,
+    "sha256": "9a886981ba4cd339bfa05f472debda1e1ddf655f7551a3595015f8bfdfd89594"
+  },
+  {
+    "path": "assets/images/expo-badge-white.png",
+    "bytes": 4129,
+    "sha256": "d9ba28c5e93aea3c2dabd901ee96fea3bb296ad8e648f6f64706dae11a1a62bd"
+  },
+  {
+    "path": "assets/images/expo-badge.png",
+    "bytes": 4137,
+    "sha256": "ff353c7efadbd379903923cb604fca11c908cba0d4658cc2bd1f147d98317249"
+  },
+  {
+    "path": "assets/images/expo-logo.png",
+    "bytes": 3317,
+    "sha256": "27b060a757a29038c9618586baa0ba3894dbe60d084c6059df497ff429c2d92f"
+  },
+  {
+    "path": "assets/images/favicon.png",
+    "bytes": 1129,
+    "sha256": "a4e030697a7571b3e95d31860e4da55d2f98e5e861e2b55e414f45a8556828ba"
+  },
+  {
+    "path": "assets/images/icon.png",
+    "bytes": 681136,
+    "sha256": "8517aea920e50076b72c3c92238f64611241ec718443593e9fd1b2e79690270a"
+  },
+  {
+    "path": "assets/images/logo-glow.png",
+    "bytes": 331624,
+    "sha256": "bbd98a3f3c12d090f4df6065b7462fcdf6bc266209d002b4ef5fe554c245f66c"
+  },
+  {
+    "path": "assets/images/react-logo.png",
+    "bytes": 6341,
+    "sha256": "224b7636b15e672801579b5b418077cbc2ca42f0146389062364356b0ecb5c5c"
+  },
+  {
+    "path": "assets/images/react-logo@2x.png",
+    "bytes": 14225,
+    "sha256": "fa600be9ad2f869c7a8dbaffc78bb15af741123e1319c948f0be51753a153cde"
+  },
+  {
+    "path": "assets/images/react-logo@3x.png",
+    "bytes": 21252,
+    "sha256": "cd84e02a5d542a3e71b7fa10a685c1b9fb51db4aff92aca6c0da6461ce17be16"
+  },
+  {
+    "path": "assets/images/splash-icon.png",
+    "bytes": 3317,
+    "sha256": "27b060a757a29038c9618586baa0ba3894dbe60d084c6059df497ff429c2d92f"
+  },
+  {
+    "path": "assets/images/splash-logo.png",
+    "bytes": 822760,
+    "sha256": "f0dec9a59408ee7ba7ea49077edf091d0ca23c4baedd8f10bf61edf351eef791"
+  },
+  {
+    "path": "assets/images/tabIcons/explore.png",
+    "bytes": 215,
+    "sha256": "e2dea1c2d20929d83e8eebd74818e808b1b72e376d3a1f3a03679fff0255d073"
+  },
+  {
+    "path": "assets/images/tabIcons/explore@2x.png",
+    "bytes": 347,
+    "sha256": "1b54913b3a0acc3e1fb72d3b9b79ad04814304b35bbb9d03a533e6130ad6c26a"
+  },
+  {
+    "path": "assets/images/tabIcons/explore@3x.png",
+    "bytes": 468,
+    "sha256": "2f3e43801df70ebe83273b90a7d170bacf5ca74a8a8dc5c154a020c2c8b06609"
+  },
+  {
+    "path": "assets/images/tabIcons/home.png",
+    "bytes": 253,
+    "sha256": "3829632ec7d495225395f5da3d0942935d7d055979b174613d1ade82fe420e76"
+  },
+  {
+    "path": "assets/images/tabIcons/home@2x.png",
+    "bytes": 343,
+    "sha256": "21c5a07df9017d97464a0a8256e265288f2fca0741ca651de05e12b32f32f5ab"
+  },
+  {
+    "path": "assets/images/tabIcons/home@3x.png",
+    "bytes": 479,
+    "sha256": "fe5b397975e7cb70ae7a122472d174ed12ec2ae106f7b49c968225ad37f8b3b8"
+  },
+  {
+    "path": "assets/images/tutorial-web.png",
+    "bytes": 58959,
+    "sha256": "e372ec23ad6262e2e0dc2799ce416b495a631a565bcd24f0615d4afc04dac3bd"
+  },
+  {
+    "path": "assets/legal/README.md",
+    "bytes": 4413,
+    "sha256": "0c6c855ac03080d5e847813fad726e4206482ad20ed185bfaa02fb0c4c7c659a"
+  },
+  {
+    "path": "assets/legal/audit.json",
+    "bytes": 77512,
+    "sha256": "d3f178962965190ec707ac22dae7be374542809f35da75ff69bd057c3f71dfb7"
+  },
+  {
+    "path": "assets/legal/notices.json",
+    "bytes": 815520,
+    "sha256": "2ad40d862d853707432d8c756cd4baa551fde40d85020eb0b1b463f90c22cf06"
+  },
+  {
+    "path": "assets/legal/upstream/apache-2.txt",
+    "bytes": 11358,
+    "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+  },
+  {
+    "path": "assets/legal/upstream/appauth.txt",
+    "bytes": 11358,
+    "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+  },
+  {
+    "path": "assets/legal/upstream/appcheck.txt",
+    "bytes": 11358,
+    "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+  },
+  {
+    "path": "assets/legal/upstream/bolts.txt",
+    "bytes": 1525,
+    "sha256": "9e69750c616877af2dec86f961a53e39324c3655e25b1d6ceed06e9661ec072b"
+  },
+  {
+    "path": "assets/legal/upstream/brotli.txt",
+    "bytes": 1084,
+    "sha256": "3d180008e36922a4e8daec11c34c7af264fed5962d07924aea928c38e8663c94"
+  },
+  {
+    "path": "assets/legal/upstream/double-conversion.txt",
+    "bytes": 1527,
+    "sha256": "4af93c12062c58058378de2397dc1c92bbff9ddfb1d583a01c84127557ce97ca"
+  },
+  {
+    "path": "assets/legal/upstream/expo-modules-v2.txt",
+    "bytes": 1106,
+    "sha256": "a1690bef5d8880c1036a72204838b18cf9dc19f51ed6a5147e281505601ac6cf"
+  },
+  {
+    "path": "assets/legal/upstream/expo.txt",
+    "bytes": 1106,
+    "sha256": "fb3ca4a837f5779e83cef89b78253a8949cfb9429c340309f62d0465ec6610b4"
+  },
+  {
+    "path": "assets/legal/upstream/fast-float.txt",
+    "bytes": 1079,
+    "sha256": "e562f3f974ced7e69dd1db77b820b36bcf8f30377f1aa105723fba449c53c4e6"
+  },
+  {
+    "path": "assets/legal/upstream/fmt.txt",
+    "bytes": 1431,
+    "sha256": "07580f2a3b35709ce703d523f447b242f6dfec7582a8c0df102c7fa2849375f8"
+  },
+  {
+    "path": "assets/legal/upstream/folly.txt",
+    "bytes": 11350,
+    "sha256": "2206c00af7013581ae0d7c8c8a0089f02fab621913daac019b32336bd4d1e1db"
+  },
+  {
+    "path": "assets/legal/upstream/fresco.txt",
+    "bytes": 1088,
+    "sha256": "da6d3703ed11cbe42bd212c725957c98da23cbff1998c05fa4b3d976d1a58e93"
+  },
+  {
+    "path": "assets/legal/upstream/glog.txt",
+    "bytes": 3215,
+    "sha256": "0fc497129c5c69ff6f22da6933c7e4aaef082fde8437fd57680c2780100772a4"
+  },
+  {
+    "path": "assets/legal/upstream/google-signin.txt",
+    "bytes": 11358,
+    "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+  },
+  {
+    "path": "assets/legal/upstream/google-utilities.txt",
+    "bytes": 12543,
+    "sha256": "ad6d036b9a78f0e1700d68039c06058033fea063172ce2dc68e382a24b4d1928"
+  },
+  {
+    "path": "assets/legal/upstream/gtmappauth.txt",
+    "bytes": 11358,
+    "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+  },
+  {
+    "path": "assets/legal/upstream/gtmsessionfetcher.txt",
+    "bytes": 11358,
+    "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+  },
+  {
+    "path": "assets/legal/upstream/hermes-regex.txt",
+    "bytes": 3493,
+    "sha256": "c1938c0e9e90639d1e8f5a7f6bebaab83a3642e0ee44295a4c69934686d0bda8"
+  },
+  {
+    "path": "assets/legal/upstream/hermes.txt",
+    "bytes": 1088,
+    "sha256": "da6d3703ed11cbe42bd212c725957c98da23cbff1998c05fa4b3d976d1a58e93"
+  },
+  {
+    "path": "assets/legal/upstream/icu.txt",
+    "bytes": 21201,
+    "sha256": "4efd0445de1976f59f435b884312d43dfdd3c21d309ec66d5b755362a81aaa10"
+  },
+  {
+    "path": "assets/legal/upstream/infer.txt",
+    "bytes": 1086,
+    "sha256": "52412d7bc7ce4157ea628bbaacb8829e0a9cb3c58f57f99176126bc8cf2bfc85"
+  },
+  {
+    "path": "assets/legal/upstream/kolibri.txt",
+    "bytes": 1106,
+    "sha256": "fb3ca4a837f5779e83cef89b78253a8949cfb9429c340309f62d0465ec6610b4"
+  },
+  {
+    "path": "assets/legal/upstream/llvh-support.txt",
+    "bytes": 284,
+    "sha256": "a012d664e4e01df52a65b2eeafdfb8aeb856fec0e6c372265d01b0109c3f5e2a"
+  },
+  {
+    "path": "assets/legal/upstream/llvh.txt",
+    "bytes": 15141,
+    "sha256": "8d85c1057d742e597985c7d4e6320b015a9139385cff4cbae06ffc0ebe89afee"
+  },
+  {
+    "path": "assets/legal/upstream/metro.txt",
+    "bytes": 1088,
+    "sha256": "da6d3703ed11cbe42bd212c725957c98da23cbff1998c05fa4b3d976d1a58e93"
+  },
+  {
+    "path": "assets/legal/upstream/mpl-2.txt",
+    "bytes": 16726,
+    "sha256": "3f3d9e0024b1921b067d6f7f88deb4a60cbe7a78e76c64e3f1d7fc3b779b9d04"
+  },
+  {
+    "path": "assets/legal/upstream/nodable-entities.txt",
+    "bytes": 1062,
+    "sha256": "dc8b095eb72e9e26863ed5da99c308d53b53758602e1ef0440a47244b6f40848"
+  },
+  {
+    "path": "assets/legal/upstream/pika.txt",
+    "bytes": 1071,
+    "sha256": "921f777d6cb71423f5a0cd8f1a0847f087b97da62e4d48ffe63e3add13f50af5"
+  },
+  {
+    "path": "assets/legal/upstream/promises.txt",
+    "bytes": 11358,
+    "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+  },
+  {
+    "path": "assets/legal/upstream/react-navigation.txt",
+    "bytes": 1086,
+    "sha256": "c3bc4b85acdbcfe7b2ffe3c986dcfc0cc98980c1b98154c87fa5a894acd9ac78"
+  },
+  {
+    "path": "assets/legal/upstream/slider.txt",
+    "bytes": 1078,
+    "sha256": "7d060af61ae5e95c26d620ce2d40fec91ff3175824e516905e8a61b4d94b07af"
+  },
+  {
+    "path": "assets/legal/upstream/standard-navigation.txt",
+    "bytes": 1086,
+    "sha256": "77aa111867b23a7dd45fd66c958c410a0a4b09f2f49e1ea0c16af01d1582d291"
+  },
+  {
+    "path": "assets/legal/upstream/swiftdraw.txt",
+    "bytes": 852,
+    "sha256": "0952fa14f101b00996c24fd6a678611feef5cb0902e8ce28949cea7cb0eb2aa7"
+  },
+  {
+    "path": "assets/legal/upstream/yoga.txt",
+    "bytes": 1086,
+    "sha256": "52412d7bc7ce4157ea628bbaacb8829e0a9cb3c58f57f99176126bc8cf2bfc85"
+  },
+  {
+    "path": "assets/legal/upstream.json",
+    "bytes": 8596,
+    "sha256": "33e04f6a5bc046c4d7eefea4a99b1e468d0633e03bfd8711d2eef93a9489be8e"
+  },
+  {
+    "path": "build-version.json",
+    "bytes": 39,
+    "sha256": "c859f30c71de814f54a12cd33fe03fc9e08151a32c53e8511a2cd66cf3efc21c"
+  },
+  {
+    "path": "eas.json",
+    "bytes": 539,
+    "sha256": "f4e9cd8305dbe1a4db3f9387a028354f75a134822b9eae9f3f85cd53872246d1"
+  },
+  {
+    "path": "modules/yeongdu-drive-picker/android/build.gradle",
+    "bytes": 447,
+    "sha256": "07d14004a09f7134cccc72da37c55e8dabc767715d4d989bcd247403489db89d"
+  },
+  {
+    "path": "modules/yeongdu-drive-picker/android/src/main/AndroidManifest.xml",
+    "bytes": 72,
+    "sha256": "343d5be1ac17cdd45d1a2f2ddc616c509290e655869125a9422a96d88aa66066"
+  },
+  {
+    "path": "modules/yeongdu-drive-picker/android/src/main/java/expo/modules/yeongdudrivepicker/DriveDocumentGrants.kt",
+    "bytes": 751,
+    "sha256": "6572988174fdb456558643297846fc3a7cfba999b9d95dd6039ac307579618ba"
+  },
+  {
+    "path": "modules/yeongdu-drive-picker/android/src/main/java/expo/modules/yeongdudrivepicker/DriveScopes.kt",
+    "bytes": 414,
+    "sha256": "ca94b92c314d294bbeec2e93f6ff4381589732093d4be5be5183334b3adea80f"
+  },
+  {
+    "path": "modules/yeongdu-drive-picker/android/src/main/java/expo/modules/yeongdudrivepicker/YeongduDrivePickerModule.kt",
+    "bytes": 6874,
+    "sha256": "e052c238572a4be6a9a82ea0a43674a6a8aed7086dd7a73281e004b9c15f1b4e"
+  },
+  {
+    "path": "modules/yeongdu-drive-picker/android/src/test/java/expo/modules/yeongdudrivepicker/DriveDocumentGrantsTest.kt",
+    "bytes": 1274,
+    "sha256": "450aee51abddb55468363509030c6a5b1b2d4f118e1df82e19d9e4de6c73407a"
+  },
+  {
+    "path": "modules/yeongdu-drive-picker/android/src/test/java/expo/modules/yeongdudrivepicker/DriveScopesTest.kt",
+    "bytes": 1091,
+    "sha256": "d8dac450311e175781bc5ddc32b6f4c25179e652b7d86b4ee7e28a95e3843411"
+  },
+  {
+    "path": "modules/yeongdu-drive-picker/expo-module.config.json",
+    "bytes": 186,
+    "sha256": "e3bdcdad7a25ec315fa31e822cf1984ba54e0e08b93b1c88b9b5543ead8f3271"
+  },
+  {
+    "path": "modules/yeongdu-drive-picker/ios/YeongduDrivePicker.podspec",
+    "bytes": 579,
+    "sha256": "3cc4b55034b75ebc2cf87f909822a8779695342c889878965fdf45e218820ea9"
+  },
+  {
+    "path": "modules/yeongdu-drive-picker/ios/YeongduDrivePickerModule.swift",
+    "bytes": 7044,
+    "sha256": "994ee9a2e4c9a15fac1d31c60f0ea05ce2fca87a583091753cc8ea0254c13f74"
+  },
+  {
+    "path": "modules/yeongdu-drive-picker/package.json",
+    "bytes": 175,
+    "sha256": "3ed80f41cdbb9cf7ad95a66f4bc4d04935d982c95a6de07343eea389225c3da9"
+  },
+  {
+    "path": "package.json",
+    "bytes": 3211,
+    "sha256": "541df3e7a442f27171c887d82d379b651dbde49f6228d8c0f22724580335043b"
+  },
+  {
+    "path": "patches/@react-native-masked-view__masked-view@0.3.2.patch",
+    "bytes": 1001,
+    "sha256": "a161e43ea5c08a1f29df340b7634fa92840e5036e237b3a3caf2c061d040f62d"
+  },
+  {
+    "path": "patches/expo-audio@57.0.5.patch",
+    "bytes": 34028,
+    "sha256": "527f218f2aa39bc32929e873c118cc3597592437c33ad643d49b1c144b2103fe"
+  },
+  {
+    "path": "patches/expo-audio@58.0.11.patch",
+    "bytes": 25781,
+    "sha256": "c701d93cf6d354214f959616d8971f7c12d1b3d0f4266c3984b04ebc7c44d645"
+  },
+  {
+    "path": "plugins/with-android-build-memory.js",
+    "bytes": 658,
+    "sha256": "b67db42900468f7959a36e32b41aa163743ca8bf4d84b45537fb4512df81fb77"
+  },
+  {
+    "path": "plugins/with-ios-system-settings.js",
+    "bytes": 2813,
+    "sha256": "8c3e893584c114c21f7721748196b0584f6ac8294976d866a69637c14cb3b4f4"
+  },
+  {
+    "path": "pnpm-lock.yaml",
+    "bytes": 385611,
+    "sha256": "10c761b942c3e820dcf5f09a94fb07bd9738a6640a71bd3c15407dcb3af0714e"
+  },
+  {
+    "path": "pnpm-workspace.yaml",
+    "bytes": 290,
+    "sha256": "8c800cda9042527895d1a8c14ba18751148899283a80746ceb1409b24074ba96"
+  },
+  {
+    "path": "scripts/audit-open-source-dependencies.cjs",
+    "bytes": 3417,
+    "sha256": "a1e0f2fee1340916dcb658dbd48c6d41320047922cece9aeacd50c63132c5cac"
+  },
+  {
+    "path": "scripts/build-android-apk.cjs",
+    "bytes": 853,
+    "sha256": "4bf2c216df4f8ce6126551ccf9661bb05b35d8c2f4012fc73fca161d39164605"
+  },
+  {
+    "path": "scripts/bump-build-version.cjs",
+    "bytes": 1417,
+    "sha256": "fc4acffa484b95d31f8b9f9242d5410ce84e043ce9728b313a8ebde474298975"
+  },
+  {
+    "path": "scripts/check-album-discs.cjs",
+    "bytes": 2538,
+    "sha256": "df1fabf970f1e1107ff5d26b1810ac67f8c37f8a943e476184513fc86818bbc2"
+  },
+  {
+    "path": "scripts/check-album-library.cjs",
+    "bytes": 18583,
+    "sha256": "fd83b7963f7f5ba07567f54454824112ac03eaae9835c1d4ff5d02c979f92585"
+  },
+  {
+    "path": "scripts/check-android-media-session.cjs",
+    "bytes": 17207,
+    "sha256": "92dfc7c7c508bb8a22246df2fc593abc3044f86a73b03fded984ba6cc27b49fe"
+  },
+  {
+    "path": "scripts/check-appearance.cjs",
+    "bytes": 10645,
+    "sha256": "8cd5a7a58861855251f87e388e8e29c167fe4981ea2a130d2a9b62f11de9de05"
+  },
+  {
+    "path": "scripts/check-auth-session.cjs",
+    "bytes": 13723,
+    "sha256": "ab9233b5e30c05913034c8c2cdea0a7aaf5ae3c2a4e67a588c07126124a504d4"
+  },
+  {
+    "path": "scripts/check-background-playback-persistence.cjs",
+    "bytes": 6094,
+    "sha256": "6c7c0cf40977f71124c58df41d5f63c23f1f779c42e437ee62c6ab44e83342c9"
+  },
+  {
+    "path": "scripts/check-blur-preferences.cjs",
+    "bytes": 11545,
+    "sha256": "d270d442006f7f082eaf845362f79223067a7dadae5f11d78fafb70d50a32bc6"
+  },
+  {
+    "path": "scripts/check-clean-export.cjs",
+    "bytes": 3690,
+    "sha256": "5e807e7b8b1edee0e9cf18221788ef5f62bb84ab5a9311aab8a7804a38afb25d"
+  },
+  {
+    "path": "scripts/check-connect-screen.cjs",
+    "bytes": 10848,
+    "sha256": "31bbe1482d314c9ed31592d0e0d1dfb3a401a7fda5386310e7f69f25495cc746"
+  },
+  {
+    "path": "scripts/check-creator-release.cjs",
+    "bytes": 3393,
+    "sha256": "6ae5e4b625fd2a1b657eb8910acccd70f3d565494c83f69789c37ee50a290fa9"
+  },
+  {
+    "path": "scripts/check-device-auth.cjs",
+    "bytes": 4199,
+    "sha256": "42c4fcd7161a50948ed2c5290903aec7c8f03f673ad9a2c120dd483af6e6b131"
+  },
+  {
+    "path": "scripts/check-device-music.cjs",
+    "bytes": 9876,
+    "sha256": "70596be0e873ec7d6bcd787fdaa6079da7b8a1b37bc338a913bc559377bbcf0c"
+  },
+  {
+    "path": "scripts/check-drive-documents.cjs",
+    "bytes": 12339,
+    "sha256": "dcc08ec0f644aae043e2b264db6aa3d8295ad9bab8138126ed9007bfea13a743"
+  },
+  {
+    "path": "scripts/check-drive-metadata.cjs",
+    "bytes": 12520,
+    "sha256": "c71cbdde3c9aab26f4a7807f45e3b39cb93dbfba37bf7f4c35862f1595b318c0"
+  },
+  {
+    "path": "scripts/check-editing-ui.cjs",
+    "bytes": 17397,
+    "sha256": "e6b3b92d961a1c28c3b55e89b446715e47320481824a164ae24a76fcca8b37f1"
+  },
+  {
+    "path": "scripts/check-favorites.cjs",
+    "bytes": 18928,
+    "sha256": "821e2d3c9901311e7e6ab9a0eb2e6a80d205b83f453da50b372a1569838ccc7b"
+  },
+  {
+    "path": "scripts/check-file-copy.cjs",
+    "bytes": 3459,
+    "sha256": "b135bc78bfc0a8e586910adeb467e73b52ea9a7c42eb4c936ff15bb34062fdd8"
+  },
+  {
+    "path": "scripts/check-file-metadata.cjs",
+    "bytes": 39451,
+    "sha256": "2434991ea3717103f85f54010998ec4912404a1d556775da73143001d3fce14b"
+  },
+  {
+    "path": "scripts/check-folder-exclusions.cjs",
+    "bytes": 14543,
+    "sha256": "3ca45e4a8269198536a5b12e090eae229524816d4881795edffef38ae91ce3a3"
+  },
+  {
+    "path": "scripts/check-folder-tree.cjs",
+    "bytes": 4176,
+    "sha256": "300b6dc421566ac383e87e9cd2f15c168adf0e665f94d3ab1d22a9760614c4d1"
+  },
+  {
+    "path": "scripts/check-google-drive.cjs",
+    "bytes": 18400,
+    "sha256": "89531c194e52196591aa1d2a757d4cd98724f133b0a29142ba49637cb6c05178"
+  },
+  {
+    "path": "scripts/check-haptics.cjs",
+    "bytes": 13308,
+    "sha256": "b96e87fe6994298464bb7416d7fa8ab76b91e1b87c4d4a8a305a113447f4a5f3"
+  },
+  {
+    "path": "scripts/check-hidden-feature-access.cjs",
+    "bytes": 14552,
+    "sha256": "677881cf73d57b6360e21f26710b950e5763c55d56f23ea34fb532d0561e72cb"
+  },
+  {
+    "path": "scripts/check-hidden-music-ios-ui.cjs",
+    "bytes": 8540,
+    "sha256": "3e4c95b2159377a0027eb67042675c462e98c15431c5ade0c8d92a3d3e1873b7"
+  },
+  {
+    "path": "scripts/check-hidden-music.cjs",
+    "bytes": 18908,
+    "sha256": "116d367042205602defb64d2c4417e2417889072c5498bf1a14f3002f1cc7b94"
+  },
+  {
+    "path": "scripts/check-hidden-playlists.cjs",
+    "bytes": 16110,
+    "sha256": "2b219ff9b6047799fd5576cb8fedc89ddba75f3ae78fdfb72697a592b553e368"
+  },
+  {
+    "path": "scripts/check-http-requests.cjs",
+    "bytes": 15805,
+    "sha256": "a69922911332eea3487405b65d588db018900f6c602032d3ce0c9025f79bb64e"
+  },
+  {
+    "path": "scripts/check-input-menus.cjs",
+    "bytes": 12164,
+    "sha256": "8106be7c814ae6c995ed8a067950645024f0ed41f50f054a0a67006d7ed15ad8"
+  },
+  {
+    "path": "scripts/check-ios-hidden-feature-entry.cjs",
+    "bytes": 7418,
+    "sha256": "beb123172bc6f3af7c786b212210eb84c5af896d637a3a964bbd10ebf40fe28d"
+  },
+  {
+    "path": "scripts/check-ios-lockscreen-artwork.cjs",
+    "bytes": 10497,
+    "sha256": "5013a0e6b58b611bdb7a60fc00487759ac14f210c5f918427f0289535dce7ef3"
+  },
+  {
+    "path": "scripts/check-ios-search.cjs",
+    "bytes": 4352,
+    "sha256": "2eb25a6a908699d57638863bb9da492f279af0d8976bd359928d8dac841bc42c"
+  },
+  {
+    "path": "scripts/check-ios-settings-controls.cjs",
+    "bytes": 32790,
+    "sha256": "e18b83a0681d84bf293c21b13b701f5f24e1a13700a9c4625eb869756ff5d2a1"
+  },
+  {
+    "path": "scripts/check-ios-system-settings.cjs",
+    "bytes": 13334,
+    "sha256": "66a5ee5fea0268a8803db6a854d0ae8c0cc070fa123f5beccaebc9a2a6b668fa"
+  },
+  {
+    "path": "scripts/check-ios-ui-foundation.cjs",
+    "bytes": 3860,
+    "sha256": "1d44d2f575dce3bc01a437c1b11397d2517a5e15c34f005cc8d9cbdd42520424"
+  },
+  {
+    "path": "scripts/check-ios-ui-preview.cjs",
+    "bytes": 1172,
+    "sha256": "1acb7c94b68d72b2e486b098284d932843a2a49ce64a653872fb366b625ba22e"
+  },
+  {
+    "path": "scripts/check-jellyfin.cjs",
+    "bytes": 11563,
+    "sha256": "24de5b22f72586010e8745a9cb21829d88c4bf5e6b5082ad9fa135e938b5b391"
+  },
+  {
+    "path": "scripts/check-library-controls.cjs",
+    "bytes": 7737,
+    "sha256": "1f55d603f22d7ebcd0b2bb1596abc1a8cbfe4a8b71d10f01c7a411c180303304"
+  },
+  {
+    "path": "scripts/check-library-details.cjs",
+    "bytes": 33316,
+    "sha256": "6f6e7aabd1e2bed5342dcf2e7f37e611d07dc7201978843cd8d903ce78deff22"
+  },
+  {
+    "path": "scripts/check-library-glass.cjs",
+    "bytes": 10678,
+    "sha256": "822a81ea109a524c16769701d9f3a465e42a2448bf41cac550547d98e7110150"
+  },
+  {
+    "path": "scripts/check-library-mutations.cjs",
+    "bytes": 12197,
+    "sha256": "77b8183e828182d102facde029b2930422174aa6121a3875ec62989724cf81bc"
+  },
+  {
+    "path": "scripts/check-library-pager.cjs",
+    "bytes": 7889,
+    "sha256": "670c3beba93468aa5987d34456f2c2c03841786a23cc0e2b1997b888ac48133d"
+  },
+  {
+    "path": "scripts/check-library-performance.cjs",
+    "bytes": 10763,
+    "sha256": "3439dc0188fcb0f4c76a209c7ea536ee9b71930c2e16ef21ab866fb19bcb90bb"
+  },
+  {
+    "path": "scripts/check-library-preferences.cjs",
+    "bytes": 5390,
+    "sha256": "b6a9d6d1d8d220b39b5de3cdd04ab34052ebcad890eed74b083956f0f499ed2b"
+  },
+  {
+    "path": "scripts/check-library-progress.cjs",
+    "bytes": 9509,
+    "sha256": "90efa40bf241b01350952f56c62228d9a34c02050e7e93c83a01655c6fbe7823"
+  },
+  {
+    "path": "scripts/check-library-sharing.cjs",
+    "bytes": 7191,
+    "sha256": "48f211d28c376a692f926f58dc92b58fd3d05c82eb9fbe8ad536bc29064966a1"
+  },
+  {
+    "path": "scripts/check-library-sort.cjs",
+    "bytes": 9810,
+    "sha256": "137d0cec44c9ec331d804c1a3dafc0de206c04a2dcbf06299041724a3f298e95"
+  },
+  {
+    "path": "scripts/check-library-state.cjs",
+    "bytes": 9753,
+    "sha256": "8171eb8fa470799a1495a7e98dacafdc0894d0e4c4fc74e1c4820af68b4fcbb4"
+  },
+  {
+    "path": "scripts/check-library-sync-integration.cjs",
+    "bytes": 9338,
+    "sha256": "e492551d05cc45ca64528c987e3b76b15c260186190c1cd7d5e03ab337643f60"
+  },
+  {
+    "path": "scripts/check-library-sync.cjs",
+    "bytes": 14752,
+    "sha256": "ef312cc254f1ca7d10c0df10be8aeac3d412b738589db221794ff0015660fa03"
+  },
+  {
+    "path": "scripts/check-liquid-glass.cjs",
+    "bytes": 5786,
+    "sha256": "75d3bc8a79280b9f8069e8df5332324e36c90bdfe2bfebf6852f5ca28f9a839d"
+  },
+  {
+    "path": "scripts/check-local-music.cjs",
+    "bytes": 20903,
+    "sha256": "6a9985abe38749e2a419a3ce70bdb9275b91145586b028b7f176886418c7d10f"
+  },
+  {
+    "path": "scripts/check-lossless-playback.cjs",
+    "bytes": 9680,
+    "sha256": "e803fd4ecab0ff8883e7558223fb3237eb451d6ea60c42e920b813a775d179ca"
+  },
+  {
+    "path": "scripts/check-lyric-scroll.cjs",
+    "bytes": 7976,
+    "sha256": "f6fff0e7d7b4a6efae27ae35fee63e9f794ae4e5ae0955a1663d88645c2a44cf"
+  },
+  {
+    "path": "scripts/check-lyrics-timing.cjs",
+    "bytes": 14402,
+    "sha256": "a0d2730281d4cd7367758577c68f49f06dee07cd407b6122f62ab46570b51367"
+  },
+  {
+    "path": "scripts/check-lyrics-translation.cjs",
+    "bytes": 21517,
+    "sha256": "a45e1113e2a04f9b4f5ee81ab67e29c6594778f184a67a71d092b118b53ef8ac"
+  },
+  {
+    "path": "scripts/check-lyrics.cjs",
+    "bytes": 27322,
+    "sha256": "1994ed310d456358930f9a3b366af922d01ed411ed1f87d38acc141504bd0a7f"
+  },
+  {
+    "path": "scripts/check-marquee.cjs",
+    "bytes": 5042,
+    "sha256": "a45fbfc7b03100a321a6cf003143b85665a226705743ee12c50c988f034813bb"
+  },
+  {
+    "path": "scripts/check-menu-preferences.cjs",
+    "bytes": 17516,
+    "sha256": "f8687be3263506dd0d6918ba97b4e84525fec3cc79a61e12343a7d9e996e38b9"
+  },
+  {
+    "path": "scripts/check-menu-reordering.cjs",
+    "bytes": 4200,
+    "sha256": "a4110a45fc321e21c8a426d2c023a35ebc79d69558d5b969129e62927b5e9e70"
+  },
+  {
+    "path": "scripts/check-mini-player-content.cjs",
+    "bytes": 9247,
+    "sha256": "d239bb8ad72c653facaa1e795484cfbab750c2277efe85c11c2c31d9dba81acd"
+  },
+  {
+    "path": "scripts/check-music-providers.cjs",
+    "bytes": 8001,
+    "sha256": "6001a9b8cbce8fecfd4c68dcf17ec3ae080ae7fd8bd94acae80c719ca58ecead"
+  },
+  {
+    "path": "scripts/check-music-source-sheet.cjs",
+    "bytes": 8932,
+    "sha256": "c56cd6ec499c41edf84ea6c90d6d9574fc701c29068cf178b4cc720bf48b375e"
+  },
+  {
+    "path": "scripts/check-music-sources.cjs",
+    "bytes": 2802,
+    "sha256": "f9c8bf31fea92171d91ca13045aaefb1e08e4c1ddfed52c48ced9d990668529e"
+  },
+  {
+    "path": "scripts/check-mybox.cjs",
+    "bytes": 16728,
+    "sha256": "ae3f8662c8ba68109373de9a436b6755fe3d36b5a42cb60bc349a19885bc63ee"
+  },
+  {
+    "path": "scripts/check-native-settings.cjs",
+    "bytes": 18540,
+    "sha256": "3462dd9aef93ee6086a84bcc4fa98c8ef3510eb1b06d80206174c01bee57437a"
+  },
+  {
+    "path": "scripts/check-native-tabs.cjs",
+    "bytes": 10441,
+    "sha256": "f641d6a41d15a7233e2457e12103c8b061014db5a1332cd99cf6fc0b78a3c0a8"
+  },
+  {
+    "path": "scripts/check-navigation.cjs",
+    "bytes": 23334,
+    "sha256": "1777ebe662fbbfbea568c7a396afe49573fd5cbf8c7bf58c3bd14ffbd96baee7"
+  },
+  {
+    "path": "scripts/check-offline-music.cjs",
+    "bytes": 21174,
+    "sha256": "6e88b0459229cad4aff4b03a1aff85b059fcd84c3cb478e0aae41a40138690b2"
+  },
+  {
+    "path": "scripts/check-open-source-notices.cjs",
+    "bytes": 4421,
+    "sha256": "7ec66dd2a831571cf1e949c113e37fe26ed38b3da3a9b7ad83ff5d442afa9adc"
+  },
+  {
+    "path": "scripts/check-playback-buffer.cjs",
+    "bytes": 23842,
+    "sha256": "a95a66a7bd423b06722595a56f08a2c16a224593e83fa746c0313e08c26b013a"
+  },
+  {
+    "path": "scripts/check-playback-energy.cjs",
+    "bytes": 5711,
+    "sha256": "80e677e7f263eba3ec6ee336992528bd07e26aab3ee6bc94a8a94fe3568c8448"
+  },
+  {
+    "path": "scripts/check-playback-recovery.cjs",
+    "bytes": 17172,
+    "sha256": "c7945cd0b4a5e718fbf8546696d135ebe81c84ebb8ac1f64197ad917b95c1e90"
+  },
+  {
+    "path": "scripts/check-player-background.cjs",
+    "bytes": 15420,
+    "sha256": "96d5fc8523396cfa3f90f30315e7940b7dd64ff23604ca7ce5f202ad02ffc46e"
+  },
+  {
+    "path": "scripts/check-player-gestures.cjs",
+    "bytes": 17133,
+    "sha256": "1344ce80970b5c18017216c7d306e21da671b6637268b5e3457282ab4522ace0"
+  },
+  {
+    "path": "scripts/check-player-options.cjs",
+    "bytes": 14246,
+    "sha256": "5396ca24b733e90a10e3bb6704fbd0d32896cd7ad0cc5b594e4bd481b7128e5c"
+  },
+  {
+    "path": "scripts/check-playlist-backup.cjs",
+    "bytes": 22974,
+    "sha256": "40759c61c0fd5ebc84dc65a3fb1f0264aeaea5000173621f4c9a5d6cbdd982e7"
+  },
+  {
+    "path": "scripts/check-playlists.cjs",
+    "bytes": 7229,
+    "sha256": "d7197592b6ea36032829435d45cf8e75e5408126fba23ede3c22db844d5c7b9e"
+  },
+  {
+    "path": "scripts/check-quick-hide.cjs",
+    "bytes": 24405,
+    "sha256": "44fe0f6027e4fb8e14d87fd1380bfa111d66ab194f2f8dfdbb6510725eb5f496"
+  },
+  {
+    "path": "scripts/check-resource-performance.cjs",
+    "bytes": 13288,
+    "sha256": "9214a1d602eb17d674ffdb7fe301c02ad73c5a0134379f9421e31e4881084176"
+  },
+  {
+    "path": "scripts/check-responsive-layout.cjs",
+    "bytes": 15035,
+    "sha256": "65a86a2875b07c6587e689c2a9071570bfc27b094803cabf9126f71f254bf81e"
+  },
+  {
+    "path": "scripts/check-s3.cjs",
+    "bytes": 23966,
+    "sha256": "40ffcc78e71599f6fd9fdfd4074112bb3212f07375d36663c63f0d7d816564a6"
+  },
+  {
+    "path": "scripts/check-scroll-edge-transition.cjs",
+    "bytes": 8690,
+    "sha256": "2732c1f67c6d45cb4d186ef78bcc8931967b7e304b6bbca5fadb8cf090185a80"
+  },
+  {
+    "path": "scripts/check-scroll-edges.cjs",
+    "bytes": 4492,
+    "sha256": "66e98b7c8e3e79eeef1c40bcac3cdac8f4ee6e5ecd63b497754d6f4ccf18d24f"
+  },
+  {
+    "path": "scripts/check-section-repeat.cjs",
+    "bytes": 21266,
+    "sha256": "935245b3ea4c3c1e3d9b8a3d300caeb2ec89259868e9c1199160097dcd267aa2"
+  },
+  {
+    "path": "scripts/check-seek-playback-settings.cjs",
+    "bytes": 4545,
+    "sha256": "4c2388a6e93effc5ed07b5bceaa9a4957e3da83b1a6031e0c0fa95af8bc8b684"
+  },
+  {
+    "path": "scripts/check-settings-backup.cjs",
+    "bytes": 33946,
+    "sha256": "55efaa068a4e37c4c91ac8427886cc9b5f77ce696f8e7409ba7722da2fd5f7dd"
+  },
+  {
+    "path": "scripts/check-sleep-timer.cjs",
+    "bytes": 18615,
+    "sha256": "ecc85c2c6ecd48278f8a794e605309eb37d00219f7d479adfb33404908c96ad1"
+  },
+  {
+    "path": "scripts/check-song-artwork.cjs",
+    "bytes": 35479,
+    "sha256": "f861bdd01c234a124bec098660cd3f1110bca0718cee89cf89b3d85d0d92bd16"
+  },
+  {
+    "path": "scripts/check-song-metadata.cjs",
+    "bytes": 18370,
+    "sha256": "5a0bc65adabd2d4dcceda4d3a601a287ffcb86969e6a5458cbb0930858890799"
+  },
+  {
+    "path": "scripts/check-source-contracts.cjs",
+    "bytes": 3717,
+    "sha256": "cd1a94e7b3eaf8777f4fe91aaa0e9f768ad7f22c912f068a0410021f516a8596"
+  },
+  {
+    "path": "scripts/check-startup-recovery.cjs",
+    "bytes": 10953,
+    "sha256": "bbc0e412dfd5d6e05cd7469b52da3e60413fd57371d1147eb085427a5fe25522"
+  },
+  {
+    "path": "scripts/check-streaming-quality.cjs",
+    "bytes": 9305,
+    "sha256": "a9422d31e88ea0abf629cee98d4b67fde88038f15bfb0cb934e2b184bdf7d1e2"
+  },
+  {
+    "path": "scripts/check-tab-scroll-indicator.cjs",
+    "bytes": 7949,
+    "sha256": "f3516f1689d045e9947ef04f73ff73d55e29acbafd60c76109e1015baeb460ef"
+  },
+  {
+    "path": "scripts/check-tablet-navigation.cjs",
+    "bytes": 10979,
+    "sha256": "02d0cc7d4bcacd5f588920f25daffb1f88c6789627b5ecbeeb7bdb51c9171517"
+  },
+  {
+    "path": "scripts/check-tablet-workspaces.cjs",
+    "bytes": 14494,
+    "sha256": "b0eb7e8982eac4e49a21830816dad865a289a1890d4ab79a9dfb8b7c0f3ac374"
+  },
+  {
+    "path": "scripts/check-text-wrapping.cjs",
+    "bytes": 8602,
+    "sha256": "33567a3ddc22cab61b48bc66fe56e80cf36ae54acb477db39f4cb5c96ba3a705"
+  },
+  {
+    "path": "scripts/check-theme-preferences.cjs",
+    "bytes": 8374,
+    "sha256": "05d8c7b298060005f45ef0e70b177d51a25dd98755db79cc62e26ef6fd6946eb"
+  },
+  {
+    "path": "scripts/check-web-metadata.cjs",
+    "bytes": 23514,
+    "sha256": "c16caba80a2a8755814ce3ac84d236515b7e24568e2d3e3cb7d519193a1b46c5"
+  },
+  {
+    "path": "scripts/diagnostics/cover-quality/AndroidManifest.xml",
+    "bytes": 503,
+    "sha256": "08276e5a8b4dabc9c8898bc781761972a5298bcd4309ca550d68650bbab1c5a5"
+  },
+  {
+    "path": "scripts/diagnostics/cover-quality/Probe.java",
+    "bytes": 5185,
+    "sha256": "9c63dbee7c0325cc1402d172d447ee615ec3660f331c3a53d18dae4e8037528c"
+  },
+  {
+    "path": "scripts/diagnostics/cover-quality/README.md",
+    "bytes": 2274,
+    "sha256": "fc520bf4a287014c1eb9b54bdd250bb2bcca532bf9dac2bd8e157040d4032875"
+  },
+  {
+    "path": "scripts/diagnostics/cover-quality/run.ps1",
+    "bytes": 2643,
+    "sha256": "98b88847ec20e2ac30a320cd83d729520b28459c9ed622c92f4373bbc5dff016"
+  },
+  {
+    "path": "scripts/diagnostics/cover-quality/source.cjs",
+    "bytes": 1148,
+    "sha256": "3d4a1e989490c9f0b4b10e8776fdd40621d94fa7aa867ca796e099867c40c321"
+  },
+  {
+    "path": "scripts/extract-native-notices.ps1",
+    "bytes": 1868,
+    "sha256": "96f8506876b1173e771d6a0f4c510f2516b6109636966360c3d23b4f070b960f"
+  },
+  {
+    "path": "scripts/generate-icon.js",
+    "bytes": 1965,
+    "sha256": "1c748101421a309d4f3f1b5e34d2086bb5e7698bac6f5fc44284ecadd3ebc7c5"
+  },
+  {
+    "path": "scripts/generate-mock-tone.js",
+    "bytes": 1275,
+    "sha256": "e8331afe05917f5867bc21bed97919fab21f5cb1dec093b95d495fbcff2b5939"
+  },
+  {
+    "path": "scripts/generate-open-source-notices.cjs",
+    "bytes": 10342,
+    "sha256": "5217225ff5502b9db1402b4309637a628052db7ce8ede46124f42e75a961031e"
+  },
+  {
+    "path": "scripts/prepare-ios-ui-preview.cjs",
+    "bytes": 5611,
+    "sha256": "c589472e24e12c2eb51bc94627d1231ab3df86477d169950cd927688d89424f4"
+  },
+  {
+    "path": "scripts/source-map-sources.cjs",
+    "bytes": 654,
+    "sha256": "beedf7d4c94511f3d44db3d62c602a52e729e00241767bc03bd29bedc3565a5e"
+  },
+  {
+    "path": "scripts/test-cloud-fixtures.cjs",
+    "bytes": 18781,
+    "sha256": "e3a25586722d2426ff39ed53d420b7f8124bd693fb089101e932fbeb5f4ee367"
+  },
+  {
+    "path": "scripts/test-provider-fixtures.cjs",
+    "bytes": 3689,
+    "sha256": "5428144703f86355aeb885d1e09d8ee31fdcd42a864adf547a34d72fdd0a086d"
+  },
+  {
+    "path": "scripts/test-source-loader.cjs",
+    "bytes": 1789,
+    "sha256": "e2d8f2604adad5e16b32a78049d6bb270c07fbd39c4c6930ee63c9594ac6c922"
+  },
+  {
+    "path": "scripts/verify-nas.ps1",
+    "bytes": 16076,
+    "sha256": "7e4874bd996a7bed400c7d99039ac8187e367b25943999f59d5bf8910b85e49d"
+  },
+  {
+    "path": "src/app/(settings)/_layout.tsx",
+    "bytes": 175,
+    "sha256": "df08d9ce3f733c432645d2a126801ee6b1b57da721dda0dce83d111599964fb3"
+  },
+  {
+    "path": "src/app/(settings)/hidden-music.tsx",
+    "bytes": 305,
+    "sha256": "ce42cc8a04fe4b356e83b30250b56652225a6bfd4430d06aea2f57ad5775c79b"
+  },
+  {
+    "path": "src/app/(settings)/hidden-playlists.tsx",
+    "bytes": 314,
+    "sha256": "485370abca29044f9e48f3435d9be2b9c8f719fb82b3193b36754101d351ff2e"
+  },
+  {
+    "path": "src/app/(settings)/settings/backup.tsx",
+    "bytes": 81,
+    "sha256": "21b64652e703d087c2add0764bcb4e2a687e7c96a59c0983e31f7782ce879d11"
+  },
+  {
+    "path": "src/app/(settings)/settings/bottom-menu.tsx",
+    "bytes": 395,
+    "sha256": "9a2e2647949c27185705d85f357eb7b345b44998781378913dbd527f5d39ae2a"
+  },
+  {
+    "path": "src/app/(settings)/settings/cloud/google-drive.tsx",
+    "bytes": 358,
+    "sha256": "acd4f6d72b6a074ff3c196f6ec2ff14a412648b78ec22a95041c46d611002b8b"
+  },
+  {
+    "path": "src/app/(settings)/settings/cloud/jellyfin.tsx",
+    "bytes": 99,
+    "sha256": "72627e87ff0f9e5cd5ffe002c29f056f99d45fba672e91fbb68d2fc67e66545b"
+  },
+  {
+    "path": "src/app/(settings)/settings/cloud/mybox.tsx",
+    "bytes": 70,
+    "sha256": "348189b26b5571639c5b06ac0230f55bcf78f9906a1ecd97a8476d9c1db735e8"
+  },
+  {
+    "path": "src/app/(settings)/settings/cloud/s3.tsx",
+    "bytes": 64,
+    "sha256": "3cd080ad2ec02a66de3324f2bbd625e428e730a2a2bcfd1ba1bc9b09b8eefffb"
+  },
+  {
+    "path": "src/app/(settings)/settings/cloud/synology.tsx",
+    "bytes": 360,
+    "sha256": "1abe6f3508afb24a45ddaa1665e6fce1c25c84f86f762d5d90b52a9f3a8b6e94"
+  },
+  {
+    "path": "src/app/(settings)/settings/cloud.tsx",
+    "bytes": 3058,
+    "sha256": "7d1b75dd6905173410987359aeeea1d176fe1b204fefc531598f605224be4cdb"
+  },
+  {
+    "path": "src/app/(settings)/settings/colors.tsx",
+    "bytes": 79,
+    "sha256": "8e480f61777bed8e4e369a610a5d78b8220588eedc12291876f6af47a99b67dd"
+  },
+  {
+    "path": "src/app/(settings)/settings/haptics.tsx",
+    "bytes": 747,
+    "sha256": "b19bd5e5d629d8492df47658dc189d8567b51613389dc7e7c1ab5405f24d9ca0"
+  },
+  {
+    "path": "src/app/(settings)/settings/index.tsx",
+    "bytes": 4185,
+    "sha256": "1c1e9fadb50c76b54d2cd3b532bd7640320e004d4683a585ed4cd7e5ef0bc428"
+  },
+  {
+    "path": "src/app/(settings)/settings/library.tsx",
+    "bytes": 1897,
+    "sha256": "b8d3b1ecf715597004670039219d608492cf4db7fe57931488db9c5c18dd7e82"
+  },
+  {
+    "path": "src/app/(settings)/settings/licenses.tsx",
+    "bytes": 85,
+    "sha256": "521c9c410e17a78da7a297bc3b8251fb5554cbd0f215becc24c04be4d619844a"
+  },
+  {
+    "path": "src/app/(settings)/settings/other.tsx",
+    "bytes": 1410,
+    "sha256": "240f71bdc1e956cac147c5a297fc4c5a089ce4d84bb5994590feca1999a54605"
+  },
+  {
+    "path": "src/app/(settings)/settings/playback.tsx",
+    "bytes": 3093,
+    "sha256": "a62b03a41543acc14e8355007a772fa15d13d7703ad987c4c99af7545853afc2"
+  },
+  {
+    "path": "src/app/(settings)/settings/player-menu.tsx",
+    "bytes": 395,
+    "sha256": "7cae90a0a4edff5ac0ead3a0da6a3bcaf43b6529d221734b2c04648c7d2d27b8"
+  },
+  {
+    "path": "src/app/(settings)/settings/playlist-backup.tsx",
+    "bytes": 90,
+    "sha256": "7e534b77fdf9be95f5732d98697e8b69cfb1d8cbdfba387049ea197efc5492e4"
+  },
+  {
+    "path": "src/app/(settings)/settings/quick-hide-preset.tsx",
+    "bytes": 320,
+    "sha256": "1de036cd294d126210621559c911fe68be73f1391fbe912ee2d26e1de48bf21c"
+  },
+  {
+    "path": "src/app/(tabs)/(library)/_layout.tsx",
+    "bytes": 1635,
+    "sha256": "567bed0f127e3937bc791349d1b783a39446a5938b0f6a0a3104b3726844b543"
+  },
+  {
+    "path": "src/app/(tabs)/(library)/album/[id].tsx",
+    "bytes": 15203,
+    "sha256": "eb0961290ab099f3db88df3a19a43d4c84cb73ba7d967e85c75182544e8f9e61"
+  },
+  {
+    "path": "src/app/(tabs)/(library)/artist/[id].tsx",
+    "bytes": 6262,
+    "sha256": "404f5405874b88603b0ed981f258cde412464390f992389fb86faba65bd684bc"
+  },
+  {
+    "path": "src/app/(tabs)/(library)/favorites.tsx",
+    "bytes": 87,
+    "sha256": "8cac7f372534cd714485fbe6dced684c0656a8503c6352ba8bd4c2d8b66b0d2b"
+  },
+  {
+    "path": "src/app/(tabs)/(library)/index.tsx",
+    "bytes": 11162,
+    "sha256": "9446459942a4dc101683acb63ba5d11b3b489258b7c2095717655b6b1800aacb"
+  },
+  {
+    "path": "src/app/(tabs)/(playlists)/_layout.tsx",
+    "bytes": 1285,
+    "sha256": "5a3b8fa915e4e946d1503e40113c0e9e3e4196db0814b762b795f482cd629ddb"
+  },
+  {
+    "path": "src/app/(tabs)/(playlists)/playlists/[id].tsx",
+    "bytes": 12205,
+    "sha256": "d194d7ef35620c996b20068d56949ef8a2ab679193225401086e2938391fd360"
+  },
+  {
+    "path": "src/app/(tabs)/(playlists)/playlists/index.tsx",
+    "bytes": 6503,
+    "sha256": "ae5df6ff3f9b72f93c8b9615f020a05bce9252c41c386db1801fdb58450b16eb"
+  },
+  {
+    "path": "src/app/(tabs)/_layout.tsx",
+    "bytes": 201,
+    "sha256": "5aa49a7c21d2765db907ff3976556f923f0c795a70c3c1e5c8d983328e36073d"
+  },
+  {
+    "path": "src/app/(tabs)/search/_layout.tsx",
+    "bytes": 898,
+    "sha256": "bd3cd97fff7ba174a9817275dbe2a9a6ea23459902bcf7d6ca282301152a0b01"
+  },
+  {
+    "path": "src/app/(tabs)/search/index.tsx",
+    "bytes": 60,
+    "sha256": "e71c20fa4a1cffc5d5f3617bcfddc8485f2802b91812bacd4640d42aa582bf7e"
+  },
+  {
+    "path": "src/app/_layout.tsx",
+    "bytes": 7889,
+    "sha256": "b9d0c4424f2580c0b7e465771934bfe9a3ec5fb9a132c12a080d244249007cff"
+  },
+  {
+    "path": "src/app/connect.tsx",
+    "bytes": 81,
+    "sha256": "f33aaa1dd74aa5edfd3ea38900ca3fa62686194dfffe204c413dfb75ce9a3c48"
+  },
+  {
+    "path": "src/app/index.tsx",
+    "bytes": 370,
+    "sha256": "5fbba74eb3277d7997fc0d8d2d5a9adae5a5d572c46c1339982dc963fe028281"
+  },
+  {
+    "path": "src/app/player.tsx",
+    "bytes": 77,
+    "sha256": "a69b193206912b8cd92348da9ad004b57b726af20a7a6e0b517703e81ee54875"
+  },
+  {
+    "path": "src/app/server-playlist.tsx",
+    "bytes": 116,
+    "sha256": "7aba3e1d57005e5cf3728d6b61b442c7c5a15f8860fc84e1327465d2cf3c8db5"
+  },
+  {
+    "path": "src/components/action-menu-position.ts",
+    "bytes": 1111,
+    "sha256": "661c169ed7e2a5c3f65e5f9115bc9c9d90cd6d8fdf39254b4546d7b0b1b919bf"
+  },
+  {
+    "path": "src/components/action-menu.tsx",
+    "bytes": 7098,
+    "sha256": "2207b0021b6e179c8b99263757b87d5f9a69f3efd40c6b7f8c18d4a5864a44f1"
+  },
+  {
+    "path": "src/components/animated-switch.ios.tsx",
+    "bytes": 984,
+    "sha256": "50c4ccaa890a4bf422b721ae03dc9d007937a1099c04c7a0b610831aed20f5e1"
+  },
+  {
+    "path": "src/components/animated-switch.tsx",
+    "bytes": 2944,
+    "sha256": "41d437fdef7d8ce0d150b6fe0995d66ee38cd56c913090dc509ac1f847ddb95c"
+  },
+  {
+    "path": "src/components/artwork.tsx",
+    "bytes": 2952,
+    "sha256": "aa05601b1a7131144656025e51fe5d958465b3236392d2c5100d3103f24670eb"
+  },
+  {
+    "path": "src/components/async-state.tsx",
+    "bytes": 1919,
+    "sha256": "89dff1d8776675b1b32fe2e0bc4c740b4cb293bd1b1ce5190330ebf8c5d75fae"
+  },
+  {
+    "path": "src/components/character-wrap.ts",
+    "bytes": 2665,
+    "sha256": "316cab8f169f085b3b684fe3b6eb597e5744169ef460fb279c7f357b53550c4f"
+  },
+  {
+    "path": "src/components/content-title-bar.tsx",
+    "bytes": 1531,
+    "sha256": "e883698a6510df99c982652bb62e8adbb5c69bf0779a32da240b147eaf796474"
+  },
+  {
+    "path": "src/components/content-transition.tsx",
+    "bytes": 1507,
+    "sha256": "6136f5a14b6d4d48aecc12245c7905656f81073e934ac2c527d6082c322328ee"
+  },
+  {
+    "path": "src/components/favorite-button.tsx",
+    "bytes": 3444,
+    "sha256": "7151264cae985144d3b4c24adbc883f8ac8ee6a50ef380332d426d7134c393a2"
+  },
+  {
+    "path": "src/components/glass-backdrop.ios.tsx",
+    "bytes": 808,
+    "sha256": "04c9d55d91661707f85823a5ac147dce32f271763c1200af8a7923d5739d532c"
+  },
+  {
+    "path": "src/components/glass-backdrop.tsx",
+    "bytes": 272,
+    "sha256": "571b64a1e6a1dd7dadb7eed37bdf81cbb404666b2c215f7bf82d800856a16ae9"
+  },
+  {
+    "path": "src/components/glass-controls.ts",
+    "bytes": 519,
+    "sha256": "52c74da32c8093040d9e71abb9ee3abf4dca1c6401aa6d95fd33974904b463d4"
+  },
+  {
+    "path": "src/components/legacy-tabs.tsx",
+    "bytes": 7175,
+    "sha256": "9ceb918c0cb02265aa918613bb4bec23411f9db7ee1c8b0238ff5e50373ceb3c"
+  },
+  {
+    "path": "src/components/list-loading.tsx",
+    "bytes": 929,
+    "sha256": "64f6e4f4877eb4045e2d7c34566e9ed3253275e5a3e94b641fa27c3dff540946"
+  },
+  {
+    "path": "src/components/marquee-text.tsx",
+    "bytes": 4871,
+    "sha256": "bc7188af82d3f1e7a9a7d58c779aa775a6b46f55b4eeed7d69cfd4753de2aad7"
+  },
+  {
+    "path": "src/components/mini-player-content.tsx",
+    "bytes": 5979,
+    "sha256": "c126c6d90c464f3627bbad32e0eeac07461ebc9897316dff494ecdfe92e9c877"
+  },
+  {
+    "path": "src/components/mini-player.tsx",
+    "bytes": 3853,
+    "sha256": "22817fde1c39e1182fa9fa07c35cb44d3f1a97f75405042a9bed793f134700b4"
+  },
+  {
+    "path": "src/components/native-tab-frame.ios.tsx",
+    "bytes": 3352,
+    "sha256": "82ce1c273c4423765fca994dc1d994b89535e106048a5e4c70c8de4015f66270"
+  },
+  {
+    "path": "src/components/native-tab-frame.tsx",
+    "bytes": 329,
+    "sha256": "6da1b89036600bbd5360a1cdd640f2c00a56d775a5b8a449091af08576469b71"
+  },
+  {
+    "path": "src/components/native-tabs-context.ts",
+    "bytes": 102,
+    "sha256": "10271bf9f135e8e138ef9feb1ededbca21e56d2ed824a31f879dc4fb2054f7b8"
+  },
+  {
+    "path": "src/components/platform-tabs.ios.tsx",
+    "bytes": 5295,
+    "sha256": "f2a7c4be325bea4ee100aee9c7d6ea66e6cbebece67fa039ff1238fcf4a51e46"
+  },
+  {
+    "path": "src/components/platform-tabs.tsx",
+    "bytes": 206,
+    "sha256": "18dad535b4aefd91f8023ee9e9b5e90ca9c214bc26d82c44517d53625846c1e6"
+  },
+  {
+    "path": "src/components/playback-glyph.tsx",
+    "bytes": 652,
+    "sha256": "a1fb83214b71b0771c1dc719b7deeca58a2cc3b32b1d2260ce31cdadd8e61df8"
+  },
+  {
+    "path": "src/components/progress-bar.tsx",
+    "bytes": 2163,
+    "sha256": "9c8f6d4356cd154d8f7561bb90af110a130e470a232084b1819f2a0c066c5c67"
+  },
+  {
+    "path": "src/components/screen-blur-target.ts",
+    "bytes": 299,
+    "sha256": "dc379bf005f7bcfbb3fb5679d3fcac0efe56d742c614964486f4d1c4fc6d9fe6"
+  },
+  {
+    "path": "src/components/screen-header.ios.tsx",
+    "bytes": 1863,
+    "sha256": "d5c08899a2c0484b220d92ff2b5676fc1b7a7ce5a87faafd569408006c3aa9a9"
+  },
+  {
+    "path": "src/components/screen-header.tsx",
+    "bytes": 1587,
+    "sha256": "57717e118537ebb69dbc349a4d82fa368eb75b7993d2a9f4f19a557def6b751c"
+  },
+  {
+    "path": "src/components/scroll-edge-child.tsx",
+    "bytes": 457,
+    "sha256": "fc3e1d16f6acd863901230728b6a91cdf9a3415d2e1f8f5b986fe3210c1067b7"
+  },
+  {
+    "path": "src/components/scroll-edge-fade-view.tsx",
+    "bytes": 3651,
+    "sha256": "e0c042de0dcfeffc0190d59f5630fae0aff95677872bf2f3140a584730fd3dd4"
+  },
+  {
+    "path": "src/components/scroll-edge-fade.tsx",
+    "bytes": 84,
+    "sha256": "6e60203b16be52ec8ec0867d85feb8b308c96d30c36861c4c522a64d2f15d383"
+  },
+  {
+    "path": "src/components/scroll-edge-fade.web.tsx",
+    "bytes": 84,
+    "sha256": "6e60203b16be52ec8ec0867d85feb8b308c96d30c36861c4c522a64d2f15d383"
+  },
+  {
+    "path": "src/components/settings-button.tsx",
+    "bytes": 3798,
+    "sha256": "0eb360e799eea187606fdebb3a7990acc83461d2fbad11c9545eb0998d061b59"
+  },
+  {
+    "path": "src/components/sidebar-header.tsx",
+    "bytes": 1611,
+    "sha256": "f7055e553828b918a0c8fbd18f15e38c629b3b3073d4dd94dd27e7885df43020"
+  },
+  {
+    "path": "src/components/song-row.tsx",
+    "bytes": 4608,
+    "sha256": "214ec42bf8cfd8f373b296274c2b1c09001a2946167f32fe14016b90cf82388f"
+  },
+  {
+    "path": "src/components/tab-bar-inset.ts",
+    "bytes": 195,
+    "sha256": "f2a6b3ad280e6a5f1501e4b338ff16701e50cdf5faea5a59e96b1a19078b586e"
+  },
+  {
+    "path": "src/components/tab-scroll-edge-fade.tsx",
+    "bytes": 6477,
+    "sha256": "601180bf8f4dc763474ba5ff10d73bfe76005f3db18a3b29584f988df4922869"
+  },
+  {
+    "path": "src/components/tablet-sidebar.tsx",
+    "bytes": 3692,
+    "sha256": "8a87ab902a2092d0f509786002ad4a396c89dab01f7625cb364bf646595b5f8e"
+  },
+  {
+    "path": "src/components/text-input.tsx",
+    "bytes": 3244,
+    "sha256": "988b9cd8bc0ebd0d053aea523f4f5142a0c0e2661d6cc95e31faf71541d77b54"
+  },
+  {
+    "path": "src/components/text.tsx",
+    "bytes": 2620,
+    "sha256": "d4bb3aceb7028c9ae73660c74d77358d3436760c58466108f9f6032075de3c3a"
+  },
+  {
+    "path": "src/components/toast-notice.tsx",
+    "bytes": 783,
+    "sha256": "df6a5c6c3978a862272d0bb4beb75acca918452118c6f6a6ff4f6ade8d083e35"
+  },
+  {
+    "path": "src/components/use-scroll-edge-transition.ts",
+    "bytes": 1022,
+    "sha256": "b9724950741fb543d38fdd5a5aef21021c244430350d5b05fb00717a7cc0057d"
+  },
+  {
+    "path": "src/components/use-scroll-edges.ts",
+    "bytes": 2958,
+    "sha256": "48361c1db00cc360837b2b62fea58674f106547262b11c8ffa3745a6b831981b"
+  },
+  {
+    "path": "src/features/artwork/album-artwork-editor.tsx",
+    "bytes": 2731,
+    "sha256": "524120a8f92407412ea1ce4a327aa93d0ab5b5ab6c920b878ae1273be55bbcff"
+  },
+  {
+    "path": "src/features/artwork/artwork-editor.tsx",
+    "bytes": 26248,
+    "sha256": "3bfd0fb0bf2aa76560ebb60502a57087a6c6129cd65a4de93f39e47428e1a9c3"
+  },
+  {
+    "path": "src/features/artwork/artwork-preview.tsx",
+    "bytes": 2392,
+    "sha256": "9c6b87426797adf6a5b2755f8eb48bd2539b32c3324a4dbfe68b88ce4725c907"
+  },
+  {
+    "path": "src/features/artwork/rules.ts",
+    "bytes": 3637,
+    "sha256": "e99687623f23b4b4aa1e86adedc811a976bc482abf14df3f6600817eeba9073e"
+  },
+  {
+    "path": "src/features/artwork/song-artwork-editor.tsx",
+    "bytes": 1212,
+    "sha256": "f647336d418ffc47d9bfa8f03b3195a764e9fc69d8b741832befb980bca8d796"
+  },
+  {
+    "path": "src/features/connection/connect-screen.ios.tsx",
+    "bytes": 6135,
+    "sha256": "ebe50c634237e92cf204b2ee08093c3081534ba2287b2166082f7b68d5431f32"
+  },
+  {
+    "path": "src/features/connection/connect-screen.tsx",
+    "bytes": 9612,
+    "sha256": "8d2e7ee3e28cfeeb66c0fb8d1a6f11707719a5c39c623a53a41a42fd1cb2a067"
+  },
+  {
+    "path": "src/features/connection/use-connect-form.ts",
+    "bytes": 3178,
+    "sha256": "f165e764bdbb576cdb53b3fd93f5358991770262e2d08428bf5a24a504f146be"
+  },
+  {
+    "path": "src/features/favorites/display-options.ts",
+    "bytes": 920,
+    "sha256": "645eb329bf3cdf8bc54aa75bebdb20ee42dba9f3e53bd241ec6948e826ef6cde"
+  },
+  {
+    "path": "src/features/favorites/display-preferences.ts",
+    "bytes": 943,
+    "sha256": "8955ebcc5e166363799eccf6ba384b2e2c2287c2035b6c15c31929b9902f9f9c"
+  },
+  {
+    "path": "src/features/favorites/favorite-display-settings.ios.tsx",
+    "bytes": 1263,
+    "sha256": "9c79ba89caa6ffe2a87ad86f313f04e0ef0e85b0e4640257c4d4e234b38eddec"
+  },
+  {
+    "path": "src/features/favorites/favorite-display-settings.tsx",
+    "bytes": 3050,
+    "sha256": "4834266cd48c4743d926d0f2119a68ee9e79d1725ab1c51ba1628e1f4706fd91"
+  },
+  {
+    "path": "src/features/favorites/liked-songs-screen.tsx",
+    "bytes": 2781,
+    "sha256": "454ece47fd473c6bb1c3e2f7b2e055999a7f577913db79e6ff1e6618ab949c76"
+  },
+  {
+    "path": "src/features/favorites/rules.ts",
+    "bytes": 1656,
+    "sha256": "942fe075aed819731871ad3fd0e0f2db1e91a6cdd6ae1d0c7aaa5019d211d1ef"
+  },
+  {
+    "path": "src/features/google-drive/add-documents.ts",
+    "bytes": 551,
+    "sha256": "bf875c355d5986b5d4852f19db4843eb2c3894d6005f31cc67dcd2fba055f316"
+  },
+  {
+    "path": "src/features/google-drive/document-settings.ios.tsx",
+    "bytes": 1744,
+    "sha256": "3fbd45a72c6973e23473e6e86175e1f1a2b895b1c7a19774d399f727b5ba1e81"
+  },
+  {
+    "path": "src/features/google-drive/document-settings.tsx",
+    "bytes": 6503,
+    "sha256": "5ba0c4ebfd72c387e2743755a244513f4f7fb238c7a1bc1ac6040ec24f4aaef1"
+  },
+  {
+    "path": "src/features/google-drive/file-picker.ios.tsx",
+    "bytes": 1755,
+    "sha256": "e4a84a6d7a8a02ed6d897288d9d98420eff0b7a97d51ec53a891be0a5f9d67cf"
+  },
+  {
+    "path": "src/features/google-drive/file-picker.tsx",
+    "bytes": 3006,
+    "sha256": "64e578e0cf74cadf924c99ba2b6488fa17adc050a81822691b715dd3f601e894"
+  },
+  {
+    "path": "src/features/google-drive/settings.ios.tsx",
+    "bytes": 5338,
+    "sha256": "92dceccd41d38a22fe5ae55444640d563438c9ee82e81622234ab9e9fdc95323"
+  },
+  {
+    "path": "src/features/google-drive/settings.tsx",
+    "bytes": 6689,
+    "sha256": "a6a6ed983e19f2e1584d725b029d3f4ac7d692f0c86a7323d14d57f095b1dfa3"
+  },
+  {
+    "path": "src/features/google-drive/use-drive-file-picker.ts",
+    "bytes": 1136,
+    "sha256": "1d6b1ba57939c33c72c75fc0fd98ffa0c88970bbadf52b4f30003d92da6fed55"
+  },
+  {
+    "path": "src/features/google-drive/use-google-drive-settings.ts",
+    "bytes": 1499,
+    "sha256": "f0cad66c9f072129fdefdc27f9451bccb714d2ed236a84e67bafa76ac3d92d4d"
+  },
+  {
+    "path": "src/features/haptics/haptic-settings.ios.tsx",
+    "bytes": 3262,
+    "sha256": "ce0ce7d2f42fa3ba09404c7d240c6c1efa6fbc7fd5659dafae923cdaab6fecb6"
+  },
+  {
+    "path": "src/features/haptics/haptic-settings.tsx",
+    "bytes": 6579,
+    "sha256": "e86b39dd46b5d0996e25f9c41cd43302d1d604886bdba84d1508b29c4f15f479"
+  },
+  {
+    "path": "src/features/haptics/preferences.ts",
+    "bytes": 2641,
+    "sha256": "c238529a24be337572fc143288c16c1a9e579cd3b57443b8fafeee00c6968874"
+  },
+  {
+    "path": "src/features/hidden-music/folder-tree.ts",
+    "bytes": 2916,
+    "sha256": "dcb3a5c2af7dec9d745a71c75df88c29a6571a9fec93b7611bc123fe3d659a64"
+  },
+  {
+    "path": "src/features/hidden-music/preset-editor.ios.tsx",
+    "bytes": 9497,
+    "sha256": "b5200a492a6d933322d5ac0253db4bd507274dbe1e0d9b563c3bc4975a9bd2a2"
+  },
+  {
+    "path": "src/features/hidden-music/preset-editor.tsx",
+    "bytes": 9724,
+    "sha256": "49e0719f3e3d31d0e14f981c3d4f270b9acfcae54d42b9d0bc8601dafff3d9c7"
+  },
+  {
+    "path": "src/features/hidden-music/preset-manager.ios.tsx",
+    "bytes": 6968,
+    "sha256": "0f76c9c6c9690474cbdf811b0ec6d31925f7087c0337d449998d70055d23afb4"
+  },
+  {
+    "path": "src/features/hidden-music/preset-manager.tsx",
+    "bytes": 9625,
+    "sha256": "dab61e9e4c81d32261ca6b84b12bc51c920601e4916ccbed477cc674d2abf4ec"
+  },
+  {
+    "path": "src/features/hidden-music/quick-hide.ts",
+    "bytes": 971,
+    "sha256": "ff30fbb6fb8a0448624c8483f9328d501704b1eb114267c38bcd1a2f78e09aad"
+  },
+  {
+    "path": "src/features/hidden-music/rules.ts",
+    "bytes": 5531,
+    "sha256": "4d9b77fa326665dded351ac20a9a3aed2810d973109b569f6cdff313b794782d"
+  },
+  {
+    "path": "src/features/hidden-music/settings-gate.ios.tsx",
+    "bytes": 2468,
+    "sha256": "96d63854314121fd3400fe36a2826c6494ab0706236b9d2992231873b076c82c"
+  },
+  {
+    "path": "src/features/hidden-music/settings-gate.tsx",
+    "bytes": 3824,
+    "sha256": "283d3bf42e74ca894b89ccbaccf871cd1ff56c1b2cbaae789553715ac9c4b03a"
+  },
+  {
+    "path": "src/features/hidden-music/use-hidden-settings-gate.ts",
+    "bytes": 703,
+    "sha256": "5f66424d34adfbb16bc00c45a6e1e3a5f2f0195387dbd42d2bab14cd3697a292"
+  },
+  {
+    "path": "src/features/hidden-music/use-preset-editor.ts",
+    "bytes": 3090,
+    "sha256": "949ef99cb4d2bafe8cd780b5a9cf8a2377df04ac1cdec74678bac47fa6e4a681"
+  },
+  {
+    "path": "src/features/hidden-music/use-preset-manager.ts",
+    "bytes": 1763,
+    "sha256": "a938d2eff5f7ee133827c534b19da176787b4407e8959f9dbc4b32f71b2c5d54"
+  },
+  {
+    "path": "src/features/jellyfin/settings.ios.tsx",
+    "bytes": 4531,
+    "sha256": "99396250d0ba72d3acc2afda3ca0020a1b1ad1e1015fc34a231d3feceab3cd7a"
+  },
+  {
+    "path": "src/features/jellyfin/settings.tsx",
+    "bytes": 7748,
+    "sha256": "a4c78a2de49e6fc63a3a058e53949fe124c287b3fa898ec3cfecccdc139b7413"
+  },
+  {
+    "path": "src/features/jellyfin/use-jellyfin-settings.ts",
+    "bytes": 2011,
+    "sha256": "24ec687f3de97e8c22e1b76850363c22ca976904549c0ab3b0fe652907c6405d"
+  },
+  {
+    "path": "src/features/library/album-disc-layout.ts",
+    "bytes": 1627,
+    "sha256": "9f6a60410ef1924a2956d2849c3e081e5e4faddc2b97c94da88055bd92abe967"
+  },
+  {
+    "path": "src/features/library/album-display-settings.ios.tsx",
+    "bytes": 1116,
+    "sha256": "460e79820f18b42546ce65e9bedbc63e0a82dc0676b943a75b0fd570852c1a92"
+  },
+  {
+    "path": "src/features/library/album-display-settings.tsx",
+    "bytes": 4526,
+    "sha256": "a9a45996c7b6f2cf3fcc79364f117a5c2762d24e855188adac5aeea1e16e830a"
+  },
+  {
+    "path": "src/features/library/album-library.ts",
+    "bytes": 3836,
+    "sha256": "126afcd61ca361491dc718c19e7e104bcba8181610f0b1ecf79485b86f5cd9c3"
+  },
+  {
+    "path": "src/features/library/album-properties.tsx",
+    "bytes": 2185,
+    "sha256": "c5ebe712af0860b28169e2cfca2b0a936ec642def88600ce894a9f4cb7667f9e"
+  },
+  {
+    "path": "src/features/library/artist-photo.tsx",
+    "bytes": 5383,
+    "sha256": "6c4ce78d5fadc28501d7504bd634c6da30f1645b133969b998e237a45c07e1a5"
+  },
+  {
+    "path": "src/features/library/detail-display-settings.ios.tsx",
+    "bytes": 1331,
+    "sha256": "49cafc9435ccd269a691b5247d60afbdb326c99787a7ecdf42f1e544422a660f"
+  },
+  {
+    "path": "src/features/library/detail-display-settings.tsx",
+    "bytes": 3939,
+    "sha256": "5598ddc9fc2b9306cd441d5b8c7a02ef0d870ca8fadcc09631421c20983a85a1"
+  },
+  {
+    "path": "src/features/library/detail-preferences.ts",
+    "bytes": 747,
+    "sha256": "7ce5bd11b91a08d6ca3cd83915fde343f6f097bb0139cf6b5f38a177a5f97f49"
+  },
+  {
+    "path": "src/features/library/folder-exclusion-settings.ios.tsx",
+    "bytes": 3061,
+    "sha256": "b5125d61cd6c86dde21286241595052eb62d28bc6044dd37806e801fb9275b78"
+  },
+  {
+    "path": "src/features/library/folder-exclusion-settings.tsx",
+    "bytes": 11301,
+    "sha256": "66c2f1fbea807e3ae7b27a6db8d3cd4a788521321dfc3df89030547e8d5af206"
+  },
+  {
+    "path": "src/features/library/library-load-status.tsx",
+    "bytes": 3667,
+    "sha256": "08b7a128d2887cfe85ccc9c3fb05c045c54b35c4df02736b80b0d4f77bd2d151"
+  },
+  {
+    "path": "src/features/library/library-page.tsx",
+    "bytes": 11876,
+    "sha256": "6c295e187d9f9c3d6e9e7a680a38c1cfa38193029cc565aa76c984081e1e45e6"
+  },
+  {
+    "path": "src/features/library/library-pager.tsx",
+    "bytes": 5332,
+    "sha256": "20913d48e8bdf8fefeee95ab17ff879e360401f3b6ebf7a0d7a5a1e746918e34"
+  },
+  {
+    "path": "src/features/library/library-result.ts",
+    "bytes": 2732,
+    "sha256": "8ded6b3955bb7961054307ec7859869c610b40f5cc091c4f7cdcdd59a17b29e9"
+  },
+  {
+    "path": "src/features/library/library-segments.ios.tsx",
+    "bytes": 1482,
+    "sha256": "7927a03df7c5189a7bba55e77e7f356a50ab7672eddcb8ec3b866a91d88b4f55"
+  },
+  {
+    "path": "src/features/library/library-segments.tsx",
+    "bytes": 331,
+    "sha256": "8c6e6f1ddb7920b6aeab0b5f28f3da3c1427e4643439c1b5f6a48837939400c7"
+  },
+  {
+    "path": "src/features/library/library-sheet.ios.tsx",
+    "bytes": 2342,
+    "sha256": "6a781e950e2823beaa86a4e86515e4561ccf72d821d1f491e3d5e4a59e1a3012"
+  },
+  {
+    "path": "src/features/library/library-sidebar.tsx",
+    "bytes": 5053,
+    "sha256": "292e37ba2453d34b6de79fdf00f09f2d175949373466625ed5460985f7ece10a"
+  },
+  {
+    "path": "src/features/library/library-sort-control.ios.tsx",
+    "bytes": 1861,
+    "sha256": "d3bd8754278df7d7e7c0aeb1aca4ac16dae1229ebf0335d60b17998f4b439799"
+  },
+  {
+    "path": "src/features/library/library-sort-control.tsx",
+    "bytes": 3086,
+    "sha256": "28e223dc0d81703a939ae3147c82a7145b7d75eea90f88ebebb1da78be3db8e9"
+  },
+  {
+    "path": "src/features/library/library-sort-options.ts",
+    "bytes": 715,
+    "sha256": "4751276e8b24601fdf04f84adb19d649d5dbda0907cc852857e47f0155cd4a5d"
+  },
+  {
+    "path": "src/features/library/load-progress.ts",
+    "bytes": 1590,
+    "sha256": "7d7dba4927209b98fcd683bd1b4cd1bbfdcf1f396de3a13ef5be09e88166790a"
+  },
+  {
+    "path": "src/features/library/load-song-library.ts",
+    "bytes": 2223,
+    "sha256": "5be847113c68c298ea75b4bd267ed29e8828317db5625370922b4e5b4f8050d6"
+  },
+  {
+    "path": "src/features/library/local-music-controls.tsx",
+    "bytes": 6983,
+    "sha256": "ca52a81c06842bdf4b4ad039d14f67cbad722f19baa2d95f7b4767de331c8670"
+  },
+  {
+    "path": "src/features/library/mock-repository.ts",
+    "bytes": 2720,
+    "sha256": "984c313bcb85b225fe7f72fc9c8d733809d1597d34fbfac838572979bf175d45"
+  },
+  {
+    "path": "src/features/library/music-source-menu-content.ios.tsx",
+    "bytes": 3145,
+    "sha256": "880ea37e3eb106050d606e3a62203bcc0c3fb1fa3475559d75fd3803e080b326"
+  },
+  {
+    "path": "src/features/library/music-source-menu-content.tsx",
+    "bytes": 6550,
+    "sha256": "6943e81a2d575529b8b22045bcdb4fb6e35f18809d4e6b2ccd88e554e2b65fee"
+  },
+  {
+    "path": "src/features/library/music-source-menu-model.ts",
+    "bytes": 1206,
+    "sha256": "e2f9757b1347b8c608c3478b235ffc098540d9273471eb960c25721fee8c4ca6"
+  },
+  {
+    "path": "src/features/library/music-source-sheet.ios.tsx",
+    "bytes": 72,
+    "sha256": "724aaa75f2ff8be61680ea3964bed47ec36c6c667a4bd79bad5a16a0f4f73122"
+  },
+  {
+    "path": "src/features/library/music-source-sheet.tsx",
+    "bytes": 229,
+    "sha256": "7e518f3fe2d77712c843b8090562e4fde892dbfc5a97993e27f7e747c6962290"
+  },
+  {
+    "path": "src/features/library/music-source-trigger.ios.tsx",
+    "bytes": 1282,
+    "sha256": "baf81845c51abcf2d4711a2ae6a3718dd584bb22b2d79fc97a7c7335d80a1a10"
+  },
+  {
+    "path": "src/features/library/music-source-trigger.tsx",
+    "bytes": 1904,
+    "sha256": "6afb6fa2ca71c7716175d997c985451116cec1ff37f2c345003f3610463905fd"
+  },
+  {
+    "path": "src/features/library/nas-library-cache.ts",
+    "bytes": 4596,
+    "sha256": "b4bb4bb76ee2aab7ede88a44d49a5cc16753384b01924a74a0c5aea8470e2b2d"
+  },
+  {
+    "path": "src/features/library/play-album.ts",
+    "bytes": 371,
+    "sha256": "82ec11ab7e42f78f381832c5bbc4f296f8380130456af14e7cc555cc2e049a27"
+  },
+  {
+    "path": "src/features/library/prepare-album-colors.ts",
+    "bytes": 882,
+    "sha256": "11ac7b3d81091870ab1bce23a8830425957101db87025fd6ea91256237b4e06d"
+  },
+  {
+    "path": "src/features/library/queries.ts",
+    "bytes": 8185,
+    "sha256": "6e40a666d0ec89a58af952dfead96615467764bee88d113dd038bff5b7d943b7"
+  },
+  {
+    "path": "src/features/library/refresh-library.ts",
+    "bytes": 1885,
+    "sha256": "9a0243c20284c5e3a8922893bf5825c81d069d5bca311a51b6e81a9118585715"
+  },
+  {
+    "path": "src/features/library/refresh-music-library.ts",
+    "bytes": 2937,
+    "sha256": "7074681664b549dedd8e630e4ed280e7674b360c58479abbc01f9ddabfd28bc1"
+  },
+  {
+    "path": "src/features/library/refresh-source-libraries.ts",
+    "bytes": 1545,
+    "sha256": "2c8e02d87887b1e4dd28ad18c5273690d90d336e0df29b11a4444f11a203b071"
+  },
+  {
+    "path": "src/features/library/repository.ts",
+    "bytes": 126,
+    "sha256": "9a2e3808614b7a1e59480f6c1dbceb1bb177e81f88150dc43c97997e52fcf7d0"
+  },
+  {
+    "path": "src/features/library/search-screen.tsx",
+    "bytes": 7613,
+    "sha256": "6078caa2cc8c139553ee6bccc7af2d8586e7bb1bdf12cc717410d8985d34381d"
+  },
+  {
+    "path": "src/features/library/search-songs.ts",
+    "bytes": 1371,
+    "sha256": "3038c5aa79d45294b606ffc9a45640b09ebdca626493b1660b948877f4d05c32"
+  },
+  {
+    "path": "src/features/library/song-library.ts",
+    "bytes": 3093,
+    "sha256": "63a4b662e789ae17c34469e281dfe8bb329f0653c0791929aa5428920b376723"
+  },
+  {
+    "path": "src/features/library/song-properties.tsx",
+    "bytes": 2989,
+    "sha256": "cf3914ddde53afbee08617a623539abaf313499b48fadcc4952328a6cbb76549"
+  },
+  {
+    "path": "src/features/library/sort-library.ts",
+    "bytes": 672,
+    "sha256": "701ce4063937a9b9dff8b722e04db42d5a563e8d1f56be74dce576e05f3c9ca1"
+  },
+  {
+    "path": "src/features/library/source-library-selection.ts",
+    "bytes": 1736,
+    "sha256": "f809bb33cd946cb5fe45d8bd2042e08ce80dc32958910bf4c811e5b1adc94a7f"
+  },
+  {
+    "path": "src/features/library/use-album-colors.ts",
+    "bytes": 1595,
+    "sha256": "351ec8495d262536e53764c3724eda7c8acdcf827f5ed22289bbb5bd3049f28c"
+  },
+  {
+    "path": "src/features/library/use-album-header.ts",
+    "bytes": 1514,
+    "sha256": "3c67e359214b6487278c81b311fb46c9d8c6e71465f7f1b140cc8aba3d9e7492"
+  },
+  {
+    "path": "src/features/library/use-folder-exclusion-settings.ts",
+    "bytes": 2951,
+    "sha256": "17576b1d109d139788f8d4c2ad86af61c6187dc3ebef3a291c137d3ccc9c7559"
+  },
+  {
+    "path": "src/features/library/use-library-activity.ts",
+    "bytes": 526,
+    "sha256": "520b4e2f3b3765e307307ab2f68330c3c45b94e4826980bb4f13544ca72553e1"
+  },
+  {
+    "path": "src/features/library/use-library-controls.ts",
+    "bytes": 4745,
+    "sha256": "ddcc8ed383aa34f462a8cb1fab17d958009d9e4736d8532ec86733ae894dcd35"
+  },
+  {
+    "path": "src/features/library/use-music-sources.ts",
+    "bytes": 630,
+    "sha256": "b25afa75a068bc92c40647c4aaaf0c6ddf24e82cc3086020843559b438d7ff03"
+  },
+  {
+    "path": "src/features/library/use-refresh-library.ts",
+    "bytes": 2177,
+    "sha256": "6b1c9f28766231bb623fbfc90316929da78e0b6cbb62af61c44bc0e376144ea9"
+  },
+  {
+    "path": "src/features/library/use-source-libraries.ts",
+    "bytes": 1974,
+    "sha256": "52b74c5182678a5f8379e3f7072d9170b965cc51cbbbffcf83f46a5665131211"
+  },
+  {
+    "path": "src/features/lyrics/load-lyrics.ts",
+    "bytes": 2382,
+    "sha256": "4953b6b0b90e2a39f755d5bcb5b4fead547bdf86918600e3ad2b885e6d87dc7a"
+  },
+  {
+    "path": "src/features/lyrics/lyrics-edge-fade.tsx",
+    "bytes": 1194,
+    "sha256": "259941fb1584cd8f416e412bbd9a42c8599a13e667d6326f4ae794682d42e0a5"
+  },
+  {
+    "path": "src/features/lyrics/lyrics-edge-fade.web.tsx",
+    "bytes": 677,
+    "sha256": "0079c60cd16b253d16ffa1f1ce1285d9c65cbeb5d9d92258ad6c625c0787a3b3"
+  },
+  {
+    "path": "src/features/lyrics/lyrics-panel.tsx",
+    "bytes": 14598,
+    "sha256": "82712315da924ca1464ed748e40cfcdac9b370689f1908da6234b8d851b086b1"
+  },
+  {
+    "path": "src/features/lyrics/lyrics-source-control.tsx",
+    "bytes": 3215,
+    "sha256": "2dfeab291e10f6945e33a4218067a20d9504867c0154eaf38995818fc605dbae"
+  },
+  {
+    "path": "src/features/lyrics/lyrics-timing-controls.tsx",
+    "bytes": 4731,
+    "sha256": "7ee29e844daa573374bb7ac4ea50af37669f3e47b449e165ada0e732fca710ff"
+  },
+  {
+    "path": "src/features/lyrics/lyrics-translation-controls.tsx",
+    "bytes": 5023,
+    "sha256": "892810269df90f6d662058d29c8377c94ccb0c4c9c3d510d26c8305993686d57"
+  },
+  {
+    "path": "src/features/lyrics/timing.ts",
+    "bytes": 756,
+    "sha256": "254c49e4a4a730e87d5e596042ff317b339ee2713790cb3b21c90a8bab44f128"
+  },
+  {
+    "path": "src/features/lyrics/translation-options.ts",
+    "bytes": 2064,
+    "sha256": "0162724dc5f6b1581ddcd2c7f627620a2f180dae20f2ed5fab61bc0ef892ee40"
+  },
+  {
+    "path": "src/features/lyrics/translation-settings.ios.tsx",
+    "bytes": 2798,
+    "sha256": "8c4d21a90b2151c0c2d356cda1a771dec587e523781dd737395aa6c79009370d"
+  },
+  {
+    "path": "src/features/lyrics/translation-settings.tsx",
+    "bytes": 6381,
+    "sha256": "d8a68eceaedeeb1c1a0dee2954ea73d361d7846d079832f6c0089987c31e083a"
+  },
+  {
+    "path": "src/features/lyrics/use-active-lyric-index.ts",
+    "bytes": 2384,
+    "sha256": "c6d29cebd801f5713b77aa31f94bd921f2eaedf93ac68fa33ee96d2d0b286b67"
+  },
+  {
+    "path": "src/features/lyrics/use-lyric-scroll.tsx",
+    "bytes": 7154,
+    "sha256": "272099720938e2f7565e0d9bfeea6cace268dd6e0c87eb7dbc1313cfde484fde"
+  },
+  {
+    "path": "src/features/lyrics/use-lyric-timing.ts",
+    "bytes": 1382,
+    "sha256": "bb183adf6113b8fa402dc80c53a7e2bab1690c932f7aa5dfbd8619deba040ba4"
+  },
+  {
+    "path": "src/features/lyrics/use-lyrics-translation.ts",
+    "bytes": 4002,
+    "sha256": "7fe46d24c838ec41b788a16c891cf77e5ed1ce6a66b23689e12e9b547705e09d"
+  },
+  {
+    "path": "src/features/lyrics/use-lyrics.ts",
+    "bytes": 2169,
+    "sha256": "ee8a2c135d50978d93f72c990dff312e8f34b9c3534e76d2791bc13a066fcbae"
+  },
+  {
+    "path": "src/features/metadata/automatic-metadata.tsx",
+    "bytes": 3735,
+    "sha256": "537b93ac717aa7a8896c81f9774a763b7c7dbdf15e58329845cfd89511a91898"
+  },
+  {
+    "path": "src/features/metadata/file-options.ts",
+    "bytes": 2831,
+    "sha256": "e045391f60b844b8d1589f4d6833abb2dad87d047c10060d539977a1d3816d59"
+  },
+  {
+    "path": "src/features/metadata/metadata-editor-form.tsx",
+    "bytes": 13414,
+    "sha256": "73a9369679fd1d2bdb8b1b67eda83cb832889195c26a5c2aad0bf40b4c00dfcb"
+  },
+  {
+    "path": "src/features/metadata/metadata-editor.tsx",
+    "bytes": 3894,
+    "sha256": "787ea79f57e4bb80085b93604705a99f7b58bf66380347a67ec95300d64755fa"
+  },
+  {
+    "path": "src/features/metadata/metadata-web-options.tsx",
+    "bytes": 7610,
+    "sha256": "399a28faabf91e2a24498ce5f2e0531c48647af7e9eb4ae000a266a2879a2a92"
+  },
+  {
+    "path": "src/features/metadata/rules.ts",
+    "bytes": 6841,
+    "sha256": "37ecadb258792ea55813e4b350e260651b2a886a2400c8af79216bbd7770a571"
+  },
+  {
+    "path": "src/features/metadata/use-web-metadata-settings.ts",
+    "bytes": 1341,
+    "sha256": "fd098494553c50931079ddd32a2621a2b09106cd848d680b089233054dfdc417"
+  },
+  {
+    "path": "src/features/metadata/web-metadata-settings.ios.tsx",
+    "bytes": 2868,
+    "sha256": "2cffb732f3461f8038cbc4900c09a041f91c567bdfa63d805db5453f999aad27"
+  },
+  {
+    "path": "src/features/metadata/web-metadata-settings.tsx",
+    "bytes": 6393,
+    "sha256": "ac76229a6c48276262a2de7bfafa6e4bb1d49843e6205392ace3c485bd422ba3"
+  },
+  {
+    "path": "src/features/metadata/web-rules.ts",
+    "bytes": 3267,
+    "sha256": "49af6cf23f45ecaa5c8fc6741139e9b0d7cc5481d034012b5b10e24ba19a0cd2"
+  },
+  {
+    "path": "src/features/mybox/settings.ios.tsx",
+    "bytes": 4326,
+    "sha256": "eb0899a08e3ac17dbc4f045e333da7fc975acea88b61d70710fd5b4d6134b6cc"
+  },
+  {
+    "path": "src/features/mybox/settings.tsx",
+    "bytes": 7232,
+    "sha256": "937d8cee4d35352772cfc05089e279fd3c4bae44a2e21cbcf43f0bfde5bb9f06"
+  },
+  {
+    "path": "src/features/mybox/use-mybox-settings.ts",
+    "bytes": 686,
+    "sha256": "64ab9b2bdec29404485ebc74b836f47292f07fb9f7dd95447b03e462c4690c76"
+  },
+  {
+    "path": "src/features/offline-music/delete-local-song-dialog.tsx",
+    "bytes": 4182,
+    "sha256": "005d1090b07a85a702660c6ee69414945d7b416c6e35e586cffd1388803a6037"
+  },
+  {
+    "path": "src/features/offline-music/download-status.tsx",
+    "bytes": 3085,
+    "sha256": "5fea2fbe51b6f850c2386d4af206940a58270ad8aa20cc75255046011d1d32e0"
+  },
+  {
+    "path": "src/features/playback/artwork-colors.ts",
+    "bytes": 2208,
+    "sha256": "03285a7339995e0fca3919400acfbb8aeffaf54f0c26cb5d2a2f0f597920be75"
+  },
+  {
+    "path": "src/features/playback/background-layers.ts",
+    "bytes": 1417,
+    "sha256": "2ee5d3eeb4d80e8edb407908962bff2d710be6c0f6dd62dd8030390b1738f1db"
+  },
+  {
+    "path": "src/features/playback/lossless-badge.tsx",
+    "bytes": 1342,
+    "sha256": "e2c404a0934ff979637dbd6b7c6640a1573af7ab70b3a04e407c1ca83500733a"
+  },
+  {
+    "path": "src/features/playback/menu-styles.ts",
+    "bytes": 1010,
+    "sha256": "1e139486f8a2e49b3fb4243489b1f4a271816119f7ba6bce27a8c39d75425daa"
+  },
+  {
+    "path": "src/features/playback/play-and-open-player.ts",
+    "bytes": 766,
+    "sha256": "981e5f0cf6666ace646d405e5db17a1b5a12684c6ba50a2e0420d20ba697c7c1"
+  },
+  {
+    "path": "src/features/playback/playback-options-settings.ios.tsx",
+    "bytes": 1034,
+    "sha256": "eebef3d7b86b13633dee05f8eefe5f700084067830fe0c44021bab3077527d36"
+  },
+  {
+    "path": "src/features/playback/playback-options-settings.tsx",
+    "bytes": 4585,
+    "sha256": "82bdd759952c3bd27735c8f992e48671b4b1f499c678bfc4fd36f315ad74a567"
+  },
+  {
+    "path": "src/features/playback/playback-speed-options.tsx",
+    "bytes": 4077,
+    "sha256": "4148c6a640d1340863f9b599d8acbde4b2aa628c1587974f0fbcd9b9cf534402"
+  },
+  {
+    "path": "src/features/playback/player-background.tsx",
+    "bytes": 2701,
+    "sha256": "60beaa247f6010ef6539a65a1300cfd1527d2e8665503dbf82cf326203bf4b53"
+  },
+  {
+    "path": "src/features/playback/player-header.tsx",
+    "bytes": 1883,
+    "sha256": "118103fcdfc083572bd4de391d2936cf6a1e90350246e7fd31d6f86922860fb5"
+  },
+  {
+    "path": "src/features/playback/player-menu.tsx",
+    "bytes": 13485,
+    "sha256": "a3a800b134465722fa333084709f3db7a48a485c57a1ab2cc36038d3fca42a11"
+  },
+  {
+    "path": "src/features/playback/player-progress.tsx",
+    "bytes": 4364,
+    "sha256": "2a1403aa4c8bc29d7d3f6573838947e9505c050279dda80e9e2281d2e2e6ff33"
+  },
+  {
+    "path": "src/features/playback/player-queue.tsx",
+    "bytes": 2281,
+    "sha256": "568a157caeba44891805a708ce8eee67f18d0fa1aed9fee546db17fdf91d4312"
+  },
+  {
+    "path": "src/features/playback/player-screen-styles.ts",
+    "bytes": 2234,
+    "sha256": "6f6cecc08b4da47a9664aa0730848611c1be4361597c97f62aa5f1af2ba2cc80"
+  },
+  {
+    "path": "src/features/playback/player-screen.tsx",
+    "bytes": 16587,
+    "sha256": "8ccfe4815179b351d9c7680ff7ce637c9e3fbccb5b31e16e58271cc485c1f9bf"
+  },
+  {
+    "path": "src/features/playback/player-song-details.tsx",
+    "bytes": 2595,
+    "sha256": "0c6b4944e9fde8bf0ab8f6d2ea9f493b7c14476cdf4130c21b6c2f3ee1282ed2"
+  },
+  {
+    "path": "src/features/playback/player-transport-controls.tsx",
+    "bytes": 4761,
+    "sha256": "9658edb8cd03976c3791f6fddd6a1910d36d824d3be2f6de4f7d798ed852b9af"
+  },
+  {
+    "path": "src/features/playback/section-repeat-options.tsx",
+    "bytes": 6225,
+    "sha256": "b41d8e0a1b89a32db338cd0a5adae88fcc3ce6f28132844a541e8984c600e65e"
+  },
+  {
+    "path": "src/features/playback/seek-playback-settings.ios.tsx",
+    "bytes": 1062,
+    "sha256": "35a0b4cd2b00f2028c61129ceb9f5ab208d95bf26d5372a78b19a7fec4fb0bbf"
+  },
+  {
+    "path": "src/features/playback/seek-playback-settings.tsx",
+    "bytes": 2596,
+    "sha256": "3b4425020ab11de3af4763c346450f2552862ccf6db2968580c920189cf2d0ab"
+  },
+  {
+    "path": "src/features/playback/sleep-timer-options.tsx",
+    "bytes": 7412,
+    "sha256": "fb5a735f8a66b99948adb0c3b269e054703b04894fd52adb8f02a0f314b43bdd"
+  },
+  {
+    "path": "src/features/playback/streaming-quality-settings.ios.tsx",
+    "bytes": 1443,
+    "sha256": "13cdfa0e0482f59509c80ed64e074527dee786449f9c975ce7d9bd927db37c9a"
+  },
+  {
+    "path": "src/features/playback/streaming-quality-settings.tsx",
+    "bytes": 4834,
+    "sha256": "e0e49357cc51db451a679d3f3b3b8e4da549d9a45f2cb757e347366757bc9661"
+  },
+  {
+    "path": "src/features/playback/use-artwork-colors.ts",
+    "bytes": 697,
+    "sha256": "d39ce20005715ef3f5215dac2811f7cb2e7ce74942af33354218a9a13fde7c58"
+  },
+  {
+    "path": "src/features/playback/use-artwork-swipe.ts",
+    "bytes": 3059,
+    "sha256": "c9936e3d25456f9d3873d380f17d66dd01edba0d3e5faedb9eac57838926fce6"
+  },
+  {
+    "path": "src/features/playback/use-playback-visibility.ts",
+    "bytes": 632,
+    "sha256": "a89822def872137aec7b3ed979b6c8e9d58df8435f1578c37250fd31b41f3108"
+  },
+  {
+    "path": "src/features/playback/use-player-dismiss.ts",
+    "bytes": 4905,
+    "sha256": "b4d1b3f4c9643c47dfe2095b5f79f80a8cf2fc8a97c6cd94fbdb0bcdadcd3e8f"
+  },
+  {
+    "path": "src/features/playlists/backup-files.ts",
+    "bytes": 317,
+    "sha256": "8af5a1543e5f18f3e89baa4b7bab10f556072e6381e7a0bc58dc5aee5d287969"
+  },
+  {
+    "path": "src/features/playlists/backup-format.ts",
+    "bytes": 3450,
+    "sha256": "380c30d12148d29915e34d1d9234d990a5cf4eb3705bc15ce0cd7cbce6e0d501"
+  },
+  {
+    "path": "src/features/playlists/backup-settings.ios.tsx",
+    "bytes": 4301,
+    "sha256": "97fdc081c9a855c9b6d113b9d3845c2d268d4d36618c3ffc4f40eb78b1dbd1cf"
+  },
+  {
+    "path": "src/features/playlists/backup-settings.tsx",
+    "bytes": 9446,
+    "sha256": "035c0dfbfaedcd7e0b23b47f1e21f80738613dd84e682a160075767d6e2081d2"
+  },
+  {
+    "path": "src/features/playlists/dialogs.tsx",
+    "bytes": 14666,
+    "sha256": "87ff13e78a52d4f81ef4b383523c42953e62429aaac93a5146e5507ed2df3c26"
+  },
+  {
+    "path": "src/features/playlists/hidden-playlist-manager.ios.tsx",
+    "bytes": 2671,
+    "sha256": "1ac3bf5e773fe57e86d9d99367c878c0e958735501455a419f48f29c5d45d18b"
+  },
+  {
+    "path": "src/features/playlists/hidden-playlist-manager.tsx",
+    "bytes": 5917,
+    "sha256": "3ceeef3bb3b3a4a993dfb88546c874dc690396f16a8276d13e43e0e7cda7004c"
+  },
+  {
+    "path": "src/features/playlists/rules.ts",
+    "bytes": 2317,
+    "sha256": "ebc0e17cb2f1b4129fbc0f759b1f19227ba58df55632969c9be42448c79e9e8b"
+  },
+  {
+    "path": "src/features/playlists/server-playlists.tsx",
+    "bytes": 8946,
+    "sha256": "c076d1b5494f2a08f70b3a8dcc9c08f0d48c33ea6f50fd78f262d0c97d2ddb4a"
+  },
+  {
+    "path": "src/features/playlists/song-picker.tsx",
+    "bytes": 6367,
+    "sha256": "b8d280652825bd60c4594805220c153e9eced0ac42d984ca35a8c845a09b6541"
+  },
+  {
+    "path": "src/features/playlists/use-hidden-playlist-manager.ts",
+    "bytes": 629,
+    "sha256": "b8f286397f9ee180b766edaf047cd5fb5f2a5e00e08382ead359e26fc26b4e96"
+  },
+  {
+    "path": "src/features/playlists/use-playlist-backup-settings.ts",
+    "bytes": 3691,
+    "sha256": "176144721941219fed491cdc4aa16c9f23cd951c5cf1ac363a993c9d49a89c8b"
+  },
+  {
+    "path": "src/features/s3/settings.ios.tsx",
+    "bytes": 4855,
+    "sha256": "ec987b746e0da41f94dc83094ce6c6be922d3e0b3fc773bc73dc5e7c9811b23d"
+  },
+  {
+    "path": "src/features/s3/settings.tsx",
+    "bytes": 7224,
+    "sha256": "4aa06a8d119ff79119ccd6922daa7a8c02cd3448933d87482df43f686696eca6"
+  },
+  {
+    "path": "src/features/s3/use-s3-settings.ts",
+    "bytes": 1580,
+    "sha256": "29a2ea4728252cfb21c81ab4c8aec85506cc2ba8d14e53240b1cfb0a03b4527c"
+  },
+  {
+    "path": "src/features/settings/backup-files.ts",
+    "bytes": 3295,
+    "sha256": "f385d71e60a317a1ae7c44c1d49ee66287c1ff5c8bd6cac59140578b1b4d9c2a"
+  },
+  {
+    "path": "src/features/settings/backup-format.ts",
+    "bytes": 7175,
+    "sha256": "7573114d53e9704899018cd236aa875ddbd19e13c8e6bb617a9abf38fe8fa407"
+  },
+  {
+    "path": "src/features/settings/backup-settings.ios.tsx",
+    "bytes": 6287,
+    "sha256": "15a85c1a0074605f9a525d10d38eeaee65e7ec31ee42111c720fd3d3c74c9402"
+  },
+  {
+    "path": "src/features/settings/backup-settings.tsx",
+    "bytes": 12239,
+    "sha256": "4ac01af7030fe9d8fb351cbcddae2945063ab1a7a33276fcd26842e7872d29a8"
+  },
+  {
+    "path": "src/features/settings/blur-preferences.ts",
+    "bytes": 2282,
+    "sha256": "c7edabe2e1fcc09e096806e93b1e9f4ac0a8660ec9a1a7d771fe7cf291f1f521"
+  },
+  {
+    "path": "src/features/settings/blur-settings.ios.tsx",
+    "bytes": 2927,
+    "sha256": "35b76e5e2c42f5963e6fed7dca9f0b34e863e62dd4be1cc701562dd254339022"
+  },
+  {
+    "path": "src/features/settings/blur-settings.tsx",
+    "bytes": 7358,
+    "sha256": "64027170be0f546e0b3762d254495b6869abe2e99d5198467b00f41e4f91d6e7"
+  },
+  {
+    "path": "src/features/settings/color-options.ts",
+    "bytes": 1213,
+    "sha256": "45dc687507615a762783c97fcf15d514a6e9f5cbf1365182ec4b749f65e1fce4"
+  },
+  {
+    "path": "src/features/settings/color-settings.ios.tsx",
+    "bytes": 4312,
+    "sha256": "9ea8a2fe309d586a810dc7f6762fcbe44c277d34474900cf45e8f0d4a22de834"
+  },
+  {
+    "path": "src/features/settings/color-settings.tsx",
+    "bytes": 8977,
+    "sha256": "904fb9d983b365e8253e25546e2a87b3e4834e19d12f154ee08a96c437503d0c"
+  },
+  {
+    "path": "src/features/settings/creator-dialog.ios.tsx",
+    "bytes": 3428,
+    "sha256": "ffb4ea2835f08b6641c6b836d24701a363e872561039c1e010f4964e98032970"
+  },
+  {
+    "path": "src/features/settings/creator-dialog.tsx",
+    "bytes": 5121,
+    "sha256": "8bfd41d7ad17922caaf495aeddee4b7d699e4e563d76206a8828ef04a56dc9d8"
+  },
+  {
+    "path": "src/features/settings/creator-info.ts",
+    "bytes": 1077,
+    "sha256": "8fd0e16b7414b18698f9848034b91fe2691fc5d8115e0ecc1ada5a5cf33ce494"
+  },
+  {
+    "path": "src/features/settings/ios/controls.tsx",
+    "bytes": 2930,
+    "sha256": "38529f708f0f23cb63422d0b4ae14f9727d609ac4029fb7616683a9ea16aa7d4"
+  },
+  {
+    "path": "src/features/settings/ios/field.tsx",
+    "bytes": 2304,
+    "sha256": "7a3689c664206dfba6ce13e2c2b69447ff9caa97644b18d7d1e42efe1f95078c"
+  },
+  {
+    "path": "src/features/settings/ios-settings-schema.json",
+    "bytes": 8246,
+    "sha256": "d728f9167cde6670dd2ad0b5486005764872b0ac36e049108f2b8ef349530ef7"
+  },
+  {
+    "path": "src/features/settings/ios-system-settings-link.ios.tsx",
+    "bytes": 1033,
+    "sha256": "ae1a8534443bc0e63e501a67689132590b7ad20898f970fcfca0451a3ab54df2"
+  },
+  {
+    "path": "src/features/settings/ios-system-settings-link.tsx",
+    "bytes": 2241,
+    "sha256": "186b13dcf22456da7d8ec3b58bc99ba467f52a609611af31224004cd5d1f3faa"
+  },
+  {
+    "path": "src/features/settings/ios-system-settings.ios.ts",
+    "bytes": 4237,
+    "sha256": "3a3e0931e25af026d0b6a8c051d8610004745878ea8dee659df93b27ec23275f"
+  },
+  {
+    "path": "src/features/settings/ios-system-settings.ts",
+    "bytes": 388,
+    "sha256": "d776b90f312b4259671a144d2090b1abde78a791e9cdc2fcc99a10f7b49082d3"
+  },
+  {
+    "path": "src/features/settings/licenses-settings.ios.tsx",
+    "bytes": 1864,
+    "sha256": "e825aaf577f357fd67b1b7c5be3288d1b28983f7d8e977fbb0506545401fa41d"
+  },
+  {
+    "path": "src/features/settings/licenses-settings.tsx",
+    "bytes": 5021,
+    "sha256": "bffadae89ee5ac360d3006894ac3f72534f78da9ec5bee36e287073b50b7ffa6"
+  },
+  {
+    "path": "src/features/settings/menu-layout-settings.ios.tsx",
+    "bytes": 4116,
+    "sha256": "fd8e9f156ef742520943aa0fc975fe8bd9fcfd44d55643d10d9f55d67c3f561a"
+  },
+  {
+    "path": "src/features/settings/menu-layout-settings.tsx",
+    "bytes": 4967,
+    "sha256": "655a54b0ff48eab10297161e2cbf95e16499a76ba48fca2a3d4303c14f8945ee"
+  },
+  {
+    "path": "src/features/settings/menu-layout.ts",
+    "bytes": 6241,
+    "sha256": "cc5d921f4d090f79dc0378c85882828ef88a5efadd87947d31a0bc430425e74e"
+  },
+  {
+    "path": "src/features/settings/open-connection-screen.ts",
+    "bytes": 753,
+    "sha256": "8179285bccc4e56d1545605896b4c6f24d0cdc5d0fbb1dd0bf174b6d7598ffcc"
+  },
+  {
+    "path": "src/features/settings/quick-hide-preset-settings.ios.tsx",
+    "bytes": 3315,
+    "sha256": "3e5c95078ccc120fe7db70fe832101db364866ac69f722fbbd0c0d5e64427c66"
+  },
+  {
+    "path": "src/features/settings/quick-hide-preset-settings.tsx",
+    "bytes": 7170,
+    "sha256": "cbc8b9d52b8cee9d6e1e317e95ec2da4cc956d4b58981f845ffebc6b8dfa7eb3"
+  },
+  {
+    "path": "src/features/settings/quick-hide-settings.ios.tsx",
+    "bytes": 1818,
+    "sha256": "db4476961c4009843b77e8f967d68e7ed9d555657d5f9387aa6591eee08dfa1b"
+  },
+  {
+    "path": "src/features/settings/quick-hide-settings.tsx",
+    "bytes": 5489,
+    "sha256": "89fc4ff4aad42e0165c8736cf33193902429bb38c250dc404ea0321b6be4ca2e"
+  },
+  {
+    "path": "src/features/settings/settings-descriptions.ts",
+    "bytes": 3167,
+    "sha256": "56f6a8ecf69928387723dfdd5d6f2381abc912eddb190090a20531fc95f4374e"
+  },
+  {
+    "path": "src/features/settings/settings-menu-layout.ts",
+    "bytes": 1193,
+    "sha256": "60a6ce58cf832d616f88a129e5132cb5fafa6e7c2ea22fa0395bd874ab2bed49"
+  },
+  {
+    "path": "src/features/settings/settings-navigation.ts",
+    "bytes": 1617,
+    "sha256": "7186edc1102058b5d804010ef92432e98c4ce394eae17fe31b1905dae4dfc963"
+  },
+  {
+    "path": "src/features/settings/settings-navigator.ios.tsx",
+    "bytes": 2041,
+    "sha256": "4a1d6bc3c5436d1f7f5b0c4e9989246c71875bcdd998ebaa9da5f65d990954b7"
+  },
+  {
+    "path": "src/features/settings/settings-navigator.tsx",
+    "bytes": 1507,
+    "sha256": "09c78641d12aeb1c9fc788e0bd0d7e24eaa6f05b825f67594de1a1a3b7f061a7"
+  },
+  {
+    "path": "src/features/settings/settings-presentation.tsx",
+    "bytes": 541,
+    "sha256": "ab55f7864846c6639c7575f67d43457a9e4ab0819200afe0694540950240067b"
+  },
+  {
+    "path": "src/features/settings/settings-screens.ts",
+    "bytes": 2206,
+    "sha256": "4355336e05c7e2747e8b70da1be7f31f702883c8ba0881ddb7283ab15e359d05"
+  },
+  {
+    "path": "src/features/settings/settings-ui.ios.tsx",
+    "bytes": 5531,
+    "sha256": "e242bfe4a9efc55fad6c00fdcf83dcf35960918387f31e1674f7265d25a8da64"
+  },
+  {
+    "path": "src/features/settings/settings-ui.tsx",
+    "bytes": 7000,
+    "sha256": "de04109f0a0994c8c3fcd2497753e3bc65b44ca6cae7d6357a86d45eb3848f35"
+  },
+  {
+    "path": "src/features/settings/settings-workspace.tsx",
+    "bytes": 6505,
+    "sha256": "f7518b054494c1b4da0843ceb93a9f41ac3e178d7241a5bd684ebf098412ceab"
+  },
+  {
+    "path": "src/features/settings/synology-settings.ios.tsx",
+    "bytes": 3379,
+    "sha256": "76787abc7bb405b74f27b4270a972de436bf17927c85aa4d6c70489db6d8345c"
+  },
+  {
+    "path": "src/features/settings/synology-settings.tsx",
+    "bytes": 6479,
+    "sha256": "760000d9c48f3a519d0efc3ca3d272940b44e52401fd907d65924e22276aa982"
+  },
+  {
+    "path": "src/features/settings/system-settings-sync.ts",
+    "bytes": 5734,
+    "sha256": "4972b5c1fb91bfe384b95e96abadd280939dc7c095eac0551c6066ae59d09d41"
+  },
+  {
+    "path": "src/features/settings/tab-menu-selection.tsx",
+    "bytes": 783,
+    "sha256": "73ed17707b0d8c24abcd98dee7130ae1153a380d0a4a57075b6478444227570c"
+  },
+  {
+    "path": "src/features/settings/tablet-tab-navigation.ts",
+    "bytes": 1073,
+    "sha256": "969923c2d9fcc02ab3bf57b2da169139b1c9f63611d36e4d4af5c68428d56aff"
+  },
+  {
+    "path": "src/features/settings/theme-settings.ios.tsx",
+    "bytes": 1160,
+    "sha256": "97dc2c8a20a2ae655903ef265cfa60f52dfde3cbf50969d5c1155eb4bbe15149"
+  },
+  {
+    "path": "src/features/settings/theme-settings.tsx",
+    "bytes": 3189,
+    "sha256": "658a7ff8f0cb369ba4c3c1b5e5444674937d1fe70500c17337c18f3a5b81a83c"
+  },
+  {
+    "path": "src/features/settings/use-backup-settings.ts",
+    "bytes": 4312,
+    "sha256": "257115f52d8bfacbef0a78ac734f925e1212266e71b5c9ce1fb48bfc9b3b7ec9"
+  },
+  {
+    "path": "src/features/settings/use-menu-reordering.ts",
+    "bytes": 2587,
+    "sha256": "1299d276ad06335fb7a2de3c3df121af5bff16c8550d6f1a7816c63275ed8734"
+  },
+  {
+    "path": "src/features/settings/use-quick-hide-preset-settings.ts",
+    "bytes": 2993,
+    "sha256": "355c3811c94f4e15437f28abfe34a57bfb9daf4511b6dc5969de4d544d46000a"
+  },
+  {
+    "path": "src/features/settings/use-synology-settings.ts",
+    "bytes": 3666,
+    "sha256": "cc56886592c8527b182998c9e66976f8d7405a67e025251cf070795d1dd51c42"
+  },
+  {
+    "path": "src/features/settings/use-system-settings-link.ts",
+    "bytes": 959,
+    "sha256": "d41517b01005137c081575c98fed27b6f8558cfc42ea004a9e5c3299b940d8c0"
+  },
+  {
+    "path": "src/features/settings/use-version-settings.ts",
+    "bytes": 2654,
+    "sha256": "1d3f5c6c3bc4b165f3bd98fb1dfa294d5b4044487ca785238d4245625481f793"
+  },
+  {
+    "path": "src/features/settings/version-settings.ios.tsx",
+    "bytes": 1798,
+    "sha256": "03299cd93d41df3e7ec1e8d4932b51ea9b75349932fecde5219033be92e5b112"
+  },
+  {
+    "path": "src/features/settings/version-settings.tsx",
+    "bytes": 2723,
+    "sha256": "83a42ba274dda9da189aca17b3112dd69eb0e20897696b0c560ec5a2c4ec29c8"
+  },
+  {
+    "path": "src/features/startup/use-app-bootstrap.ts",
+    "bytes": 2983,
+    "sha256": "99e36e18ed9d59fcf938675b2e7616d6d836e76f8584766841723b57addd4413"
+  },
+  {
+    "path": "src/features/startup/use-music-source-bootstrap.ts",
+    "bytes": 1164,
+    "sha256": "8dbee8c0512718c0385852e3ca465d41f799f59ba82bd57dc219b665c4bea5c3"
+  },
+  {
+    "path": "src/features/startup/use-playback-recovery.ts",
+    "bytes": 2707,
+    "sha256": "f93482170b146e6bc46202b08f61680f2f7ae3348e1324e822690915fe5bd50b"
+  },
+  {
+    "path": "src/services/artwork/artist-photo.ts",
+    "bytes": 13065,
+    "sha256": "99b0a2daee5b9b2a511400628e53ca43dbcdedefa7007eaf5f58ab2a7c8f69e7"
+  },
+  {
+    "path": "src/services/artwork/files.ts",
+    "bytes": 8354,
+    "sha256": "5257c99c39e2bd1edef9f92e60f2c18bb015abd8dbfac2796717b4f3ba18efd7"
+  },
+  {
+    "path": "src/services/artwork/image-url.ts",
+    "bytes": 500,
+    "sha256": "87bd645010be7dea21e468e41399616d752bf48a45ad2786268598c33e45aaad"
+  },
+  {
+    "path": "src/services/artwork/palette.ts",
+    "bytes": 2520,
+    "sha256": "c454bed89cffb3cdfdcae7f4c08a3aca74b1fb99f8f5e149aaaf9e50c120e83f"
+  },
+  {
+    "path": "src/services/artwork/search.ts",
+    "bytes": 3053,
+    "sha256": "456a217f0f6e08f4d4d84622d70020c5e3b708b7c7820df322c195b807577eaf"
+  },
+  {
+    "path": "src/services/artwork/source.ts",
+    "bytes": 739,
+    "sha256": "9f07ac976ae47b694084e3714aff2cb45c7b6caef552aa51b2e9b937683878b9"
+  },
+  {
+    "path": "src/services/async/serial-queue.ts",
+    "bytes": 409,
+    "sha256": "e0a0f14188bace7e516196b627c50e168fdc80c9e472b9785ea2751bfbf2524d"
+  },
+  {
+    "path": "src/services/backup-operation.ts",
+    "bytes": 343,
+    "sha256": "c7b8c1d311b574293628521c3a180249fa292b1a14540390a895d296d7bf7b1b"
+  },
+  {
+    "path": "src/services/cloud-music/request.ts",
+    "bytes": 2160,
+    "sha256": "bc14ce7fba413729c45dab55e59be8e5fd7747377e1337899cd51b5372b64007"
+  },
+  {
+    "path": "src/services/cloud-music/source.ts",
+    "bytes": 1587,
+    "sha256": "b41edede534726a092a32965e4da8dac4e4b8dac3b591206e391e95bfcf5bc53"
+  },
+  {
+    "path": "src/services/google-drive/api.ts",
+    "bytes": 7142,
+    "sha256": "b220e7edf569ed2021cbc17557d91650adccb810924296f9f18cae41d54d72e1"
+  },
+  {
+    "path": "src/services/google-drive/auth.ts",
+    "bytes": 2416,
+    "sha256": "5c778ccc99b59d6d1fa342385dd85f49636ef47cb1571879775e60c5a5a6b5d8"
+  },
+  {
+    "path": "src/services/google-drive/changes.ts",
+    "bytes": 2663,
+    "sha256": "d1bb7db33bd46c75fd56e2de3b3e3ddfea25756c578361477932e9588aba20ec"
+  },
+  {
+    "path": "src/services/google-drive/config.ts",
+    "bytes": 403,
+    "sha256": "3cafa11e303d35f7e992a17df1884799996125d173ad5d6f0e29ba8eebf66408"
+  },
+  {
+    "path": "src/services/google-drive/connection-tasks.ts",
+    "bytes": 2882,
+    "sha256": "329bada5758ee2f0d24658278a165fddc3625275ab1e5e529525884654443cbc"
+  },
+  {
+    "path": "src/services/google-drive/documents.ts",
+    "bytes": 5430,
+    "sha256": "1bc1e7e7f18f18b4524a568a34572a7ca6da845a04e43a1eebb6890e869b58f4"
+  },
+  {
+    "path": "src/services/google-drive/library.ts",
+    "bytes": 1814,
+    "sha256": "9dd014f7a9241ed669a56b8da50e72bce0ae8677a2ce508000a6fc0bde322d4a"
+  },
+  {
+    "path": "src/services/google-drive/metadata.ts",
+    "bytes": 10129,
+    "sha256": "606fc5074295d5f99f97553a51930204dfdf9573c88df6590e0d399de7840c36"
+  },
+  {
+    "path": "src/services/google-drive/picker.ts",
+    "bytes": 2855,
+    "sha256": "cbbad5a0ac8c178b708b4c84c8a48653114a3e980a2ce3fe1987fc8f0f2ed9c3"
+  },
+  {
+    "path": "src/services/google-drive/read-tags.ts",
+    "bytes": 9138,
+    "sha256": "55547b3e8735d2cfe69f36b7ed0ff5c8430504915cb7445cfbb38811fdef09d5"
+  },
+  {
+    "path": "src/services/google-drive/scopes.ts",
+    "bytes": 314,
+    "sha256": "e6cf9a20b061228f85bd21af696984b86fd7358df949063713f36a9c5343d655"
+  },
+  {
+    "path": "src/services/google-drive/selection.ts",
+    "bytes": 1906,
+    "sha256": "f058f31907bbe848082a0b3b540f914e43ead8b4243fd4ef1c94659e3e2e72c5"
+  },
+  {
+    "path": "src/services/google-drive/session.ts",
+    "bytes": 8696,
+    "sha256": "255b0d0e85eb70aaeabfbd2a8093a61ee8010309b24c21665a306e619b1e0e05"
+  },
+  {
+    "path": "src/services/haptics.ts",
+    "bytes": 1738,
+    "sha256": "dd99ced185d66f7347c1686bc2a49cffe7ddda8d35b3a31ff313325a89a51fba"
+  },
+  {
+    "path": "src/services/hidden-music/biometrics.ts",
+    "bytes": 1584,
+    "sha256": "7ba2960f535c22c0cbb731d69c7f48a5395b48da0dc75e5d575abeb56c88d39a"
+  },
+  {
+    "path": "src/services/hidden-music/storage.ts",
+    "bytes": 1627,
+    "sha256": "9b3d75cf92bc45a683838aa3b9b347f7450d0b6fd917e72fc8958f12bcf4ac65"
+  },
+  {
+    "path": "src/services/jellyfin/api.ts",
+    "bytes": 8789,
+    "sha256": "25a6139b595797643d751cb47ff7bc6f441ea0d108c45a6a98c808740cf0fbf2"
+  },
+  {
+    "path": "src/services/jellyfin/artwork.ts",
+    "bytes": 3573,
+    "sha256": "3500873f8ee97eca5d0e4406a7deb24badef9c91e465826b019c882e844866d0"
+  },
+  {
+    "path": "src/services/jellyfin/library.ts",
+    "bytes": 1952,
+    "sha256": "743cd2c0c9f05504598f1d8351fcaeef1b62552df1b456c1cdb0dfb925d1680c"
+  },
+  {
+    "path": "src/services/jellyfin/mapping.ts",
+    "bytes": 1677,
+    "sha256": "e7b8ff98e00cd89ff7aaa46645a9d29f82da2055cdb02b8b379a627ba5b9284f"
+  },
+  {
+    "path": "src/services/jellyfin/playback.ts",
+    "bytes": 4809,
+    "sha256": "cf7ee7247de3f45eda9591924b8648b76c9ec56d0a5d2526aea5b000a54e3dd7"
+  },
+  {
+    "path": "src/services/local-music/database.ts",
+    "bytes": 851,
+    "sha256": "ba8b82ba5067096089fca3371af66c5c1a229b94c99b0f82993aa1e0965662b5"
+  },
+  {
+    "path": "src/services/local-music/file-copy.ts",
+    "bytes": 1799,
+    "sha256": "a4ac0321e09dda81ea65a297211867d14e7276c22aef99e1527a10b00ad178fb"
+  },
+  {
+    "path": "src/services/local-music/files.ts",
+    "bytes": 2059,
+    "sha256": "bd9394bbf1e64c756e53e54cdbdb7d0c5e058a8bfa4af3ff3b2e209dda5a602b"
+  },
+  {
+    "path": "src/services/local-music/folders.ts",
+    "bytes": 4164,
+    "sha256": "3660382e7893c0b8eefb79f19ea47abdcc068216e9c22b92778ddb72538f6852"
+  },
+  {
+    "path": "src/services/local-music/import-types.ts",
+    "bytes": 364,
+    "sha256": "73c64e48fc49b2c81484b2e0b0887fb9def1aa762d2ae377287780f46cdeb3d5"
+  },
+  {
+    "path": "src/services/local-music/metadata-recovery.ts",
+    "bytes": 2017,
+    "sha256": "f0d1a387f14b36738e572372c4fc0b2942a10b02bda4f7efa2c7ce5bee828a09"
+  },
+  {
+    "path": "src/services/local-music/scan.ts",
+    "bytes": 4132,
+    "sha256": "75a1fff0097ddceabe38dbd9ffa9229fa8004224f85c8b31c43054fb912eb502"
+  },
+  {
+    "path": "src/services/local-music/storage.ts",
+    "bytes": 16573,
+    "sha256": "6895863309c9e05ec7bbab62899e0287c4f5be16251085cc81656e6409a1fa70"
+  },
+  {
+    "path": "src/services/lyrics/lrclib.ts",
+    "bytes": 9445,
+    "sha256": "2336accd6f2dc2207bfe05ecb2ff3aeb9aebef346eeba7577fe0233444a5d9cf"
+  },
+  {
+    "path": "src/services/lyrics/parse-lyrics.ts",
+    "bytes": 2680,
+    "sha256": "08e693d16ee2423940d72ab45f18b8b7fb06fef52d458050f344cbb7be302932"
+  },
+  {
+    "path": "src/services/lyrics/translate-lyrics.ts",
+    "bytes": 7482,
+    "sha256": "3de68168ada93ee802c9964e32fac39946c5cb5ad88410867302b236c61c2349"
+  },
+  {
+    "path": "src/services/metadata/automatic.ts",
+    "bytes": 3331,
+    "sha256": "66497c2cdc8a87d4d25b71bc30f94e23da6a3760830796ea3c01e695abc0bcb2"
+  },
+  {
+    "path": "src/services/metadata/cloud-file.ts",
+    "bytes": 3688,
+    "sha256": "2d1e0665aca9b50386eb11718dd4dc5f80e13d02238877eeec8c488334d1e4aa"
+  },
+  {
+    "path": "src/services/metadata/file-io.ts",
+    "bytes": 7670,
+    "sha256": "f0ab774e8b00a55b806b721ffabfa66e979de8ae8046f186ae929c566909a423"
+  },
+  {
+    "path": "src/services/metadata/nas-file.ts",
+    "bytes": 10084,
+    "sha256": "7915e223fcd2ddb793ae476ba28eedea6b55df7fb552c57ac548b9280a24d2a4"
+  },
+  {
+    "path": "src/services/metadata/tag-writer.ts",
+    "bytes": 14938,
+    "sha256": "bf1072060a15140c37fc729f3da406984437cfce12e70f1fd1d0fc560bd08df7"
+  },
+  {
+    "path": "src/services/metadata/web-search.ts",
+    "bytes": 7382,
+    "sha256": "9809da0de3f0b3f2f7ed612c58818160a83385c9d8ecc207f4b5cb648cc91a8a"
+  },
+  {
+    "path": "src/services/metadata/write-song-file.ts",
+    "bytes": 9004,
+    "sha256": "2f675b2864ec1e3a963c11d4bbf27fdeca41710bbafe7e8191d0b3877fc98640"
+  },
+  {
+    "path": "src/services/metadata/written-song.ts",
+    "bytes": 1526,
+    "sha256": "12ae44e2fffcb64bab493eb7bef3a0a9114a7d8a6691b1b1494453f6d214a872"
+  },
+  {
+    "path": "src/services/music-providers/cache.ts",
+    "bytes": 2545,
+    "sha256": "e8a2665919c271d79b72bad9390810c5acb3b870f5a6e583342b366de277569e"
+  },
+  {
+    "path": "src/services/music-providers/catalog-deletions.ts",
+    "bytes": 1540,
+    "sha256": "78c01a9afe747bbe21bb48697b2cda28a2fae4e769d73005aa47decbd59461ce"
+  },
+  {
+    "path": "src/services/music-providers/contracts.ts",
+    "bytes": 2693,
+    "sha256": "2439ff765e7a81705e9c43228696bc53accb35e90497695117e0fc950238a469"
+  },
+  {
+    "path": "src/services/music-providers/file-providers.ts",
+    "bytes": 9888,
+    "sha256": "2241bd3baf2b755c10805c160b93a811c7582e2a827fad76a979cf980cf06cac"
+  },
+  {
+    "path": "src/services/music-providers/jellyfin.ts",
+    "bytes": 5235,
+    "sha256": "72541f9c8af22a51f4bab276bddd8c54b1d10ed8193bd334198feb33535dcd65"
+  },
+  {
+    "path": "src/services/music-providers/library-policy.ts",
+    "bytes": 801,
+    "sha256": "79d2dc7e9dd1e3f56060525f5e70b0812a609abb20c845c118a1c9c77c6c4e92"
+  },
+  {
+    "path": "src/services/music-providers/library-snapshots.ts",
+    "bytes": 5117,
+    "sha256": "99b8543b87dfd5ec7aad1969dc77c1be0432635b7aa2c169476de10c31ee4988"
+  },
+  {
+    "path": "src/services/music-providers/library-statistics.ts",
+    "bytes": 542,
+    "sha256": "1095bdf51ea15cf0715db234d1d9fa801c42fcf3a8662960b2279fe439426b5b"
+  },
+  {
+    "path": "src/services/music-providers/library-sync-task.ts",
+    "bytes": 4827,
+    "sha256": "4866e7bd34b8aa8b93bb76cf027e3a4ea30c225e5137ac1bdbe10e3137ede9ba"
+  },
+  {
+    "path": "src/services/music-providers/library-tasks.ts",
+    "bytes": 796,
+    "sha256": "5681e1f3b0f3052e4148f8f521c6ccbec7cda4589bd1022be952905d94f0470e"
+  },
+  {
+    "path": "src/services/music-providers/nas-library-task.ts",
+    "bytes": 2361,
+    "sha256": "63814b36791119726add24c82235739e1eccb602fcc8335f4a1d24db9ce4aad4"
+  },
+  {
+    "path": "src/services/music-providers/query-library-task.ts",
+    "bytes": 2217,
+    "sha256": "e2ff0723488be7f947a3911e933f76ff70c37d14a32479a6f9b66fd9defdd4fe"
+  },
+  {
+    "path": "src/services/music-providers/registry.ts",
+    "bytes": 1390,
+    "sha256": "802c8045026e24a1b8f1a9540c2dbe083afb9fb48dab3517820285506a6b5997"
+  },
+  {
+    "path": "src/services/music-providers/stored-library-task.ts",
+    "bytes": 6579,
+    "sha256": "185b81c25bd04bbb1b2cf425187cfc7b177fd4db090be65d547cd1d80312da99"
+  },
+  {
+    "path": "src/services/music-providers/stored-song-index.ts",
+    "bytes": 661,
+    "sha256": "bd657f8e8e1e051e65a07b4d176974ad514a9b1b2050d26c8b7be6c9da910e6b"
+  },
+  {
+    "path": "src/services/music-providers/synology.ts",
+    "bytes": 4116,
+    "sha256": "ff0fb9c1506c3a7b8bffdb913d0747e9bb8e3ef17b3113fa0c0ffce6e3be2a05"
+  },
+  {
+    "path": "src/services/music-source.ts",
+    "bytes": 1034,
+    "sha256": "bafdc832c9343eb7411b1369151edc94298d4b494a79eae40689d507805b1e3f"
+  },
+  {
+    "path": "src/services/mybox/api.ts",
+    "bytes": 9824,
+    "sha256": "45d7b3d38e3c18f7cd5ca8419b51ab8b332a7bcce0ea6f11daebabaacabb28fb"
+  },
+  {
+    "path": "src/services/mybox/playback-cache.ts",
+    "bytes": 5115,
+    "sha256": "d903be00bc3b3f6e20e24f4fa2cc47508ed2c1e3a12abf01afdd81cc057993e6"
+  },
+  {
+    "path": "src/services/offline-music/download.ts",
+    "bytes": 5966,
+    "sha256": "c4b58eff73988db8ef677886033b4f580a57cd999f92ab7fa6900af99cd1dd82"
+  },
+  {
+    "path": "src/services/offline-music/formats.ts",
+    "bytes": 1558,
+    "sha256": "085304adcbf63007b2a6d8bc29c64804b58a883211cf66bc7998703d4b2a2f6a"
+  },
+  {
+    "path": "src/services/playback/audio-engine.ts",
+    "bytes": 20738,
+    "sha256": "838a29df66fc64d877555568c08eb02348b3f9a5a3b8f8108fbfb2f4449174d9"
+  },
+  {
+    "path": "src/services/playback/controller.ts",
+    "bytes": 22190,
+    "sha256": "01ec8808d5e77c806647bc9d25d57531559de02c8e8cfabf97f4c300f47af9d7"
+  },
+  {
+    "path": "src/services/playback/equalizer.ts",
+    "bytes": 1823,
+    "sha256": "ba11b86e4af8c95a7550f762f0d5fd2b3c0c3e2088d81a7f1ceb09cb1da84d07"
+  },
+  {
+    "path": "src/services/playback/lossless.ts",
+    "bytes": 1917,
+    "sha256": "94ef577533e14f0f69590d57443b3b209e1357dd51bb870af3a2cb984ec32310"
+  },
+  {
+    "path": "src/services/playback/metadata.ts",
+    "bytes": 654,
+    "sha256": "f96ace64c96e27d549432f780109fc85fd851473944e0d83d4390743edd95812"
+  },
+  {
+    "path": "src/services/playback/persistence.ts",
+    "bytes": 10443,
+    "sha256": "7d3ecf5b02a1392508b28da869f14a055153a4e82b466a114ca5ba49ef3249c8"
+  },
+  {
+    "path": "src/services/playback/playback-rate.ts",
+    "bytes": 418,
+    "sha256": "3bdca32218f252e495c4c4d7b2e98d9f42664e502518ad244d989c40e42f80d8"
+  },
+  {
+    "path": "src/services/playback/queue.ts",
+    "bytes": 398,
+    "sha256": "45361e3edbc7d99d7fe39d618d90f33fd9532a8eb7e4984ec4762fbd5ed0ca7c"
+  },
+  {
+    "path": "src/services/playback/section-repeat-controller.ts",
+    "bytes": 7219,
+    "sha256": "fdbf2272c415a255fc0f8255227f9f9a9194c1d8849d0102ee4feb1838107d32"
+  },
+  {
+    "path": "src/services/playback/section-repeat.ts",
+    "bytes": 1352,
+    "sha256": "99268a6cf534eb9f7927d300d396c72cc72b6d227c14b19047ae1b05165b455d"
+  },
+  {
+    "path": "src/services/playback/sleep-timer.ts",
+    "bytes": 2876,
+    "sha256": "17ca54aa41a37e0dacd5abf34b212ffa81775af214c6a645c55762e6b11b09e1"
+  },
+  {
+    "path": "src/services/playback/source.ts",
+    "bytes": 803,
+    "sha256": "979196865655d0ab5f6d3684bad42e022236c0fc7a6c951d89f8d3fc2d6f968c"
+  },
+  {
+    "path": "src/services/playlists/backup.ts",
+    "bytes": 5553,
+    "sha256": "a6475d3c1eb76d78a7f52781bff43409537928ff599fb54147da4e70aa43a4f2"
+  },
+  {
+    "path": "src/services/playlists/storage.ts",
+    "bytes": 1349,
+    "sha256": "71aebab0fa647cd23eddc43168b7c94e0b4bbf3a1f67b7b0de7fc46d4a330df6"
+  },
+  {
+    "path": "src/services/preferences/persistence.ts",
+    "bytes": 2685,
+    "sha256": "a984d694a3ce36860c77e5c69055d5ff0dc9abf7b08c48ed4876ce9cceb1db16"
+  },
+  {
+    "path": "src/services/preferences/storage.ts",
+    "bytes": 640,
+    "sha256": "a2750ae46f636c5ab0749728ebe3397bd82ce58803817159af124abc663f69d3"
+  },
+  {
+    "path": "src/services/s3/api.ts",
+    "bytes": 2335,
+    "sha256": "a8f94d719c3c8980b311e239b709a56c1e98baa9ef8b6267d68d77def7c59e7e"
+  },
+  {
+    "path": "src/services/s3/connection.ts",
+    "bytes": 5993,
+    "sha256": "19889866c2bb76b3782a15506d8738973cc8055842e4c723199e85ee3eb184c7"
+  },
+  {
+    "path": "src/services/s3/response.ts",
+    "bytes": 4632,
+    "sha256": "1e11f56a69efe6aff4256abb7d3d03b78fd105b4d340350ffd7e6c5428f696d2"
+  },
+  {
+    "path": "src/services/settings-backup.ts",
+    "bytes": 14580,
+    "sha256": "b7c4e4925a60a7636a2a3238dbf8a42f1ddf2e52b12f88fd7f086e8241eb2903"
+  },
+  {
+    "path": "src/services/synology/api.ts",
+    "bytes": 19338,
+    "sha256": "01838320db697def96b3d1fb4ad7f749ff6cef8df391f58a1842b491dafabb4a"
+  },
+  {
+    "path": "src/services/synology/cache.ts",
+    "bytes": 259,
+    "sha256": "2f5a1d3c0ef0f71611effe39d5f15cae40ea342aac414b8e6a0507ae3ee0f320"
+  },
+  {
+    "path": "src/services/synology/discovery-cache.ts",
+    "bytes": 1247,
+    "sha256": "3b78ced7f00243e20f74d8422634db607948c70f3a344cccb1debd864516df6c"
+  },
+  {
+    "path": "src/services/synology/repository.ts",
+    "bytes": 3947,
+    "sha256": "b0fd5078249ee7373111fe17e347f9b3e30d63fd579bb429761dd3ecf1734480"
+  },
+  {
+    "path": "src/stores/appearance-preferences.ts",
+    "bytes": 1759,
+    "sha256": "1cd374fb3e7bdde5932f539aff724f6d2ce19abf35b1fd2752c987f6ea7d5d8c"
+  },
+  {
+    "path": "src/stores/auth.ts",
+    "bytes": 8191,
+    "sha256": "f4d6df974ea14c58b90cdef340bcc9eecec3664fe8f4648575c624d3a74ffe10"
+  },
+  {
+    "path": "src/stores/blur-preferences.ts",
+    "bytes": 2441,
+    "sha256": "67c3e2bcf36c6e64ed8b65d983c2105a1b0235f91fa4d7871728dd17e9362bd6"
+  },
+  {
+    "path": "src/stores/display-preferences.ts",
+    "bytes": 2418,
+    "sha256": "117ca43eca6fc1795fdb8ff4f0ecb3a025f916b1ebb2e293b42b09e9a0fec2bc"
+  },
+  {
+    "path": "src/stores/drive-documents.ts",
+    "bytes": 6321,
+    "sha256": "7ff8c45e6961036dd2945b004203597249b6da6926a321d50c469be4d215cd11"
+  },
+  {
+    "path": "src/stores/favorite-display-preferences.ts",
+    "bytes": 1704,
+    "sha256": "a633f2511eb3ea58bc7eddf7cd926688fd0ee5ee24a66f7827630865c57baf3a"
+  },
+  {
+    "path": "src/stores/favorites.ts",
+    "bytes": 3062,
+    "sha256": "5dd3247d2efe2fb7561076edba5743dd6bdbb9972d7f6fd1950a387067cc0dd1"
+  },
+  {
+    "path": "src/stores/folder-exclusions.ts",
+    "bytes": 3114,
+    "sha256": "c8ef49bd2ae723fdf6cae4e9b8c0a7f73cc62b10495f5e63c6dfd335593ef95b"
+  },
+  {
+    "path": "src/stores/google-drive.ts",
+    "bytes": 19544,
+    "sha256": "8a6fdeccb98b62b34d9694a9d84282d403b07f852340ee7bec3b1fd02d483dfa"
+  },
+  {
+    "path": "src/stores/haptic-preferences.ts",
+    "bytes": 2288,
+    "sha256": "7b13fe0fbbb45f0d74bc140d742ca310993e70ad29a6acd69b3dd024cefa1231"
+  },
+  {
+    "path": "src/stores/hidden-feature-access.ts",
+    "bytes": 5248,
+    "sha256": "1d7ca368a78fb7968972e05abd4281fcc09288e5b7bef100c1db02ba29cf33c4"
+  },
+  {
+    "path": "src/stores/hidden-music.ts",
+    "bytes": 9213,
+    "sha256": "f5d677de47c85a257810034133dee90e072673d901a1158f9f8d6d73c36e75df"
+  },
+  {
+    "path": "src/stores/jellyfin.ts",
+    "bytes": 11901,
+    "sha256": "9d2bc206382dfa32be7595ae4d957f124e11954bf2f37f243c8ef5c06766354a"
+  },
+  {
+    "path": "src/stores/library-detail-preferences.ts",
+    "bytes": 1670,
+    "sha256": "c53d743864f820b26eb3e3eedff5ab12b2ad45fc1e6b77255389300d8a423f47"
+  },
+  {
+    "path": "src/stores/library-preferences.ts",
+    "bytes": 3107,
+    "sha256": "9a710fd0ec17371d15f6694102c4ddb2deb980c26d751233d083fd56817445c0"
+  },
+  {
+    "path": "src/stores/local-music.ts",
+    "bytes": 3997,
+    "sha256": "75cbecafa6630bf2cbf4ad8c964d2ce070b98fcafdfc3db89144fa9cc5072981"
+  },
+  {
+    "path": "src/stores/lyrics-timing.ts",
+    "bytes": 4388,
+    "sha256": "2c874f435b666f64c187b6a05814e564fafc37c50aec66363f570a34573e28c5"
+  },
+  {
+    "path": "src/stores/lyrics-translation.ts",
+    "bytes": 3496,
+    "sha256": "f84f02b503509d6ec3359a303378c87244670b7987c7a2207a5fc8158a045ae4"
+  },
+  {
+    "path": "src/stores/menu-preferences.ts",
+    "bytes": 4655,
+    "sha256": "13594ff1a7beaa1cc56d87824189d31b94a4c565593e090a18fb0a2b81e39d60"
+  },
+  {
+    "path": "src/stores/mybox.ts",
+    "bytes": 9276,
+    "sha256": "ebe015a54ce1690bad1c63b4fc12bd62381b10926cce6eaa4d9f9474a7f49fa1"
+  },
+  {
+    "path": "src/stores/offline-music.ts",
+    "bytes": 6325,
+    "sha256": "0036fd66fa1682b161cfbde65c038e4b188f18ffffd5af39490ffc2a4c6101d0"
+  },
+  {
+    "path": "src/stores/playback-preferences.ts",
+    "bytes": 1309,
+    "sha256": "ae098ea94e8c4a058bab9575bd9c2648eeb882522155097b91727a40ccd79233"
+  },
+  {
+    "path": "src/stores/playback.ts",
+    "bytes": 2858,
+    "sha256": "e5dbe8c45b267c8d4c4825f4a35b69feb7c12f6e74d0588a8be4f4621c8fe5d4"
+  },
+  {
+    "path": "src/stores/player-background.ts",
+    "bytes": 5167,
+    "sha256": "98aa1d51b6ee29ba434ab46fc6dfcc5229583f0c6e153e41dc8af4dd3bc97578"
+  },
+  {
+    "path": "src/stores/playlists.ts",
+    "bytes": 5790,
+    "sha256": "96571cc218c3314a3cc419db9fcc18ccec45d5246d7b4e89edb4dccc603dfd7c"
+  },
+  {
+    "path": "src/stores/s3.ts",
+    "bytes": 8706,
+    "sha256": "6ac803076391cf43870104fe5183e5ec2d82ba7403c672debfe0b0b7f742fceb"
+  },
+  {
+    "path": "src/stores/song-artwork.ts",
+    "bytes": 4009,
+    "sha256": "1f6ef88bbcb6a37a0d516dad47ca051ecae799dad4a3c8b307f9feb7a4d057a4"
+  },
+  {
+    "path": "src/stores/song-metadata.ts",
+    "bytes": 3707,
+    "sha256": "6a09ae54631c7fc16aede992cc39ce801ae1ce928b7290229f17cb8e2dd149e5"
+  },
+  {
+    "path": "src/stores/streaming-preferences.ts",
+    "bytes": 2932,
+    "sha256": "38610636bea4fdfe69ee7c4a67b1883588f17834c9a98369834aa624fa009d99"
+  },
+  {
+    "path": "src/stores/theme-preferences.ts",
+    "bytes": 3225,
+    "sha256": "c5d0bb167fb4bb4498ec18dfab3ac84305d7b1f9a0597e42ca076a6a0e37c76c"
+  },
+  {
+    "path": "src/stores/web-metadata.ts",
+    "bytes": 5140,
+    "sha256": "5d345cac3138c502348e098076f36171dd7a01a047741ccc401d0cf1770be8fc"
+  },
+  {
+    "path": "src/theme/appearance.ts",
+    "bytes": 5625,
+    "sha256": "830c9ad9d2cbebe4618223251c49c450398ec76ac47cb005f63c69dc614b6a8e"
+  },
+  {
+    "path": "src/theme/layout.ts",
+    "bytes": 2148,
+    "sha256": "da64f6c767dc8b12ddf13f287b1ce6f22aceef0d940c9f717641dc4e92c02ad8"
+  },
+  {
+    "path": "src/theme/liquid-glass.ios.tsx",
+    "bytes": 1956,
+    "sha256": "5b4f551395a989694ea31f96fdd12fc0ab2ca0f4e15482bc41a676f592d6d5ef"
+  },
+  {
+    "path": "src/theme/liquid-glass.tsx",
+    "bytes": 401,
+    "sha256": "39d50d77226d47d7a0777be5d7c9ee6138e3d454e53a912e7a4f8a9b2059f20b"
+  },
+  {
+    "path": "src/theme/mode.ts",
+    "bytes": 564,
+    "sha256": "7c9ed130637fec668de6974cd5f75a38fa7d5df10aa7e02b2964dfee7f404b8e"
+  },
+  {
+    "path": "src/theme/tokens.ios.ts",
+    "bytes": 1007,
+    "sha256": "7117b4fcca1cb14f08b0f15fe56c13b38dd13b8d80407964a9251a8ba58b65ff"
+  },
+  {
+    "path": "src/theme/tokens.shared.ts",
+    "bytes": 1704,
+    "sha256": "315b338a057a7e269581f1c9ea94a83e8f0a939ac4ec3b03e711326eb483db0a"
+  },
+  {
+    "path": "src/theme/tokens.ts",
+    "bytes": 107,
+    "sha256": "74dc78264b1c7bef2abe0d0ae0a94ac448327689e0c3c5961260b3686bed192f"
+  },
+  {
+    "path": "src/theme/use-player-colors.ts",
+    "bytes": 741,
+    "sha256": "4aabdd261fd5024c3c77da6ff80f548b057f344626b3b2918b05a85d7b9d7661"
+  },
+  {
+    "path": "src/types/hidden-music.ts",
+    "bytes": 327,
+    "sha256": "9041049d1fcf0c9ec14e8e8914be95e92b4e0c31f83717c620b6cd5cc7ded514"
+  },
+  {
+    "path": "src/types/jsmediatags.d.ts",
+    "bytes": 1280,
+    "sha256": "b2d52f910080ef2c3ebf9be975a3242706084121896f5c3c7968d877167e16cb"
+  },
+  {
+    "path": "src/types/lyrics.ts",
+    "bytes": 326,
+    "sha256": "1bdd970042b993abca0cfcc95c1961135d2c091ff49e46f047215530a1a78e2d"
+  },
+  {
+    "path": "src/types/music.ts",
+    "bytes": 3941,
+    "sha256": "eb0d751a511ad9d30be5ace6851a2d55c1f2bb94a7991f840d50a7cbca633efd"
+  },
+  {
+    "path": "src/types/playlists.ts",
+    "bytes": 151,
+    "sha256": "74acb375fd4866ab859992c7e56ea30d6844e00acc464e381e27abd141e2441c"
+  },
+  {
+    "path": "tsconfig.json",
+    "bytes": 298,
+    "sha256": "2c427a7bc50569dc5167d39425793d8bba22eeffcb213fff05f6274980784508"
+  }
+]

@@ -19,7 +19,7 @@ const mocks = {
     cloneElement: (child, props) => ({ ...child, props: { ...child.props, ...props } }),
   },
   'react/jsx-runtime': { jsx, jsxs: jsx },
-  'react-native': { Platform: platform, View: 'View', StyleSheet: { create: styles => styles } },
+  'react-native': { Platform: platform, View: 'View', StyleSheet: { create: styles => styles, flatten: styles => Object.assign({}, ...[styles].flat(Infinity).filter(Boolean)) } },
   'react-native-reanimated': {
     __esModule: true, default: { View: 'AnimatedView' },
     useSharedValue: initial => ({ current: initial, get() { return this.current; }, set(next) { if (!next?.animation) this.current = next; } }),
@@ -109,6 +109,13 @@ assert.deepEqual(iosList.props.scrollIndicatorInsets, { top: 12, right: 2, botto
 assert.equal(iosList.props.automaticallyAdjustsScrollIndicatorInsets, false);
 assert.equal(iosList.props.ref, ref);
 assert.equal(iosList.props.showsVerticalScrollIndicator, undefined, 'iOS keeps its native indicator');
+assert.equal(mocks['react-native'].StyleSheet.flatten(iosList.props.contentContainerStyle).paddingBottom, 98, 'Final rows stay above the measured UIKit tab/accessory inset');
+bottomInset = 236;
+iosList = TabScrollEdgeFade({ children: { ...iosChild, props: { ...iosChild.props, contentContainerStyle: [{ paddingBottom: 180, paddingTop: 12 }] } } }).props.children;
+assert.equal(mocks['react-native'].StyleSheet.flatten(iosList.props.contentContainerStyle).paddingBottom, 252, 'Rotation and larger system bars can exceed the old fixed 180pt padding');
+assert.equal(mocks['react-native'].StyleSheet.flatten(iosList.props.contentContainerStyle).paddingTop, 12);
+iosList = TabScrollEdgeFade({ children: { ...iosChild, props: { ...iosChild.props, contentContainerStyle: { paddingBottom: 300 } } } }).props.children;
+assert.equal(mocks['react-native'].StyleSheet.flatten(iosList.props.contentContainerStyle).paddingBottom, 300, 'Preserve larger caller padding');
 bottomInset = 0;
 iosList = TabScrollEdgeFade({ children: iosChild }).props.children;
 assert.equal(iosList.props.scrollIndicatorInsets.bottom, 4, 'Keyboard-hidden tabs preserve caller insets');

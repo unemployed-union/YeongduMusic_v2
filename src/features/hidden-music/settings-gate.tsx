@@ -1,24 +1,23 @@
-import { useCallback, useEffect, type ReactNode } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
 import { Text } from '@/components/text';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Redirect, useFocusEffect } from 'expo-router';
-import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
-import Ionicons from '@expo/vector-icons/Ionicons';
-import { useHiddenMusicStore } from '@/stores/hidden-music';
-import { useHiddenFeatureAccess } from '@/stores/hidden-feature-access';
 import { useColors } from '@/theme/tokens';
+import Ionicons from '@expo/vector-icons/Ionicons';
+import { Redirect } from 'expo-router';
+import { type ReactNode } from 'react';
+import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
+import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useHiddenSettingsGate } from './use-hidden-settings-gate';
 
-export function HiddenSettingsGate({ children }: { children: ReactNode }) {
+export function HiddenSettingsGate({
+  children,
+}: {
+  children: ReactNode;
+  systemAppearance?: boolean;
+}) {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { scope, ready, profile, unlocked, busy, error, unlock, lock, load } =
-    useHiddenMusicStore();
-  const { ready: accessReady, enabled: accessEnabled, load: loadAccess } = useHiddenFeatureAccess();
-  useEffect(() => {
-    void loadAccess();
-  }, [loadAccess]);
-  useFocusEffect(useCallback(() => () => lock(), [lock]));
+  const { scope, ready, profile, unlocked, busy, error, unlock, load, accessReady, accessEnabled } =
+    useHiddenSettingsGate();
   if (!accessReady) {
     return <View style={[styles.screen, { backgroundColor: colors.background }]} />;
   }

@@ -1,0 +1,31 @@
+{
+  "date": "2026-11-12",
+  "runtime": "iOS 27.0 Simulator",
+  "devices": [
+    "iPhone 18 Pro",
+    "iPad Pro 13 M5"
+  ],
+  "baseline": "/tmp/yeongdu-ui-before",
+  "preview": "/tmp/yeongdu-ui-after",
+  "baselineBundleSHA256": "074e231caae2f4dc19904bc7f62044ddfdea6bbf17c95cdeaf48ab850a279072",
+  "fixture": "mock account, paused demo queue, in-memory SecureStore; only temporary copied source",
+  "productionSourceMaps": "382 iOS / 379 Android source files including 37 routes match workspace; no fixture sources",
+  "nativeBuild": "Release Simulator: BUILD SUCCEEDED; no distribution or submission",
+  "lint": "passed",
+  "typecheck": "passed",
+  "regression": "35/35; native boundaries mocked",
+  "eas": "User chose local validation only; no cloud build/upload/submission performed",
+  "actualTouchKeyboardVoiceOver": "not verified; Simulator GUI unavailable",
+  "ios26Runtime": "not installed; not verified",
+  "accessibility": "Dark/accessibility-extra-large: library, search, settings and player rendered; physical scroll/touch/VoiceOver not verified",
+  "nativeBuildPath": "/tmp/yeongdu-liquid-glass-build/Build/Products/Release-iphonesimulator/YeongduMusic.app",
+  "baselineSourceMap": "382 source files / 36 routes match baseline preview",
+  "afterSourceMap": "385 source files / 37 routes match final preview",
+  "nativeBundleSHA256": "7823d086cd23abce80e1f13a62e4c59ad96735cece3fc5bf1d2f36641f6ad0e6",
+  "unchangedConfigurationComparedWithBaseline": [
+    "app.json",
+    "package.json",
+    "pnpm-lock.yaml"
+  ],
+  "largeTextScroll": "Temporary fixture programmatically scrolled native ScrollView to end; playback controls visible; physical touch unverified"
+}

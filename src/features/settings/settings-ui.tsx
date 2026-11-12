@@ -20,6 +20,8 @@ export function SettingsPage({
   children: ReactNode;
   overlay?: ReactNode;
   overview?: boolean;
+  reordering?: boolean;
+  systemAppearance?: boolean;
 }) {
   const colors = useColors();
   const glass = useLiquidGlass();
@@ -64,7 +66,16 @@ export function SettingsPage({
   );
 }
 
-export function SettingsSection({ title, children }: { title: string; children: ReactNode }) {
+export function SettingsSection({
+  title,
+  children,
+}: {
+  title: string;
+  children: ReactNode;
+  nativeContent?: boolean;
+  description?: string;
+  systemAppearance?: boolean;
+}) {
   const colors = useColors();
   const glass = useLiquidGlass();
   return (
@@ -116,6 +127,19 @@ export function SettingsSection({ title, children }: { title: string; children: 
     </View>
   );
 }
+
+/** Bridge for custom editors embedded in an iOS native settings form. */
+export function SettingsRowContent({ children }: { children: ReactNode }) {
+  return <>{children}</>;
+}
+
+export function SettingsNativeContent({ children }: { children: ReactNode }) {
+  return <>{children}</>;
+}
+
+export type SettingsPageProps = ComponentProps<typeof SettingsPage>;
+export type SettingsSectionProps = ComponentProps<typeof SettingsSection>;
+export type SettingsLinkProps = ComponentProps<typeof SettingsLink>;
 
 export function SettingsLink({
   title,

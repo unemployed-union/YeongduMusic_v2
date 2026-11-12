@@ -1,8 +1,10 @@
+import { Platform } from 'react-native';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { Gesture } from 'react-native-gesture-handler';
 import {
   cancelAnimation,
   useAnimatedStyle,
+  useReducedMotion,
   useSharedValue,
   withTiming,
   type SharedValue,
@@ -18,6 +20,8 @@ export function useArtworkSwipe(
   onSwipe: (direction: ArtworkSwipeDirection) => Promise<void>,
   active = true,
 ) {
+  const systemReducedMotion = useReducedMotion();
+  const reducedMotion = Platform.OS === 'ios' && systemReducedMotion;
   const translationX = useSharedValue(0);
   const switching = useSharedValue(false);
   const mounted = useRef(true);
@@ -82,13 +86,13 @@ export function useArtworkSwipe(
           }
         })
         .onFinalize(() => {
-          translationX.set(withTiming(0, { duration: 180 }));
+          translationX.set(withTiming(0, { duration: reducedMotion ? 0 : 180 }));
         }),
-    [active, artSize, changeTrack, closing, ready, switching, translationX],
+    [active, artSize, changeTrack, closing, ready, reducedMotion, switching, translationX],
   );
 
   const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: translationX.get() }],
+    transform: [{ translateX: reducedMotion ? 0 : translationX.get() }],
   }));
   return { gesture, animatedStyle };
 }

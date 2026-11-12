@@ -31,11 +31,23 @@ export function TabScrollEdgeFade({ children, ...props }: ScrollEdgeFadeProps) {
   }
   if (Platform.OS === 'ios') {
     const insets = children.props.scrollIndicatorInsets;
+    const contentStyle = StyleSheet.flatten(children.props.contentContainerStyle);
+    const existingBottom = contentStyle?.paddingBottom;
+    const bottomPadding = typeof existingBottom === 'number' ? existingBottom : 0;
     return (
       <ScrollEdgeFade {...props}>
         {cloneElement(children, {
           automaticallyAdjustsScrollIndicatorInsets: false,
           scrollIndicatorInsets: { ...insets, bottom: Math.max(insets?.bottom ?? 0, bottomInset) },
+          // UIKit's safe area includes the accessory. Keep the final row reachable
+          // after rotation or a system bar size change without shrinking the list.
+          contentContainerStyle:
+            bottomInset > 0
+              ? [
+                  children.props.contentContainerStyle,
+                  { paddingBottom: Math.max(bottomPadding, bottomInset + 16) },
+                ]
+              : children.props.contentContainerStyle,
         })}
       </ScrollEdgeFade>
     );

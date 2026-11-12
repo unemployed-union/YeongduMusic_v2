@@ -18,6 +18,18 @@ function BlurAreaSettings({ area }: { area: BlurArea }) {
   const [draft, setDraft] = useState<number | null>(null);
   const disabled = !state.ready || state.loading || state.loadError;
   const value = draft ?? option.intensity;
+  let glassHint: string;
+  if (area === 'tabBar') {
+    glassHint =
+      'iOS 시스템 탭 바의 재질은 iOS가 관리합니다. 이 선택은 Android·이전 iOS의 하단 메뉴에 적용됩니다.';
+  } else if (area === 'miniPlayer') {
+    glassHint =
+      'iPhone의 탭 바에 통합된 미니 플레이어 배경은 iOS가 관리합니다. 이 선택은 독립형 미니 플레이어에 적용됩니다.';
+  } else if (glass.reduceTransparency) {
+    glassHint = 'iOS의 투명도 줄이기가 켜져 있어 단색 배경을 사용합니다.';
+  } else {
+    glassHint = '켜면 Liquid Glass를 사용합니다. 유리 효과의 강도는 iOS가 자동으로 조절합니다.';
+  }
   return (
     <View style={[styles.area, { borderTopColor: colors.separator }]}>
       <View style={styles.areaHeader}>
@@ -38,13 +50,7 @@ function BlurAreaSettings({ area }: { area: BlurArea }) {
           다크 모드의 재생 화면 메뉴에 적용됩니다.
         </Text>
       )}
-      {glass.supported && (
-        <Text style={[styles.hint, { color: colors.muted }]}>
-          {glass.reduceTransparency
-            ? 'iOS의 투명도 줄이기가 켜져 있어 단색 배경을 사용합니다.'
-            : '켜면 Liquid Glass를 사용합니다. 유리 효과의 강도는 iOS가 자동으로 조절합니다.'}
-        </Text>
-      )}
+      {glass.supported && <Text style={[styles.hint, { color: colors.muted }]}>{glassHint}</Text>}
       {!glass.supported && (
         <>
           <View style={styles.strengthLabel}>
@@ -94,6 +100,7 @@ function BlurAreaSettings({ area }: { area: BlurArea }) {
 
 export function BlurSettings() {
   const colors = useColors();
+  const glass = useLiquidGlass();
   const state = useBlurPreferences();
   const load = state.load;
   const iconStyle = useSettingsMenuIconStyle(colors.tint);
@@ -109,7 +116,9 @@ export function BlurSettings() {
         <View style={styles.copy}>
           <Text style={[styles.title, { color: colors.text }]}>블러 효과 전체</Text>
           <Text style={[styles.hint, { color: colors.muted }]}>
-            전체를 꺼도 영역별 선택과 강도를 기억합니다. 꺼진 영역은 단색 배경을 사용합니다.
+            {glass.supported
+              ? '앱이 그리는 효과를 조절하며 영역별 선택과 강도를 기억합니다. 시스템 탭 바·통합 미니 플레이어·기본 메뉴와 시트의 효과는 iOS 손쉬운 사용 설정을 따릅니다.'
+              : '전체를 꺼도 영역별 선택과 강도를 기억합니다. 꺼진 영역은 단색 배경을 사용합니다.'}
           </Text>
         </View>
         <AnimatedSwitch

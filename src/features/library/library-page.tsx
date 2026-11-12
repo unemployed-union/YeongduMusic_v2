@@ -2,6 +2,8 @@ import { TabScrollEdgeFade } from '@/components/tab-scroll-edge-fade';
 import { memo, useCallback, useMemo, useState } from 'react';
 import {
   FlatList,
+  Platform,
+  useWindowDimensions,
   Pressable,
   RefreshControl,
   StyleSheet,
@@ -64,6 +66,13 @@ export const LibraryPage = memo(function LibraryPage({
 }: Props) {
   const colors = useColors();
   const glass = useLiquidGlass();
+  const ios = Platform.OS === 'ios';
+  const { fontScale } = useWindowDimensions();
+  const largeText = ios && fontScale >= 1.3;
+  let albumRadius = glass.supported ? 18 : 11;
+  if (ios) {
+    albumRadius = 8;
+  }
   const [selectedAlbum, setSelectedAlbum] = useState<{
     album: Album;
     anchor: ActionMenuAnchor;
@@ -121,9 +130,9 @@ export const LibraryPage = memo(function LibraryPage({
             }
             style={[styles.album, spacious && styles.spaciousAlbum, { width: cardWidth }]}
           >
-            <Artwork item={album} size={cardWidth} radius={glass.supported ? 18 : 11} />
+            <Artwork item={album} size={cardWidth} radius={albumRadius} />
             <Text
-              numberOfLines={1}
+              numberOfLines={largeText ? 2 : 1}
               style={[
                 styles.albumTitle,
                 spacious && styles.spaciousAlbumTitle,
@@ -132,7 +141,10 @@ export const LibraryPage = memo(function LibraryPage({
             >
               {album.title}
             </Text>
-            <Text numberOfLines={1} style={[styles.albumArtist, { color: colors.muted }]}>
+            <Text
+              numberOfLines={largeText ? 2 : 1}
+              style={[styles.albumArtist, { color: colors.muted }]}
+            >
               {album.artist}
             </Text>
           </Pressable>
@@ -159,12 +171,17 @@ export const LibraryPage = memo(function LibraryPage({
             { borderBottomColor: colors.separator },
             grid.columns > 1 && { width: cardWidth },
             spacious && styles.spaciousArtist,
+            ios && { height: undefined, minHeight: spacious ? 82 : 70, paddingVertical: 10 },
           ]}
         >
           <View style={[styles.artistIcon, { backgroundColor: colors.surface }]}>
             <Ionicons name="person" size={22} color={colors.tint} />
           </View>
-          <Text numberOfLines={1} style={[styles.artistName, { color: colors.text }]}>
+          <Text
+            variant="body"
+            numberOfLines={largeText ? 2 : 1}
+            style={[styles.artistName, ios && { fontWeight: '400' }, { color: colors.text }]}
+          >
             {artist.name}
           </Text>
           <Text style={{ color: colors.muted }}>
@@ -174,7 +191,7 @@ export const LibraryPage = memo(function LibraryPage({
         </Pressable>
       );
     },
-    [tab, cardWidth, colors, play, grid.columns, spacious, glass.supported],
+    [tab, cardWidth, colors, play, grid.columns, spacious, ios, largeText, albumRadius],
   );
   const frame = [width === undefined && styles.fill, { width }];
   if (isPending) {

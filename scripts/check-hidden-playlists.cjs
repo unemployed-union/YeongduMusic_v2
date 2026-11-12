@@ -7,6 +7,12 @@ const root = path.resolve(__dirname, '..');
 const ts = require(path.join(root, 'node_modules/typescript'));
 const { create } = require(path.join(root, 'node_modules/zustand'));
 function load(file, modules = {}) {
+  modules = {
+    '@/features/settings/settings-descriptions': require('./test-source-loader.cjs').loadSource(
+      'src/features/settings/settings-descriptions.ts',
+    ),
+    ...modules,
+  };
   modules = { ...require('./test-cloud-fixtures.cjs').cloudFixtures({}, modules), ...modules };
   const code = ts.transpileModule(fs.readFileSync(path.join(root, file), 'utf8'), { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText;
   const exports = {};
@@ -102,7 +108,7 @@ async function main() {
   await privacy.getState().setBiometricLock(true); privacy.getState().lock();
   await assert.rejects(privacy.getState().setPlaylistHidden('private', false), /생체 인증/);
   authFailure = true; await privacy.getState().unlock(); assert.equal(privacy.getState().unlocked, false); authFailure = false;
-  const Gate = load('src/features/hidden-music/settings-gate.tsx', uiModules).HiddenSettingsGate;
+  const Gate = require('./test-source-loader.cjs').loadSource('src/features/hidden-music/settings-gate.tsx', uiModules).HiddenSettingsGate;
   const marker = jsx('PrivateManager', {});
   assert.ok(!nodes(Gate({ children: marker })).includes(marker), 'Locked management must not render names');
   await privacy.getState().unlock();
@@ -120,7 +126,7 @@ async function main() {
   featureAccess.ready = false;
   assert.ok(!nodes(Gate({ children: marker })).includes(marker));
   featureAccess.ready = true; featureAccess.enabled = true;
-  const Settings = load('src/app/settings.tsx', {
+  const Settings = load('src/app/(settings)/settings/index.tsx', {
     ...uiModules,
   '@/components/text': { Text: 'Text' },
   'react-native': { ...uiModules['react-native'], Keyboard: { dismiss: () => {} } },
@@ -143,7 +149,7 @@ async function main() {
   assert.ok(!text(Settings()).includes('음악 숨기기')); assert.ok(!text(Settings()).includes('플레이리스트 숨기기'));
   assert.ok(nodes(Settings()).some(node => node.type === 'VersionSettings'));
   assert.ok(nodes(Settings()).some(node => node.type === 'SettingsLink' && node.props.href === '/settings/library'), 'Ordinary library settings remain available');
-  const Other = load('src/app/settings/other.tsx', {
+  const Other = load('src/app/(settings)/settings/other.tsx', {
     ...uiModules,
     '@/features/settings/settings-ui': { SettingsLink: 'SettingsLink', SettingsPage: 'SettingsPage', SettingsSection: 'SettingsSection' },
   }).default;
@@ -159,7 +165,7 @@ async function main() {
   const Dialog = load('src/features/playlists/dialogs.tsx', { ...uiModules, '@/features/metadata/metadata-editor-form': { MetadataEditorForm: 'MetadataEditorForm' } }).AddToPlaylistDialog;
   const dialog = Dialog({ songs: [{ id: 'song', source: 'local' }], onClose: () => {} });
   assert.ok(!text(dialog).includes('Private')); assert.ok(text(dialog).includes('Public'));
-  const Manager = load('src/features/playlists/hidden-playlist-manager.tsx', uiModules).HiddenPlaylistManager;
+  const Manager = require('./test-source-loader.cjs').loadSource('src/features/playlists/hidden-playlist-manager.tsx', uiModules).HiddenPlaylistManager;
   assert.equal(flatList(Manager()).props.data.length, 2, 'Authorized manager includes hidden playlists');
   cleanup(); assert.equal(privacy.getState().unlocked, false, 'Leaving either manager relocks the shared setting');
   authDelay = deferred(); const lateUnlock = privacy.getState().unlock(); privacy.getState().lock(); authDelay.resolve(); await lateUnlock; authDelay = null;

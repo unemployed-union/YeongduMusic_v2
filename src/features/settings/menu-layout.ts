@@ -24,6 +24,42 @@ export type MenuLayout = {
 };
 export type MenuGroup = keyof MenuLayout;
 
+export const MENU_GROUP_IDS = {
+  bottom: BOTTOM_MENU_IDS,
+  library: LIBRARY_MENU_IDS,
+  player: PLAYER_MENU_IDS,
+} satisfies Record<MenuGroup, readonly MenuId[]>;
+
+export const MENU_GROUP_LABELS: Record<MenuGroup, string> = {
+  bottom: '하단 메뉴',
+  library: '보관함 메뉴',
+  player: '재생 화면 메뉴',
+};
+
+/** SwiftUI destinations count positions before the source rows are removed. */
+export function moveMenuItems<T>(items: T[], sources: number[], destination: number): T[] {
+  const validDestination =
+    Number.isInteger(destination) && destination >= 0 && destination <= items.length;
+  const validSources =
+    sources.length > 0 &&
+    new Set(sources).size === sources.length &&
+    sources.every((index) => Number.isInteger(index) && index >= 0 && index < items.length);
+  if (!validDestination || !validSources) {
+    return items;
+  }
+
+  const selected = new Set(sources);
+  const moving = items.filter((_, index) => selected.has(index));
+  const remaining = items.filter((_, index) => !selected.has(index));
+  const removedBeforeDestination = sources.filter((index) => index < destination).length;
+  remaining.splice(destination - removedBeforeDestination, 0, ...moving);
+
+  if (remaining.every((item, index) => item === items[index])) {
+    return items;
+  }
+  return remaining;
+}
+
 export const MENU_LABELS: Record<MenuId, string> = {
   library: '보관함',
   playlists: '플레이리스트',

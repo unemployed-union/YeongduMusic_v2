@@ -1,5 +1,11 @@
 # 의존성 수정 점검 — 2026-10-12
 
+2026-11-10 iOS 컴파일 수정: SDK 58의 `MediaController`는 `LockScreenPlayable`을 받으므로 앨범아트 완료 콜백의 이전 `player.ref`·`player.metadata` 참조를 `playable.lockScreenPlayer`·`playable.metadata`로 수정했다. `node_modules` 밖의 pnpm 편집 복사본을 사용해 기존 패치와 잠금 파일을 갱신했다. 기존 설치의 배포 파일 176개가 편집 전 복사본과 일치함을 확인했고, 패치의 실제 코드 변경은 이 두 참조뿐이며 나머지 14개 파일의 수정 내용과 의존성 그래프는 유지했다. 라이선스 원문·고지 331개가 바뀌지 않는 패치 수정임을 대조한 후 `assets/legal/audit.json`의 잠금 파일 지문만 갱신했다.
+
+잠금 화면 검사는 SDK 58 프로토콜과 원격 명령 인터페이스에 맞췄다. 테스트의 `player`를 지역 변수로 옮겨 잘못된 프로덕션 참조가 테스트 전역 변수 때문에 컴파일되는 일을 막는다. 수정 전 코드의 동일한 컴파일 오류를 재현했고 수정 후 실제 `MediaController.swift` 전체의 Swift 컴파일 및 이미지 지연·실패·곡/재생기 전환 검사를 통과했다. MediaPlayer·AVFoundation 경계는 테스트 대체물이므로 전체 iOS 앱 빌드·실기기 재생 결과와 구분한다.
+
+별도의 빈 임시 디렉터리에서 `pnpm install --offline --frozen-lockfile --ignore-scripts --side-effects-cache=false`로 새로 설치한 뒤 오디오 패치 14개 파일과 masked-view 패치 1개 파일의 바이트 일치를 확인했다. 새 설치의 `MediaController.swift`로도 같은 Swift 검사를 통과했다.
+
 2026-11-06 SDK 58 추가: 아래 내용은 SDK 57 당시의 점검 기록이다. 현재 활성 패치는 `expo-audio@58.0.11`의 14개 파일과 `@react-native-masked-view/masked-view@0.3.2`의 타입 선언 1개다. SDK 57 오디오 패치는 원본 파일을 보존했고, SDK 58 패치는 별도 편집 폴더에서 이식해 pnpm으로 등록했다. 깨끗한 frozen-lockfile 설치에서도 패치 재현을 확인했다. 현재 검증과 남은 항목은 [SDK 58 마이그레이션 보고](docs/expo-sdk-58-migration.md)에 기록한다.
 
 2026-10-16 추가: 화면 꺼짐 상태의 곡 전환을 위해 기존 pnpm 절차로 `TrackTransitionWakeLock.kt`를 추가하고 `AudioPlayer.kt`, `AudioModule.kt` 및 소스·배포 타입을 갱신했다. 아래 12개 파일과 해시는 10월 12일 점검 당시 기록이다. 현재 패치는 13개 파일이며 원래의 잠금 화면 곡 이동·탐색·오디오 세션 패치를 유지한다. `pnpm patch --edit-dir .expo/audio-handoff-patch`의 복사본만 편집하고 `pnpm patch-commit`으로 패치와 잠금 파일을 함께 갱신했다. workspace 등록은 기존 경로를 그대로 사용한다. 기존 설치를 삭제하지 않고 별도 `.expo/audio-handoff-install`에서 `--frozen-lockfile --ignore-scripts --side-effects-cache=false --offline` 새 설치를 실행했다. 패치 13개 파일이 설치 간 바이트 단위로 일치하고 현재 SHA-256과 잠금 파일도 일치함을 확인했다. 새 잠금 클래스는 실제 Android SDK API로 컴파일했고 가상 Android 시계로 만료·조기 해제·재사용을 검증했다. 전체 Gradle 컴파일은 로컬 NDK 미설치로 실행되지 않았다. 실기기 재생 검사는 사용자 요청에 따라 생략했다.

@@ -10,7 +10,10 @@ import Animated, {
 import { useColors } from '@/theme/tokens';
 import { playHaptic } from '@/services/haptics';
 
-type Props = Pick<SwitchProps, 'value' | 'disabled' | 'onValueChange' | 'accessibilityLabel'> & {
+export type AnimatedSwitchProps = Pick<
+  SwitchProps,
+  'value' | 'disabled' | 'onValueChange' | 'accessibilityLabel'
+> & {
   trackColor?: { false?: string; true?: string };
   thumbColor?: string;
   ios_backgroundColor?: string;
@@ -29,7 +32,7 @@ export function AnimatedSwitch({
   thumbColor,
   ios_backgroundColor,
   haptics = true,
-}: Props) {
+}: AnimatedSwitchProps) {
   const colors = useColors();
   const progress = useSharedValue(value ? 1 : 0);
   const off = disabled

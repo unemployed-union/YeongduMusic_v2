@@ -31,7 +31,7 @@ const ionicons = notices.entries.find(item => item.id === 'asset:ionicons');
 assert(ionicons.texts.some(id => notices.texts[id].includes('Copyright (c) 2015-present Ionic')));
 const mpl = notices.entries.find(item => item.id === 'resource:public-suffix-list');
 assert(mpl.url.includes('publicsuffix.org') && mpl.texts.some(id => notices.texts[id].includes('Mozilla Public License')));
-const settings = ts.createSourceFile('settings.tsx', read('src/app/settings.tsx'), ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+const settings = ts.createSourceFile('settings.tsx', read('src/app/(settings)/settings/index.tsx'), ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
 const menuNodes = [];
 function collectMenus(node) {
   if (ts.isJsxSelfClosingElement(node) || ts.isJsxOpeningElement(node)) {
@@ -51,7 +51,7 @@ assert.equal(licenseMenus.length, 1, 'Settings must expose one open-source licen
 assert.equal(versionMenus.length, 1, 'Settings must expose one version row, regardless of its callback props');
 assert.equal(licenseMenus[0].attributes.href, '/settings/licenses');
 assert(licenseMenus[0].position < versionMenus[0].position, 'The license menu stays above the version row');
-assert(read('src/app/_layout.tsx').includes('name="settings/licenses"'));
+assert(read('src/features/settings/settings-screens.ts').includes("name: 'settings/licenses'"));
 for (const name of ['assets/legal/notices.json', 'assets/legal/audit.json']) {
   assert(!/E:\\\\Project|C:\\\\Users|_sid=|EXPO_PUBLIC_NAS_EXTERNAL_URL/.test(read(name)), 'Do not ship local paths or credentials');
 }

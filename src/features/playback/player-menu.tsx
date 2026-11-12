@@ -8,8 +8,9 @@ import Animated, {
   FadeOut,
   FadeOutDown,
   LinearTransition,
+  useReducedMotion,
 } from 'react-native-reanimated';
-import { Pressable, ScrollView, StyleSheet, View, type ViewInstance } from 'react-native';
+import { Platform, Pressable, ScrollView, StyleSheet, View, type ViewInstance } from 'react-native';
 import { router } from 'expo-router';
 import { Text } from '@/components/text';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -91,8 +92,14 @@ export function PlayerMenu({
   const colors = useColors();
   const light = useAppColorScheme() === 'light';
   const glass = useLiquidGlass('playerMenu');
+  const ios = Platform.OS === 'ios';
+  const customGlass = !ios && glass.enabled;
+  const systemReducedMotion = useReducedMotion();
+  const reducedMotion = ios && systemReducedMotion;
+  const animate = !reducedMotion && !customGlass;
   const blurIntensity = useBlurIntensity('playerMenu');
-  const opaque = !glass.enabled && (light || blurIntensity === 0 || glass.reduceTransparency);
+  const opaque =
+    ios || (!customGlass && (light || blurIntensity === 0 || glass.reduceTransparency));
   const [options, setOptions] = useState<
     'sleep-timer' | 'section-repeat' | 'playback-speed' | null
   >(null);
@@ -235,8 +242,8 @@ export function PlayerMenu({
   return (
     <Animated.View
       collapsable={false}
-      entering={glass.enabled ? undefined : ENTER_OVERLAY}
-      exiting={glass.enabled ? undefined : EXIT_OVERLAY}
+      entering={animate ? ENTER_OVERLAY : undefined}
+      exiting={animate ? EXIT_OVERLAY : undefined}
       style={StyleSheet.absoluteFill}
       pointerEvents="box-none"
       accessibilityViewIsModal
@@ -249,15 +256,15 @@ export function PlayerMenu({
       />
       <Animated.View
         collapsable={false}
-        entering={glass.enabled ? undefined : ENTER_CARD}
-        exiting={glass.enabled ? undefined : EXIT_CARD}
-        layout={glass.enabled ? LinearTransition.duration(180) : undefined}
+        entering={animate ? ENTER_CARD : undefined}
+        exiting={animate ? EXIT_CARD : undefined}
+        layout={ios && animate ? LinearTransition.duration(180) : undefined}
         style={[
           styles.card,
           { bottom, maxHeight, borderColor: colors.separator },
           opaque && { backgroundColor: colors.surface },
-          glass.supported && { borderRadius: 26 },
-          glass.enabled && { backgroundColor: 'transparent', borderWidth: 0 },
+          ios && { borderRadius: 14 },
+          customGlass && { backgroundColor: 'transparent', borderWidth: 0 },
           kind === 'details' && { left: 29, right: undefined },
           left !== undefined && { left, right: undefined },
         ]}
@@ -266,11 +273,11 @@ export function PlayerMenu({
           style={[
             styles.surface,
             opaque && { backgroundColor: colors.surface },
-            glass.supported && { borderRadius: 26 },
-            glass.enabled && { backgroundColor: 'transparent' },
+            ios && { borderRadius: 14 },
+            customGlass && { backgroundColor: 'transparent' },
           ]}
         >
-          {glass.enabled ? (
+          {customGlass ? (
             <GlassBackdrop style={{ borderRadius: 26 }} />
           ) : (
             <>

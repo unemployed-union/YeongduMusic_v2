@@ -1,4 +1,4 @@
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Platform, Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { Text } from '@/components/text';
 import { useState } from 'react';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -23,6 +23,9 @@ export function SongRow({
   favoriteLocation?: Exclude<FavoriteButtonLocation, 'player'>;
 }) {
   const colors = useColors();
+  const ios = Platform.OS === 'ios';
+  const { fontScale } = useWindowDimensions();
+  const largeText = ios && fontScale >= 1.3;
   const [menuAnchor, setMenuAnchor] = useState<ActionMenuAnchor | null>(null);
   const [pressed, setPressed] = useState(false);
   const selected = menuAnchor !== null;
@@ -38,6 +41,7 @@ export function SongRow({
     <View
       style={[
         styles.row,
+        ios && { borderRadius: 0, minHeight: 64, paddingVertical: 8 },
         {
           borderBottomColor: colors.separator,
           backgroundColor: rowBackgroundColor,
@@ -70,10 +74,22 @@ export function SongRow({
           <Text style={[styles.index, { color: colors.muted }]}>{index + 1}</Text>
         )}
         <View style={styles.text}>
-          <Text numberOfLines={1} style={[styles.title, { color: colors.text }]}>
+          <Text
+            variant="body"
+            numberOfLines={largeText ? 2 : 1}
+            style={[
+              styles.title,
+              ios && { fontSize: 17, fontWeight: '400' },
+              { color: colors.text },
+            ]}
+          >
             {song.title}
           </Text>
-          <Text numberOfLines={1} style={[styles.subtitle, { color: colors.muted }]}>
+          <Text
+            variant="footnote"
+            numberOfLines={largeText ? 2 : 1}
+            style={[styles.subtitle, { color: colors.muted }]}
+          >
             {song.artist} · {song.album}
           </Text>
         </View>

@@ -73,6 +73,8 @@ export function PlayerScreen() {
   const insets = useSafeAreaInsets();
   const { width, height, fontScale } = useWindowDimensions();
   const layout = playerLayout(width, height, insets, fontScale);
+  const accessibleText = Platform.OS === 'ios' && fontScale >= 1.3;
+  const scrollArtwork = layout.compact || accessibleText;
   const controlsRef = useRef<ViewInstance | null>(null);
   const [panel, setPanel] = useState<'artwork' | 'queue' | 'lyrics'>('artwork');
   const [lyricsSource, setLyricsSource] = useState<LyricsSource>('auto');
@@ -216,25 +218,35 @@ export function PlayerScreen() {
       ? controlsTop - insets.top - 16
       : screenHeight - insets.top - insets.bottom - 90,
   );
+  let artworkRadius = glass.supported ? 28 : 17;
+  if (ios) {
+    artworkRadius = 12;
+  }
   const artworkPanel = song ? (
     <GestureDetector gesture={artworkGesture}>
       <View
         collapsable={false}
-        style={[styles.artContainer, { minHeight: artSize + 24 }, layout.split && { flex: 0 }]}
+        style={[
+          styles.artContainer,
+          { minHeight: artSize + 24 },
+          layout.split && { flex: 0 },
+          accessibleText && { flexGrow: 0, flexShrink: 0, flexBasis: 'auto' },
+        ]}
       >
         <Animated.View
           style={[
             styles.artShadow,
+            ios && { shadowOpacity: 0.18, shadowRadius: 16, shadowOffset: { width: 0, height: 8 } },
             {
               width: artSize,
               height: artSize,
               backgroundColor: colors[0],
-              ...(glass.supported && { borderRadius: 28 }),
+              borderRadius: artworkRadius,
             },
             artworkSwipe.animatedStyle,
           ]}
         >
-          <Artwork item={song} size={artSize} radius={glass.supported ? 28 : 17} fullResolution />
+          <Artwork item={song} size={artSize} radius={artworkRadius} fullResolution />
         </Animated.View>
       </View>
     </GestureDetector>
@@ -267,7 +279,7 @@ export function PlayerScreen() {
       style={[
         styles.bottom,
         ios && styles.iosBottom,
-        (layout.split || layout.compact) && styles.compactBottom,
+        (layout.split || scrollArtwork) && styles.compactBottom,
       ]}
       onLayout={(event) =>
         setControlsTop(screenHeight - insets.bottom - 18 - event.nativeEvent.layout.height)
@@ -344,7 +356,7 @@ export function PlayerScreen() {
         <View style={styles.secondary}>{activePanel}</View>
       </>
     );
-  } else if (layout.compact && panel === 'artwork') {
+  } else if (scrollArtwork && panel === 'artwork') {
     playerContent = (
       <ScrollView
         contentContainerStyle={styles.primaryContent}
@@ -394,8 +406,6 @@ export function PlayerScreen() {
             width={layout.split ? layout.contentWidth : layout.primaryWidth}
             split={layout.split}
             showQueue={showQueue}
-            glassSupported={glass.supported}
-            glassEnabled={glass.enabled}
             onClose={close}
             onShowLyrics={() => {
               playHaptic('menu');

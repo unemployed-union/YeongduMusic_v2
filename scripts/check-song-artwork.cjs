@@ -202,7 +202,7 @@ function checkPreview() {
   const jsx = (type, props) => ({ type, props });
   const nodes = tree => Array.isArray(tree) ? tree.flatMap(nodes) : tree && typeof tree === 'object' ? [tree, ...nodes(tree.props?.children)] : [];
   const flatten = value => Object.assign({}, ...[value].flat(Infinity).filter(Boolean));
-  const palette = load('src/theme/tokens.ts', { 'react-native': {}, '@/stores/theme-preferences': {}, './mode': {} }).palette;
+  const palette = load('src/theme/tokens.shared.ts', { 'react-native': {}, '@/stores/theme-preferences': {}, './mode': {} }).palette;
   for (const mode of ['light', 'dark']) {
     const slots = []; let cursor = 0;
     const Preview = load('src/features/artwork/artwork-preview.tsx', {

@@ -9,7 +9,7 @@ function load(file, mocks = {}, globals = {}) {
     if (name === 'zustand') return { create }; if (name in mocks) return mocks[name]; throw Error('Unexpected appearance dependency ' + name);
   }, exports, ...Object.values(globals)); return exports;
 }
-const rules = load('src/theme/appearance.ts'), palette = load('src/theme/tokens.ts', { 'react-native': {} }).palette;
+const rules = load('src/theme/appearance.ts'), palette = load('src/theme/tokens.shared.ts', { 'react-native': {} }).palette;
 const flush = async () => { for (let i = 0; i < 60; i++) await Promise.resolve(); };
 const jsx = (type, props) => ({ type, props });
 const nodes = tree => Array.isArray(tree) ? tree.flatMap(nodes) : tree && typeof tree === 'object' ? [tree, ...nodes(tree.props?.children)] : [];
@@ -66,7 +66,7 @@ async function checkUI() {
   const r = runtime('android'), state = r.store.getState; await state().load();
   let scheme = 'light', cursor = 0; const slots = [];
   const useAppearancePreferences = select => select ? select(state()) : state();
-  const tokens = load('src/theme/tokens.ts', { 'react-native': { useColorScheme: () => scheme }, '@/stores/theme-preferences': { useThemePreferences: select => select({ mode: 'auto' }) },
+  const tokens = load('src/theme/tokens.shared.ts', { 'react-native': { useColorScheme: () => scheme }, '@/stores/theme-preferences': { useThemePreferences: select => select({ mode: 'auto' }) },
     '@/stores/appearance-preferences': { useAppearancePreferences }, './mode': load('src/theme/mode.ts'), './appearance': rules });
   const colorHooks = load('src/theme/use-player-colors.ts', { react: { useMemo: fn => fn() }, '@/stores/appearance-preferences': { useAppearancePreferences }, './tokens': tokens, './appearance': rules });
   let artworkColors = ['#331122', '#221133', '#111122'];
@@ -80,6 +80,7 @@ async function checkUI() {
     '@/components/text': { Text: 'Text' }, '@/components/text-input': { TextInput: 'Input' }, '@/stores/appearance-preferences': { useAppearancePreferences },
     '@/theme/tokens': tokens, '@/theme/use-player-colors': colorHooks, '@/features/playback/use-artwork-colors': { useArtworkColors }, '@/theme/appearance': rules,
     './settings-ui': { SettingsPage: 'Page', SettingsSection: 'Section' },
+    './color-options': load('src/features/settings/color-options.ts', {}),
   };
   const Settings = load('src/features/settings/color-settings.tsx', ui).ColorSettings;
   const expand = tree => Array.isArray(tree) ? tree.map(expand) : !tree || typeof tree !== 'object' ? tree : typeof tree.type === 'function' ? expand(tree.type(tree.props)) : { ...tree, props: { ...tree.props, children: expand(tree.props.children) } };

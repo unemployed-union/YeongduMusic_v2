@@ -12,11 +12,13 @@
     ],
     "userInterfaceStyle": "automatic",
     "ios": {
+      "icon": "./assets/YeongduMusic.icon",
       "supportsTablet": true,
       "infoPlist": {
         "NSAppTransportSecurity": {
           "NSAllowsArbitraryLoads": true
-        }
+        },
+        "ITSAppUsesNonExemptEncryption": false
       },
       "bundleIdentifier": "xyz.yeongdu.yeongdumusic"
     },

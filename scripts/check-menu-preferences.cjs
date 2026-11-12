@@ -10,6 +10,9 @@ function load(file, modules) {
   }).outputText;
   const exports = {};
   new Function('require', 'exports', code)(name => {
+    if (name === '@/features/settings/settings-descriptions') {
+      return load('src/features/settings/settings-descriptions.ts', {});
+    }
     if (name === '@/theme/layout') return load('src/theme/layout.ts');
     if (name === '@/features/library/library-sidebar') return { LibrarySidebar: 'LibrarySidebar' };
     if (name === '@/components/content-title-bar') return { ContentTitleBar: 'ContentTitleBar' };
@@ -104,6 +107,7 @@ function checkSettingsUI(store) {
     '@expo/vector-icons/Ionicons': { __esModule: true, default: 'Icon' }, '@/components/text': { Text: 'Text' },
     '@/components/animated-switch': { AnimatedSwitch: 'Switch' }, '@/stores/menu-preferences': { useMenuPreferences: () => store.getState() },
     '@/theme/tokens': { useColors: () => ({}) }, './menu-layout': rules,
+    './settings-ui': { SettingsSection: 'Section' },
   }).MenuLayoutSettings;
   for (const group of ['bottom', 'library', 'player']) {
     const layout = rules.defaultMenuLayout(); layout[group].forEach((item, index) => { item.visible = index === 1; });
@@ -119,7 +123,7 @@ function checkSettingsUI(store) {
     assert.deepEqual(pending.filter(node => node.type === 'Icon').map(node => node.props.color), before, 'Reorder arrows do not flash while toggling');
     store.setState({ saving: false });
   }
-  const settings = load('src/app/settings.tsx', {
+  const settings = load('src/app/(settings)/settings/index.tsx', {
     react: { useEffect: () => {}, useState: initial => [initial, () => {}] },
     '@/components/toast-notice': { ToastNotice: 'Toast' },
     'react/jsx-runtime': { jsx, jsxs: jsx }, '@/features/settings/settings-ui': { SettingsPage: 'Page', SettingsLink: 'Link', SettingsSection: 'Section' },
@@ -128,7 +132,7 @@ function checkSettingsUI(store) {
   const links = nodes(settings()).filter(node => node.type === 'Link').map(node => node.props.href);
   assert(links.includes('/settings/bottom-menu')); assert(links.includes('/settings/library')); assert(!links.includes('/settings/player-menu')); assert(!links.includes('/settings/other'));
   assert(links.includes('/settings/playback'), 'Playback settings remain available while hidden settings are off');
-  const playback = load('src/app/settings/playback.tsx', {
+  const playback = load('src/app/(settings)/settings/playback.tsx', {
     'react/jsx-runtime': { jsx, jsxs: jsx }, '@/features/settings/settings-ui': { SettingsPage: 'Page', SettingsLink: 'Link', SettingsSection: 'Section' },
     '@/features/settings/theme-settings': { ThemeSettings: 'ThemeSettings' },
     '@/features/settings/blur-settings': { BlurSettings: 'BlurSettings' },

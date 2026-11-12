@@ -15,7 +15,14 @@
       }
     },
     "production": {
+      "distribution": "store",
       "autoIncrement": true
+    },
+    "ui-qa-simulator": {
+      "extends": "preview",
+      "ios": {
+        "simulator": true
+      }
     }
   },
   "submit": {

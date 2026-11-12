@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react';
-import { BackHandler } from 'react-native';
+import { BackHandler, Platform } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { Gesture } from 'react-native-gesture-handler';
 import {
   cancelAnimation,
   useAnimatedStyle,
+  useReducedMotion,
   useSharedValue,
   withSpring,
   withTiming,
@@ -12,6 +13,8 @@ import {
 import { scheduleOnRN, scheduleOnUI } from 'react-native-worklets';
 
 export function usePlayerDismiss(height: number, onDismiss: () => void, active = true) {
+  const systemReducedMotion = useReducedMotion();
+  const reducedMotion = Platform.OS === 'ios' && systemReducedMotion;
   const translationY = useSharedValue(height);
   const closing = useSharedValue(false);
   const ready = useSharedValue(false);
@@ -55,14 +58,14 @@ export function usePlayerDismiss(height: number, onDismiss: () => void, active =
 
   useEffect(() => {
     translationY.set(
-      withTiming(0, { duration: 260 }, (finished) => {
+      withTiming(0, { duration: reducedMotion ? 120 : 260 }, (finished) => {
         if (finished) {
           ready.set(true);
         }
       }),
     );
     return () => cancelAnimation(translationY);
-  }, [ready, translationY]);
+  }, [ready, reducedMotion, translationY]);
 
   useEffect(() => {
     if (closing.get()) {
@@ -91,13 +94,13 @@ export function usePlayerDismiss(height: number, onDismiss: () => void, active =
     closing.set(true);
     scheduleOnRN(watchDismiss);
     translationY.set(
-      withTiming(height, { duration: 230 }, (finished) => {
+      withTiming(height, { duration: reducedMotion ? 120 : 230 }, (finished) => {
         if (finished) {
           scheduleOnRN(finishDismiss);
         }
       }),
     );
-  }, [closing, finishDismiss, height, translationY, watchDismiss]);
+  }, [closing, finishDismiss, height, reducedMotion, translationY, watchDismiss]);
 
   useFocusEffect(
     useCallback(() => {
@@ -139,14 +142,21 @@ export function usePlayerDismiss(height: number, onDismiss: () => void, active =
         })
         .onFinalize(() => {
           if (ready.get() && !closing.get()) {
-            translationY.set(withSpring(0, { damping: 24, stiffness: 220 }));
+            if (reducedMotion) {
+              translationY.set(withTiming(0, { duration: 120 }));
+            } else {
+              translationY.set(withSpring(0, { damping: 24, stiffness: 220 }));
+            }
           }
         }),
-    [active, close, closing, height, ready, translationY],
+    [active, close, closing, height, ready, reducedMotion, translationY],
   );
 
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: translationY.get() }],
-  }));
+  const animatedStyle = useAnimatedStyle(() => {
+    if (reducedMotion) {
+      return { opacity: Math.max(0, Math.min(1, 1 - translationY.get() / Math.max(height, 1))) };
+    }
+    return { transform: [{ translateY: translationY.get() }] };
+  });
   return { gesture, animatedStyle, close, ready, closing };
 }

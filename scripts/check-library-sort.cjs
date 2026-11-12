@@ -8,6 +8,7 @@ function load(file, modules = {}) {
   return mod.exports;
 }
 const sorting = load('src/features/library/sort-library.ts');
+const sortOptions = load('src/features/library/library-sort-options.ts');
 const sort = sorting.sortLibraryItems;
 for (const field of ['title', 'name']) {
   const items = Object.freeze(['다', '나 10', '가', '나 2'].map((value, index) => Object.freeze({ id: String(index), [field]: value })));
@@ -22,6 +23,7 @@ assert.deepEqual(sort([], 'ascending'), []);
 let memo, calls = 0, queue;
 const jsx = (type, props) => ({ type, props });
 const modules = {
+  './library-sort-options': sortOptions,
   react: { memo: fn => fn, useCallback: fn => fn, useState: value => [value, () => {}], useMemo: (fn, deps) => { if (!memo || deps.some((value, index) => value !== memo.deps[index])) memo = { deps, value: fn() }; return memo.value; } },
   './album-properties': { AlbumProperties: 'AlbumProperties' },
   'react/jsx-runtime': { jsx, jsxs: jsx },
@@ -34,6 +36,8 @@ const modules = {
   '@/features/playback/play-and-open-player': { playAndOpenPlayer: (items, index) => { queue = { items, index }; } },
   '@/theme/tokens': { useColors: () => ({}) }, './sort-library': { sortLibraryItems: (...args) => { calls++; return sort(...args); } },
 };
+modules['react-native'].Platform = { OS: 'android' };
+modules['react-native'].useWindowDimensions = () => ({ width: 400, height: 800, fontScale: 1 });
 const { LibraryPage } = load('src/features/library/library-page.tsx', modules);
 function find(node, type) {
   if (!node || typeof node !== 'object') return undefined;

@@ -1,3 +1,8 @@
+import { Text } from '@/components/text';
+import { PlaylistSheet } from '@/features/playlists/dialogs';
+import { useDriveDocumentsStore } from '@/stores/drive-documents';
+import { useColors } from '@/theme/tokens';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { useState } from 'react';
 import {
   ActivityIndicator,
@@ -8,12 +13,7 @@ import {
   View,
   useWindowDimensions,
 } from 'react-native';
-import Ionicons from '@expo/vector-icons/Ionicons';
-import { Text } from '@/components/text';
-import { PlaylistSheet } from '@/features/playlists/dialogs';
-import { useDriveDocumentsStore } from '@/stores/drive-documents';
-import { useLocalMusicStore } from '@/stores/local-music';
-import { useColors } from '@/theme/tokens';
+import { addDriveDocuments } from './add-documents';
 
 export function DriveDocumentSettings({ blocked }: { blocked: boolean }) {
   const documents = useDriveDocumentsStore();
@@ -25,15 +25,7 @@ export function DriveDocumentSettings({ blocked }: { blocked: boolean }) {
   }
   const busy = blocked || documents.busy;
   async function add() {
-    if (busy) {
-      return;
-    }
-    const revision = useDriveDocumentsStore.getState().revision;
-    await documents.add();
-    const current = useDriveDocumentsStore.getState();
-    if (!current.error && current.revision !== revision && current.songs.length) {
-      useLocalMusicStore.getState().setSource('drive');
-    }
+    await addDriveDocuments(busy);
   }
   return (
     <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.separator }]}>

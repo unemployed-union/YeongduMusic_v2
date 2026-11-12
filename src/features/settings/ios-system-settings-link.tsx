@@ -1,18 +1,14 @@
-import { useState } from 'react';
-import { ActivityIndicator, Linking, Pressable, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Text } from '@/components/text';
 import { useColors } from '@/theme/tokens';
-import { playHaptic } from '@/services/haptics';
 import { settingsMenuStyles, useSettingsMenuIconStyle } from './settings-menu-layout';
-import { refreshIosSystemSettings, useIosSystemSettingsStatus } from './ios-system-settings';
+import { useSystemSettingsLink } from './use-system-settings-link';
 
 export function IosSystemSettingsLink() {
   const colors = useColors();
   const iconStyle = useSettingsMenuIconStyle(colors.tint);
-  const status = useIosSystemSettingsStatus();
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { busy, error, syncError, openSettings, retry } = useSystemSettingsLink();
   return (
     <View>
       <Pressable
@@ -21,17 +17,7 @@ export function IosSystemSettingsLink() {
         accessibilityState={{ disabled: busy, busy }}
         disabled={busy}
         style={settingsMenuStyles.row}
-        onPress={() => {
-          playHaptic('menu');
-          setBusy(true);
-          setError(null);
-          void refreshIosSystemSettings()
-            .then(() => Linking.openSettings())
-            .catch(() =>
-              setError('iOS 설정을 열지 못했습니다. 설정 앱에서 YeongduMusic을 선택해 주세요.'),
-            )
-            .finally(() => setBusy(false));
-        }}
+        onPress={openSettings}
       >
         <View style={iconStyle}>
           <Ionicons name="settings-outline" size={23} color={colors.tint} />
@@ -48,7 +34,7 @@ export function IosSystemSettingsLink() {
           <Ionicons name="open-outline" size={19} color={colors.muted} />
         )}
       </Pressable>
-      {!!(error || status.error) && (
+      {!!error && (
         <View
           style={{
             padding: 16,
@@ -57,12 +43,12 @@ export function IosSystemSettingsLink() {
           }}
         >
           <Text accessibilityRole="alert" style={{ color: colors.tint, fontSize: 13 }}>
-            {error || status.error}
+            {error}
           </Text>
-          {!!status.error && (
+          {syncError && (
             <Pressable
               accessibilityRole="button"
-              onPress={() => void refreshIosSystemSettings()}
+              onPress={retry}
               style={{ minHeight: 44, justifyContent: 'center' }}
             >
               <Text style={{ color: colors.tint }}>설정 다시 반영하기</Text>

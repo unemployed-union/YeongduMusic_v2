@@ -4,7 +4,11 @@ import { Text } from '@/components/text';
 import { AnimatedSwitch } from '@/components/animated-switch';
 import { useColors } from '@/theme/tokens';
 import { useLyricsTranslationStore } from '@/stores/lyrics-translation';
-import { TRANSLATION_LANGUAGES, type TranslationOptions } from './translation-options';
+import {
+  TRANSLATION_LANGUAGES,
+  withTranslationLanguage,
+  type TranslationOptions,
+} from './translation-options';
 import { playHaptic } from '@/services/haptics';
 
 export function TranslationLanguageControls({
@@ -63,15 +67,7 @@ export function TranslationLanguageControls({
                     if (!selected) {
                       playHaptic('selection');
                     }
-                    onChange(
-                      field === 'source'
-                        ? {
-                            source: language.code,
-                            target:
-                              language.code === options.target ? options.source : options.target,
-                          }
-                        : { ...options, target: language.code },
-                    );
+                    onChange(withTranslationLanguage(options, field, language.code));
                   }}
                   style={[
                     styles.language,
@@ -176,3 +172,5 @@ const styles = StyleSheet.create({
   note: { fontSize: 12, lineHeight: 19 },
   retry: { minHeight: 44, justifyContent: 'center' },
 });
+
+export type TranslationLanguageControlsProps = Parameters<typeof TranslationLanguageControls>[0];

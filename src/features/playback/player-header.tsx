@@ -1,14 +1,11 @@
 import { Platform, Pressable, View } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { GlassBackdrop } from '@/components/glass-backdrop';
-import { playerScreenStyles as styles, glassTopButton } from './player-screen-styles';
+import { playerScreenStyles as styles } from './player-screen-styles';
 
 type Props = {
   width: number;
   split: boolean;
   showQueue: boolean;
-  glassSupported: boolean;
-  glassEnabled: boolean;
   onClose(): void;
   onShowLyrics(): void;
   onToggleQueue(): void;
@@ -17,8 +14,6 @@ export function PlayerHeader({
   width,
   split,
   showQueue,
-  glassSupported,
-  glassEnabled,
   onClose,
   onShowLyrics,
   onToggleQueue,
@@ -27,30 +22,27 @@ export function PlayerHeader({
   return (
     <View style={[styles.top, { width: width, alignSelf: 'center' }]}>
       <Pressable
+        accessibilityRole="button"
         accessibilityLabel="플레이어 닫기"
+        hitSlop={ios ? undefined : 4}
         onPress={onClose}
-        style={[
-          styles.topButton,
-          glassSupported && glassTopButton,
-          ios && { backgroundColor: 'transparent' },
-        ]}
+        style={[styles.topButton, ios && styles.iosTopButton]}
       >
-        {!ios && glassEnabled && <GlassBackdrop dark interactive style={{ borderRadius: 22 }} />}
         <Ionicons name="chevron-down" size={26} color="white" />
       </Pressable>
       {split && (
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="가사 보기"
+          hitSlop={ios ? undefined : 4}
           accessibilityState={{ selected: !showQueue }}
           onPress={onShowLyrics}
           style={[
             styles.topButton,
-            glassSupported && glassTopButton,
+            ios && styles.iosTopButton,
             { marginLeft: 'auto', marginRight: 12 },
           ]}
         >
-          {glassEnabled && <GlassBackdrop dark interactive style={{ borderRadius: 22 }} />}
           <Ionicons
             name="chatbox-ellipses-outline"
             size={24}
@@ -59,15 +51,13 @@ export function PlayerHeader({
         </Pressable>
       )}
       <Pressable
+        accessibilityRole="button"
         accessibilityLabel="대기열"
+        hitSlop={ios ? undefined : 4}
+        accessibilityState={{ selected: showQueue }}
         onPress={onToggleQueue}
-        style={[
-          styles.topButton,
-          glassSupported && glassTopButton,
-          ios && { backgroundColor: 'transparent' },
-        ]}
+        style={[styles.topButton, ios && styles.iosTopButton]}
       >
-        {!ios && glassEnabled && <GlassBackdrop dark interactive style={{ borderRadius: 22 }} />}
         <Ionicons name={showQueue ? 'albums' : 'list'} size={26} color="white" />
       </Pressable>
     </View>

@@ -115,7 +115,7 @@ index fb2d0b57fb8718df04e5c073b70837b2658f2c16..45d7ae872e8cd987a606f619309c1315
        serviceConnection.playbackServiceBinder?.service?.unregisterPlayable()
 diff --git a/android/src/main/java/expo/modules/audio/TrackTransitionWakeLock.kt b/android/src/main/java/expo/modules/audio/TrackTransitionWakeLock.kt
 new file mode 100644
-index 0000000000000000000000000000000000000000..35a12431d7aff418cc7431a637941369a207c518
+index 0000000000000000000000000000000000000000..4a079a8bc3196f24bdb56c59ce5c0989a1015531
 --- /dev/null
 +++ b/android/src/main/java/expo/modules/audio/TrackTransitionWakeLock.kt
 @@ -0,0 +1,20 @@
@@ -185,7 +185,7 @@ index 53c36f7e3c0a0bcb8b4de1f5e6d2d3e214d3fbf2..cd36db585505b3c878fff5bc186e3612
      val backwardMs = seekIntervalMs(options?.seekBackwardIntervalSeconds)
 diff --git a/android/src/main/java/expo/modules/audio/service/ForwardingPlayerListener.java b/android/src/main/java/expo/modules/audio/service/ForwardingPlayerListener.java
 new file mode 100644
-index 0000000000000000000000000000000000000000..9ddeed260dbb160527284bb43bf6dc3433fa9467
+index 0000000000000000000000000000000000000000..cca25932f49482df03013670bb37b3ba8005ff2a
 --- /dev/null
 +++ b/android/src/main/java/expo/modules/audio/service/ForwardingPlayerListener.java
 @@ -0,0 +1,165 @@
@@ -371,7 +371,7 @@ index 18203a364d17dcf3de95d22a20175308e3363889..fd45ebe07d4b3b1b1cd79580a5cb22db
      }
 diff --git a/android/src/main/java/expo/modules/audio/service/TrackNavigationPlayer.kt b/android/src/main/java/expo/modules/audio/service/TrackNavigationPlayer.kt
 new file mode 100644
-index 0000000000000000000000000000000000000000..c0d709a38b9ab446e343fd328e3409823e09168f
+index 0000000000000000000000000000000000000000..27b2c716b5567daef94c912bae40a89c5178aed9
 --- /dev/null
 +++ b/android/src/main/java/expo/modules/audio/service/TrackNavigationPlayer.kt
 @@ -0,0 +1,102 @@
@@ -561,7 +561,7 @@ index 41f63da33bd9acf0926944605fc9dfcc4721dd88..ae86dbf8c1ff0a7c23ff8f0561b67738
  
      let asset = AVURLAsset(url: finalUrl, options: options)
 diff --git a/ios/MediaController.swift b/ios/MediaController.swift
-index 9b66e45411fab8e869144994c35c54c947626cf2..27b62e2959b2424055b01af6d745be6e2d37bf7d 100644
+index 9b66e45411fab8e869144994c35c54c947626cf2..23a8046b188d99225f23ec37490b2e2d833235b9 100644
 --- a/ios/MediaController.swift
 +++ b/ios/MediaController.swift
 @@ -184,9 +184,12 @@ class MediaController {
@@ -584,8 +584,8 @@ index 9b66e45411fab8e869144994c35c54c947626cf2..27b62e2959b2424055b01af6d745be6e
              self.currentArtworkUrl == artworkUrl,
 -            self.currentArtworkItemIdentifier == currentItemIdentifier else {
 +            self.currentArtworkItemIdentifier == currentItemIdentifier,
-+            player.ref.currentItem.map({ ObjectIdentifier($0) }) == currentItemIdentifier,
-+            player.metadata?.artworkUrl == artworkUrl else {
++            playable.lockScreenPlayer.currentItem.map({ ObjectIdentifier($0) }) == currentItemIdentifier,
++            playable.metadata?.artworkUrl == artworkUrl else {
          return
        }
  

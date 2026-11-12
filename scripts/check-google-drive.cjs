@@ -148,7 +148,7 @@ async function checkFileEditor() {
   const jsx = (type, props) => ({ type, props }), slots = [], refs = []; let slot = 0, ref = 0, closed = 0, saved;
   const state = { files: [{ id: 'one', name: 'One' }, { id: 'two', name: 'Two' }], fileSaving: false, selectFiles: async files => { saved = files; } };
   const store = Object.assign(select => select(state), { getState: () => state });
-  const Editor = load('src/features/google-drive/file-picker.tsx', {
+  const Editor = require('./test-source-loader.cjs').loadSource('src/features/google-drive/file-picker.tsx', {
     react: { useState: initial => { const i = slot++; if (!(i in slots)) slots[i] = typeof initial === 'function' ? initial() : initial; return [slots[i], value => { slots[i] = typeof value === 'function' ? value(slots[i]) : value; }]; }, useRef: initial => refs[ref++] ??= { current: initial } },
     'react/jsx-runtime': { jsx, jsxs: jsx }, 'react-native': { View: 'View', FlatList: 'List', Pressable: 'Button' },
     '@expo/vector-icons/Ionicons': { __esModule: true, default: 'Icon' }, '@/components/text': { Text: 'Text' },

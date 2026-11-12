@@ -111,7 +111,7 @@ async function checkExplicitDownload(h, song) {
 async function checkSettings() {
   const jsx = (type, props) => ({ type, props }), h = harness(); let selected;
   const store = Object.assign(() => h.store.getState(), { getState: h.store.getState });
-  const Settings = load('src/features/google-drive/document-settings.tsx', {
+  const Settings = require('./test-source-loader.cjs').loadSource('src/features/google-drive/document-settings.tsx', {
     react: { useState: value => [value, () => {}] }, 'react/jsx-runtime': { jsx, jsxs: jsx },
     'react-native': { View: 'View', Pressable: 'Button', FlatList: 'List', Platform: { OS: 'android' }, useWindowDimensions: () => ({ height: 800 }), StyleSheet: { create: value => value } },
     '@expo/vector-icons/Ionicons': { __esModule: true, default: 'Icon' }, '@/components/text': { Text: 'Text' }, '@/features/playlists/dialogs': { PlaylistSheet: 'Sheet' },

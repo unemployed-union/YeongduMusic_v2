@@ -29,6 +29,32 @@ pnpm exec expo run:android
 pnpm exec expo run:ios
 ```
 
+연결한 실제 기기를 선택해 빌드·설치하려면 다음 명령을 사용하세요. 선택 목록에서 시뮬레이터 대신 연결된 휴대전화를 선택합니다.
+
+```bash
+# 개발용 Debug 빌드·설치 (Metro 사용)
+pnpm ios:device
+pnpm android:device
+
+# Release 빌드·설치 (기존 빌드 명령과 동일하게 빌드 번호 증가)
+pnpm build:ios:device
+pnpm build:android:device
+```
+
+iOS는 macOS·Xcode와 기기의 개발자 모드·개발 서명이 필요하며, Android는 USB 디버깅을 허용해야 합니다. 기기 이름 또는 iOS UDID를 알고 있다면 `pnpm ios:device "<기기 이름 또는 UDID>"`처럼 뒤에 붙여 지정할 수 있습니다. 기기 선택 옵션은 [Expo CLI의 `--device` 옵션](https://docs.expo.dev/more/expo-cli/#compiling-for-development)을 사용합니다.
+
+IPA 파일로 배포하려면 다음 명령을 사용하세요. 두 명령 모두 기존 빌드 번호를 한 번 증가시키고 `eas.json`의 `preview` 프로필로 서명된 기기용 앱을 생성합니다.
+
+```bash
+# EAS 클라우드에서 빌드 — 완료 후 표시되는 링크에서 IPA 다운로드
+pnpm build:ipa
+
+# Mac에서 로컬 빌드 — build/YeongduMusic.ipa로 저장
+pnpm build:ipa:local
+```
+
+Expo 로그인과 Apple Developer 배포 인증서·프로비저닝 프로필이 필요합니다. 현재 `preview`는 [내부 배포](https://docs.expo.dev/build/internal-distribution/) 설정이므로, 일반적인 Ad Hoc 서명에서는 등록된 기기에 설치할 수 있습니다. App Store/TestFlight용 빌드는 기존 명령 `pnpm build:eas --platform ios --profile production`을 사용하세요. [로컬 EAS 빌드](https://docs.expo.dev/build-reference/local-builds/)에는 macOS·Xcode·CocoaPods·fastlane이 필요하며 Expo 인증도 사용합니다.
+
 Android에서 `Failed to start the expo-audio playback service` 또는 `service binding failed`가 나타나면, Expo Go가 아닌 **YeongduMusic** 앱을 실행 중인지 확인하세요. 이미 개발 빌드를 설치했다면 위 명령으로 현재 `app.json`을 반영한 앱을 다시 빌드하고 설치하세요. 저장소의 `expo-audio` 플러그인은 `enableBackgroundPlayback: true`로 설정되어 있으며, Expo 설정 검사에서 Android `AudioControlsService` 선언과 foreground service 권한을 확인했습니다. 실제 기기의 서비스 동작과 잠금 화면 컨트롤은 별도로 검증해야 합니다.
 
 Android Release 스플래시는 `app.json`의 `expo-splash-screen` 플러그인이 `assets/images/splash-logo.png`를 사용해 생성합니다. 아이콘과 스플래시는 제공된 구름·음표 이미지 `assets/branding/app-logo.png`를 원본으로 사용합니다. `node scripts/generate-icon.js`로 기본 아이콘, 스플래시 PNG와 Android adaptive 레이어를 다시 만들 수 있습니다. `android/`는 생성 파일이라 Git과 EAS 업로드에서 제외됩니다. EAS Build는 업로드된 이미지와 설정으로 Prebuild를 실행합니다. Git 기반 빌드에서는 새 이미지와 설정을 커밋해야 합니다.
@@ -59,34 +85,40 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\verify-nas.ps1 -Ba
 
 ## 구조
 
-| 경로 | 역할 |
-| --- | --- |
-| `src/app` | Expo Router 화면과 레이아웃 |
-| `src/features/library` | 라이브러리 쿼리, Mock 및 실제 Repository 선택 |
-| `src/features/playback` | 플레이어 화면 조립, 상단 버튼·곡 정보·대기열·진행 막대·재생 제어와 제스처 |
-| `src/services/synology` | DSM API 발견·인증·응답 변환·SQLite 캐시 |
-| `src/services/playback` | 오디오 엔진·세션·곡 전환 제어, 구간 반복 스케줄러, 대기열 필터 |
-| `src/services/google-drive` | Drive API, 인증 SDK 설정·오류 변환, 인증 작업의 취소·시간 제한 |
-| `src/services/preferences` | 비밀 정보가 아닌 설정의 저장 I/O와 공통 불러오기·저장 수명 주기 |
-| `src/services/async` | 실패한 작업 다음에도 계속 실행되는 직렬 작업 큐 |
-| `src/stores` | Zustand 인증·재생 상태 |
-| `src/components`, `src/theme`, `src/types` | 공통 UI, 디자인 토큰, 도메인 모델 |
+| 경로                                       | 역할                                                                      |
+| ------------------------------------------ | ------------------------------------------------------------------------- |
+| `src/app`                                  | Expo Router 화면과 레이아웃                                               |
+| `src/features/library`                     | 라이브러리 쿼리, Mock 및 실제 Repository 선택                             |
+| `src/features/playback`                    | 플레이어 화면 조립, 상단 버튼·곡 정보·대기열·진행 막대·재생 제어와 제스처 |
+| `src/services/synology`                    | DSM API 발견·인증·응답 변환·SQLite 캐시                                   |
+| `src/services/playback`                    | 오디오 엔진·세션·곡 전환 제어, 구간 반복 스케줄러, 대기열 필터            |
+| `src/services/google-drive`                | Drive API, 인증 SDK 설정·오류 변환, 인증 작업의 취소·시간 제한            |
+| `src/services/preferences`                 | 비밀 정보가 아닌 설정의 저장 I/O와 공통 불러오기·저장 수명 주기           |
+| `src/services/async`                       | 실패한 작업 다음에도 계속 실행되는 직렬 작업 큐                           |
+| `src/stores`                               | Zustand 인증·재생 상태                                                    |
+| `src/components`, `src/theme`, `src/types` | 공통 UI, 디자인 토큰, 도메인 모델                                         |
 
 리팩토링 후 책임 경계와 검증 방법은 [코드 구조 안내](docs/code-structure.md)에 정리했습니다.
 
 ## iOS 26 Liquid Glass와 하단 블러
 
-iOS 26 이상에서는 [Expo SDK 57의 `expo-glass-effect`](https://docs.expo.dev/versions/v57.0.0/sdk/glass-effect/)로 하단 탭, 미니 플레이어, 설정 버튼, 재생 화면의 닫기·대기열·재생 버튼, 보관함·재생 팝업 메뉴에 네이티브 Liquid Glass를 적용합니다. 하단 탭은 홈 인디케이터 위에 떠 있는 둥근 형태이며 목록과 미니 플레이어의 여백도 함께 조절합니다. 앨범 표지와 설정 카드의 모서리, 화면 제목도 이 형태에 맞춥니다. Android와 이전 iOS는 기존 레이아웃과 블러를 유지합니다. 네이티브 유리 뷰를 가져오는 코드는 `.ios.tsx`로 분리했습니다.
+iOS 26 이상에서는 [Expo SDK 58의 `expo-glass-effect`](https://docs.expo.dev/versions/v58.0.0/sdk/glass-effect/)로 하단 탭, 미니 플레이어, 설정 버튼, 재생 화면의 닫기·대기열·더보기 버튼, 보관함·재생 팝업 메뉴에 네이티브 Liquid Glass를 적용합니다. 하단 탭은 홈 인디케이터 위에 떠 있는 둥근 형태이며 목록과 미니 플레이어의 여백도 함께 조절합니다. 앨범 표지와 설정 카드의 모서리, 화면 제목도 이 형태에 맞춥니다. Android와 이전 iOS는 기존 레이아웃과 블러를 유지합니다. 네이티브 유리 뷰를 가져오는 코드는 `.ios.tsx`로 분리했습니다.
 
-하단 메뉴는 [Expo Router SDK 57의 `NativeTabs`](https://docs.expo.dev/versions/v57.0.0/sdk/router/native-tabs/)를 사용합니다. 색상만 바꾸는 React Native 버튼과 직접 그린 선택 배경은 제거했습니다. 선택 렌즈가 떠오르고 늘어나며 손가락을 따라 움직이는 효과와 탭 간 슬라이딩은 UIKit이 직접 처리합니다. 아이콘은 SF Symbols를 사용하고, 탭바 크기·모서리·선택 표시·동작은 시스템 기본값을 유지합니다. 메뉴 순서와 숨김 설정은 유지하며, 선택 중인 탭을 숨기면 첫 번째 표시 메뉴로 이동합니다. iPad 확장 화면에서는 기존 사이드바를 사용합니다. Android와 iOS 18 이하·지원하지 않는 빌드는 기존 JavaScript 탭바를 사용합니다.
+하단 메뉴는 [Expo Router SDK 58의 `NativeTabs`](https://docs.expo.dev/versions/v58.0.0/sdk/router/native-tabs/)를 사용합니다. 색상만 바꾸는 React Native 버튼과 직접 그린 선택 배경은 제거했습니다. 선택 렌즈가 떠오르고 늘어나며 손가락을 따라 움직이는 효과와 탭 간 슬라이딩은 UIKit이 직접 처리합니다. 아이콘은 SF Symbols를 사용하고, 탭바 크기·모서리·선택 표시·동작은 시스템 기본값을 유지합니다. 메뉴 순서와 숨김 설정은 유지하며, 선택 중인 탭을 숨기면 첫 번째 표시 메뉴로 이동합니다. iPad 확장 화면에서는 기존 사이드바를 사용합니다. Android와 iOS 18 이하·지원하지 않는 빌드는 기존 JavaScript 탭바를 사용합니다.
 
 `NativeTabFrame`은 각 네이티브 탭의 실제 UIKit 안전 여백에 맞춰 미니 플레이어와 스크롤 표시기를 배치하고, 보관함·검색·플레이리스트 메뉴의 블러 대상을 분리합니다. 키보드가 열리면 탭바와 미니 플레이어를 숨깁니다. NativeTabs는 화면을 미리 마운트하므로, 보관함 조회는 해당 화면에 포커스가 있을 때만 활성화합니다. 2026-10-27 iOS 27.0 시뮬레이터에서 현재 JS와 에셋을 넣은 기존 Release 네이티브 앱의 임시 복사본으로 보관함 → 검색, 검색 → 보관함, 보관함 → 플레이리스트 → 검색의 실제 드래그 이동을 확인하고 화면 기록을 남겼습니다. 새 IPA 컴파일이나 실제 iPhone 설치는 하지 않았습니다.
 
 보관함의 앨범·노래·아티스트·좋아요 선택은 [Expo UI SDK 57의 SwiftUI Picker](https://docs.expo.dev/versions/v57.0.0/sdk/ui/swift-ui/picker/)를 `segmented` 스타일로 사용합니다. 시스템이 선택 렌즈의 드래그를 처리하며, 페이지 스와이프·메뉴 순서·숨김 설정과 선택 상태를 함께 유지합니다. 컨트롤을 접었다 펼칠 때 네이티브 유리가 사라지지 않도록 투명도 대신 높이와 위치로 숨깁니다. 음악 소스 시트는 실제 `GlassView` 배경 하나 위에 소스·연결 관리·가져오기 그룹을 배치하며, 기존 iOS 파일 선택기는 시트의 `onDismiss` 이후에 엽니다. iOS 27.0 시뮬레이터에서 세로·가로 선택 탭의 드래그, 소스 시트 스크롤, 파일 선택기 진입·취소를 확인했습니다. Android 빌드에서는 SwiftUI 선택 컨트롤이 포함되지 않는 것도 확인했습니다. Android·구형 iOS와 블러 비활성화·투명도 줄이기 상태에서는 기존 선택 버튼 및 단색 배경을 사용합니다.
 
-실행 중인 iOS 버전, Glass API, 앱 빌드의 지원 여부를 모두 확인합니다. **설정 → 재생 및 화면**의 기존 블러 전체·영역별 켜기/끄기는 유리 효과에도 적용되며, 끄면 단색 배경을 사용합니다. Liquid Glass의 강도는 iOS가 조절하므로 지원 기기에서는 기존 강도 슬라이더 대신 안내를 표시합니다. 저장된 강도는 유지합니다. iOS **손쉬운 사용 → 디스플레이 및 텍스트 크기 → 투명도 줄이기**를 켜면 즉시 단색으로 전환합니다. 앱의 다크·화이트 테마를 따르며 재생 화면의 버튼은 어두운 배경에 맞춥니다.
+실행 중인 iOS 버전, Glass API, 앱 빌드의 지원 여부를 모두 확인합니다. **설정 → 재생 및 화면**의 기존 블러 전체·영역별 켜기/끄기는 앱이 직접 그리는 유리 효과에 적용되며, 끄면 단색 배경을 사용합니다. iOS 26의 시스템 탭과 통합 미니 플레이어 배경은 UIKit이 관리하므로 앱의 블러 스위치로 끌 수 없으며, iOS 손쉬운 사용 설정을 따릅니다. Liquid Glass의 강도는 iOS가 조절하므로 지원 기기에서는 기존 강도 슬라이더 대신 안내를 표시합니다. 저장된 강도는 유지합니다. iOS **손쉬운 사용 → 디스플레이 및 텍스트 크기 → 투명도 줄이기**를 켜면 앱이 그리는 Glass 표면은 즉시 단색으로 전환합니다. 앱의 다크·화이트 테마를 따르며 재생 화면의 버튼은 어두운 배경에 맞춥니다.
 
 네이티브 효과를 사용하려면 Xcode 26 이상의 iOS SDK로 앱을 다시 빌드해야 합니다. EAS에서는 `npx eas-cli@latest build --platform ios --profile development`를 사용합니다. 지원하지 않는 빌드에서는 기존 UI로 돌아갑니다. `node scripts/check-liquid-glass.cjs`, `node scripts/check-native-tabs.cjs`, `node scripts/check-tablet-navigation.cjs`로 버전·API·빌드 조건, 영역 설정, 접근성 변경, 네이티브 탭 사용·숨긴 경로 복구, UIKit 안전 여백과 기존 태블릿 탐색을 검사합니다. 실제 iOS 26 기기에서의 유리 렌더링과 터치 반응도 별도로 확인해야 합니다.
+
+미니 플레이어는 `NativeTabs.BottomAccessory.usePlacement()`로 Regular/Inline 표시를 구분합니다. 곡·재생·버퍼링 상태는 탭 부모에서 읽어 두 인스턴스에 전달하며, 재생 엔진이나 재생 이벤트 구독을 추가하지 않습니다. Regular에는 다음 곡 버튼을 추가하고 Inline은 작은 표지·한 줄 제목·재생 버튼으로 구성합니다. 현재 FlatList의 공식 제약 때문에 스크롤 축소는 `never`로 유지하며 Inline 전환을 활성화하지 않습니다. 구현 범위·검증 결과·수동 확인 항목은 [Liquid Glass 적용 결과](docs/liquid-glass.md)에 정리했습니다.
+
+### iOS 설정 하위 메뉴
+
+iOS 설정의 재생 동작, 가사 번역, 보관함 표시, 메뉴 구성, 색상, 연결, 백업과 숨김 관리에 실제 SwiftUI 컨트롤을 사용합니다. 스위치는 `Toggle`, 선택은 시스템 메뉴 `Picker`, 색상은 `ColorPicker`, 주소·계정은 `TextField`, 암호·토큰은 `SecureField`로 표시합니다. 색상은 적용 버튼을 누를 때 저장하며, 설정 내 이동은 같은 시트 안에서 유지합니다. Android는 기존 화면을 사용하고 저장·인증·복구 동작은 공통 훅과 저장소를 공유합니다. 적용 범위와 검증 경계는 [iOS 기본 프레임워크 사용](docs/ios-native-ui.md)을 참고하세요.
 
 ### Android와 이전 iOS의 블러
 
@@ -124,27 +156,27 @@ Android에는 `blurMethod="dimezisBlurView"`를 지정하고 강도 75를 사용
 
 2026-10-10에 내부 HTTP 주소와 외부 HTTPS 주소 모두에서 다음 API Info 응답을 확인했습니다. 내부 HTTP 주소로는 인증 요청을 실행하지 않았습니다.
 
-| API | NAS가 반환한 경로 | 지원 버전 |
-| --- | --- | --- |
-| `SYNO.API.Auth` | `entry.cgi` | 1–7 |
-| `SYNO.AudioStation.Song` | `AudioStation/song.cgi` | 1–3 |
-| `SYNO.AudioStation.Album` | `AudioStation/album.cgi` | 1–3 |
-| `SYNO.AudioStation.Artist` | `AudioStation/artist.cgi` | 1–4 |
-| `SYNO.AudioStation.Stream` | `AudioStation/stream.cgi` | 1–2 |
-| `SYNO.AudioStation.Cover` | `AudioStation/cover.cgi` | 1–3 |
+| API                        | NAS가 반환한 경로         | 지원 버전 |
+| -------------------------- | ------------------------- | --------- |
+| `SYNO.API.Auth`            | `entry.cgi`               | 1–7       |
+| `SYNO.AudioStation.Song`   | `AudioStation/song.cgi`   | 1–3       |
+| `SYNO.AudioStation.Album`  | `AudioStation/album.cgi`  | 1–3       |
+| `SYNO.AudioStation.Artist` | `AudioStation/artist.cgi` | 1–4       |
+| `SYNO.AudioStation.Stream` | `AudioStation/stream.cgi` | 1–2       |
+| `SYNO.AudioStation.Cover`  | `AudioStation/cover.cgi`  | 1–3       |
 
 Audio Station의 세부 API 매개변수와 응답 필드에 대한 최신 공식 스키마는 공개 자료에서 확인하지 못했습니다. API 경로·버전은 연결한 NAS의 API Info 응답만 사용합니다. 외부 HTTPS NAS에서 확인한 인증 요청 결과는 다음과 같습니다.
 
-| 동작 | 확인 결과 |
-| --- | --- |
-| `SYNO.API.Auth.login` | `AudioStation` 세션 로그인 성공. 진단 스크립트는 세션 값을 출력하거나 파일에 저장하지 않음 |
-| `Song.list` | `songs`, `total` 응답; 1곡. 기본 필드는 `id,path,title,type` |
-| `Song.list`의 `additional=song_tag` | `additional.song_tag`에 `album,album_artist,artist,comment,composer,disc,genre,track,year` 필드 확인 |
-| `Album.list`, `Artist.list` | 각 1건; 앨범은 `album_artist,artist,display_artist,name,year`, 아티스트는 `name` 필드 확인 |
-| `Song.search` 요청 | 요청 성공만 확인; keyword의 실제 필터 적용은 미검증. 앱 검색에서는 사용하지 않음 |
-| `Song.list`의 `album` 필터 | 과거 1건 요청 성공만 확인; 정확한 소속 곡 필터는 미검증. 앱 앨범 화면에서는 사용하지 않음 |
-| `Cover.getsongcover`, `Stream.stream` | 각각 JPEG·FLAC, HTTP 206과 `Content-Range` 확인 |
-| 로그아웃 후 `Song.list` | `success=false`, 오류 코드 105 확인 |
+| 동작                                  | 확인 결과                                                                                            |
+| ------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `SYNO.API.Auth.login`                 | `AudioStation` 세션 로그인 성공. 진단 스크립트는 세션 값을 출력하거나 파일에 저장하지 않음           |
+| `Song.list`                           | `songs`, `total` 응답; 1곡. 기본 필드는 `id,path,title,type`                                         |
+| `Song.list`의 `additional=song_tag`   | `additional.song_tag`에 `album,album_artist,artist,comment,composer,disc,genre,track,year` 필드 확인 |
+| `Album.list`, `Artist.list`           | 각 1건; 앨범은 `album_artist,artist,display_artist,name,year`, 아티스트는 `name` 필드 확인           |
+| `Song.search` 요청                    | 요청 성공만 확인; keyword의 실제 필터 적용은 미검증. 앱 검색에서는 사용하지 않음                     |
+| `Song.list`의 `album` 필터            | 과거 1건 요청 성공만 확인; 정확한 소속 곡 필터는 미검증. 앱 앨범 화면에서는 사용하지 않음            |
+| `Cover.getsongcover`, `Stream.stream` | 각각 JPEG·FLAC, HTTP 206과 `Content-Range` 확인                                                      |
+| 로그아웃 후 `Song.list`               | `success=false`, 오류 코드 105 확인                                                                  |
 
 NAS에는 확인 시점에 곡·앨범·아티스트가 각각 1건이었습니다. `limit=1`과 `limit=2` 요청은 모두 1건을 반환해 여러 페이지 이동은 검증하지 못했습니다. 곡의 `duration` 필드는 기본 응답과 `song_tag` 응답에서 확인되지 않아 보관함에서는 0으로 남고, 재생 시 네이티브 플레이어가 보고하는 길이를 사용합니다. 실제 Android/iOS 앱에서의 로그인·이미지 표시·스트리밍·키보드·잠금 화면 동작은 이 HTTP 진단으로 검증되지 않았습니다. 응답이 예상 형식과 다르면 성공으로 처리하지 않고 오류를 보여줍니다.
 
@@ -180,11 +212,11 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\verify-nas.ps1 -Ba
 
 2026-10-10에 사용자가 로컬 진단 스크립트를 DS audio와 같은 계정으로 실행해 다음 실제 NAS 응답을 확인했습니다. 첫 진단의 다른 계정은 개인 0곡이었고, 같은 계정에서는 개인 음악이 반환됐습니다. 2단계 인증을 거친 로그인과 로그아웃 후 오류 코드 105도 확인했습니다.
 
-| 조회 범위 | 총 곡 수 | 앨범 수 | 아티스트 수 |
-| --- | --- | --- | --- |
-| 공용 `shared` | 2 | 2 | 1 |
-| 개인 `personal` | 1,504 | 77 | 115 |
-| 통합 `all` | 1,506 | 77 | 115 |
+| 조회 범위       | 총 곡 수 | 앨범 수 | 아티스트 수 |
+| --------------- | -------- | ------- | ----------- |
+| 공용 `shared`   | 2        | 2       | 1           |
+| 개인 `personal` | 1,504    | 77      | 115         |
+| 통합 `all`      | 1,506    | 77      | 115         |
 
 각 범위의 곡·앨범·아티스트 목록, 검색 요청, 앨범 필터 요청을 확인했습니다. 개인·통합 범위에서 커버 JPEG와 MP3 스트림에 Range HTTP 206 및 `Content-Range`가 반환됐고, 개인 첫 페이지 30개 ID가 통합 첫 페이지에 포함됨을 확인했습니다. 곡 값·계정명·세션·인증 코드는 이 문서에 기록하지 않습니다. 전체 1,504곡의 페이지 이동과 실제 앱의 개인 음악 재생·탐색·잠금 화면은 아직 기기에서 확인해야 합니다.
 
@@ -219,7 +251,7 @@ Android 13 이상은 표준 MediaSession 곡 이동 명령과 버튼 슬롯을 �
 
 ### 삼성 잠금 화면·알림창 진행 바
 
-미디어 컨트롤러가 곡 로딩 중 연결되면 `COMMAND_SEEK_IN_CURRENT_MEDIA_ITEM`이 아직 없을 수 있습니다. 기존 패치는 이 시점의 `session.player.availableCommands`를 연결 권한으로 고정해, 음원의 길이와 탐색 가능 여부가 확인된 뒤에도 진행 바 탐색을 허용하지 않았습니다. 연결 권한은 `DEFAULT_PLAYER_COMMANDS`로 설정하고, Media3가 플레이어의 현재 지원 명령과 교집합을 계산하도록 수정했습니다. 따라서 탐색 가능한 곡은 로딩 후 진행 바를 사용할 수 있고, 라이브·탐색 불가 음원에는 탐색을 강제로 활성화하지 않습니다. 이전·다음 곡 명령은 기존 대기열 패치를 계속 사용합니다. [Media3 컨트롤러 명령 권한](https://developer.android.com/reference/androidx/media3/session/MediaSession.ConnectionResult.AcceptedResultBuilder#setAvailablePlayerCommands(androidx.media3.common.Player.Commands))
+미디어 컨트롤러가 곡 로딩 중 연결되면 `COMMAND_SEEK_IN_CURRENT_MEDIA_ITEM`이 아직 없을 수 있습니다. 기존 패치는 이 시점의 `session.player.availableCommands`를 연결 권한으로 고정해, 음원의 길이와 탐색 가능 여부가 확인된 뒤에도 진행 바 탐색을 허용하지 않았습니다. 연결 권한은 `DEFAULT_PLAYER_COMMANDS`로 설정하고, Media3가 플레이어의 현재 지원 명령과 교집합을 계산하도록 수정했습니다. 따라서 탐색 가능한 곡은 로딩 후 진행 바를 사용할 수 있고, 라이브·탐색 불가 음원에는 탐색을 강제로 활성화하지 않습니다. 이전·다음 곡 명령은 기존 대기열 패치를 계속 사용합니다. [Media3 컨트롤러 명령 권한](<https://developer.android.com/reference/androidx/media3/session/MediaSession.ConnectionResult.AcceptedResultBuilder#setAvailablePlayerCommands(androidx.media3.common.Player.Commands)>)
 
 패치 파일은 Windows에서도 LF 줄바꿈을 유지하도록 `.gitattributes`에 지정했고, 패치 해시를 잠금 파일에 갱신했습니다. **수정 반영에는 새 Android 앱 빌드 설치가 필요합니다.** 기존 EAS 프로필로 `npx eas-cli@latest build --platform android --profile preview`를 실행해 새 APK를 설치하세요.
 
@@ -269,7 +301,6 @@ expo-local-authentication ~57.0.3을 추가했습니다. **기존 앱을 다시 
 
 숨김 기능 회귀 검사는 `node scripts/check-hidden-music.cjs`로 실행합니다. 모의 SQLite·생체 인증·오디오로 폴더 경계·하위 폴더·새 곡, 활성 프리셋 합집합, 계정/NAS별 보존, 보호된 변경, 실패/취소/늦은 인증과 재잠금, 오래된 계정 조회 무시, 전체 화면의 필터와 raw 캐시 공유, 대기열 정리·현재 곡 중단·오디오 초기화 취소를 확인합니다. 앨범과 배경의 기존 회귀 검사, TypeScript·린트·SDK 의존성 검사, iOS·Android 번들 생성도 통과했습니다. Expo 설정에서 생체 인증 플러그인과 iOS NSFaceIDUsageDescription을 확인했으며 Android 모듈에 USE_BIOMETRIC/USE_FINGERPRINT 권한 선언이 있습니다. 새 네이티브 APK/IPA와 실제 인증 성공·NAS 숨김 동작은 아직 기기에서 검증하지 않았습니다.
 
-
 ## 외부 NAS 스트리밍의 간헐적 끊김
 
 화면을 끈 상태에서 첫 곡만 재생되고 다음 곡이 시작되지 않는 경로를 보완했습니다. 현재 대기열은 JavaScript가 관리하므로 곡 종료 뒤 다음 파일·인증 URL을 준비할 시간이 필요합니다. Android ExoPlayer의 재생용 CPU 잠금은 곡이 끝나면 해제되기 때문에, 네이티브 종료 이벤트를 보내기 전에 별도의 `PARTIAL_WAKE_LOCK`을 최대 30초 확보합니다. 화면은 켜지지 않습니다. 다음 재생 시작·명시적 일시정지·대기열 종료·소스 준비 실패·플레이어 해제 시 잠금을 풀며, JavaScript 응답이 없어도 제한 시간이 지나면 자동 해제됩니다. 곡 전환 동안에는 이 잠금을 유지하고 잠금 화면 미디어 세션을 재등록하는 대신 곡 정보만 갱신합니다. Android `WAKE_LOCK` 권한과 기존 pnpm 오디오 패치를 갱신했으므로 **새 네이티브 빌드가 필요합니다**. 기존 설치 APK나 JavaScript 새로고침만으로는 반영되지 않습니다.
@@ -290,7 +321,6 @@ iOS 57.0.5 구현은 생성 시의 AVPlayerItem에만 해당 옵션을 적용합
 
 회귀 검사: node scripts/check-playback-buffer.cjs. 실제 엔진 소스에 모의 네이티브 플레이어와 가상 타이머를 연결해 짧은 버퍼링에서 연결을 유지하는지, Android/iOS 오류·장기 버퍼링·초기 로딩 실패 시 위치를 복원하는지, 재시도 횟수 제한·오류 유지·수동 재개·중단·곡 변경·늦은 탐색·이전 음원의 상태 이벤트를 처리하는지 검사합니다. 진단의 초기 로딩·탐색·일시정지 구분과 구독 정리도 확인합니다. 모의 상태 이벤트는 실제 NAS·삼성 기기의 끊김 개선을 입증하지 않습니다. JavaScript 타이머에 의존하는 복구는 OS가 프로세스나 JavaScript 실행을 중지한 상황에서는 즉시 실행되지 않을 수 있으므로, 새 버전에서 화면을 끈 채 MP3·FLAC를 장시간 재생하고 잠금 화면 일시정지와 네트워크 단절·복귀를 확인해야 합니다.
 
-
 ## 앱 아이콘과 상세 화면 탐색
 
 앱 아이콘과 스플래시는 `assets/branding/app-logo.png`의 구름·음표 디자인을 사용합니다. `node scripts/generate-icon.js`는 설치된 Expo 이미지 도구로 1024px 기본 아이콘, 스플래시, Android adaptive foreground/background를 생성하며 원본 파일은 보존합니다. 기본 아이콘의 투명 영역은 스플래시와 같은 남색(`#17132D`)으로 채우고, adaptive foreground에는 런처 마스크에 필요한 여백을 둡니다. 컬러 이미지를 단색 아이콘으로 잘못 표시하지 않도록 기존 monochrome 설정은 제거했습니다. 이전 Ionicons 윤곽과 라이선스 파일은 그대로 보관합니다.
@@ -302,7 +332,6 @@ iOS 57.0.5 구현은 생성 시의 AVPlayerItem에만 해당 옵션을 적용합
 실기기 확인: 홈 화면 아이콘과 시작 스플래시, 삼성 adaptive 아이콘의 잘림 여부, 상세에서 탭 이동 및 뒤로가기, 상세의 마지막 곡 터치, 보관함·검색·앨범·아티스트에서 곡 선택과 전체 플레이어, 플레이어 닫기·미니 플레이어·재생 지속을 확인합니다.
 
 검증: TypeScript·린트, iOS/Android 번들 생성, Android :app:processReleaseResources가 통과했습니다. node scripts/check-navigation.cjs는 실제 파일 경로에서 Expo Router가 만든 보관함 Stack과 상세 경로, 곡 선택·취소·늦은 재생 완료의 화면 전환을 검사합니다. 화면 렌더링과 실제 기기의 조작·재생은 별도 확인이 필요하며 APK 설치나 원격 EAS 빌드는 수행하지 않았습니다.
-
 
 숨김 폴더 선택은 상위 폴더부터 펼치고 접는 트리로 표시합니다. 화살표는 펼침/접기, 이름·체크박스는 숨김 선택입니다. 접어도 선택이 유지되며 상위 폴더를 선택하면 하위 곡과 새 곡을 숨기는 기존 규칙을 유지합니다. 검색과 선택한 항목만 보기는 해당 폴더의 상위 경로를 자동으로 펼쳐 표시합니다. 현재 목록에 곡이 없어도 저장된 선택 폴더는 0곡으로 표시해 선택을 해제할 수 있습니다. 생체 인증과 프리셋 스위치는 분홍색 활성 트랙·흰색 손잡이·중립색 비활성 트랙을 명시해 Android 기본 초록색 손잡이를 사용하지 않습니다. [React Native Switch 설정](https://reactnative.dev/docs/switch)
 
@@ -340,7 +369,6 @@ node scripts/check-lyrics.cjs
 
 Expo 라우트 타입은 오프라인 개발 서버로 다시 생성했습니다. 새 타입에 맞춰 로그인·세션 진입·플레이어 닫기의 보관함 목적지를 `/(tabs)/(library)`로 명시했습니다.
 
-
 ## 스크롤 경계 페이드
 
 가사는 별도의 LyricsEdgeFade로 글자 자체를 위아래 28pt에서 투명하게 지웁니다. 앨범아트 배경색을 덮지 않으며, 네이티브에서는 처음부터 고정된 알파 마스크를 사용하고 Android의 hardware 모드를 유지합니다. 웹에서는 CSS 마스크를 사용합니다. 가사 목록의 ref·자동 스크롤·가사 선택 탐색은 유지합니다. 실제 삼성/iOS 기기에서 투명 경계와 스크롤 성능 확인이 필요합니다.
@@ -361,7 +389,6 @@ Expo 라우트 타입은 오프라인 개발 서버로 다시 생성했습니다
 
 타이머는 화면과 분리된 전역 재생 컨트롤러에서 관리하며 예약 콜백·네이티브 재생 상태 이벤트·앱 전경 복귀에서 절대 시각을 확인합니다. 네이티브 알람을 추가하지 않았으므로 OS가 JavaScript 실행을 중단하면 시간 지정 종료가 지연될 수 있습니다. 실기기에서 Android/iOS 잠금 화면·백그라운드·절전 모드의 장시간 타이머, NAS 버퍼링 중 만료, 한 곡 반복 중 곡 종료를 검증해야 합니다. `node scripts/check-sleep-timer.cjs`는 Mock 오디오 엔진과 시계를 사용하는 회귀 검사이며 실제 NAS나 기기 검증을 대체하지 않습니다.
 
-
 ## 스트리밍 음질
 
 설정 → 스트리밍 음질에서 **원본 · 무손실 유지**(기본값) 또는 **MP3 변환**을 선택합니다. iOS/Android에서는 인증 정보와 별개의 SecureStore 키에 옵션 이름만 저장하며, 웹에서는 localStorage를 사용합니다. 설정은 다음 곡을 불러올 때 적용되어 현재 재생과 대기열을 변경하지 않습니다. 데모 음원은 변환하지 않습니다.
@@ -378,12 +405,11 @@ iOS 17 이상에서 NAS 원본 FLAC을 재생할 때는 `audio/flac` 형식 정�
 
 NAS 검증(주소·계정·토큰·곡명 없이 응답 상태만 출력, 최대 1 KiB 읽기):
 
-~~~powershell
+```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\verify-nas.ps1 -BaseUrl '<본인 NAS HTTPS 주소>' -QualityOnly
-~~~
+```
 
 원본/변환의 Content-Type 및 HTTP 상태를 비교하고, 앱에서 FLAC 원본과 MP3 변환 각각의 재생·탐색·곡 종료·이전/다음·백그라운드 재생을 확인하세요.
-
 
 ## 휴대전화 로컬 음악 (1차 구현)
 
@@ -419,7 +445,7 @@ NAS 인증 만료/숨김 프로필 변경 중 현재 로컬 곡은 유지하고 
 - src/services/synology/api.ts: NAS 소스 표시·예약 ID 충돌 처리·로컬 요청 방지.
 - src/features/library/queries.ts, use-refresh-library.ts, local-music-controls.tsx: 공통 목록/검색에 소스 선택·로컬 결합·새로고침.
 - src/features/hidden-music/rules.ts: 로컬 곡을 NAS 숨김 규칙에서 제외.
-- src/app/index.tsx, _layout.tsx, connect.tsx, (tabs)/(library)/index.tsx: 로그인 없는 진입·가져오기 UI.
+- src/app/index.tsx, \_layout.tsx, connect.tsx, (tabs)/(library)/index.tsx: 로그인 없는 진입·가져오기 UI.
 - src/features/lyrics/load-lyrics.ts, use-lyrics.ts: 로컬 곡에 NAS 인증/가사 요청을 하지 않음.
 - scripts/check-local-music.cjs: 신규 회귀 검사. check-playback-buffer.cjs는 로컬 오류와 엔진 공유 검사 추가. check-album-library.cjs, check-hidden-music.cjs, check-library-performance.cjs는 NAS 전용 테스트에 로컬 상태 모의 추가.
 
@@ -487,7 +513,6 @@ Android 조합 근거: [Android 공식 생체/암호 인증 안내](https://deve
 
 이번 변경 검증: TypeScript·ESLint(src 및 변경/신규 검사)·회귀 스크립트 23개·Git diff 공백 검사 통과. 새 가사 검색, 수동 검색의 캐시 우회, 재검색 로딩/오류, 숨김 중 지연 추출 결과 무시, 저장/재시작/실패/재시도, 시스템 패널의 세션 전달/중복 방지/소리 설정 대체를 Mock으로 확인했습니다. Android :app:assembleRelease --offline 빌드 성공(33초), APK: android/app/build/outputs/apk/release/app-release.apk. 실제 NAS/온라인 가사·삼성 시스템 패널·음향 효과·iOS 기기 동작은 이번 작업에서 검증하지 않았습니다.
 
-
 ## 기기 음악 폴더 제외
 
 **설정 → 보관함 → 기기 음악 제외 폴더**에서 통화녹음 등 가져오지 않을 폴더를 선택합니다. 시스템 폴더 선택기로 경로를 추가하거나, 원본 폴더 정보가 있는 기존 음악을 트리에서 선택할 수 있습니다. 하위 폴더까지 적용하며 NAS 숨김 프리셋·지문/기기 암호 잠금과 독립적으로 기기 전체에 저장합니다.
@@ -498,7 +523,7 @@ Android 조합 근거: [Android 공식 생체/암호 인증 안내](https://deve
 - Android의 기본 저장소 및 SD 카드 폴더 선택과 MediaStore 경로를 같은 메타데이터 키로 비교합니다. 물리 경로는 제외 비교에만 사용하며 실제 복사는 기존 content URI로 수행합니다. iOS는 선택한 폴더/파일 범위만 지원합니다. 서드파티 파일 제공자의 불투명한 경로는 다른 방식으로 선택한 경로와 동일하다고 가정하지 않습니다.
 - 동일 내용의 음악이 제외 폴더와 허용 폴더 모두에 있으면 허용 폴더에서 가져온 곡을 유지합니다. 저장 실패 시 기존 제외 목록을 유지하고 재시도 오류를 표시합니다. 설정을 읽지 못한 경우 기존 저장 내용을 빈 목록으로 덮어쓰지 않습니다.
 
-변경: services/local-music/folders.ts·scan.ts·storage.ts, stores/folder-exclusions.ts·local-music.ts, features/library/folder-exclusion-settings.tsx, types/music.ts, app/(tabs)/settings.tsx·app/_layout.tsx 및 playback/controller.ts의 기존 대기열 정리 함수. 새로운 의존성이나 네이티브 설정 변경은 없습니다.
+변경: services/local-music/folders.ts·scan.ts·storage.ts, stores/folder-exclusions.ts·local-music.ts, features/library/folder-exclusion-settings.tsx, types/music.ts, app/(tabs)/settings.tsx·app/\_layout.tsx 및 playback/controller.ts의 기존 대기열 정리 함수. 새로운 의존성이나 네이티브 설정 변경은 없습니다.
 
 검증: TypeScript·ESLint(src 및 변경/신규 검사)·회귀 스크립트 24개·Git diff 공백 검사 통과. 신규 check-folder-exclusions.cjs는 경로/하위 폴더·저장/재시작·실패/재시도·제외 파일 복사 생략·기존 파일 내용 연결·동일 이름 다른 파일·목록/대기열·제외 해제·원본/앱 복사본 보존을 Mock으로 확인합니다. 실제 삼성 기기의 통화녹음 경로 선택, MediaStore 폴더 정보 갱신, SD 카드 및 iOS 파일 제공자 선택·재시작·재생은 기기 검증이 필요합니다.
 
@@ -564,7 +589,7 @@ NAS 로그인/로그아웃은 Google 연결 정보를 삭제하지 않습니다.
 
 ### Android OAuth 오류 확인
 
-Android는 패키지명·서명 SHA-1로 등록된 Android OAuth 클라이언트와 Drive 읽기 권한을 사용합니다. Drive 요청에는 `getTokens()`의 `accessToken`을 사용하며 `idToken`은 사용하지 않습니다. `webClientId`를 전달하면 네이티브 SDK가 서버용 ID 토큰도 요청하므로 Android에서는 전달하지 않습니다. iOS의 기존 클라이언트 설정은 유지합니다. [Google ID 토큰 API 설명](https://developers.google.com/android/reference/com/google/android/gms/auth/api/signin/GoogleSignInOptions.Builder#requestIdToken(java.lang.String)), [로그인 SDK 설정](https://react-native-google-signin.github.io/docs/original#configure).
+Android는 패키지명·서명 SHA-1로 등록된 Android OAuth 클라이언트와 Drive 읽기 권한을 사용합니다. Drive 요청에는 `getTokens()`의 `accessToken`을 사용하며 `idToken`은 사용하지 않습니다. `webClientId`를 전달하면 네이티브 SDK가 서버용 ID 토큰도 요청하므로 Android에서는 전달하지 않습니다. iOS의 기존 클라이언트 설정은 유지합니다. [Google ID 토큰 API 설명](<https://developers.google.com/android/reference/com/google/android/gms/auth/api/signin/GoogleSignInOptions.Builder#requestIdToken(java.lang.String)>), [로그인 SDK 설정](https://react-native-google-signin.github.io/docs/original#configure).
 
 코드 10이 계속 발생하면 오류가 난 **실제 설치 APK**의 패키지명·서명 SHA-1과 Google Cloud의 Android OAuth 항목을 비교합니다. 로컬·EAS·Play 서명은 서로 다를 수 있습니다. Android OAuth 클라이언트가 등록된 프로젝트에서 Drive API 활성화와 동의 화면·테스트 사용자를 확인합니다. `GoogleSignin.configure()`에서 발생한 오류를 모듈 누락으로 덮어쓰지 않고 원래 OAuth 오류로 안내합니다. Google Cloud 설정과 실제 로그인 성공은 Mock 검사로 확인할 수 없습니다.
 
@@ -633,11 +658,11 @@ Android의 강제 중지·재부팅·배터리 관리에 의한 프로세스 종
 
 ## 숨김 기능 메뉴와 빌드 버전
 
-음악 숨기기·플레이리스트 숨기기 메뉴는 기본적으로 표시하지 않습니다. 설정 → 정보의 **버전 항목 왼쪽 정보 아이콘**을 연속 **15번** 누르면 두 메뉴와 플레이리스트 탭의 숨김 관리가 표시됩니다. 활성화된 상태에서 같은 아이콘을 **5번** 누르면 다시 감춥니다. 버전 제목·값·나머지 행 영역은 횟수에 포함하지 않습니다. 입력 간격이 3초를 넘거나 설정 화면을 나가면 누른 횟수는 초기화됩니다. 메뉴 활성화 여부는 기기에 저장되어 앱 재시작 후에도 유지됩니다.
+음악 숨기기·플레이리스트 숨기기 메뉴는 기본적으로 표시하지 않습니다. **iOS에서는 설정 → 정보의 버전 항목을 연속 5번** 눌러 제작자 화면을 연 뒤, **제작자 닉네임 `무직노조`를 연속 10번** 누르면 두 메뉴와 플레이리스트 탭의 숨김 관리가 표시됩니다. 같은 순서를 다시 실행하면 메뉴를 감춥니다. 완료되면 제작자 화면을 닫고 설정에서 결과를 알립니다. Android에서는 기존처럼 버전 항목 왼쪽 정보 아이콘을 15번 누르면 표시하고, 활성화된 상태에서 같은 아이콘을 5번 누르면 감춥니다. 입력 간격이 3초를 넘거나 설정 화면을 나가면 횟수가 초기화되며, iOS의 닉네임 횟수는 제작자 화면을 닫아도 초기화됩니다. 메뉴 활성화 여부는 기기에 저장되어 앱 재시작 후에도 유지됩니다.
 
 활성화·비활성화는 확인 대화상자를 열지 않고 **숨김 설정 열림 / 숨김 설정 닫힘** 토스트로만 알립니다. 토스트는 설정 목록 바깥에서 약 3.5초간 표시되며 터치와 스크롤을 가로막지 않습니다.
 
-버전 항목의 **아이콘을 제외한 영역**을 연속 **7번** 누르면 제작자의 프로필 사진과 메시지를 표시합니다. 사진은 앱에 포함되어 오프라인에서도 표시되고, 긴 메시지는 스크롤해서 읽을 수 있습니다. 바깥 영역 터치로는 닫히지 않으며 닫기 아이콘이나 시스템 뒤로가기로 닫습니다. GitHub 주소를 눌렀을 때만 외부 프로필을 엽니다. 이 카운터는 숨김 메뉴의 아이콘 입력과 독립적이며 3초를 넘는 입력 간격·설정 화면 떠나기·메시지 닫기로 초기화됩니다.
+iOS에서는 버전 항목을 연속 **5번**, Android에서는 버전 항목의 **아이콘을 제외한 영역**을 연속 **7번** 누르면 제작자의 프로필 사진과 메시지를 표시합니다. 사진은 앱에 포함되어 오프라인에서도 표시되고, 긴 메시지는 스크롤해서 읽을 수 있습니다. 바깥 영역 터치로는 닫히지 않으며 닫기 아이콘이나 시스템 뒤로가기로 닫습니다. GitHub 주소를 눌렀을 때만 외부 프로필을 엽니다. 이 카운터는 숨김 메뉴의 아이콘 입력과 독립적이며 3초를 넘는 입력 간격·설정 화면 떠나기·메시지 닫기로 초기화됩니다.
 
 메뉴를 감춰도 기존 음악·플레이리스트 숨김 규칙은 계속 적용되고 삭제되지 않습니다. 관리 화면의 직접 링크도 비활성화 상태에서는 설정으로 돌아갑니다. 메뉴 활성화는 기존 지문·기기 암호 인증을 해제하지 않으며, 메뉴를 감추면 관리 잠금도 다시 잠급니다. 일반 폴더 제외 기능은 계속 표시합니다.
 

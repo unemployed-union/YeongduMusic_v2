@@ -1,7 +1,7 @@
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import { Redirect, useIsFocused, useSegments } from 'expo-router';
-import { NativeTabs } from 'expo-router/unstable-native-tabs';
-import { useWindowDimensions, type ViewInstance } from 'react-native';
+import { NativeTabs } from 'expo-router/native-tabs';
+import { useWindowDimensions } from 'react-native';
 import { useKeyboardState } from 'react-native-keyboard-controller';
 import { useMenuPreferences } from '@/stores/menu-preferences';
 import {
@@ -15,8 +15,10 @@ import { useColors } from '@/theme/tokens';
 import { workspaceLayout } from '@/theme/layout';
 import { playHaptic } from '@/services/haptics';
 import { NativeTabsEnabledContext } from './native-tabs-context';
-import { MiniPlayer } from './mini-player';
+import { MiniPlayerContent, type MiniPlayerContentProps } from './mini-player-content';
 import { usePlaybackStore } from '@/stores/playback';
+import { useMiniPlayerColors } from '@/theme/use-player-colors';
+import { usePlaybackVisibility } from '@/features/playback/use-playback-visibility';
 import type { PlatformTabsProps } from './platform-tabs';
 
 const icons = {
@@ -30,10 +32,18 @@ export function PlatformTabs({ fallback: Fallback }: PlatformTabsProps) {
   return glass.supported ? <SystemTabs /> : <Fallback />;
 }
 
+/** UIKit mounts both placements. They receive one snapshot and own no playback effects. */
+export function NativeMiniPlayer(props: MiniPlayerContentProps) {
+  const placement = NativeTabs.BottomAccessory.usePlacement();
+  return <MiniPlayerContent {...props} embedded compact={placement === 'inline'} />;
+}
+
 /** UIKit owns the floating, deforming selection lens and its pan gesture. */
 export function SystemTabs() {
   const colors = useColors();
-  const glass = useLiquidGlass('tabBar');
+  const miniColors = useMiniPlayerColors();
+  const miniGlass = useLiquidGlass('miniPlayer');
+  const playbackVisible = usePlaybackVisibility();
   const savedBottom = useMenuPreferences((state) => state.layout.bottom);
   const focused = useIsFocused();
   const [displayedBottom, setDisplayedBottom] = useState(savedBottom);
@@ -47,8 +57,9 @@ export function SystemTabs() {
   const { width, height, fontScale } = useWindowDimensions();
   const tablet = workspaceLayout(width, height, fontScale).expanded;
   const keyboardVisible = useKeyboardState((state) => state.isVisible);
-  const hasSong = usePlaybackStore((state) => !!state.queue[state.index]);
-  const accessoryTarget = useRef<ViewInstance | null>(null);
+  const song = usePlaybackStore((state) => state.queue[state.index]);
+  const playing = usePlaybackStore((state) => state.playing);
+  const buffering = usePlaybackStore((state) => state.buffering);
   const visible = visibleMenuIds(bottom);
   const current = segments.at(1);
   // Hidden native tabs cannot be selected, including after changing the menu in Settings.
@@ -64,18 +75,27 @@ export function SystemTabs() {
       <NativeTabs
         hidden={keyboardVisible || tablet}
         sidebarAdaptable={false}
+        // FlatList cannot drive UIKit's minimize-on-scroll in this Router version.
+        // Keep virtualization and a persistent accessory rather than guess scroll offsets.
         minimizeBehavior="never"
         tintColor={colors.tint}
         iconColor={{ default: colors.muted, selected: colors.tint }}
         labelStyle={{ default: { color: colors.muted }, selected: { color: colors.tint } }}
         disableTransparentOnScrollEdge
-        backgroundColor={glass.enabled ? undefined : colors.surface}
-        blurEffect={glass.enabled ? undefined : 'none'}
         screenListeners={{ tabPress: () => playHaptic('selection') }}
       >
-        {hasSong && !keyboardVisible && !tablet && (
+        {song && !keyboardVisible && !tablet && (
           <NativeTabs.BottomAccessory>
-            <MiniPlayer embedded blurTarget={accessoryTarget} />
+            <NativeMiniPlayer
+              song={song}
+              playing={playing}
+              buffering={buffering}
+              active={playbackVisible}
+              colors={miniColors}
+              glassSupported={miniGlass.supported}
+              glassEnabled={miniGlass.enabled}
+              largeText={fontScale >= 1.3}
+            />
           </NativeTabs.BottomAccessory>
         )}
         {ordered.map((item) => (

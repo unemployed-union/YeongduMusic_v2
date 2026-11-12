@@ -1,8 +1,8 @@
+import { MENU_LABELS } from '@/features/settings/menu-layout';
+import { useLiquidGlass } from '@/theme/liquid-glass';
+import { useAppColorScheme, useColors } from '@/theme/tokens';
 import { Host, Picker, Text } from '@expo/ui/swift-ui';
 import { controlSize, frame, pickerStyle, tag } from '@expo/ui/swift-ui/modifiers';
-import { useAppColorScheme, useColors } from '@/theme/tokens';
-import { useLiquidGlass } from '@/theme/liquid-glass';
-import { MENU_LABELS } from '@/features/settings/menu-layout';
 import type { LibrarySegmentsProps } from './library-segments';
 
 /** SwiftUI owns the lifting, stretching selection lens and its drag gesture. */
@@ -10,7 +10,7 @@ export function LibrarySegments({ tabs, selected, onSelect, fallback }: LibraryS
   const glass = useLiquidGlass();
   const colors = useColors();
   const scheme = useAppColorScheme();
-  if (!glass.enabled) {
+  if (!glass.supported) {
     return fallback;
   }
   return (
