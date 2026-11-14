@@ -1,0 +1,2 @@
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -workspace ios/YeongduMusic.xcworkspace -scheme YeongduMusic -configuration Release -destination "platform=iOS Simulator,id=04674652-9292-47C8-AD25-97A6CDF48FB5" -derivedDataPath /tmp/yeongdu-native-sheet-simulator CODE_SIGNING_ALLOWED=NO
+** BUILD SUCCEEDED **

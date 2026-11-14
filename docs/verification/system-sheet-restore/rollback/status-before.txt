@@ -1,0 +1,20 @@
+ M scripts/check-ios-settings-controls.cjs
+ M scripts/check-native-settings.cjs
+ M src/app/(settings)/_layout.tsx
+ M src/features/settings/settings-ui.ios.tsx
+?? docs/ios-native-material-path.md
+?? docs/ios-settings-group-background.md
+?? docs/ios-settings-sheet-experiment.md
+?? docs/ios-sheet-background-motion.md
+?? docs/ios-sheet-threshold-transition.md
+?? docs/verification/native-material-path/
+?? docs/verification/settings-group-background/
+?? docs/verification/settings-sheet/
+?? docs/verification/sheet-motion/
+?? docs/verification/sheet-threshold/
+?? docs/verification/system-sheet-restore/
+?? modules/yeongdu-sheet-background/
+?? scripts/check-native-sheet-background.cjs
+?? scripts/ios-sheet-qa/
+?? src/features/settings/settings-sheet-background.ios.tsx
+?? src/features/settings/settings-sheet-background.tsx

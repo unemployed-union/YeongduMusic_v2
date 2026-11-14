@@ -1,0 +1,325 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -project /tmp/yeongdu-sheet-ui-tests/SheetUITests.xcodeproj -scheme SheetUITests -configuration Debug -destination "platform=iOS Simulator,id=04674652-9292-47C8-AD25-97A6CDF48FB5" -derivedDataPath /tmp/yeongdu-sheet-ui-test-build -resultBundlePath /tmp/yeongdu-group-native-transition-final-dark/tests.xcresult "-only-testing:SheetUITests/SheetUITests/testNativeSheetGesturesAndNavigation" "-only-testing:SheetUITests/SheetUITests/testMusicSourceAndSettingsReference" test-without-building CODE_SIGNING_ALLOWED=NO
+
+Build settings from command line:
+    CODE_SIGNING_ALLOWED = NO
+
+Writing result bundle at path:
+	/tmp/yeongdu-group-native-transition-final-dark/tests.xcresult
+
+2026-11-15 01:10:59.906222+0900 SheetUITests-Runner[10473:840545] [Default] Running tests...
+    t =      nans Interface orientation changed to Portrait
+Test Suite 'Selected tests' started at 2026-11-15 01:11:02.577.
+Test Suite 'SheetUITests.xctest' started at 2026-11-15 01:11:02.578.
+Test Suite 'SheetUITests' started at 2026-11-15 01:11:02.578.
+Test Case '-[SheetUITests.SheetUITests testMusicSourceAndSettingsReference]' started.
+    t =     0.00s Start Test at 2026-11-15 01:11:02.580
+    t =     0.02s Set Up
+    t =     0.02s Open xyz.yeongdu.yeongdumusic
+    t =     0.02s     Launch xyz.yeongdu.yeongdumusic
+    t =     0.02s         Terminate xyz.yeongdu.yeongdumusic:10326
+objc[10473]: Class UIAccessibilityLoaderWebShared is implemented in both /private/var/run/com.apple.security.cryptexd/mnt/com.apple.iPhoneOS.SimulatorRuntime-v24.1.434.0.dRYydF/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 27.0.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebKit.axbundle/WebKit (0x108984398) and /private/var/run/com.apple.security.cryptexd/mnt/com.apple.iPhoneOS.SimulatorRuntime-v24.1.434.0.dRYydF/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 27.0.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebCore.axbundle/WebCore (0x109328310). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+    t =     1.07s         Setting up automation session
+    t =     3.74s         Wait for xyz.yeongdu.yeongdumusic to idle
+    t =     5.29s Waiting 20.0s for "음악 소스 및 가져오기 메뉴" Button to exist
+    t =     6.34s     Checking `Expect predicate `existsNoRetry == 1` for object "음악 소스 및 가져오기 메뉴" Button`
+    t =     6.34s         Checking existence of `"음악 소스 및 가져오기 메뉴" Button`
+    t =     6.50s Tap "음악 소스 및 가져오기 메뉴" Button
+    t =     6.50s     Wait for xyz.yeongdu.yeongdumusic to idle
+    t =     6.53s     Find the "음악 소스 및 가져오기 메뉴" Button
+    t =     6.57s     Check for interrupting elements affecting "음악 소스 및 가져오기 메뉴" Button
+    t =     6.62s     Synthesize event
+    t =     6.91s     Wait for xyz.yeongdu.yeongdumusic to idle
+    t =     7.15s Waiting 10.0s for "음악 소스 닫기" Button to exist
+    t =     8.19s     Checking `Expect predicate `existsNoRetry == 1` for object "음악 소스 닫기" Button`
+    t =     8.19s         Checking existence of `"음악 소스 닫기" Button`
+    t =     8.29s reference-source-half
+    t =     8.29s     Find the Application 'xyz.yeongdu.yeongdumusic'
+    t =     8.46s Checking existence of `Button (First Match)`
+    t =     8.46s Press Button (First Match)[0.50, 0.50] for 0.1 seconds, then drag to Application 'xyz.yeongdu.yeongdumusic'[0.50, 0.12] with velocity of 70.00 pixels per second, and then hold for 1.0 seconds 
+    t =     8.46s     Wait for xyz.yeongdu.yeongdumusic to idle
+    t =     8.46s     Find the Button (First Match)
+    t =     8.47s     Check for interrupting elements affecting "Sheet Grabber" Button
+    t =     8.52s     Synthesize event
+    t =     8.53s         Find the "Sheet Grabber" Button
+    t =     8.54s         Find the "Sheet Grabber" Button
+    t =     8.55s         Find the Application 'xyz.yeongdu.yeongdumusic'
+    t =     8.59s         Find the Application 'xyz.yeongdu.yeongdumusic'
+    t =     8.64s         Find the "Sheet Grabber" Button
+    t =    14.58s     Wait for xyz.yeongdu.yeongdumusic to idle
+    t =    14.96s reference-source-expanded
+    t =    14.96s     Find the Application 'xyz.yeongdu.yeongdumusic'
+    t =    15.13s Tap "음악 소스 닫기" Button
+    t =    15.13s     Wait for xyz.yeongdu.yeongdumusic to idle
+    t =    15.13s     Find the "음악 소스 닫기" Button
+    t =    15.19s     Check for interrupting elements affecting "음악 소스 닫기" Button
+    t =    15.25s     Synthesize event
+    t =    15.54s     Wait for xyz.yeongdu.yeongdumusic to idle
+    t =    15.98s Waiting 20.0s for "설정 열기" Button to exist
+    t =    17.03s     Checking `Expect predicate `existsNoRetry == 1` for object "설정 열기" Button`
+    t =    17.03s         Checking existence of `"설정 열기" Button`
+    t =    17.06s Tap "설정 열기" Button
+    t =    17.06s     Wait for xyz.yeongdu.yeongdumusic to idle
+    t =    17.06s     Find the "설정 열기" Button
+    t =    17.10s     Check for interrupting elements affecting "설정 열기" Button
+    t =    17.13s     Synthesize event
+    t =    17.44s     Wait for xyz.yeongdu.yeongdumusic to idle
+    t =    17.95s Waiting 10.0s for "설정 닫기" Button to exist
+    t =    19.00s     Checking `Expect predicate `existsNoRetry == 1` for object "설정 닫기" Button`
+    t =    19.00s         Checking existence of `"설정 닫기" Button`
+    t =    19.08s reference-settings-half
+    t =    19.08s     Find the Application 'xyz.yeongdu.yeongdumusic'
+    t =    19.23s Tap "설정 닫기" Button
+    t =    19.23s     Wait for xyz.yeongdu.yeongdumusic to idle
+    t =    19.23s     Find the "설정 닫기" Button
+    t =    19.28s     Check for interrupting elements affecting "설정 닫기" Button
+    t =    19.33s     Synthesize event
+    t =    19.62s     Wait for xyz.yeongdu.yeongdumusic to idle
+    t =    20.04s Tear Down
+Test Case '-[SheetUITests.SheetUITests testMusicSourceAndSettingsReference]' passed (20.470 seconds).
+Test Case '-[SheetUITests.SheetUITests testNativeSheetGesturesAndNavigation]' started.
+    t =     0.00s Start Test at 2026-11-15 01:11:23.053
+    t =     0.04s Set Up
+    t =     0.04s Open xyz.yeongdu.yeongdumusic
+    t =     0.04s     Launch xyz.yeongdu.yeongdumusic
+    t =     0.04s         Terminate xyz.yeongdu.yeongdumusic:10485
+    t =     1.15s         Setting up automation session
+    t =     3.42s         Wait for xyz.yeongdu.yeongdumusic to idle
+    t =     4.88s Waiting 20.0s for "설정 열기" Button to exist
+    t =     5.92s     Checking `Expect predicate `existsNoRetry == 1` for object "설정 열기" Button`
+    t =     5.92s         Checking existence of `"설정 열기" Button`
+    t =     6.06s Tap "설정 열기" Button
+    t =     6.06s     Wait for xyz.yeongdu.yeongdumusic to idle
+    t =     6.06s     Find the "설정 열기" Button
+    t =     6.09s     Check for interrupting elements affecting "설정 열기" Button
+    t =     6.12s     Synthesize event
+    t =     6.42s     Wait for xyz.yeongdu.yeongdumusic to idle
+    t =     6.51s Waiting 10.0s for "설정 닫기" Button to exist
+    t =     7.54s     Checking `Expect predicate `existsNoRetry == 1` for object "설정 닫기" Button`
+    t =     7.54s         Checking existence of `"설정 닫기" Button`
+    t =     7.62s 01-half
+    t =     7.62s     Find the Application 'xyz.yeongdu.yeongdumusic'
+    t =     7.77s Slow up and hold midway for two seconds
+    t =     7.77s     Checking existence of `Button (First Match)`
+    t =     7.78s     Press Button (First Match)[0.50, 0.50] for 0.1 seconds, then drag to Application 'xyz.yeongdu.yeongdumusic'[0.50, 0.31] with velocity of 70.00 pixels per second, and then hold for 2.0 seconds 
+    t =     7.78s         Wait for xyz.yeongdu.yeongdumusic to idle
+    t =     7.78s         Find the Button (First Match)
+    t =     7.79s         Check for interrupting elements affecting "Sheet Grabber" Button
+    t =     7.84s         Synthesize event
+    t =     7.84s             Find the "Sheet Grabber" Button
+    t =     7.85s             Find the "Sheet Grabber" Button
+    t =     7.86s             Find the Application 'xyz.yeongdu.yeongdumusic'
+    t =     7.90s             Find the Application 'xyz.yeongdu.yeongdumusic'
+    t =     7.94s             Find the "Sheet Grabber" Button
+    t =    13.16s         Wait for xyz.yeongdu.yeongdumusic to idle
+    t =    13.89s 02-after-midpoint-hold
+    t =    13.89s     Find the Application 'xyz.yeongdu.yeongdumusic'
+    t =    14.08s Slow expand to the upper detent
+    t =    14.08s     Checking existence of `Button (First Match)`
+    t =    14.08s     Press Button (First Match)[0.50, 0.50] for 0.1 seconds, then drag to Application 'xyz.yeongdu.yeongdumusic'[0.50, 0.12] with velocity of 70.00 pixels per second, and then hold for 1.0 seconds 
+    t =    14.08s         Wait for xyz.yeongdu.yeongdumusic to idle
+    t =    14.08s         Find the Button (First Match)
+    t =    14.09s         Check for interrupting elements affecting "Sheet Grabber" Button
+    t =    14.14s         Synthesize event
+    t =    14.15s             Find the "Sheet Grabber" Button
+    t =    14.16s             Find the "Sheet Grabber" Button
+    t =    14.17s             Find the Application 'xyz.yeongdu.yeongdumusic'
+    t =    14.21s             Find the Application 'xyz.yeongdu.yeongdumusic'
+    t =    14.26s             Find the "Sheet Grabber" Button
+    t =    20.84s         Wait for xyz.yeongdu.yeongdumusic to idle
+    t =    21.19s 03-expanded
+    t =    21.19s     Find the Application 'xyz.yeongdu.yeongdumusic'
+    t =    21.36s Find the "설정 닫기" Button
+    t =    21.43s Find the Application 'xyz.yeongdu.yeongdumusic'
+    t =    21.47s Swipe up Application 'xyz.yeongdu.yeongdumusic'
+    t =    21.47s     Wait for xyz.yeongdu.yeongdumusic to idle
+    t =    21.47s     Find the Application 'xyz.yeongdu.yeongdumusic'
+    t =    21.52s     Check for interrupting elements affecting "YeongduMusic" Application
+    t =    21.58s     Synthesize event
+    t =    22.07s     Wait for xyz.yeongdu.yeongdumusic to idle
+    t =    22.72s 04-expanded-list-scroll
+    t =    22.72s     Find the Application 'xyz.yeongdu.yeongdumusic'
+    t =    22.89s Checking existence of `"설정 닫기" Button`
+    t =    22.95s Find the "설정 닫기" Button
+    t =    23.01s Swipe down Application 'xyz.yeongdu.yeongdumusic'
+    t =    23.01s     Wait for xyz.yeongdu.yeongdumusic to idle
+    t =    23.01s     Find the Application 'xyz.yeongdu.yeongdumusic'
+    t =    23.06s     Check for interrupting elements affecting "YeongduMusic" Application
+    t =    23.11s     Synthesize event
+    t =    23.60s     Wait for xyz.yeongdu.yeongdumusic to idle
+    t =    24.25s Waiting 5.0s for "클라우드 연결" Button to exist
+    t =    25.28s     Checking `Expect predicate `existsNoRetry == 1` for object "클라우드 연결" Button`
+    t =    25.28s         Checking existence of `"클라우드 연결" Button`
+    t =    25.37s Tap "클라우드 연결" Button
+    t =    25.37s     Wait for xyz.yeongdu.yeongdumusic to idle
+    t =    25.53s     Find the "클라우드 연결" Button
+    t =    25.61s     Check for interrupting elements affecting "클라우드 연결" Button
+    t =    25.67s     Synthesize event
+    t =    25.96s     Wait for xyz.yeongdu.yeongdumusic to idle
+    t =    26.35s Waiting 5.0s for "클라우드 연결" NavigationBar to exist
+    t =    27.39s     Checking `Expect predicate `existsNoRetry == 1` for object "클라우드 연결" NavigationBar`
+    t =    27.39s         Checking existence of `"클라우드 연결" NavigationBar`
+    t =    27.45s Tap Button (First Match)
+    t =    27.45s     Wait for xyz.yeongdu.yeongdumusic to idle
+    t =    27.45s     Find the Button (First Match)
+    t =    27.47s     Check for interrupting elements affecting "BackButton" Button
+    t =    27.52s     Synthesize event
+    t =    27.81s     Wait for xyz.yeongdu.yeongdumusic to idle
+    t =    28.13s Waiting 5.0s for "설정 닫기" Button to exist
+    t =    29.17s     Checking `Expect predicate `existsNoRetry == 1` for object "설정 닫기" Button`
+    t =    29.17s         Checking existence of `"설정 닫기" Button`
+    t =    29.26s Slow down and hold midway
+    t =    29.26s     Checking existence of `Button (First Match)`
+    t =    29.26s     Press Button (First Match)[0.50, 0.50] for 0.1 seconds, then drag to Application 'xyz.yeongdu.yeongdumusic'[0.50, 0.31] with velocity of 70.00 pixels per second, and then hold for 2.0 seconds 
+    t =    29.26s         Wait for xyz.yeongdu.yeongdumusic to idle
+    t =    29.26s         Find the Button (First Match)
+    t =    29.27s         Check for interrupting elements affecting "Sheet Grabber" Button
+    t =    29.33s         Synthesize event
+    t =    29.33s             Find the "Sheet Grabber" Button
+    t =    29.34s             Find the "Sheet Grabber" Button
+    t =    29.35s             Find the Application 'xyz.yeongdu.yeongdumusic'
+    t =    29.40s             Find the Application 'xyz.yeongdu.yeongdumusic'
+    t =    29.45s             Find the "Sheet Grabber" Button
+    t =    34.72s         Wait for xyz.yeongdu.yeongdumusic to idle
+    t =    35.07s 05-after-down-hold
+    t =    35.07s     Find the Application 'xyz.yeongdu.yeongdumusic'
+    t =    35.22s Return to lower detent
+    t =    35.22s     Checking existence of `Button (First Match)`
+    t =    35.23s     Press Button (First Match)[0.50, 0.50] for 0.1 seconds, then drag to Application 'xyz.yeongdu.yeongdumusic'[0.50, 0.51] with velocity of 70.00 pixels per second, and then hold for 1.0 seconds 
+    t =    35.23s         Wait for xyz.yeongdu.yeongdumusic to idle
+    t =    35.23s         Find the Button (First Match)
+    t =    35.24s         Check for interrupting elements affecting "Sheet Grabber" Button
+    t =    35.30s         Synthesize event
+    t =    35.30s             Find the "Sheet Grabber" Button
+    t =    35.31s             Find the "Sheet Grabber" Button
+    t =    35.32s             Find the Application 'xyz.yeongdu.yeongdumusic'
+    t =    35.37s             Find the Application 'xyz.yeongdu.yeongdumusic'
+    t =    35.42s             Find the "Sheet Grabber" Button
+    t =    42.20s         Wait for xyz.yeongdu.yeongdumusic to idle
+    t =    42.54s 06-lower
+    t =    42.54s     Find the Application 'xyz.yeongdu.yeongdumusic'
+    t =    42.70s Find the "설정 닫기" Button
+    t =    42.75s Find the Application 'xyz.yeongdu.yeongdumusic'
+    t =    42.79s Checking existence of `Button (First Match)`
+    t =    42.80s Press Button (First Match)[0.50, 0.50] for 0.1 seconds, then drag to Application 'xyz.yeongdu.yeongdumusic'[0.50, 0.12] with velocity of 750.00 pixels per second, and then hold for 0.0 seconds 
+    t =    42.80s     Wait for xyz.yeongdu.yeongdumusic to idle
+    t =    42.80s     Find the Button (First Match)
+    t =    42.81s     Check for interrupting elements affecting "Sheet Grabber" Button
+    t =    42.86s     Synthesize event
+    t =    42.86s         Find the "Sheet Grabber" Button
+    t =    42.87s         Find the "Sheet Grabber" Button
+    t =    42.88s         Find the Application 'xyz.yeongdu.yeongdumusic'
+    t =    42.92s         Find the Application 'xyz.yeongdu.yeongdumusic'
+    t =    42.96s         Find the "Sheet Grabber" Button
+    t =    43.76s     Wait for xyz.yeongdu.yeongdumusic to idle
+    t =    44.48s 07-flick-up
+    t =    44.48s     Find the Application 'xyz.yeongdu.yeongdumusic'
+    t =    44.65s Find the "설정 닫기" Button
+    t =    44.72s Find the Application 'xyz.yeongdu.yeongdumusic'
+    t =    44.77s Checking existence of `Button (First Match)`
+    t =    44.77s Press Button (First Match)[0.50, 0.50] for 0.1 seconds, then drag to Application 'xyz.yeongdu.yeongdumusic'[0.50, 0.51] with velocity of 750.00 pixels per second, and then hold for 0.0 seconds 
+    t =    44.77s     Wait for xyz.yeongdu.yeongdumusic to idle
+    t =    44.77s     Find the Button (First Match)
+    t =    44.78s     Check for interrupting elements affecting "Sheet Grabber" Button
+    t =    44.84s     Synthesize event
+    t =    44.84s         Find the "Sheet Grabber" Button
+    t =    44.85s         Find the "Sheet Grabber" Button
+    t =    44.86s         Find the Application 'xyz.yeongdu.yeongdumusic'
+    t =    44.91s         Find the Application 'xyz.yeongdu.yeongdumusic'
+    t =    44.96s         Find the "Sheet Grabber" Button
+    t =    45.77s     Wait for xyz.yeongdu.yeongdumusic to idle
+    t =    46.13s 08-flick-down
+    t =    46.13s     Find the Application 'xyz.yeongdu.yeongdumusic'
+    t =    46.30s Checking existence of `"설정 닫기" Button`
+    t =    46.35s Tap "설정 닫기" Button
+    t =    46.35s     Wait for xyz.yeongdu.yeongdumusic to idle
+    t =    46.35s     Find the "설정 닫기" Button
+    t =    46.40s     Check for interrupting elements affecting "설정 닫기" Button
+    t =    46.45s     Synthesize event
+    t =    46.74s     Wait for xyz.yeongdu.yeongdumusic to idle
+    t =    47.17s Waiting 20.0s for "설정 열기" Button to exist
+    t =    48.20s     Checking `Expect predicate `existsNoRetry == 1` for object "설정 열기" Button`
+    t =    48.20s         Checking existence of `"설정 열기" Button`
+    t =    48.26s Tap "설정 열기" Button
+    t =    48.26s     Wait for xyz.yeongdu.yeongdumusic to idle
+    t =    48.26s     Find the "설정 열기" Button
+    t =    48.30s     Check for interrupting elements affecting "설정 열기" Button
+    t =    48.33s     Synthesize event
+    t =    48.63s     Wait for xyz.yeongdu.yeongdumusic to idle
+    t =    49.08s Waiting 10.0s for "설정 닫기" Button to exist
+    t =    50.12s     Checking `Expect predicate `existsNoRetry == 1` for object "설정 닫기" Button`
+    t =    50.12s         Checking existence of `"설정 닫기" Button`
+    t =    50.19s 09-reopened-half-0
+    t =    50.19s     Find the Application 'xyz.yeongdu.yeongdumusic'
+    t =    50.35s Find the "설정 닫기" Button
+    t =    50.41s Find the Application 'xyz.yeongdu.yeongdumusic'
+    t =    50.44s Checking existence of `"설정 닫기" Button`
+    t =    50.50s Tap "설정 닫기" Button
+    t =    50.50s     Wait for xyz.yeongdu.yeongdumusic to idle
+    t =    50.50s     Find the "설정 닫기" Button
+    t =    50.55s     Check for interrupting elements affecting "설정 닫기" Button
+    t =    50.61s     Synthesize event
+    t =    50.90s     Wait for xyz.yeongdu.yeongdumusic to idle
+    t =    51.34s Waiting 20.0s for "설정 열기" Button to exist
+    t =    52.36s     Checking `Expect predicate `existsNoRetry == 1` for object "설정 열기" Button`
+    t =    52.36s         Checking existence of `"설정 열기" Button`
+    t =    52.41s Tap "설정 열기" Button
+    t =    52.41s     Wait for xyz.yeongdu.yeongdumusic to idle
+    t =    52.41s     Find the "설정 열기" Button
+    t =    52.45s     Check for interrupting elements affecting "설정 열기" Button
+    t =    52.49s     Synthesize event
+    t =    52.78s     Wait for xyz.yeongdu.yeongdumusic to idle
+    t =    53.21s Waiting 10.0s for "설정 닫기" Button to exist
+    t =    54.24s     Checking `Expect predicate `existsNoRetry == 1` for object "설정 닫기" Button`
+    t =    54.24s         Checking existence of `"설정 닫기" Button`
+    t =    54.32s 09-reopened-half-1
+    t =    54.32s     Find the Application 'xyz.yeongdu.yeongdumusic'
+    t =    54.48s Find the "설정 닫기" Button
+    t =    54.53s Find the Application 'xyz.yeongdu.yeongdumusic'
+    t =    54.56s Checking existence of `"설정 닫기" Button`
+    t =    54.61s Tap "설정 닫기" Button
+    t =    54.61s     Wait for xyz.yeongdu.yeongdumusic to idle
+    t =    54.61s     Find the "설정 닫기" Button
+    t =    54.66s     Check for interrupting elements affecting "설정 닫기" Button
+    t =    54.71s     Synthesize event
+    t =    55.01s     Wait for xyz.yeongdu.yeongdumusic to idle
+    t =    55.41s Waiting 20.0s for "설정 열기" Button to exist
+    t =    56.44s     Checking `Expect predicate `existsNoRetry == 1` for object "설정 열기" Button`
+    t =    56.44s         Checking existence of `"설정 열기" Button`
+    t =    56.49s Tap "설정 열기" Button
+    t =    56.49s     Wait for xyz.yeongdu.yeongdumusic to idle
+    t =    56.50s     Find the "설정 열기" Button
+    t =    56.53s     Check for interrupting elements affecting "설정 열기" Button
+    t =    56.56s     Synthesize event
+    t =    56.86s     Wait for xyz.yeongdu.yeongdumusic to idle
+    t =    57.30s Waiting 10.0s for "설정 닫기" Button to exist
+    t =    58.32s     Checking `Expect predicate `existsNoRetry == 1` for object "설정 닫기" Button`
+    t =    58.32s         Checking existence of `"설정 닫기" Button`
+    t =    58.41s 09-reopened-half-2
+    t =    58.41s     Find the Application 'xyz.yeongdu.yeongdumusic'
+    t =    58.56s Find the "설정 닫기" Button
+    t =    58.61s Find the Application 'xyz.yeongdu.yeongdumusic'
+    t =    58.65s Tap "설정 닫기" Button
+    t =    58.65s     Wait for xyz.yeongdu.yeongdumusic to idle
+    t =    58.65s     Find the "설정 닫기" Button
+    t =    58.70s     Check for interrupting elements affecting "설정 닫기" Button
+    t =    58.75s     Synthesize event
+    t =    59.05s     Wait for xyz.yeongdu.yeongdumusic to idle
+    t =    59.45s Tear Down
+Test Case '-[SheetUITests.SheetUITests testNativeSheetGesturesAndNavigation]' passed (60.216 seconds).
+Test Suite 'SheetUITests' passed at 2026-11-15 01:12:23.272.
+	 Executed 2 tests, with 0 failures (0 unexpected) in 80.686 (80.694) seconds
+Test Suite 'SheetUITests.xctest' passed at 2026-11-15 01:12:23.275.
+	 Executed 2 tests, with 0 failures (0 unexpected) in 80.686 (80.697) seconds
+Test Suite 'Selected tests' passed at 2026-11-15 01:12:23.276.
+	 Executed 2 tests, with 0 failures (0 unexpected) in 80.686 (80.699) seconds
+2026-11-15 01:12:23.581 xcodebuild[10461:840335] [MT] IDETestOperationsObserverDebug: 84.938 elapsed -- Testing started completed.
+2026-11-15 01:12:23.581 xcodebuild[10461:840335] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-11-15 01:12:23.581 xcodebuild[10461:840335] [MT] IDETestOperationsObserverDebug: 84.938 sec, +84.938 sec -- end
+
+Test session results, code coverage, and logs:
+	/tmp/yeongdu-group-native-transition-final-dark/tests.xcresult
+
+** TEST EXECUTE SUCCEEDED **
+
+Testing started

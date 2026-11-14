@@ -1,0 +1,109 @@
+diff --git a/scripts/check-ios-settings-controls.cjs b/scripts/check-ios-settings-controls.cjs
+index f388b7c..8837dc0 100644
+--- a/scripts/check-ios-settings-controls.cjs
++++ b/scripts/check-ios-settings-controls.cjs
+@@ -176,6 +176,7 @@ function harness(overrides = {}, eagerEffects = false) {
+     ];
+   }
+   const mocks = {
++    './settings-sheet-background': { usesNativeSettingsSheetBackground: false },
+     react: {
+       Children: { toArray: (children) => [children].flat(Infinity).filter(Boolean) },
+       createContext: () => ({ Provider: 'Provider' }),
+diff --git a/scripts/check-native-settings.cjs b/scripts/check-native-settings.cjs
+index e1b9c05..1f33a4b 100644
+--- a/scripts/check-native-settings.cjs
++++ b/scripts/check-native-settings.cjs
+@@ -27,6 +27,7 @@ const nativeNames = [
+   'VStack',
+ ];
+ const boundaries = {
++  './settings-sheet-background': { usesNativeSettingsSheetBackground: false, settingsGroupBackgroundModifier: null },
+   react: {
+     Children: { toArray: (children) => [children].flat(Infinity).filter(Boolean) },
+     createContext: (value) => ({ value, Provider: 'ContextProvider' }),
+@@ -159,6 +160,29 @@ assert(
+   'The native List retains its automatic sheet background',
+ );
+ assert.equal(nodes(systemPage).find((node) => node.type === 'Host').props.seedColor, '#FF5588');
++boundaries['./settings-sheet-background'].usesNativeSettingsSheetBackground = true;
++boundaries['./settings-sheet-background'].settingsGroupBackgroundModifier = {
++  $type: 'yeongduSettingsGroupBackground',
++};
++const motionPage = settings.SettingsPage({ children: [] });
++assert(
++  nodes(motionPage).find((node) => node.type === 'List').props.modifiers.some(
++    (mod) => mod.name === 'scrollContentBackground' && mod.args[0] === 'hidden',
++  ),
++  'Supported native backdrop remains visible through the List scroll background',
++);
++const thresholdSection = settings.SettingsSection({ title: '설정', children: editor });
++assert.equal(
++  thresholdSection.props.modifiers[0].$type,
++  'yeongduSettingsGroupBackground',
++  'Supported settings sections connect the existing native background slot without wrapping content',
++);
++const thresholdRow = settings.SettingsRowContent({ children: editor });
++assert(!thresholdRow.props.modifiers.some(mod => mod.$type === 'yeongduSettingsGroupBackground'));
++assert.equal(thresholdRow.props.children.props.children.props.children.props.children, editor,
++  'Native row preserves the existing editor and actions');
++boundaries['./settings-sheet-background'].usesNativeSettingsSheetBackground = false;
++boundaries['./settings-sheet-background'].settingsGroupBackgroundModifier = null;
+ assert(
+   nodes(systemPage)
+     .find((node) => node.type === 'List')
+diff --git a/src/app/(settings)/_layout.tsx b/src/app/(settings)/_layout.tsx
+index f2f7719..ff99f96 100644
+--- a/src/app/(settings)/_layout.tsx
++++ b/src/app/(settings)/_layout.tsx
+@@ -1,5 +1,12 @@
+ import { SettingsNavigator } from '@/features/settings/settings-navigator';
++import { SettingsSheetBackground } from '@/features/settings/settings-sheet-background';
+ 
+ export const unstable_settings = { anchor: 'settings/index' };
+ 
+-export default SettingsNavigator;
++export default function SettingsLayout() {
++  return (
++    <SettingsSheetBackground>
++      <SettingsNavigator />
++    </SettingsSheetBackground>
++  );
++}
+diff --git a/src/features/settings/settings-ui.ios.tsx b/src/features/settings/settings-ui.ios.tsx
+index 219d910..53b9fad 100644
+--- a/src/features/settings/settings-ui.ios.tsx
++++ b/src/features/settings/settings-ui.ios.tsx
+@@ -20,11 +20,16 @@ import {
+   foregroundStyle,
+   listRowInsets,
+   listStyle,
++  scrollContentBackground,
+ } from '@expo/ui/swift-ui/modifiers';
+ import { router } from 'expo-router';
+ import { Children, createContext, isValidElement, useContext, type ReactNode } from 'react';
+ import { View } from 'react-native';
+ import type { SettingsLinkProps, SettingsPageProps, SettingsSectionProps } from './settings-ui';
++import {
++  settingsGroupBackgroundModifier,
++  usesNativeSettingsSheetBackground,
++} from './settings-sheet-background';
+ 
+ const NativeSettingsContext = createContext(false);
+ 
+@@ -62,6 +67,7 @@ export function SettingsPage({
+             modifiers={[
+               ...(!systemAppearance ? [foregroundStyle('white')] : []),
+               listStyle('insetGrouped'),
++              ...(usesNativeSettingsSheetBackground ? [scrollContentBackground('hidden')] : []),
+               ...(reordering ? [environment('editMode', 'active')] : []),
+             ]}
+           >
+@@ -92,6 +98,7 @@ export function SettingsSection({
+   return (
+     <Section
+       title={title}
++      modifiers={settingsGroupBackgroundModifier ? [settingsGroupBackgroundModifier] : undefined}
+       footer={
+         description ? (
+           <Text

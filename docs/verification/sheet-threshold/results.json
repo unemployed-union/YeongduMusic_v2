@@ -1,0 +1,119 @@
+{
+  "date": "2026-11-14",
+  "branch": "experiment/ios-settings-truesheet4",
+  "simulator": {
+    "name": "YeongduMusic Sheet QA",
+    "udid": "04674652-9292-47C8-AD25-97A6CDF48FB5",
+    "model": "iPhone 18 Pro",
+    "runtime": "iOS 27.0",
+    "separateEmptyData": true
+  },
+  "thresholds": {
+    "relativeTo": "resolved maximum content detent excluding bottom safe area",
+    "expandAtOrAbove": 0.85,
+    "collapseBelow": 0.78,
+    "durationSeconds": 0.2
+  },
+  "nativeBuild": {
+    "configuration": "Release",
+    "result": "BUILD SUCCEEDED",
+    "log": "/tmp/yeongdu-truesheet-simulator-build.log",
+    "app": "/tmp/yeongdu-truesheet-simulator/Build/Products/Release-iphonesimulator/YeongduMusic.app"
+  },
+  "scenarios": [
+    {
+      "mode": "dark",
+      "passed": true,
+      "tests": [
+        {
+          "name": "testContrastNativeSheetGesturesAndNavigation",
+          "seconds": 60.87
+        },
+        {
+          "name": "testFirstDragAcrossThreshold",
+          "seconds": 16.83
+        },
+        {
+          "name": "testNativeRendererReversalProbe",
+          "seconds": 10.508
+        },
+        {
+          "name": "testThresholdBandWithHeldDrags",
+          "seconds": 31.112
+        }
+      ],
+      "xcresult": "/tmp/yeongdu-threshold-final-dark.xcresult",
+      "log": "/tmp/yeongdu-threshold-final-dark-test.log",
+      "fullRecording": "/tmp/yeongdu-threshold-final-dark.mp4"
+    },
+    {
+      "mode": "light",
+      "passed": true,
+      "tests": [
+        {
+          "name": "testNativeSheetGesturesAndNavigation",
+          "seconds": 62.349
+        },
+        {
+          "name": "testThresholdBandWithHeldDrags",
+          "seconds": 31.012
+        }
+      ],
+      "xcresult": "/tmp/yeongdu-threshold-final-light.xcresult",
+      "log": "/tmp/yeongdu-threshold-final-light-test.log",
+      "fullRecording": "/tmp/yeongdu-threshold-final-light.mp4"
+    }
+  ],
+  "nativeTraceChecks": {
+    "hysteresisBandContainsBothRetainedStates": true,
+    "sampledThresholdStatesValid": true,
+    "rendererReversal": {
+      "before": 0.353,
+      "immediateAfter": 0.353,
+      "nextFrame": 0.3505,
+      "settled": 0.0,
+      "verified": true,
+      "scope": "actual UIKit color-layer animator in the app window; not a same-finger reversal gesture"
+    }
+  },
+  "checks": {
+    "policy": "passed: thresholds, hysteresis, reversed samples, invalid geometry, Reduce Transparency policy",
+    "lint": "passed",
+    "types": "passed",
+    "sourceRegressions": "11/11 passed; source/native boundaries mocked",
+    "diff": "passed"
+  },
+  "evidenceClips": {
+    "dark.mp4": {
+      "source": "/tmp/yeongdu-threshold-final-dark.mp4",
+      "start": 82,
+      "duration": 44
+    },
+    "light.mp4": {
+      "source": "/tmp/yeongdu-threshold-final-light.mp4",
+      "start": 97,
+      "duration": 29
+    }
+  },
+  "unverified": [
+    "Physical device and iOS 26.1 runtime",
+    "Same-finger direction reversal during an active 200ms transition",
+    "iPad, rotation, keyboard, actual OS Reduce Motion/Transparency toggles",
+    "NAS authentication, save and playback"
+  ],
+  "discardedAttempt": {
+    "test": "Standalone runner window animator test",
+    "result": "No presentation layer because runner window was not displayed; removed, not counted as passed",
+    "log": "/tmp/yeongdu-threshold-animator-test.log"
+  },
+  "sourceSha256": {
+    "modules/yeongdu-sheet-background/expo-module.config.json": "942a54435ec673c2c92c4bfa435f12255a9b63a0808e9c71be2fcc1410ae4894",
+    "modules/yeongdu-sheet-background/package.json": "e980aa154ea1e0fbaa4ba88cc631b94ada928449d05a44f35b08bc91fe49419a",
+    "modules/yeongdu-sheet-background/ios/SettingsGroupBackground.swift": "677a38cd750ef816fac07999808c643599ea9f20e644e1e529cb76049e495e96",
+    "modules/yeongdu-sheet-background/ios/YeongduSheetBackground.podspec": "3edffa05d4d8080318cdbfd3b846ddda6fb55aeb7488333536cc588b4a02162e",
+    "modules/yeongdu-sheet-background/ios/YeongduSheetBackgroundModule.swift": "8d23b7bc68c3de32e21b07cb4f7d73d9b1e703e2126e5600a607a9c98bc9e06c",
+    "modules/yeongdu-sheet-background/ios/SheetAppearancePolicy.swift": "e1de9f3f72e500e4da8cf1e559b10713819ce41f86f356c0509ce932c8d00be0",
+    "src/features/settings/settings-sheet-background.ios.tsx": "a3b6f070e13c5f534371ead9c279b9adf37800a952f9ce056691d5e6b42a5b0c",
+    "src/features/settings/settings-ui.ios.tsx": "5e364bb62eb87d37be191cc6452ba3fa8dd5edcbe9119a3c298807072b03bbfc"
+  }
+}

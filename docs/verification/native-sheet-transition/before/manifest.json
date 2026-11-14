@@ -1,0 +1,9 @@
+{
+  "src/features/settings/settings-ui.ios.tsx": "1d24474965f33aa6a9af197bec1ed1ec54610af1fb3329e95f9c1a07193325ae",
+  "scripts/check-native-settings.cjs": "b8b3838dc4291253f717a155efc46b7895cc873acee564a2d42aa6fee8353a55",
+  "src/features/settings/settings-presentation.tsx": "ab55f7864846c6639c7575f67d43457a9e4ab0819200afe0694540950240067b",
+  "src/features/settings/settings-navigator.ios.tsx": "f92cbad40b1abea024b601f8205ccc1769f82a7ad74136f977645bafbf5e6123",
+  "src/features/library/library-sheet.ios.tsx": "6a781e950e2823beaa86a4e86515e4561ccf72d821d1f491e3d5e4a59e1a3012",
+  "src/features/library/music-source-sheet.ios.tsx": "724aaa75f2ff8be61680ea3964bed47ec36c6c667a4bd79bad5a16a0f4f73122",
+  "src/features/library/music-source-menu-content.ios.tsx": "b936db1f5ab988bf0b893edd062c416aa0224a07a9e6d7951030821bf9b64e37"
+}

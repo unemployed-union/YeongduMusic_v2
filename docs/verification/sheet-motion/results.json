@@ -1,0 +1,150 @@
+{
+  "date": "2026-11-14",
+  "branch": "experiment/ios-settings-truesheet4",
+  "simulator": {
+    "name": "YeongduMusic Sheet QA",
+    "udid": "04674652-9292-47C8-AD25-97A6CDF48FB5",
+    "device": "iPhone 18 Pro",
+    "runtime": "iOS 27.0",
+    "data": "Separate empty QA simulator; original simulator data preserved"
+  },
+  "finalNativeBuild": {
+    "result": "BUILD SUCCEEDED",
+    "configuration": "Release",
+    "app": "/tmp/yeongdu-truesheet-simulator/Build/Products/Release-iphonesimulator/YeongduMusic.app",
+    "log": "/tmp/yeongdu-truesheet-simulator-build.log",
+    "notes": "Swift switch cases later expanded across lines only; same compiled behavior."
+  },
+  "checks": {
+    "lint": "passed",
+    "typecheck": "passed",
+    "regressions": "11 of 11 passed after adding the new native boundary mock; see regressions.json",
+    "diffCheck": "passed"
+  },
+  "scenarios": [
+    {
+      "name": "baseline-contrast-dark",
+      "passed": true,
+      "tests": [
+        {
+          "name": "testBaselineSheetGesturesAndNavigation",
+          "seconds": 60.098
+        }
+      ],
+      "log": "/tmp/yeongdu-baseline-contrast-dark-test.log",
+      "xcresult": "/tmp/yeongdu-baseline-contrast-dark.xcresult",
+      "recording": "/tmp/yeongdu-baseline-contrast-dark.mp4",
+      "finalCandidate": false
+    },
+    {
+      "name": "native-contrast-dark",
+      "passed": true,
+      "tests": [
+        {
+          "name": "testContrastNativeSheetGesturesAndNavigation",
+          "seconds": 61.075
+        }
+      ],
+      "log": "/tmp/yeongdu-native-contrast-dark-test.log",
+      "xcresult": "/tmp/yeongdu-native-contrast-dark.xcresult",
+      "recording": "/tmp/yeongdu-native-contrast-dark.mp4",
+      "finalCandidate": false
+    },
+    {
+      "name": "continuous-dark",
+      "passed": true,
+      "tests": [
+        {
+          "name": "testContrastNativeSheetGesturesAndNavigation",
+          "seconds": 61.588
+        }
+      ],
+      "log": "/tmp/yeongdu-continuous-dark-test.log",
+      "xcresult": "/tmp/yeongdu-continuous-dark.xcresult",
+      "recording": "/tmp/yeongdu-continuous-dark.mp4",
+      "finalCandidate": false
+    },
+    {
+      "name": "continuous-light",
+      "passed": true,
+      "tests": [
+        {
+          "name": "testContrastNativeSheetGesturesAndNavigation",
+          "seconds": 59.244
+        },
+        {
+          "name": "testNativeSheetGesturesAndNavigation",
+          "seconds": 60.132
+        }
+      ],
+      "log": "/tmp/yeongdu-continuous-light-test.log",
+      "xcresult": "/tmp/yeongdu-continuous-light.xcresult",
+      "recording": "/tmp/yeongdu-continuous-light.mp4",
+      "finalCandidate": false
+    },
+    {
+      "name": "sheet-final-dark",
+      "passed": true,
+      "tests": [
+        {
+          "name": "testContrastNativeSheetGesturesAndNavigation",
+          "seconds": 60.876
+        },
+        {
+          "name": "testNativeSheetGesturesAndNavigation",
+          "seconds": 58.843
+        }
+      ],
+      "log": "/tmp/yeongdu-sheet-final-dark-test.log",
+      "xcresult": "/tmp/yeongdu-sheet-final-dark.xcresult",
+      "recording": "/tmp/yeongdu-sheet-final-dark.mp4",
+      "finalCandidate": true
+    },
+    {
+      "name": "sheet-final-light",
+      "passed": true,
+      "tests": [
+        {
+          "name": "testContrastNativeSheetGesturesAndNavigation",
+          "seconds": 59.301
+        }
+      ],
+      "log": "/tmp/yeongdu-sheet-final-light-test.log",
+      "xcresult": "/tmp/yeongdu-sheet-final-light.xcresult",
+      "recording": "/tmp/yeongdu-sheet-final-light.mp4",
+      "finalCandidate": true
+    }
+  ],
+  "evidence": {
+    "baseline-dark.mp4": {
+      "source": "/tmp/yeongdu-baseline-contrast-dark.mp4",
+      "startSeconds": 19,
+      "durationSeconds": 18
+    },
+    "final-dark.mp4": {
+      "source": "/tmp/yeongdu-sheet-final-dark.mp4",
+      "startSeconds": 20,
+      "durationSeconds": 30
+    },
+    "final-light.mp4": {
+      "source": "/tmp/yeongdu-sheet-final-light.mp4",
+      "startSeconds": 16,
+      "durationSeconds": 36
+    }
+  },
+  "unverified": [
+    "Physical device final candidate",
+    "iOS 26.1 runtime",
+    "Same-finger direction reversal within a held multi-segment gesture",
+    "iPad, rotation, keyboard, accessibility options",
+    "Quantitative frame latency and real NAS authentication/save/playback"
+  ],
+  "sourceSha256": {
+    "modules/yeongdu-sheet-background/expo-module.config.json": "942a54435ec673c2c92c4bfa435f12255a9b63a0808e9c71be2fcc1410ae4894",
+    "modules/yeongdu-sheet-background/package.json": "e980aa154ea1e0fbaa4ba88cc631b94ada928449d05a44f35b08bc91fe49419a",
+    "modules/yeongdu-sheet-background/ios/YeongduSheetBackground.podspec": "4545e20cb22f1cf9c76f4408ef4f59833dc8ca1379eee16070c0c9952f1af2ef",
+    "modules/yeongdu-sheet-background/ios/YeongduSheetBackgroundModule.swift": "022ce05b55baa5e0c0c87f87a3acfae26eaca27b0792da55bc1d9c5ee4da57ba",
+    "src/features/settings/settings-sheet-background.ios.tsx": "b4d2d1336e6523a762901f17caad5ebac930984dd0412a142d275f0a6521afc9",
+    "src/features/settings/settings-ui.ios.tsx": "101cd87f2a7f45c2af00ec1bc3f89b169dfee1056eb85dc136996aaac3572c74"
+  }
+}

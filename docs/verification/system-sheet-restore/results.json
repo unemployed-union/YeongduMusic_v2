@@ -1,0 +1,133 @@
+{
+  "date": "2026-11-14",
+  "status": "system default sheet and List/Section backgrounds restored; custom driver retired",
+  "versions": {
+    "expo": "58.0.23",
+    "expoRouter": "58.0.30",
+    "expoUI": "58.0.27",
+    "reactNative": "0.88.1",
+    "screens": "4.30.1"
+  },
+  "runtime": "iPhone 18 Pro Simulator / iOS 27.0",
+  "backup": {
+    "archive": "docs/verification/system-sheet-restore/rollback/before-system-restore.tar.gz",
+    "files": 98,
+    "sha256": "de79e0c84f9f352dac5acc8ff3bb78256f8ec3da07b8e124ec7c7a04dd99eb21",
+    "scope": "docs/verification/system-sheet-restore/rollback/restore-scope.txt",
+    "allMembersVerifiedAgainstManifest": true
+  },
+  "changedFromDirtyBaseline": [
+    "docs/ios-native-material-path.md",
+    "docs/ios-settings-group-background.md",
+    "docs/ios-sheet-background-motion.md",
+    "docs/ios-sheet-threshold-transition.md",
+    "modules/yeongdu-sheet-background/expo-module.config.json",
+    "modules/yeongdu-sheet-background/ios/SettingsGroupBackground.swift",
+    "modules/yeongdu-sheet-background/ios/SheetAppearancePolicy.swift",
+    "modules/yeongdu-sheet-background/ios/YeongduSheetBackground.podspec",
+    "modules/yeongdu-sheet-background/ios/YeongduSheetBackgroundModule.swift",
+    "modules/yeongdu-sheet-background/package.json",
+    "scripts/check-native-settings.cjs",
+    "scripts/check-native-sheet-background.cjs",
+    "scripts/ios-sheet-qa/SheetUITests.swift",
+    "scripts/ios-sheet-qa/check-policy.swift",
+    "src/app/(settings)/_layout.tsx",
+    "src/features/settings/settings-sheet-background.ios.tsx",
+    "src/features/settings/settings-sheet-background.tsx",
+    "src/features/settings/settings-ui.ios.tsx"
+  ],
+  "retiredFiles": [
+    "modules/yeongdu-sheet-background/expo-module.config.json",
+    "modules/yeongdu-sheet-background/ios/SettingsGroupBackground.swift",
+    "modules/yeongdu-sheet-background/ios/SheetAppearancePolicy.swift",
+    "modules/yeongdu-sheet-background/ios/YeongduSheetBackground.podspec",
+    "modules/yeongdu-sheet-background/ios/YeongduSheetBackgroundModule.swift",
+    "modules/yeongdu-sheet-background/package.json",
+    "scripts/ios-sheet-qa/check-policy.swift",
+    "src/features/settings/settings-sheet-background.ios.tsx",
+    "src/features/settings/settings-sheet-background.tsx"
+  ],
+  "unchangedProtectedSources": {
+    "src/features/library/library-sheet.ios.tsx": "6a781e950e2823beaa86a4e86515e4561ccf72d821d1f491e3d5e4a59e1a3012",
+    "src/features/library/music-source-sheet.ios.tsx": "724aaa75f2ff8be61680ea3964bed47ec36c6c667a4bd79bad5a16a0f4f73122",
+    "src/features/library/music-source-menu-content.ios.tsx": "b936db1f5ab988bf0b893edd062c416aa0224a07a9e6d7951030821bf9b64e37",
+    "src/features/library/local-music-controls.tsx": "ca52a81c06842bdf4b4ad039d14f67cbad722f19baa2d95f7b4767de331c8670",
+    "src/features/settings/settings-navigator.ios.tsx": "f92cbad40b1abea024b601f8205ccc1769f82a7ad74136f977645bafbf5e6123",
+    "src/features/settings/settings-presentation.tsx": "ab55f7864846c6639c7575f67d43457a9e4ab0819200afe0694540950240067b",
+    "src/features/settings/settings-ui.tsx": "de04109f0a0994c8c3fcd2497753e3bc65b44ca6cae7d6357a86d45eb3848f35",
+    "src/features/settings/settings-navigator.tsx": "09c78641d12aeb1c9fc788e0bd0d7e24eaa6f05b825f67594de1a1a3b7f061a7",
+    "package.json": "541df3e7a442f27171c887d82d379b651dbde49f6228d8c0f22724580335043b",
+    "pnpm-lock.yaml": "10c761b942c3e820dcf5f09a94fb07bd9738a6640a71bd3c15407dcb3af0714e"
+  },
+  "customNativeModuleRemovedFromPods": true,
+  "runs": [
+    {
+      "label": "system-default-before-cleanup",
+      "tests": [
+        {
+          "name": "testBaselineSheetGesturesAndNavigation",
+          "seconds": 62.38
+        }
+      ],
+      "xcresult": "/tmp/yeongdu-group-system-default-before-cleanup/tests.xcresult",
+      "recording": "/tmp/yeongdu-group-system-default-before-cleanup/recording.mp4"
+    },
+    {
+      "label": "system-default-final-light",
+      "tests": [
+        {
+          "name": "testMusicSourceAndSettingsReference",
+          "seconds": 20.939
+        },
+        {
+          "name": "testNativeSheetGesturesAndNavigation",
+          "seconds": 59.651
+        }
+      ],
+      "xcresult": "/tmp/yeongdu-group-system-default-final-light/tests.xcresult",
+      "recording": "/tmp/yeongdu-group-system-default-final-light/recording.mp4"
+    },
+    {
+      "label": "system-default-final-dark",
+      "tests": [
+        {
+          "name": "testMusicSourceAndSettingsReference",
+          "seconds": 20.108
+        },
+        {
+          "name": "testNativeSheetGesturesAndNavigation",
+          "seconds": 59.727
+        }
+      ],
+      "xcresult": "/tmp/yeongdu-group-system-default-final-dark/tests.xcresult",
+      "recording": "/tmp/yeongdu-group-system-default-final-dark/recording.mp4"
+    }
+  ],
+  "checks": {
+    "releaseSimulatorBuild": "passed",
+    "lint": "passed",
+    "types": "passed",
+    "sourceRegressionScripts": 4,
+    "diffCheck": "passed"
+  },
+  "buildLog": "/tmp/yeongdu-truesheet-simulator-build.log",
+  "podLog": "/tmp/yeongdu-truesheet-pods.log",
+  "decision": "Keep native transition. Do not reintroduce threshold opacity, alternate Material or opaque overlay.",
+  "verificationBoundaries": [
+    "Pre-cleanup baseline uses a Simulator-only contrast fixture with original system sheet effects. Final build has no custom native module or fixture.",
+    "Both actual final screens were opened in light/dark; rendering paths use default List/Section and system sheet effects. No pixel-perfect equivalence over real album artwork is claimed.",
+    "iOS 26 runtime, physical device, actual NAS login/save/playback, iPad and accessibility operation remain unverified."
+  ],
+  "videoClips": {
+    "system-baseline-contrast-drag.mp4": {
+      "source": "/tmp/yeongdu-group-system-default-before-cleanup/recording.mp4",
+      "start": 18,
+      "duration": 18
+    },
+    "final-light-drag.mp4": {
+      "source": "/tmp/yeongdu-group-system-default-final-light/recording.mp4",
+      "start": 42,
+      "duration": 27
+    }
+  }
+}

@@ -1,0 +1,156 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -project /tmp/yeongdu-native-sheet-probe/Probe.xcodeproj -scheme NativeSheetProbe -destination "platform=iOS Simulator,id=04674652-9292-47C8-AD25-97A6CDF48FB5" -derivedDataPath /tmp/yeongdu-native-sheet-probe/build -resultBundlePath /tmp/yeongdu-native-sheet-probe/e-light/tests.xcresult "-only-testing:ProbeTests/ProbeTests/testENativeNav" test-without-building CODE_SIGNING_ALLOWED=NO
+
+Build settings from command line:
+    CODE_SIGNING_ALLOWED = NO
+
+Writing result bundle at path:
+	/tmp/yeongdu-native-sheet-probe/e-light/tests.xcresult
+
+2026-11-15 00:18:50.593395+0900 ProbeTests-Runner[92679:734194] [Default] Running tests...
+    t =      nans Interface orientation changed to Portrait
+Test Suite 'Selected tests' started at 2026-11-15 00:18:53.300.
+Test Suite 'ProbeTests.xctest' started at 2026-11-15 00:18:53.300.
+Test Suite 'ProbeTests' started at 2026-11-15 00:18:53.301.
+Test Case '-[ProbeTests.ProbeTests testENativeNav]' started.
+    t =     0.00s Start Test at 2026-11-15 00:18:53.304
+    t =     0.02s Set Up
+    t =     0.02s Open xyz.yeongdu.native-sheet-probe
+    t =     0.02s     Launch xyz.yeongdu.native-sheet-probe
+2026-11-15 00:18:53.390 xcodebuild[92665:733903] [MT] IDELaunchParametersSnapshot: debugger version lookup failed for path '<nil>': noURL
+2026-11-15 00:18:53.390 xcodebuild[92665:733903] [MT] IDELaunchParametersSnapshot: no debugger version
+    t =     0.51s         Setting up automation session
+objc[92679]: Class UIAccessibilityLoaderWebShared is implemented in both /private/var/run/com.apple.security.cryptexd/mnt/com.apple.iPhoneOS.SimulatorRuntime-v24.1.434.0.dRYydF/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 27.0.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebKit.axbundle/WebKit (0x101f6c398) and /private/var/run/com.apple.security.cryptexd/mnt/com.apple.iPhoneOS.SimulatorRuntime-v24.1.434.0.dRYydF/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 27.0.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebCore.axbundle/WebCore (0x10649c310). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+    t =     2.99s         Wait for xyz.yeongdu.native-sheet-probe to idle
+    t =     4.37s Waiting 10.0s for "E Native nav auto" Button to exist
+    t =     5.42s     Checking `Expect predicate `existsNoRetry == 1` for object "E Native nav auto" Button`
+    t =     5.42s         Checking existence of `"E Native nav auto" Button`
+    t =     5.49s Tap "E Native nav auto" Button
+    t =     5.49s     Wait for xyz.yeongdu.native-sheet-probe to idle
+    t =     5.49s     Find the "E Native nav auto" Button
+    t =     5.50s     Check for interrupting elements affecting "E Native nav auto" Button
+    t =     5.51s     Synthesize event
+    t =     5.85s     Wait for xyz.yeongdu.native-sheet-probe to idle
+    t =     6.17s Waiting 10.0s for "Close probe" Button to exist
+    t =     7.21s     Checking `Expect predicate `existsNoRetry == 1` for object "Close probe" Button`
+    t =     7.22s         Checking existence of `"Close probe" Button`
+    t =     7.34s Find the Target Application 'xyz.yeongdu.native-sheet-probe'
+    t =     7.49s Added attachment named 'E Native nav auto half'
+    t =     7.49s E Native nav auto slow up
+    t =     7.49s     Checking existence of `Button (First Match)`
+    t =     7.49s     Press Button (First Match)[0.50, 0.50] for 0.1 seconds, then drag to Target Application 'xyz.yeongdu.native-sheet-probe'[0.50, 0.10] with velocity of 95.00 pixels per second, and then hold for 1.0 seconds 
+    t =     7.49s         Wait for xyz.yeongdu.native-sheet-probe to idle
+    t =     7.50s         Find the Button (First Match)
+    t =     7.51s         Check for interrupting elements affecting "Sheet Grabber" Button
+    t =     7.56s         Synthesize event
+    t =     7.56s             Find the "Sheet Grabber" Button
+    t =     7.57s             Find the "Sheet Grabber" Button
+    t =     7.59s             Find the Target Application 'xyz.yeongdu.native-sheet-probe'
+    t =     7.61s             Find the Target Application 'xyz.yeongdu.native-sheet-probe'
+    t =     7.64s             Find the "Sheet Grabber" Button
+    t =    12.59s         Wait for xyz.yeongdu.native-sheet-probe to idle
+    t =    12.91s Find the Target Application 'xyz.yeongdu.native-sheet-probe'
+    t =    13.06s Added attachment named 'E Native nav auto slow up'
+    t =    13.06s Find the "Close probe" Button
+    t =    13.09s Find the Target Application 'xyz.yeongdu.native-sheet-probe'
+    t =    13.12s E Native nav auto slow down
+    t =    13.12s     Checking existence of `Button (First Match)`
+    t =    13.13s     Press Button (First Match)[0.50, 0.50] for 0.1 seconds, then drag to Target Application 'xyz.yeongdu.native-sheet-probe'[0.50, 0.51] with velocity of 95.00 pixels per second, and then hold for 1.0 seconds 
+    t =    13.13s         Wait for xyz.yeongdu.native-sheet-probe to idle
+    t =    13.13s         Find the Button (First Match)
+    t =    13.14s         Check for interrupting elements affecting "Sheet Grabber" Button
+    t =    13.18s         Synthesize event
+    t =    13.18s             Find the "Sheet Grabber" Button
+    t =    13.19s             Find the "Sheet Grabber" Button
+    t =    13.20s             Find the Target Application 'xyz.yeongdu.native-sheet-probe'
+    t =    13.23s             Find the Target Application 'xyz.yeongdu.native-sheet-probe'
+    t =    13.26s             Find the "Sheet Grabber" Button
+    t =    18.63s         Wait for xyz.yeongdu.native-sheet-probe to idle
+    t =    18.94s Find the Target Application 'xyz.yeongdu.native-sheet-probe'
+    t =    19.09s Added attachment named 'E Native nav auto slow down'
+    t =    19.09s Find the "Close probe" Button
+    t =    19.12s Find the Target Application 'xyz.yeongdu.native-sheet-probe'
+    t =    19.14s E Native nav auto partial up
+    t =    19.15s     Checking existence of `Button (First Match)`
+    t =    19.15s     Press Button (First Match)[0.50, 0.50] for 0.1 seconds, then drag to Target Application 'xyz.yeongdu.native-sheet-probe'[0.50, 0.28] with velocity of 95.00 pixels per second, and then hold for 1.0 seconds 
+    t =    19.15s         Wait for xyz.yeongdu.native-sheet-probe to idle
+    t =    19.16s         Find the Button (First Match)
+    t =    19.17s         Check for interrupting elements affecting "Sheet Grabber" Button
+    t =    19.20s         Synthesize event
+    t =    19.20s             Find the "Sheet Grabber" Button
+    t =    19.22s             Find the "Sheet Grabber" Button
+    t =    19.23s             Find the Target Application 'xyz.yeongdu.native-sheet-probe'
+    t =    19.25s             Find the Target Application 'xyz.yeongdu.native-sheet-probe'
+    t =    19.28s             Find the "Sheet Grabber" Button
+    t =    22.55s         Wait for xyz.yeongdu.native-sheet-probe to idle
+    t =    22.90s Find the Target Application 'xyz.yeongdu.native-sheet-probe'
+    t =    23.04s Added attachment named 'E Native nav auto partial up'
+    t =    23.04s E Native nav auto reverse next gesture
+    t =    23.04s     Checking existence of `Button (First Match)`
+    t =    23.06s     Press Button (First Match)[0.50, 0.50] for 0.1 seconds, then drag to Target Application 'xyz.yeongdu.native-sheet-probe'[0.50, 0.51] with velocity of 95.00 pixels per second, and then hold for 1.0 seconds 
+    t =    23.06s         Wait for xyz.yeongdu.native-sheet-probe to idle
+    t =    23.06s         Find the Button (First Match)
+    t =    23.07s         Check for interrupting elements affecting "Sheet Grabber" Button
+    t =    23.11s         Synthesize event
+    t =    23.11s             Find the "Sheet Grabber" Button
+    t =    23.12s             Find the "Sheet Grabber" Button
+    t =    23.14s             Find the Target Application 'xyz.yeongdu.native-sheet-probe'
+    t =    23.16s             Find the Target Application 'xyz.yeongdu.native-sheet-probe'
+    t =    23.19s             Find the "Sheet Grabber" Button
+    t =    24.84s         Wait for xyz.yeongdu.native-sheet-probe to idle
+    t =    25.16s Find the Target Application 'xyz.yeongdu.native-sheet-probe'
+    t =    25.31s Added attachment named 'E Native nav auto reverse next gesture'
+    t =    25.31s E Native nav auto flick up
+    t =    25.31s     Checking existence of `Button (First Match)`
+    t =    25.32s     Press Button (First Match)[0.50, 0.50] for 0.1 seconds, then drag to Target Application 'xyz.yeongdu.native-sheet-probe'[0.50, 0.10] with velocity of 1500.00 pixels per second, and then hold for 1.0 seconds 
+    t =    25.32s         Wait for xyz.yeongdu.native-sheet-probe to idle
+    t =    25.33s         Find the Button (First Match)
+    t =    25.34s         Check for interrupting elements affecting "Sheet Grabber" Button
+    t =    25.37s         Synthesize event
+    t =    25.38s             Find the "Sheet Grabber" Button
+    t =    25.39s             Find the "Sheet Grabber" Button
+    t =    25.40s             Find the Target Application 'xyz.yeongdu.native-sheet-probe'
+    t =    25.43s             Find the Target Application 'xyz.yeongdu.native-sheet-probe'
+    t =    25.46s             Find the "Sheet Grabber" Button
+    t =    27.08s         Wait for xyz.yeongdu.native-sheet-probe to idle
+    t =    27.44s Find the Target Application 'xyz.yeongdu.native-sheet-probe'
+    t =    27.59s Added attachment named 'E Native nav auto flick up'
+    t =    27.59s E Native nav auto flick down
+    t =    27.59s     Checking existence of `Button (First Match)`
+    t =    27.60s     Press Button (First Match)[0.50, 0.50] for 0.1 seconds, then drag to Target Application 'xyz.yeongdu.native-sheet-probe'[0.50, 0.51] with velocity of 1500.00 pixels per second, and then hold for 1.0 seconds 
+    t =    27.60s         Wait for xyz.yeongdu.native-sheet-probe to idle
+    t =    27.60s         Find the Button (First Match)
+    t =    27.61s         Check for interrupting elements affecting "Sheet Grabber" Button
+    t =    27.65s         Synthesize event
+    t =    27.65s             Find the "Sheet Grabber" Button
+    t =    27.67s             Find the "Sheet Grabber" Button
+    t =    27.68s             Find the Target Application 'xyz.yeongdu.native-sheet-probe'
+    t =    27.71s             Find the Target Application 'xyz.yeongdu.native-sheet-probe'
+    t =    27.74s             Find the "Sheet Grabber" Button
+    t =    29.40s         Wait for xyz.yeongdu.native-sheet-probe to idle
+    t =    29.81s Find the Target Application 'xyz.yeongdu.native-sheet-probe'
+    t =    29.96s Added attachment named 'E Native nav auto flick down'
+    t =    29.96s Tap "Close probe" Button
+    t =    29.96s     Wait for xyz.yeongdu.native-sheet-probe to idle
+    t =    29.97s     Find the "Close probe" Button
+    t =    30.00s     Check for interrupting elements affecting "Close probe" Button
+    t =    30.03s     Synthesize event
+    t =    30.33s     Wait for xyz.yeongdu.native-sheet-probe to idle
+    t =    30.69s Tear Down
+Test Case '-[ProbeTests.ProbeTests testENativeNav]' passed (31.284 seconds).
+Test Suite 'ProbeTests' passed at 2026-11-15 00:19:24.589.
+	 Executed 1 test, with 0 failures (0 unexpected) in 31.284 (31.289) seconds
+Test Suite 'ProbeTests.xctest' passed at 2026-11-15 00:19:24.591.
+	 Executed 1 test, with 0 failures (0 unexpected) in 31.284 (31.290) seconds
+Test Suite 'Selected tests' passed at 2026-11-15 00:19:24.592.
+	 Executed 1 test, with 0 failures (0 unexpected) in 31.284 (31.292) seconds
+2026-11-15 00:19:24.899 xcodebuild[92665:733903] [MT] IDETestOperationsObserverDebug: 35.791 elapsed -- Testing started completed.
+2026-11-15 00:19:24.899 xcodebuild[92665:733903] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-11-15 00:19:24.899 xcodebuild[92665:733903] [MT] IDETestOperationsObserverDebug: 35.791 sec, +35.791 sec -- end
+
+Test session results, code coverage, and logs:
+	/tmp/yeongdu-native-sheet-probe/e-light/tests.xcresult
+
+** TEST EXECUTE SUCCEEDED **
+
+Testing started

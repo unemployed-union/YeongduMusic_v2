@@ -1,0 +1,156 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -project /tmp/yeongdu-native-sheet-probe/Probe.xcodeproj -scheme NativeSheetProbe -destination "platform=iOS Simulator,id=04674652-9292-47C8-AD25-97A6CDF48FB5" -derivedDataPath /tmp/yeongdu-native-sheet-probe/build -resultBundlePath /tmp/yeongdu-native-sheet-probe/g-light/tests.xcresult "-only-testing:ProbeTests/ProbeTests/testGUndimmed" test-without-building CODE_SIGNING_ALLOWED=NO
+
+Build settings from command line:
+    CODE_SIGNING_ALLOWED = NO
+
+Writing result bundle at path:
+	/tmp/yeongdu-native-sheet-probe/g-light/tests.xcresult
+
+2026-11-15 00:55:17.867005+0900 ProbeTests-Runner[99490:788230] [Default] Running tests...
+    t =      nans Interface orientation changed to Portrait
+Test Suite 'Selected tests' started at 2026-11-15 00:55:21.341.
+Test Suite 'ProbeTests.xctest' started at 2026-11-15 00:55:21.341.
+Test Suite 'ProbeTests' started at 2026-11-15 00:55:21.342.
+Test Case '-[ProbeTests.ProbeTests testGUndimmed]' started.
+    t =     0.01s Start Test at 2026-11-15 00:55:21.347
+    t =     0.03s Set Up
+    t =     0.03s Open xyz.yeongdu.native-sheet-probe
+    t =     0.03s     Launch xyz.yeongdu.native-sheet-probe
+2026-11-15 00:55:21.624 xcodebuild[99474:787951] [MT] IDELaunchParametersSnapshot: debugger version lookup failed for path '<nil>': noURL
+2026-11-15 00:55:21.624 xcodebuild[99474:787951] [MT] IDELaunchParametersSnapshot: no debugger version
+objc[99490]: Class UIAccessibilityLoaderWebShared is implemented in both /private/var/run/com.apple.security.cryptexd/mnt/com.apple.iPhoneOS.SimulatorRuntime-v24.1.434.0.dRYydF/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 27.0.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebKit.axbundle/WebKit (0x10299c398) and /private/var/run/com.apple.security.cryptexd/mnt/com.apple.iPhoneOS.SimulatorRuntime-v24.1.434.0.dRYydF/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 27.0.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebCore.axbundle/WebCore (0x106754310). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+    t =     2.11s         Setting up automation session
+    t =     5.20s         Wait for xyz.yeongdu.native-sheet-probe to idle
+    t =     7.15s Waiting 10.0s for "G UIKit undimmed" Button to exist
+    t =     8.19s     Checking `Expect predicate `existsNoRetry == 1` for object "G UIKit undimmed" Button`
+    t =     8.19s         Checking existence of `"G UIKit undimmed" Button`
+    t =     8.30s Tap "G UIKit undimmed" Button
+    t =     8.30s     Wait for xyz.yeongdu.native-sheet-probe to idle
+    t =     8.30s     Find the "G UIKit undimmed" Button
+    t =     8.31s     Check for interrupting elements affecting "G UIKit undimmed" Button
+    t =     8.35s     Synthesize event
+    t =     8.68s     Wait for xyz.yeongdu.native-sheet-probe to idle
+    t =     9.09s Waiting 10.0s for "Close probe" Button to exist
+    t =    10.13s     Checking `Expect predicate `existsNoRetry == 1` for object "Close probe" Button`
+    t =    10.14s         Checking existence of `"Close probe" Button`
+    t =    10.31s Find the Target Application 'xyz.yeongdu.native-sheet-probe'
+    t =    10.47s Added attachment named 'G UIKit undimmed half'
+    t =    10.47s G UIKit undimmed slow up
+    t =    10.47s     Checking existence of `Button (First Match)`
+    t =    10.48s     Press Button (First Match)[0.50, 0.50] for 0.1 seconds, then drag to Target Application 'xyz.yeongdu.native-sheet-probe'[0.50, 0.10] with velocity of 95.00 pixels per second, and then hold for 1.0 seconds 
+    t =    10.48s         Wait for xyz.yeongdu.native-sheet-probe to idle
+    t =    10.48s         Find the Button (First Match)
+    t =    10.49s         Check for interrupting elements affecting "Sheet Grabber" Button
+    t =    10.53s         Synthesize event
+    t =    10.53s             Find the "Sheet Grabber" Button
+    t =    10.55s             Find the "Sheet Grabber" Button
+    t =    10.56s             Find the Target Application 'xyz.yeongdu.native-sheet-probe'
+    t =    10.59s             Find the Target Application 'xyz.yeongdu.native-sheet-probe'
+    t =    10.62s             Find the "Sheet Grabber" Button
+    t =    15.56s         Wait for xyz.yeongdu.native-sheet-probe to idle
+    t =    15.89s Find the Target Application 'xyz.yeongdu.native-sheet-probe'
+    t =    16.04s Added attachment named 'G UIKit undimmed slow up'
+    t =    16.04s Find the "Close probe" Button
+    t =    16.09s Find the Target Application 'xyz.yeongdu.native-sheet-probe'
+    t =    16.12s G UIKit undimmed slow down
+    t =    16.12s     Checking existence of `Button (First Match)`
+    t =    16.12s     Press Button (First Match)[0.50, 0.50] for 0.1 seconds, then drag to Target Application 'xyz.yeongdu.native-sheet-probe'[0.50, 0.51] with velocity of 95.00 pixels per second, and then hold for 1.0 seconds 
+    t =    16.13s         Wait for xyz.yeongdu.native-sheet-probe to idle
+    t =    16.13s         Find the Button (First Match)
+    t =    16.14s         Check for interrupting elements affecting "Sheet Grabber" Button
+    t =    16.18s         Synthesize event
+    t =    16.18s             Find the "Sheet Grabber" Button
+    t =    16.20s             Find the "Sheet Grabber" Button
+    t =    16.21s             Find the Target Application 'xyz.yeongdu.native-sheet-probe'
+    t =    16.24s             Find the Target Application 'xyz.yeongdu.native-sheet-probe'
+    t =    16.28s             Find the "Sheet Grabber" Button
+    t =    21.65s         Wait for xyz.yeongdu.native-sheet-probe to idle
+    t =    21.97s Find the Target Application 'xyz.yeongdu.native-sheet-probe'
+    t =    22.12s Added attachment named 'G UIKit undimmed slow down'
+    t =    22.12s Find the "Close probe" Button
+    t =    22.15s Find the Target Application 'xyz.yeongdu.native-sheet-probe'
+    t =    22.18s G UIKit undimmed partial up
+    t =    22.18s     Checking existence of `Button (First Match)`
+    t =    22.19s     Press Button (First Match)[0.50, 0.50] for 0.1 seconds, then drag to Target Application 'xyz.yeongdu.native-sheet-probe'[0.50, 0.28] with velocity of 95.00 pixels per second, and then hold for 1.0 seconds 
+    t =    22.19s         Wait for xyz.yeongdu.native-sheet-probe to idle
+    t =    22.19s         Find the Button (First Match)
+    t =    22.20s         Check for interrupting elements affecting "Sheet Grabber" Button
+    t =    22.24s         Synthesize event
+    t =    22.24s             Find the "Sheet Grabber" Button
+    t =    22.25s             Find the "Sheet Grabber" Button
+    t =    22.26s             Find the Target Application 'xyz.yeongdu.native-sheet-probe'
+    t =    22.29s             Find the Target Application 'xyz.yeongdu.native-sheet-probe'
+    t =    22.32s             Find the "Sheet Grabber" Button
+    t =    25.59s         Wait for xyz.yeongdu.native-sheet-probe to idle
+    t =    25.96s Find the Target Application 'xyz.yeongdu.native-sheet-probe'
+    t =    26.09s Added attachment named 'G UIKit undimmed partial up'
+    t =    26.09s G UIKit undimmed reverse next gesture
+    t =    26.09s     Checking existence of `Button (First Match)`
+    t =    26.10s     Press Button (First Match)[0.50, 0.50] for 0.1 seconds, then drag to Target Application 'xyz.yeongdu.native-sheet-probe'[0.50, 0.51] with velocity of 95.00 pixels per second, and then hold for 1.0 seconds 
+    t =    26.10s         Wait for xyz.yeongdu.native-sheet-probe to idle
+    t =    26.11s         Find the Button (First Match)
+    t =    26.12s         Check for interrupting elements affecting "Sheet Grabber" Button
+    t =    26.16s         Synthesize event
+    t =    26.16s             Find the "Sheet Grabber" Button
+    t =    26.17s             Find the "Sheet Grabber" Button
+    t =    26.19s             Find the Target Application 'xyz.yeongdu.native-sheet-probe'
+    t =    26.22s             Find the Target Application 'xyz.yeongdu.native-sheet-probe'
+    t =    26.26s             Find the "Sheet Grabber" Button
+    t =    27.89s         Wait for xyz.yeongdu.native-sheet-probe to idle
+    t =    28.21s Find the Target Application 'xyz.yeongdu.native-sheet-probe'
+    t =    28.36s Added attachment named 'G UIKit undimmed reverse next gesture'
+    t =    28.36s G UIKit undimmed flick up
+    t =    28.36s     Checking existence of `Button (First Match)`
+    t =    28.37s     Press Button (First Match)[0.50, 0.50] for 0.1 seconds, then drag to Target Application 'xyz.yeongdu.native-sheet-probe'[0.50, 0.10] with velocity of 1500.00 pixels per second, and then hold for 1.0 seconds 
+    t =    28.37s         Wait for xyz.yeongdu.native-sheet-probe to idle
+    t =    28.37s         Find the Button (First Match)
+    t =    28.38s         Check for interrupting elements affecting "Sheet Grabber" Button
+    t =    28.42s         Synthesize event
+    t =    28.43s             Find the "Sheet Grabber" Button
+    t =    28.44s             Find the "Sheet Grabber" Button
+    t =    28.45s             Find the Target Application 'xyz.yeongdu.native-sheet-probe'
+    t =    28.48s             Find the Target Application 'xyz.yeongdu.native-sheet-probe'
+    t =    28.52s             Find the "Sheet Grabber" Button
+    t =    30.15s         Wait for xyz.yeongdu.native-sheet-probe to idle
+    t =    30.51s Find the Target Application 'xyz.yeongdu.native-sheet-probe'
+    t =    30.65s Added attachment named 'G UIKit undimmed flick up'
+    t =    30.65s G UIKit undimmed flick down
+    t =    30.65s     Checking existence of `Button (First Match)`
+    t =    30.66s     Press Button (First Match)[0.50, 0.50] for 0.1 seconds, then drag to Target Application 'xyz.yeongdu.native-sheet-probe'[0.50, 0.51] with velocity of 1500.00 pixels per second, and then hold for 1.0 seconds 
+    t =    30.66s         Wait for xyz.yeongdu.native-sheet-probe to idle
+    t =    30.66s         Find the Button (First Match)
+    t =    30.67s         Check for interrupting elements affecting "Sheet Grabber" Button
+    t =    30.72s         Synthesize event
+    t =    30.72s             Find the "Sheet Grabber" Button
+    t =    30.73s             Find the "Sheet Grabber" Button
+    t =    30.75s             Find the Target Application 'xyz.yeongdu.native-sheet-probe'
+    t =    30.78s             Find the Target Application 'xyz.yeongdu.native-sheet-probe'
+    t =    30.82s             Find the "Sheet Grabber" Button
+    t =    32.48s         Wait for xyz.yeongdu.native-sheet-probe to idle
+    t =    32.89s Find the Target Application 'xyz.yeongdu.native-sheet-probe'
+    t =    33.03s Added attachment named 'G UIKit undimmed flick down'
+    t =    33.03s Tap "Close probe" Button
+    t =    33.03s     Wait for xyz.yeongdu.native-sheet-probe to idle
+    t =    33.03s     Find the "Close probe" Button
+    t =    33.07s     Check for interrupting elements affecting "Close probe" Button
+    t =    33.11s     Synthesize event
+    t =    33.41s     Wait for xyz.yeongdu.native-sheet-probe to idle
+    t =    33.76s Tear Down
+Test Case '-[ProbeTests.ProbeTests testGUndimmed]' passed (34.671 seconds).
+Test Suite 'ProbeTests' passed at 2026-11-15 00:55:56.017.
+	 Executed 1 test, with 0 failures (0 unexpected) in 34.671 (34.676) seconds
+Test Suite 'ProbeTests.xctest' passed at 2026-11-15 00:55:56.024.
+	 Executed 1 test, with 0 failures (0 unexpected) in 34.671 (34.683) seconds
+Test Suite 'Selected tests' passed at 2026-11-15 00:55:56.025.
+	 Executed 1 test, with 0 failures (0 unexpected) in 34.671 (34.684) seconds
+2026-11-15 00:55:56.334 xcodebuild[99474:787951] [MT] IDETestOperationsObserverDebug: 41.942 elapsed -- Testing started completed.
+2026-11-15 00:55:56.334 xcodebuild[99474:787951] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-11-15 00:55:56.334 xcodebuild[99474:787951] [MT] IDETestOperationsObserverDebug: 41.942 sec, +41.942 sec -- end
+
+Test session results, code coverage, and logs:
+	/tmp/yeongdu-native-sheet-probe/g-light/tests.xcresult
+
+** TEST EXECUTE SUCCEEDED **
+
+Testing started

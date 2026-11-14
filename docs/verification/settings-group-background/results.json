@@ -1,0 +1,155 @@
+{
+  "date": "2026-11-14",
+  "analysisModel": {
+    "model": "gpt-6.1-sol",
+    "reasoningEffort": "high",
+    "scope": "read-only hierarchy and background analysis"
+  },
+  "appChange": "Only SettingsSection row-background modifier connection in settings-ui.ios.tsx",
+  "protectedSourcesUnchanged": true,
+  "protectedSources": {
+    "src/features/library/library-sheet.ios.tsx": {
+      "before": "6a781e950e2823beaa86a4e86515e4561ccf72d821d1f491e3d5e4a59e1a3012",
+      "after": "6a781e950e2823beaa86a4e86515e4561ccf72d821d1f491e3d5e4a59e1a3012"
+    },
+    "src/features/library/music-source-sheet.ios.tsx": {
+      "before": "724aaa75f2ff8be61680ea3964bed47ec36c6c667a4bd79bad5a16a0f4f73122",
+      "after": "724aaa75f2ff8be61680ea3964bed47ec36c6c667a4bd79bad5a16a0f4f73122"
+    },
+    "src/features/library/music-source-menu-content.ios.tsx": {
+      "before": "b936db1f5ab988bf0b893edd062c416aa0224a07a9e6d7951030821bf9b64e37",
+      "after": "b936db1f5ab988bf0b893edd062c416aa0224a07a9e6d7951030821bf9b64e37"
+    },
+    "src/features/library/local-music-controls.tsx": {
+      "before": "ca52a81c06842bdf4b4ad039d14f67cbad722f19baa2d95f7b4767de331c8670",
+      "after": "ca52a81c06842bdf4b4ad039d14f67cbad722f19baa2d95f7b4767de331c8670"
+    },
+    "src/features/settings/settings-navigator.ios.tsx": {
+      "before": "f92cbad40b1abea024b601f8205ccc1769f82a7ad74136f977645bafbf5e6123",
+      "after": "f92cbad40b1abea024b601f8205ccc1769f82a7ad74136f977645bafbf5e6123"
+    },
+    "src/features/settings/settings-presentation.tsx": {
+      "before": "ab55f7864846c6639c7575f67d43457a9e4ab0819200afe0694540950240067b",
+      "after": "ab55f7864846c6639c7575f67d43457a9e4ab0819200afe0694540950240067b"
+    },
+    "src/features/settings/settings-sheet-background.ios.tsx": {
+      "before": "a3b6f070e13c5f534371ead9c279b9adf37800a952f9ce056691d5e6b42a5b0c",
+      "after": "a3b6f070e13c5f534371ead9c279b9adf37800a952f9ce056691d5e6b42a5b0c"
+    },
+    "src/app/(settings)/_layout.tsx": {
+      "before": "d3534f45eefd01ee8abb15fc869be3385335bb6dd9d929d5dbb0fd754fce2dd2",
+      "after": "d3534f45eefd01ee8abb15fc869be3385335bb6dd9d929d5dbb0fd754fce2dd2"
+    },
+    "modules/yeongdu-sheet-background/expo-module.config.json": {
+      "before": "942a54435ec673c2c92c4bfa435f12255a9b63a0808e9c71be2fcc1410ae4894",
+      "after": "942a54435ec673c2c92c4bfa435f12255a9b63a0808e9c71be2fcc1410ae4894"
+    },
+    "modules/yeongdu-sheet-background/package.json": {
+      "before": "e980aa154ea1e0fbaa4ba88cc631b94ada928449d05a44f35b08bc91fe49419a",
+      "after": "e980aa154ea1e0fbaa4ba88cc631b94ada928449d05a44f35b08bc91fe49419a"
+    },
+    "modules/yeongdu-sheet-background/ios/SettingsGroupBackground.swift": {
+      "before": "677a38cd750ef816fac07999808c643599ea9f20e644e1e529cb76049e495e96",
+      "after": "677a38cd750ef816fac07999808c643599ea9f20e644e1e529cb76049e495e96"
+    },
+    "modules/yeongdu-sheet-background/ios/YeongduSheetBackground.podspec": {
+      "before": "3edffa05d4d8080318cdbfd3b846ddda6fb55aeb7488333536cc588b4a02162e",
+      "after": "3edffa05d4d8080318cdbfd3b846ddda6fb55aeb7488333536cc588b4a02162e"
+    },
+    "modules/yeongdu-sheet-background/ios/YeongduSheetBackgroundModule.swift": {
+      "before": "8d23b7bc68c3de32e21b07cb4f7d73d9b1e703e2126e5600a607a9c98bc9e06c",
+      "after": "8d23b7bc68c3de32e21b07cb4f7d73d9b1e703e2126e5600a607a9c98bc9e06c"
+    },
+    "modules/yeongdu-sheet-background/ios/SheetAppearancePolicy.swift": {
+      "before": "e1de9f3f72e500e4da8cf1e559b10713819ce41f86f356c0509ce932c8d00be0",
+      "after": "e1de9f3f72e500e4da8cf1e559b10713819ce41f86f356c0509ce932c8d00be0"
+    }
+  },
+  "simulator": {
+    "name": "YeongduMusic Sheet QA",
+    "model": "iPhone 18 Pro",
+    "runtime": "iOS 27.0",
+    "data": "separate empty QA data; no real NAS or album artwork"
+  },
+  "runs": [
+    {
+      "label": "baseline-dark",
+      "passed": true,
+      "tests": [
+        {
+          "name": "testContrastNativeSheetGesturesAndNavigation",
+          "seconds": 63.256
+        },
+        {
+          "name": "testMusicSourceAndSettingsReference",
+          "seconds": 23.827
+        }
+      ],
+      "xcresult": "/tmp/yeongdu-group-baseline-dark/tests.xcresult",
+      "recording": "/tmp/yeongdu-group-baseline-dark/recording.mp4"
+    },
+    {
+      "label": "section-dark",
+      "passed": true,
+      "tests": [
+        {
+          "name": "testContrastNativeSheetGesturesAndNavigation",
+          "seconds": 58.644
+        },
+        {
+          "name": "testMusicSourceAndSettingsReference",
+          "seconds": 19.869
+        }
+      ],
+      "xcresult": "/tmp/yeongdu-group-section-dark/tests.xcresult",
+      "recording": "/tmp/yeongdu-group-section-dark/recording.mp4"
+    },
+    {
+      "label": "section-light",
+      "passed": true,
+      "tests": [
+        {
+          "name": "testContrastNativeSheetGesturesAndNavigation",
+          "seconds": 60.028
+        },
+        {
+          "name": "testMusicSourceAndSettingsReference",
+          "seconds": 20.109
+        }
+      ],
+      "xcresult": "/tmp/yeongdu-group-section-light/tests.xcresult",
+      "recording": "/tmp/yeongdu-group-section-light/recording.mp4"
+    }
+  ],
+  "checks": {
+    "releaseSimulatorBuildBefore": "passed",
+    "releaseSimulatorBuildAfter": "passed",
+    "lint": "passed",
+    "types": "passed",
+    "sourceChecks": [
+      "check-native-settings.cjs",
+      "check-native-sheet-background.cjs",
+      "check-music-source-sheet.cjs",
+      "check-ios-settings-controls.cjs"
+    ],
+    "diffCheck": "passed"
+  },
+  "evidence": {
+    "before-dark.mp4": {
+      "recording": "/tmp/yeongdu-group-baseline-dark/recording.mp4",
+      "start": 20,
+      "duration": 16
+    },
+    "after-dark.mp4": {
+      "recording": "/tmp/yeongdu-group-section-dark/recording.mp4",
+      "start": 11,
+      "duration": 16
+    }
+  },
+  "unverified": [
+    "Physical device and real album backdrop matching",
+    "Exact private OS material used by Music Source",
+    "iOS 26.1, iPad, rotation, keyboard and accessibility settings"
+  ],
+  "captureNote": "One initial screenshot omitted header/section-title composition. Recording and stable reopened captures show them. Initial attachment remains in xcresult."
+}

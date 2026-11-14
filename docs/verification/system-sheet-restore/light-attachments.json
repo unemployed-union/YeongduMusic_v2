@@ -1,0 +1,140 @@
+[
+  {
+    "attachments" : [
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "04674652-9292-47C8-AD25-97A6CDF48FB5",
+        "deviceName" : "YeongduMusic Sheet QA",
+        "exportedFileName" : "DEFFEBD1-FD5C-4E88-A307-00177D041EEB.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "reference-settings-half_0_7B232FDA-8686-475A-9ADB-AEE25E335F64.png",
+        "timestamp" : 1794666565.258
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "04674652-9292-47C8-AD25-97A6CDF48FB5",
+        "deviceName" : "YeongduMusic Sheet QA",
+        "exportedFileName" : "55BFB4D4-3A7F-4415-9B74-D912B4B00507.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "reference-source-expanded_0_A4C9E431-1BB5-47CA-B067-89A0AA688C2F.png",
+        "timestamp" : 1794666561.654
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "04674652-9292-47C8-AD25-97A6CDF48FB5",
+        "deviceName" : "YeongduMusic Sheet QA",
+        "exportedFileName" : "DA189A51-EFAB-4A0D-856D-844B4DF3A6FA.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "reference-source-half_0_F99FB18F-9676-4B6E-AE12-AE6951096B3F.png",
+        "timestamp" : 1794666554.985
+      }
+    ],
+    "testIdentifier" : "SheetUITests/testMusicSourceAndSettingsReference()",
+    "testIdentifierURL" : "test://com.apple.xcode/SheetUITests/SheetUITests/SheetUITests/testMusicSourceAndSettingsReference"
+  },
+  {
+    "attachments" : [
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "04674652-9292-47C8-AD25-97A6CDF48FB5",
+        "deviceName" : "YeongduMusic Sheet QA",
+        "exportedFileName" : "4EA81952-98D9-4EEB-AFDA-6243904F142D.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "09-reopened-half-2_0_972B60CB-59F2-4A0C-A41E-FA2731DC760E.png",
+        "timestamp" : 1794666624.99
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "04674652-9292-47C8-AD25-97A6CDF48FB5",
+        "deviceName" : "YeongduMusic Sheet QA",
+        "exportedFileName" : "445894A8-708B-4EE8-A78E-7FC8C20EDAB3.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "09-reopened-half-1_0_46B072AC-E89E-42E7-8FBE-1FA7291F6C4E.png",
+        "timestamp" : 1794666620.891
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "04674652-9292-47C8-AD25-97A6CDF48FB5",
+        "deviceName" : "YeongduMusic Sheet QA",
+        "exportedFileName" : "0848BE9C-5F2A-49CE-B0FF-C42FF73867AF.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "09-reopened-half-0_0_8C0FB0DB-4E85-4202-A320-241C5A1E4967.png",
+        "timestamp" : 1794666616.804
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "04674652-9292-47C8-AD25-97A6CDF48FB5",
+        "deviceName" : "YeongduMusic Sheet QA",
+        "exportedFileName" : "40D862AF-07EA-4018-B2BB-2B66246B75E0.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "08-flick-down_0_BA2FAD9A-F3C3-404F-853E-616B2C8C8517.png",
+        "timestamp" : 1794666612.749
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "04674652-9292-47C8-AD25-97A6CDF48FB5",
+        "deviceName" : "YeongduMusic Sheet QA",
+        "exportedFileName" : "A2554085-9B42-4923-80BB-335EDEEADD92.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "07-flick-up_0_973A05FB-2CE8-43AA-B032-F6771301F5B8.png",
+        "timestamp" : 1794666611.137
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "04674652-9292-47C8-AD25-97A6CDF48FB5",
+        "deviceName" : "YeongduMusic Sheet QA",
+        "exportedFileName" : "5C6B3F36-907D-4E4F-94D7-47EEC199A32A.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "06-lower_0_321B95D8-0C6A-4A9F-A2B7-B05BDD8BB3F3.png",
+        "timestamp" : 1794666609.205
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "04674652-9292-47C8-AD25-97A6CDF48FB5",
+        "deviceName" : "YeongduMusic Sheet QA",
+        "exportedFileName" : "7C616D46-B934-4E0D-BF79-3B82E42088A6.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "05-after-down-hold_0_90FC3205-39E8-4D15-9D0E-E195BDEFA597.png",
+        "timestamp" : 1794666601.721
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "04674652-9292-47C8-AD25-97A6CDF48FB5",
+        "deviceName" : "YeongduMusic Sheet QA",
+        "exportedFileName" : "715F1AC2-8CEE-4CDA-8546-178460706F9D.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "04-expanded-list-scroll_0_62582DE8-285B-460C-852E-68D590F8590F.png",
+        "timestamp" : 1794666589.332
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "04674652-9292-47C8-AD25-97A6CDF48FB5",
+        "deviceName" : "YeongduMusic Sheet QA",
+        "exportedFileName" : "B761ED33-D6B9-49C2-A127-BA16917C64D4.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "03-expanded_0_AEC01404-D506-41E1-9D2D-7A71243DAD50.png",
+        "timestamp" : 1794666587.811
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "04674652-9292-47C8-AD25-97A6CDF48FB5",
+        "deviceName" : "YeongduMusic Sheet QA",
+        "exportedFileName" : "DC39482D-B432-4E5F-8B66-D553DEA51764.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "02-after-midpoint-hold_0_3C08E02E-9AF5-4601-AFDB-65158FD4072A.png",
+        "timestamp" : 1794666580.456
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "04674652-9292-47C8-AD25-97A6CDF48FB5",
+        "deviceName" : "YeongduMusic Sheet QA",
+        "exportedFileName" : "7DF2B854-4051-4FFC-A3C4-678319EA7F1F.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "01-half_0_6C920B69-A10C-4EDC-90D2-8AF123AEDBD3.png",
+        "timestamp" : 1794666574.172
+      }
+    ],
+    "testIdentifier" : "SheetUITests/testNativeSheetGesturesAndNavigation()",
+    "testIdentifierURL" : "test://com.apple.xcode/SheetUITests/SheetUITests/SheetUITests/testNativeSheetGesturesAndNavigation"
+  }
+]

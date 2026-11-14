@@ -1,0 +1,11 @@
+{
+  "animationsEnabled" : true,
+  "darkerSystemColors" : false,
+  "os" : "Version 27.2.1 (Build 24B156)",
+  "prefersCrossFadeTransitions" : false,
+  "presenterLayerSpeed" : 1,
+  "reduceMotion" : false,
+  "reduceTransparency" : false,
+  "sdk" : "iphoneos27.2",
+  "windowLayerSpeed" : 1
+}

@@ -1,0 +1,5 @@
+PASS: NAS login replaces the settings sheet in the installed SDK 58 stack router; the old partial reset is rejected.
+PASS: SwiftUI List/Section/semantic native rows and native grouped surfaces, preserved routes and disabled/busy states, custom editor sizing/context, overlays, UIKit switches and haptics. Native rendering is mocked.
+PASS: native system-settings row and shared sync-before-open, busy, error and retry behavior. Linking/storage are mocked.
+PASS: actual iOS playback/library native Form rows, language swapping and invalid-pair guards, menu visibility/order, explicit color commit/reset, native secure-field clearing, connection busy guard, and protected settings unlock/relock. Native views/network/storage are mocked.
+PASS: settings mount the existing navigator directly without loading a custom background driver, including on old native binaries. UIKit system rendering is not tested by this mocked check.

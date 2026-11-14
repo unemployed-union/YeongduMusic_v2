@@ -1,0 +1,97 @@
+{
+  "backgroundEffect" : "nil",
+  "detentEffects" : [
+    "nil",
+    "nil"
+  ],
+  "hostTraits" : "<UITraitCollection: 0x10965db80; UserInterfaceIdiom = Phone, DisplayScale = 3, DisplayGamut = P3, HorizontalSizeClass = Compact, VerticalSizeClass = Regular, UserInterfaceStyle = Dark, UserInterfaceLayoutDirection = LTR, ForceTouchCapability = Unavailable, PreferredContentSizeCategory = L, AccessibilityContrast = Normal, UserInterfaceLevel = Elevated, SceneCaptureState = 0, HDRHeadroomUsageLimit = 1, ImageDynamicRange = 0, FloatingBarContainerView = Optional(container 0x106ad6000, column: Unspecified, host: navigation controller, mode: disabled)>",
+  "mode" : "SwiftUI sheet",
+  "sheetTraits" : "<UITraitCollection: 0x106a49400; UserInterfaceIdiom = Phone, DisplayScale = 3, DisplayGamut = P3, HorizontalSizeClass = Compact, VerticalSizeClass = Regular, UserInterfaceStyle = Dark, UserInterfaceLayoutDirection = LTR, ForceTouchCapability = Unavailable, PreferredContentSizeCategory = L, AccessibilityContrast = Normal, UserInterfaceLevel = Elevated, SceneCaptureState = 0, HDRHeadroomUsageLimit = 1, ImageDynamicRange = 0>",
+  "views" : [
+    {
+      "alpha" : "1.0",
+      "backgroundColor" : "UIExtendedGrayColorSpace 0 0",
+      "class" : "UpdateCoalescingCollectionView"
+    },
+    {
+      "alpha" : "1.0",
+      "backgroundColor" : "nil",
+      "cellBackground" : "<UIBackgroundConfiguration: 0x113ab5b20; Base Style = List Cell; backgroundColor = <UIDynamicSystemColor: 0x1094a1040; name = tableCellGroupedBackgroundColor>>",
+      "cellResolvedColor" : "UIExtendedSRGBColorSpace 0.172549 0.172549 0.180392 1",
+      "cellVisualEffect" : "nil",
+      "class" : "ListCollectionViewCell",
+      "hasColorTransformer" : "false",
+      "resolvedBackgroundColor" : "<UIDynamicSystemColor: 0x1094a1040; name = tableCellGroupedBackgroundColor>"
+    },
+    {
+      "alpha" : "1.0",
+      "backgroundColor" : "nil",
+      "cellBackground" : "<UIBackgroundConfiguration: 0x113ab56c0; Base Style = List Cell; backgroundColor = <UIDynamicSystemColor: 0x1094a1040; name = tableCellGroupedBackgroundColor>>",
+      "cellResolvedColor" : "UIExtendedSRGBColorSpace 0.172549 0.172549 0.180392 1",
+      "cellVisualEffect" : "nil",
+      "class" : "ListCollectionViewCell",
+      "hasColorTransformer" : "false",
+      "resolvedBackgroundColor" : "<UIDynamicSystemColor: 0x1094a1040; name = tableCellGroupedBackgroundColor>"
+    },
+    {
+      "alpha" : "1.0",
+      "backgroundColor" : "nil",
+      "cellBackground" : "<UIBackgroundConfiguration: 0x113ab5ce0; Base Style = List Cell; backgroundColor = <UIDynamicSystemColor: 0x1094a1040; name = tableCellGroupedBackgroundColor>>",
+      "cellResolvedColor" : "UIExtendedSRGBColorSpace 0.172549 0.172549 0.180392 1",
+      "cellVisualEffect" : "nil",
+      "class" : "ListCollectionViewCell",
+      "hasColorTransformer" : "false",
+      "resolvedBackgroundColor" : "<UIDynamicSystemColor: 0x1094a1040; name = tableCellGroupedBackgroundColor>"
+    },
+    {
+      "alpha" : "1.0",
+      "backgroundColor" : "nil",
+      "cellBackground" : "<UIBackgroundConfiguration: 0x113ab6140; Base Style = List Cell; backgroundColor = <UIDynamicSystemColor: 0x1094a1040; name = tableCellGroupedBackgroundColor>>",
+      "cellResolvedColor" : "UIExtendedSRGBColorSpace 0.172549 0.172549 0.180392 1",
+      "cellVisualEffect" : "nil",
+      "class" : "ListCollectionViewCell",
+      "hasColorTransformer" : "false",
+      "resolvedBackgroundColor" : "<UIDynamicSystemColor: 0x1094a1040; name = tableCellGroupedBackgroundColor>"
+    },
+    {
+      "alpha" : "1.0",
+      "backgroundColor" : "nil",
+      "cellBackground" : "<UIBackgroundConfiguration: 0x113ab65a0; Base Style = List Cell; backgroundColor = <UIDynamicSystemColor: 0x1094a1040; name = tableCellGroupedBackgroundColor>>",
+      "cellResolvedColor" : "UIExtendedSRGBColorSpace 0.172549 0.172549 0.180392 1",
+      "cellVisualEffect" : "nil",
+      "class" : "ListCollectionViewCell",
+      "hasColorTransformer" : "false",
+      "resolvedBackgroundColor" : "<UIDynamicSystemColor: 0x1094a1040; name = tableCellGroupedBackgroundColor>"
+    },
+    {
+      "alpha" : "1.0",
+      "backgroundColor" : "nil",
+      "cellBackground" : "<UIBackgroundConfiguration: 0x113ab6a00; Base Style = List Cell; backgroundColor = <UIDynamicSystemColor: 0x1094a1040; name = tableCellGroupedBackgroundColor>>",
+      "cellResolvedColor" : "UIExtendedSRGBColorSpace 0.172549 0.172549 0.180392 1",
+      "cellVisualEffect" : "nil",
+      "class" : "ListCollectionViewCell",
+      "hasColorTransformer" : "false",
+      "resolvedBackgroundColor" : "<UIDynamicSystemColor: 0x1094a1040; name = tableCellGroupedBackgroundColor>"
+    },
+    {
+      "alpha" : "1.0",
+      "backgroundColor" : "nil",
+      "cellBackground" : "<UIBackgroundConfiguration: 0x113ab6e60; Base Style = List Header; cornerRadius = 26>",
+      "cellResolvedColor" : "UIExtendedGrayColorSpace 0 0",
+      "cellVisualEffect" : "nil",
+      "class" : "ListCollectionViewHeaderFooter",
+      "hasColorTransformer" : "false",
+      "resolvedBackgroundColor" : "UIExtendedGrayColorSpace 0 0"
+    },
+    {
+      "alpha" : "1.0",
+      "backgroundColor" : "nil",
+      "cellBackground" : "<UIBackgroundConfiguration: 0x113ab72c0; Base Style = List Header; cornerRadius = 26>",
+      "cellResolvedColor" : "UIExtendedGrayColorSpace 0 0",
+      "cellVisualEffect" : "nil",
+      "class" : "ListCollectionViewHeaderFooter",
+      "hasColorTransformer" : "false",
+      "resolvedBackgroundColor" : "UIExtendedGrayColorSpace 0 0"
+    }
+  ]
+}

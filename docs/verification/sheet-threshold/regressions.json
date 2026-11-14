@@ -1,0 +1,60 @@
+{
+  "scope": "Source boundary and action checks; not native visual or animation verification",
+  "results": [
+    {
+      "name": "check-native-sheet-background.cjs",
+      "status": 0,
+      "output": "PASS: native capability fallback, Android passthrough, retained content/scroll order, noninteractive anchor and no content opacity. UIKit interpolation/drag is not mocked by this check."
+    },
+    {
+      "name": "check-native-settings.cjs",
+      "status": 0,
+      "output": "PASS: NAS login replaces the settings sheet in the installed SDK 58 stack router; the old partial reset is rejected.\nPASS: SwiftUI List/Section/semantic native rows and native grouped surfaces, preserved routes and disabled/busy states, custom editor sizing/context, overlays, UIKit switches and haptics. Native rendering is mocked.\nPASS: native system-settings row and shared sync-before-open, busy, error and retry behavior. Linking/storage are mocked."
+    },
+    {
+      "name": "check-ios-settings-controls.cjs",
+      "status": 0,
+      "output": "PASS: actual iOS playback/library native Form rows, language swapping and invalid-pair guards, menu visibility/order, explicit color commit/reset, native secure-field clearing, connection busy guard, and protected settings unlock/relock. Native views/network/storage are mocked."
+    },
+    {
+      "name": "check-ios-system-settings.cjs",
+      "status": 0,
+      "output": "PASS: iOS Settings schema, existing-value migration, prelaunch edits, cold-start restoration, external/backup sync, invalid values, fractional sliders, delayed-edit races, errors/retry/disposal, actual preference persistence and platform/build fallback."
+    },
+    {
+      "name": "check-navigation.cjs",
+      "status": 0,
+      "output": "PASS: actual Expo Router library/playlist stacks, retained detail links and initial routes; library/playlist/search tab order, selected-tab mini player and blur targets; top-right settings action/keyboard dismissal and root settings route; song/queue selection and stale playback guards. Native rendering and playback are not exercised."
+    },
+    {
+      "name": "check-connect-screen.cjs",
+      "status": 0,
+      "output": "PASS: native login form, saved address, secure fields, accent, validation, single requests, busy states, HTTP consent, OTP challenges/autofill/secret clearing, failures, cancel/demo and Android presentation. Native rendering/network are mocked."
+    },
+    {
+      "name": "check-hidden-music-ios-ui.cjs",
+      "status": 0,
+      "output": "PASS: iOS hidden music native header, hierarchical browse/back and independent selection, filters, empty/search states, save/cancel and immutable draft payloads. Native rendering is checked separately."
+    },
+    {
+      "name": "check-hidden-feature-access.cjs",
+      "status": 0,
+      "output": "PASS: concealed features default off, independent icon 15/5 and creator 7 taps, propagation isolation, pause/focus reset, creator photo/message/link/dismissal, restart persistence, concurrent taps, storage failure, version UI/relocking; Seoul build labels and read-only Expo config. Native storage/UI are mocked."
+    },
+    {
+      "name": "check-folder-navigation.cjs",
+      "status": 0,
+      "output": "PASS: immediate children, deep/back navigation, flat global search and explicit selection filters, same-name paths, parent coverage, missing/empty folders, 1500 siblings, preset round-trip and duplicate-free hiding."
+    },
+    {
+      "name": "check-settings-backup.cjs",
+      "status": 0,
+      "output": "PASS: settings backup/restore/restart, strict format/version/UTF-8 size, unknown field stripping, default privacy exclusion, authenticated account presets and lock restore, account mismatch, general-only preservation, duplicate actions, rollback/rollback failure, native/web file pick/write/cancel/cache cleanup, preview-before-restore and privacy toggles. Native storage, files, UI and authentication are mocked."
+    },
+    {
+      "name": "check-native-tabs.cjs",
+      "status": 0,
+      "output": "PASS: real native-tab selection, platform fallback, SF Symbols, visibility/order/hidden-route recovery, UIKit safe areas, mini-player targets, keyboard hiding and iPad sidebars. UIKit motion must also be verified on iOS."
+    }
+  ]
+}

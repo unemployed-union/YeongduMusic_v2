@@ -1,0 +1,22 @@
+--- before/settings-ui.ios.tsx
++++ after/settings-ui.ios.tsx
+@@ -26,7 +26,10 @@
+ import { Children, createContext, isValidElement, useContext, type ReactNode } from 'react';
+ import { View } from 'react-native';
+ import type { SettingsLinkProps, SettingsPageProps, SettingsSectionProps } from './settings-ui';
+-import { usesNativeSettingsSheetBackground } from './settings-sheet-background';
++import {
++  settingsGroupBackgroundModifier,
++  usesNativeSettingsSheetBackground,
++} from './settings-sheet-background';
+ 
+ const NativeSettingsContext = createContext(false);
+ 
+@@ -95,6 +98,7 @@
+   return (
+     <Section
+       title={title}
++      modifiers={settingsGroupBackgroundModifier ? [settingsGroupBackgroundModifier] : undefined}
+       footer={
+         description ? (
+           <Text

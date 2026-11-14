@@ -1,0 +1,26 @@
+{
+  "maps-reference.mp4": {
+    "sha256": "2b256e6fe02a59bd765786a8e0e9e446366018b2b4345e2c2681a31d2463eb59",
+    "bytes": 1374705
+  },
+  "final-app-dark-drag.mp4": {
+    "sha256": "a83374a91b91c5384a7108d76f152f710bc9d37036fa1ca9bb7c31c5647349c7",
+    "bytes": 2469652
+  },
+  "a-swiftui-system.mp4": {
+    "sha256": "3e9ed3ad25053ee94f4804b6f33178ceda5dcbea1dff9b6dded521ede0ec8a81",
+    "bytes": 1302171
+  },
+  "f-native-list-backing-hidden.mp4": {
+    "sha256": "8b16d3760ec885f6070f925c277c86048ce976c9c7723a4924f97e7d31c0609e",
+    "bytes": 1164150
+  },
+  "b-uikit-system.mp4": {
+    "sha256": "0f5ba1ba8619d9bc9c404fe8e782f29ab6ae54f6f3b9e02281f0fe474d2da018",
+    "bytes": 1167947
+  },
+  "final-app-light-drag.mp4": {
+    "sha256": "3586965564a30d403eb97d5b3b5b4362030fad32e708451c65474fce8a0b83d0",
+    "bytes": 2098643
+  }
+}

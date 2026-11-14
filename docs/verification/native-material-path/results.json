@@ -1,0 +1,101 @@
+{
+  "date": "2026-11-14",
+  "status": "native material unification not implemented; group-only public API solution not verified",
+  "productionCodeChanged": false,
+  "musicSourceCodeChanged": false,
+  "sheetAnimationCodeChanged": false,
+  "protectedFilesUnchanged": {
+    "src/features/library/library-sheet.ios.tsx": "6a781e950e2823beaa86a4e86515e4561ccf72d821d1f491e3d5e4a59e1a3012",
+    "src/features/library/music-source-sheet.ios.tsx": "724aaa75f2ff8be61680ea3964bed47ec36c6c667a4bd79bad5a16a0f4f73122",
+    "src/features/library/music-source-menu-content.ios.tsx": "b936db1f5ab988bf0b893edd062c416aa0224a07a9e6d7951030821bf9b64e37",
+    "src/features/library/local-music-controls.tsx": "ca52a81c06842bdf4b4ad039d14f67cbad722f19baa2d95f7b4767de331c8670",
+    "src/features/settings/settings-navigator.ios.tsx": "f92cbad40b1abea024b601f8205ccc1769f82a7ad74136f977645bafbf5e6123",
+    "src/features/settings/settings-presentation.tsx": "ab55f7864846c6639c7575f67d43457a9e4ab0819200afe0694540950240067b",
+    "src/features/settings/settings-sheet-background.ios.tsx": "a3b6f070e13c5f534371ead9c279b9adf37800a952f9ce056691d5e6b42a5b0c",
+    "src/app/(settings)/_layout.tsx": "d3534f45eefd01ee8abb15fc869be3385335bb6dd9d929d5dbb0fd754fce2dd2",
+    "modules/yeongdu-sheet-background/expo-module.config.json": "942a54435ec673c2c92c4bfa435f12255a9b63a0808e9c71be2fcc1410ae4894",
+    "modules/yeongdu-sheet-background/package.json": "e980aa154ea1e0fbaa4ba88cc631b94ada928449d05a44f35b08bc91fe49419a",
+    "modules/yeongdu-sheet-background/ios/SettingsGroupBackground.swift": "677a38cd750ef816fac07999808c643599ea9f20e644e1e529cb76049e495e96",
+    "modules/yeongdu-sheet-background/ios/YeongduSheetBackground.podspec": "3edffa05d4d8080318cdbfd3b846ddda6fb55aeb7488333536cc588b4a02162e",
+    "modules/yeongdu-sheet-background/ios/YeongduSheetBackgroundModule.swift": "8d23b7bc68c3de32e21b07cb4f7d73d9b1e703e2126e5600a607a9c98bc9e06c",
+    "modules/yeongdu-sheet-background/ios/SheetAppearancePolicy.swift": "e1de9f3f72e500e4da8cf1e559b10713819ce41f86f356c0509ce932c8d00be0"
+  },
+  "simulator": {
+    "name": "YeongduMusic Sheet QA",
+    "id": "04674652-9292-47C8-AD25-97A6CDF48FB5",
+    "model": "iPhone 18 Pro",
+    "runtime": "iOS 27.0"
+  },
+  "tests": [
+    {
+      "name": "ProbeTests/testAllPresentations",
+      "theme": "light",
+      "passed": true,
+      "presentations": 7,
+      "seconds": 77.587,
+      "xcresult": "/tmp/yeongdu-native-material-probe/light-final.xcresult"
+    },
+    {
+      "name": "ProbeTests/testAllPresentations",
+      "theme": "dark",
+      "passed": true,
+      "presentations": 7,
+      "seconds": 81.995,
+      "xcresult": "/tmp/yeongdu-native-material-probe/dark-final.xcresult"
+    }
+  ],
+  "testMeaning": "Independent native reproducer: row accessibility existence, screenshot capture and terminate for each case. Not automated pixel/material equivalence or YeongduMusic user-flow verification.",
+  "visualLimitations": [
+    "Some screenshots have incomplete composition, including dark native-navigation case and light explicit-Glass case. They were not used as visual proof.",
+    "No physical device, real album comparison, iOS 26.1 runtime, expanded-state equivalence or drag-transition validation in this task."
+  ],
+  "evidenceConclusion": "Native system sheet/default List reflects backdrop; the same UIKit/navigation/List with empty sheet/detent backgroundEffect renders opaque groups. Adding a separate Glass backdrop and hiding scroll background does not restore the default group composition.",
+  "checks": {
+    "releaseSimulatorBuild": "passed",
+    "lint": "passed",
+    "types": "passed",
+    "sourceRegressionChecks": {
+      "check-native-settings.cjs": "passed",
+      "check-native-sheet-background.cjs": "passed",
+      "check-music-source-sheet.cjs": "passed",
+      "check-ios-settings-controls.cjs": "passed"
+    }
+  },
+  "buildLog": "/tmp/yeongdu-truesheet-simulator-build.log",
+  "reproducer": "Exact executed source, kept as diagnostic evidence only. create.rb references existing native files in the current checkout; no app route or dependency modification.",
+  "files": {
+    "dark-attachments.json": "8ae882374b005e9d5d3ecabbddddb4d29a18058f58ec6ca62bceaa07ef92a7f9",
+    "dark-custom-sheet-automatic-list.png": "627d12c3768227cae51e70135a93eab357edeb2a244e223622e1d3fa5778ef71",
+    "dark-custom-sheet-hidden-list.png": "6359a9456cbd9aa726014ff29fd34427f71a4f30dc5ff7430d280d68e92309bf",
+    "dark-empty-sheet-effect.png": "348237312158bd4ba05c646e2da88ea41e330e5e4a62f31bc75448084672776a",
+    "dark-explicit-glass-sheet-effect.png": "348237312158bd4ba05c646e2da88ea41e330e5e4a62f31bc75448084672776a",
+    "dark-swiftui-default.png": "ec4bb3cd2dee3a9956b6c0419d1a0a41994855fc1286df44d11df2adc55f491e",
+    "dark-uikit-native-navigation.png": "ec4bb3cd2dee3a9956b6c0419d1a0a41994855fc1286df44d11df2adc55f491e",
+    "dark-uikit-swiftui-navigation.png": "31137599fe59e036516b60124bfe6fb8f689de7bf61bbf9dd040d38d833dc85e",
+    "dark-values/SwiftUI sheet.json": "e7e1aa74407b11dac36d009077726eb251ea6dfd671cd8c8dbb0acfa3d891124",
+    "dark-values/UIKit SwiftUI navigation.json": "804948546c6537e354162a399a017fd95f2163a3c8760bb2430ff20416853b8c",
+    "dark-values/UIKit custom hidden list.json": "a4453fef9f72992a68033dcc1fd767d2bf5fb6694eecea89b5885e9cbd44c83d",
+    "dark-values/UIKit custom sheet background.json": "c6f1c3fbace6e79a2f7385441131b1f01beca9b03a2a29ae75ad3f9627facdbc",
+    "dark-values/UIKit empty sheet background.json": "d6a86f76705719aa67f4b801f58df174412a7147287f4ee392733f18af669a99",
+    "dark-values/UIKit explicit native Glass.json": "aecb4ace7ed03338ae8e67ea0c95918d1f64a2eea50a45a4b15b8b623a980601",
+    "dark-values/UIKit native navigation.json": "e4af522cf25331c2284850928d93c77641e2d4f5ccc38e98aa94652cb1336437",
+    "light-attachments.json": "25ad19190424cd94138f3398f5f551eb8e7bb6de027862c32aedde66ec627ea8",
+    "light-custom-sheet-automatic-list.png": "b39392f73121ab5bc861cb1621577cae52d1bb642f60e5e80c54b281ef527929",
+    "light-custom-sheet-hidden-list.png": "ee424c7f696205586a033b33dc24c918b68447b7c19aac47757591634cbe658b",
+    "light-empty-sheet-effect.png": "b7957755daddce5119af1b789098645e4d88d10908a1b684bece736e7bf82f3a",
+    "light-explicit-glass-sheet-effect.png": "b7957755daddce5119af1b789098645e4d88d10908a1b684bece736e7bf82f3a",
+    "light-swiftui-default.png": "7f1f145a52c7c3ddd42c0a031b2f1fa8880bed4f0316b8751dd5b6daa85a0272",
+    "light-uikit-native-navigation.png": "7f1f145a52c7c3ddd42c0a031b2f1fa8880bed4f0316b8751dd5b6daa85a0272",
+    "light-uikit-swiftui-navigation.png": "bf1b19c71e0e556d97a98b0a3b0acbec806553ef024e60e7a0e66b5e4324e98b",
+    "light-values/SwiftUI sheet.json": "190e7f3e85ac8f3c2ecaac015c6e4456b88949927bffb51be3c3ab1da3cffdf7",
+    "light-values/UIKit SwiftUI navigation.json": "3202aa1ee5415d75f03ae2a0493d80fd65c6c0204eee799dc9f379fdff0215e0",
+    "light-values/UIKit custom hidden list.json": "843e6952c6a8c5bfbfcea3d89f0b04a0f5a842012a05a3c25bed3118620e052c",
+    "light-values/UIKit custom sheet background.json": "7e6932a955fb4e267e459db79c6830d4862b039c13dae77f25a820d5bad8224d",
+    "light-values/UIKit empty sheet background.json": "66cd9127eaeaace922d233805a493135c059da855342c68700227a548b9dbbc5",
+    "light-values/UIKit explicit native Glass.json": "cfc439d4c5005bd162e248e7f6cf4ce9aec0040ce129cadc0e6910a2ce12dd57",
+    "light-values/UIKit native navigation.json": "e7bea2757d5e03158c3f49a0c7f6fc0677b7328bf3c8cd49bddb644bf188cdea",
+    "reproducer/Probe.swift": "153a3e89eedafa2e8853d7419c8b28160944ce340d4151c66379964a5951e3ae",
+    "reproducer/ProbeTests.swift": "f27903d216c8b0e0967ba175c81f7c65c69901924554139fa198a4530b71f3a4",
+    "reproducer/create.rb": "a602e317f56b3816179b812d1c137ccef84fff72584a671b9df343de1ae09c68"
+  }
+}

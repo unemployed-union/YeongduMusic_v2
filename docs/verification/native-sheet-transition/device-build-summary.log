@@ -1,0 +1,2 @@
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -workspace ios/YeongduMusic.xcworkspace -scheme YeongduMusic -configuration Release -destination id=00008140-001475363A0B001C -derivedDataPath /tmp/yeongdu-native-sheet-device DEVELOPMENT_TEAM=26UYTX8ZTY CODE_SIGN_STYLE=Automatic "CODE_SIGN_IDENTITY=Apple Development"
+** BUILD SUCCEEDED **

@@ -1,0 +1,1074 @@
+--- before/modules/yeongdu-sheet-background/expo-module.config.json
++++ after/modules/yeongdu-sheet-background/expo-module.config.json
+@@ -1,4 +0,0 @@
+-{
+-  "platforms": ["apple"],
+-  "apple": { "modules": ["YeongduSheetBackgroundModule"] }
+-}
+--- before/modules/yeongdu-sheet-background/ios/SettingsGroupBackground.swift
++++ after/modules/yeongdu-sheet-background/ios/SettingsGroupBackground.swift
+@@ -1,289 +0,0 @@
+-import UIKit
+-import SwiftUI
+-
+-/// Weakly keyed by the actual controller, so separate sheet presentations never share state.
+-final class SettingsSheetSurfaces {
+-  private static let states = NSMapTable<UISheetPresentationController, SettingsSheetSurfaces>(
+-    keyOptions: .weakMemory, valueOptions: .strongMemory
+-  )
+-
+-  static func forSheet(_ sheet: UISheetPresentationController) -> SettingsSheetSurfaces {
+-    if let state = states.object(forKey: sheet) {
+-      return state
+-    }
+-    let state = SettingsSheetSurfaces()
+-    states.setObject(state, forKey: sheet)
+-    return state
+-  }
+-
+-  private let surfaces = NSHashTable<UIView>.weakObjects()
+-  private var animator: UIViewPropertyAnimator?
+-  private(set) var isOpaque = false
+-
+-  func register(_ surface: UIView) {
+-    guard !surfaces.contains(surface) else {
+-      return
+-    }
+-    let visibleAlpha = surfaces.allObjects.first.map { view in
+-      CGFloat(view.layer.presentation()?.opacity ?? Float(view.alpha))
+-    } ?? (isOpaque ? 1 : 0)
+-    surfaces.add(surface)
+-    surface.alpha = visibleAlpha
+-    if let animator, animator.state == .active {
+-      let target: CGFloat = isOpaque ? 1 : 0
+-      animator.addAnimations { [weak surface] in
+-        surface?.alpha = target
+-      }
+-    } else {
+-      surface.alpha = isOpaque ? 1 : 0
+-    }
+-  }
+-
+-  func unregister(_ surface: UIView) {
+-    surfaces.remove(surface)
+-    if surfaces.allObjects.isEmpty {
+-      animator?.stopAnimation(true)
+-      animator = nil
+-      isOpaque = false
+-    }
+-  }
+-
+-  func setOpaque(_ opaque: Bool, animated: Bool) {
+-    guard isOpaque != opaque || (!animated && animator?.state == .active) else {
+-      return
+-    }
+-    // Finish at the currently displayed values before reversing; never jump to an endpoint.
+-    if let animator, animator.state == .active {
+-      animator.stopAnimation(false)
+-      animator.finishAnimation(at: .current)
+-    }
+-    animator = nil
+-    isOpaque = opaque
+-    let layers = surfaces.allObjects
+-    let target: CGFloat = opaque ? 1 : 0
+-    guard animated else {
+-      UIView.performWithoutAnimation {
+-        for layer in layers {
+-          layer.alpha = target
+-        }
+-      }
+-      return
+-    }
+-    let animation = UIViewPropertyAnimator(duration: SheetAppearancePolicy.animationDuration, curve: .easeInOut) {
+-      for layer in layers {
+-        layer.alpha = target
+-      }
+-    }
+-    animator = animation
+-    animation.addCompletion { [weak self, weak animation] _ in
+-      if self?.animator === animation {
+-        self?.animator = nil
+-      }
+-    }
+-    #if targetEnvironment(simulator)
+-    if ProcessInfo.processInfo.environment["YEONGDU_SHEET_QA_CONTRAST"] == "1" {
+-      animation.addCompletion { position in
+-        NSLog("[SheetThresholdQA] finished position=%ld target=%@", position.rawValue,
+-              opaque ? "opaque" : "translucent")
+-      }
+-    }
+-    #endif
+-    animation.startAnimation()
+-    #if targetEnvironment(simulator)
+-    if ProcessInfo.processInfo.environment["YEONGDU_SHEET_QA_CONTRAST"] == "1" {
+-      NSLog("[SheetThresholdQA] opaque=%@ duration=%.3f surfaces=%ld", opaque ? "true" : "false",
+-            SheetAppearancePolicy.animationDuration, layers.count)
+-    }
+-    #endif
+-  }
+-
+-  #if targetEnvironment(simulator)
+-  private(set) var probingReversal = false
+-  private var didProbeReversal = false
+-
+-  /// A renderer probe, explicitly separate from actual sheet gestures. No device build code.
+-  func probeReversalIfRequested(on surface: UIView) {
+-    guard !didProbeReversal,
+-      ProcessInfo.processInfo.environment["YEONGDU_SHEET_QA_REVERSAL"] == "1" else {
+-      return
+-    }
+-    didProbeReversal = true
+-    probingReversal = true
+-    setOpaque(true, animated: true)
+-    DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) { [weak self, weak surface] in
+-      guard let self, let surface else {
+-        return
+-      }
+-      let before = surface.layer.presentation()?.opacity
+-      self.setOpaque(false, animated: true)
+-      let after = surface.layer.presentation()?.opacity
+-      DispatchQueue.main.asyncAfter(deadline: .now() + 0.025) { [weak surface] in
+-        NSLog("[SheetReversalQA] nextFrame=%.4f", surface?.layer.presentation()?.opacity ?? -1)
+-      }
+-      NSLog("[SheetReversalQA] before=%.4f after=%.4f available=%@",
+-            before ?? -1, after ?? -1, before != nil && after != nil ? "true" : "false")
+-      DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self, weak surface] in
+-        NSLog("[SheetReversalQA] settled=%.4f", surface?.alpha ?? -1)
+-        self?.probingReversal = false
+-      }
+-    }
+-  }
+-  #endif
+-}
+-
+-/// Uses only public responder/controller APIs, never SwiftUI's private UIKit hierarchy.
+-func enclosingSettingsSheet(from start: UIResponder?) -> UISheetPresentationController? {
+-  var responder = start
+-  while let current = responder {
+-    if let controller = current as? UIViewController {
+-      var ancestor: UIViewController? = controller
+-      while let candidate = ancestor {
+-        if let sheet = candidate.presentationController as? UISheetPresentationController,
+-          sheet.containerView != nil, sheet.presentedViewController === candidate {
+-          return sheet
+-        }
+-        ancestor = candidate.parent
+-      }
+-    }
+-    responder = current.next
+-  }
+-  return nil
+-}
+-
+-/// The modifier replaces the List's *background slot*, leaving row content and clipping intact.
+-struct SettingsGroupBackgroundModifier: ViewModifier {
+-  func body(content: Content) -> some View {
+-    content.listRowBackground(SettingsGroupMaterial())
+-  }
+-}
+-
+-private struct SettingsGroupMaterial: UIViewRepresentable {
+-  func makeUIView(context: Context) -> SettingsGroupMaterialView {
+-    SettingsGroupMaterialView()
+-  }
+-
+-  func updateUIView(_ view: SettingsGroupMaterialView, context: Context) {
+-    view.setColorScheme(context.environment.colorScheme == .dark ? .dark : .light)
+-  }
+-}
+-
+-private final class SettingsGroupMaterialView: UIView {
+-  private let material = UIVisualEffectView(effect: UIBlurEffect(style: .systemThinMaterial))
+-  private let opaqueSurface = UIView()
+-  private var surfaces: SettingsSheetSurfaces?
+-
+-  init() {
+-    super.init(frame: .zero)
+-    isUserInteractionEnabled = false
+-    isAccessibilityElement = false
+-    backgroundColor = .clear
+-    opaqueSurface.backgroundColor = .secondarySystemGroupedBackground
+-    opaqueSurface.alpha = 0
+-    for background in [material, opaqueSurface] {
+-      background.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+-      addSubview(background)
+-    }
+-  }
+-
+-  required init?(coder: NSCoder) {
+-    fatalError("init(coder:) has not been implemented")
+-  }
+-
+-  func setColorScheme(_ scheme: UIUserInterfaceStyle) {
+-    overrideUserInterfaceStyle = scheme
+-  }
+-
+-  override func layoutSubviews() {
+-    super.layoutSubviews()
+-    material.frame = bounds
+-    opaqueSurface.frame = bounds
+-    attach()
+-  }
+-
+-  override func didMoveToWindow() {
+-    super.didMoveToWindow()
+-    if window == nil {
+-      surfaces?.unregister(opaqueSurface)
+-      surfaces = nil
+-    } else {
+-      attach()
+-      DispatchQueue.main.async { [weak self] in
+-        self?.attach()
+-      }
+-    }
+-  }
+-
+-  private func attach() {
+-    guard window != nil, surfaces == nil,
+-      let sheet = enclosingSettingsSheet(from: next) else {
+-      return
+-    }
+-    let state = SettingsSheetSurfaces.forSheet(sheet)
+-    surfaces = state
+-    state.register(opaqueSurface)
+-  }
+-}
+-
+-/// The sheet owns clipping/corners. Only this background view contains Glass, never content.
+-final class SettingsSheetGlassBackdrop: UIView {
+-  let opaqueSurface = UIView()
+-  private let glass = UIVisualEffectView()
+-  private var installed = false
+-
+-  init() {
+-    super.init(frame: .zero)
+-    backgroundColor = .clear
+-    isUserInteractionEnabled = false
+-    isAccessibilityElement = false
+-    opaqueSurface.backgroundColor = .systemGroupedBackground
+-    opaqueSurface.alpha = 0
+-    addSubview(glass)
+-    addSubview(opaqueSurface)
+-  }
+-
+-  required init?(coder: NSCoder) {
+-    fatalError("init(coder:) has not been implemented")
+-  }
+-
+-  override func layoutSubviews() {
+-    super.layoutSubviews()
+-    glass.frame = bounds
+-    opaqueSurface.frame = bounds
+-    // Like Expo GlassView, create the effect during a visible layout pass.
+-    if #available(iOS 26.0, *), window != nil, !installed {
+-      var ancestor: UIView? = self
+-      var visibleAlpha: CGFloat = 1
+-      while let view = ancestor {
+-        if view.isHidden {
+-          return
+-        }
+-        visibleAlpha *= view.alpha
+-        ancestor = view.superview
+-      }
+-      guard visibleAlpha > 0.02 else {
+-        return
+-      }
+-      let effect = UIGlassEffect(style: .regular)
+-      effect.isInteractive = false
+-      glass.effect = effect
+-      installed = true
+-    }
+-  }
+-
+-  override func didMoveToWindow() {
+-    super.didMoveToWindow()
+-    if window == nil {
+-      glass.effect = UIVisualEffect()
+-      installed = false
+-    } else {
+-      setNeedsLayout()
+-    }
+-  }
+-
+-  /// Retrying visible layout does not animate or update React.
+-  func prepareVisibleMaterial() {
+-    if !installed {
+-      setNeedsLayout()
+-    }
+-  }
+-}
+--- before/modules/yeongdu-sheet-background/ios/SheetAppearancePolicy.swift
++++ after/modules/yeongdu-sheet-background/ios/SheetAppearancePolicy.swift
+@@ -1,21 +0,0 @@
+-import Foundation
+-
+-/// Ratios are relative to the resolved maximum content height, not the detent interval.
+-enum SheetAppearancePolicy {
+-  static let expandHeightRatio: CGFloat = 0.85
+-  static let collapseHeightRatio: CGFloat = 0.78
+-  static let animationDuration: TimeInterval = 0.2
+-
+-  static func wantsOpaque(current: Bool, heightRatio: CGFloat, reduceTransparency: Bool) -> Bool {
+-    if reduceTransparency {
+-      return true
+-    }
+-    guard heightRatio.isFinite else {
+-      return current
+-    }
+-    if current {
+-      return heightRatio >= collapseHeightRatio
+-    }
+-    return heightRatio >= expandHeightRatio
+-  }
+-}
+--- before/modules/yeongdu-sheet-background/ios/YeongduSheetBackground.podspec
++++ after/modules/yeongdu-sheet-background/ios/YeongduSheetBackground.podspec
+@@ -1,17 +0,0 @@
+-Pod::Spec.new do |s|
+-  s.name = 'YeongduSheetBackground'
+-  s.version = '1.0.0'
+-  s.summary = 'Native settings sheet background effects'
+-  s.description = s.summary
+-  s.license = 'MIT'
+-  s.author = 'Yeongdu'
+-  s.homepage = 'https://developer.apple.com/documentation/uikit/uisheetpresentationcontroller'
+-  s.source = { :git => 'https://github.com/expo/expo.git' }
+-  s.platforms = { :ios => '16.4' }
+-  s.swift_version = '5.9'
+-  s.static_framework = true
+-  s.dependency 'ExpoModulesCore'
+-  s.dependency 'ExpoUI'
+-  s.source_files = '**/*.swift'
+-  s.frameworks = 'UIKit'
+-end
+--- before/modules/yeongdu-sheet-background/ios/YeongduSheetBackgroundModule.swift
++++ after/modules/yeongdu-sheet-background/ios/YeongduSheetBackgroundModule.swift
+@@ -1,391 +0,0 @@
+-import ExpoModulesCore
+-import UIKit
+-import QuartzCore
+-import ExpoUI
+-
+-public class YeongduSheetBackgroundModule: Module {
+-  public func definition() -> ModuleDefinition {
+-    Name("YeongduSheetBackground")
+-    Constant("supportsThresholdSurfaces") { true }
+-
+-    OnCreate {
+-      ViewModifierRegistry.register("yeongduSettingsGroupBackground") { _, _, _ in
+-        SettingsGroupBackgroundModifier()
+-      }
+-    }
+-    OnDestroy {
+-      ViewModifierRegistry.unregister("yeongduSettingsGroupBackground")
+-    }
+-
+-    Constant("isSupported") {
+-      if #available(iOS 26.1, *) {
+-        return true
+-      }
+-      return false
+-    }
+-
+-    Constant("isEnabled") {
+-      #if targetEnvironment(simulator)
+-      // Process-only baseline for XCTest; never changes preferences or device builds.
+-      if ProcessInfo.processInfo.environment["YEONGDU_SHEET_QA_BASELINE"] == "1" {
+-        return false
+-      }
+-      #endif
+-      return true
+-    }
+-
+-    View(SettingsSheetBackgroundView.self) {
+-      Prop("colorScheme") { (view: SettingsSheetBackgroundView, scheme: String) in
+-        view.setColorScheme(scheme)
+-      }
+-    }
+-  }
+-}
+-
+-/// Attaches a background-only driver to the existing UIKit sheet; never owns gestures.
+-final class SettingsSheetBackgroundView: ExpoView {
+-  private weak var configuredSheet: UISheetPresentationController?
+-  private var configuredDetents: [UISheetPresentationController.Detent] = []
+-  private var originalDetents: [UISheetPresentationController.Detent] = []
+-  private var originalSheetEffect: UIVisualEffect?
+-  private var originalSheetTraits: UITraitCollection?
+-  private var installedSheetTraits: UITraitCollection?
+-  private var installedSheetEffect: UIVisualEffect?
+-  private var motion: SheetBackgroundMotion?
+-  private var colorScheme: UIUserInterfaceStyle = .unspecified
+-  private var configuredReducedTransparency = false
+-  private var pendingAttachment = false
+-  #if targetEnvironment(simulator)
+-  private let qa = SheetBackgroundQA()
+-  #endif
+-
+-  required init(appContext: AppContext? = nil) {
+-    super.init(appContext: appContext)
+-    backgroundColor = .clear
+-    isUserInteractionEnabled = false
+-    isAccessibilityElement = false
+-    NotificationCenter.default.addObserver(
+-      self,
+-      selector: #selector(accessibilityChanged),
+-      name: UIAccessibility.reduceTransparencyStatusDidChangeNotification,
+-      object: nil
+-    )
+-  }
+-
+-  deinit {
+-    NotificationCenter.default.removeObserver(self)
+-  }
+-
+-  override func didMoveToWindow() {
+-    super.didMoveToWindow()
+-    if window == nil {
+-      restoreEffects()
+-      return
+-    }
+-    configureIfReady()
+-    scheduleAttachment()
+-  }
+-
+-  override func layoutSubviews() {
+-    super.layoutSubviews()
+-    configureIfReady()
+-  }
+-
+-  /// One deferred attachment handles the native presentation's initial mounting order.
+-  private func scheduleAttachment() {
+-    guard !pendingAttachment else {
+-      return
+-    }
+-    pendingAttachment = true
+-    DispatchQueue.main.async { [weak self] in
+-      guard let self else {
+-        return
+-      }
+-      self.pendingAttachment = false
+-      self.configureIfReady()
+-    }
+-  }
+-
+-  @objc private func accessibilityChanged() {
+-    configureIfReady()
+-  }
+-
+-  func setColorScheme(_ scheme: String) {
+-    colorScheme = scheme == "dark" ? .dark : .light
+-    motion?.setColorScheme(colorScheme)
+-    if #available(iOS 26.1, *), let sheet = configuredSheet {
+-      applyMaterial(to: sheet)
+-    }
+-  }
+-
+-  @available(iOS 26.1, *)
+-  private func applyMaterial(to sheet: UISheetPresentationController) {
+-    let traits = UITraitCollection(traitsFrom: [
+-      originalSheetTraits ?? UITraitCollection(),
+-      UITraitCollection(userInterfaceStyle: colorScheme)
+-    ])
+-    installedSheetTraits = traits
+-    sheet.overrideTraitCollection = traits
+-    // Suppress UIKit's independent detent material switching. The visible native
+-    // Glass view lives behind this controller's content and keeps alpha == 1.
+-    let effect = UIVisualEffect()
+-    installedSheetEffect = effect
+-    for detent in configuredDetents {
+-      detent.backgroundEffect = effect
+-    }
+-    sheet.backgroundEffect = effect
+-  }
+-
+-  private func configureIfReady() {
+-    guard #available(iOS 26.1, *), window != nil,
+-      let sheet = enclosingSettingsSheet(from: next), sheet.detents.count == 2 else {
+-      return
+-    }
+-    let detents = sheet.detents
+-    #if targetEnvironment(simulator)
+-    if SheetBackgroundQA.isBaseline {
+-      qa.attach(to: sheet)
+-      return
+-    }
+-    #endif
+-    // Some early OS builds omit setters present in the SDK; retain their system default.
+-    let setter = #selector(setter: UISheetPresentationController.Detent.backgroundEffect)
+-    guard detents.allSatisfy({ $0.responds(to: setter) }) else {
+-      return
+-    }
+-    let reducedTransparency = UIAccessibility.isReduceTransparencyEnabled
+-    let sameDetents = configuredSheet === sheet &&
+-      configuredDetents.count == detents.count &&
+-      zip(configuredDetents, detents).allSatisfy { pair in pair.0 === pair.1 }
+-    if sameDetents && configuredReducedTransparency == reducedTransparency {
+-      return
+-    }
+-    if !sameDetents {
+-      restoreEffects()
+-      configuredSheet = sheet
+-      configuredDetents = detents
+-      originalDetents = detents
+-      originalSheetEffect = sheet.backgroundEffect
+-      originalSheetTraits = sheet.overrideTraitCollection
+-    }
+-    #if targetEnvironment(simulator)
+-    qa.attach(to: sheet)
+-    #endif
+-    configuredReducedTransparency = reducedTransparency
+-
+-    if !sameDetents {
+-      let driver = SheetBackgroundMotion(sheet: sheet)
+-      motion = driver
+-      driver.setColorScheme(colorScheme)
+-      // Preserve each resolver and identifier. UIKit still owns detents and all gestures.
+-      configuredDetents = originalDetents.enumerated().map { index, original in
+-        let detent = UISheetPresentationController.Detent.custom(identifier: original.identifier) { [weak driver] context in
+-          let height = original.resolvedValue(in: context)
+-          driver?.resolvedHeights[index] = height
+-          return height
+-        }
+-        return detent
+-      }
+-      applyMaterial(to: sheet)
+-      sheet.detents = configuredDetents
+-      driver.start()
+-    }
+-  }
+-
+-  private func restoreEffects() {
+-    #if targetEnvironment(simulator)
+-    qa.reset()
+-    #endif
+-    if #available(iOS 26.1, *), let sheet = configuredSheet {
+-      let ownsCurrentDetents = sheet.detents.count == configuredDetents.count &&
+-        zip(sheet.detents, configuredDetents).allSatisfy { pair in pair.0 === pair.1 }
+-      // Do not alter a replacement controller or interrupt the system's dismiss animation.
+-      if !sheet.presentedViewController.isBeingDismissed {
+-        if sheet.backgroundEffect === installedSheetEffect {
+-          sheet.backgroundEffect = originalSheetEffect
+-        }
+-        if sheet.overrideTraitCollection == installedSheetTraits {
+-          sheet.overrideTraitCollection = originalSheetTraits
+-        }
+-        if ownsCurrentDetents {
+-          sheet.detents = originalDetents
+-        }
+-      }
+-    }
+-    motion?.stop()
+-    motion = nil
+-    configuredSheet = nil
+-    configuredDetents = []
+-    originalDetents = []
+-    originalSheetEffect = nil
+-    originalSheetTraits = nil
+-    installedSheetTraits = nil
+-    installedSheetEffect = nil
+-  }
+-}
+-
+-/// Reads the public presentation-layer geometry on the main/UI thread, including
+-/// UIKit's post-release spring. No JS frame events, scroll offsets or detent-arrival fade.
+-private final class SheetBackgroundMotion {
+-  weak var sheet: UISheetPresentationController?
+-  var resolvedHeights: [Int: CGFloat] = [:]
+-  private let backdrop = SettingsSheetGlassBackdrop()
+-  private var surface: UIView { backdrop.opaqueSurface }
+-  private var displayLink: CADisplayLink?
+-  private let target = SheetDisplayLinkTarget()
+-  private var geometrySize: CGSize?
+-  private var geometryInset: CGFloat?
+-  private let surfaces: SettingsSheetSurfaces
+-  #if targetEnvironment(simulator)
+-  private var lastLoggedProgress: Int = -1
+-  #endif
+-
+-  init(sheet: UISheetPresentationController) {
+-    self.sheet = sheet
+-    surfaces = SettingsSheetSurfaces.forSheet(sheet)
+-    surface.backgroundColor = .systemGroupedBackground
+-    surface.isUserInteractionEnabled = false
+-    surface.isAccessibilityElement = false
+-    surface.alpha = 0
+-    target.owner = self
+-  }
+-
+-  func setColorScheme(_ scheme: UIUserInterfaceStyle) {
+-    backdrop.overrideUserInterfaceStyle = scheme
+-  }
+-
+-  func start() {
+-    guard let view = sheet?.presentedViewController.view else {
+-      return
+-    }
+-    backdrop.frame = view.bounds
+-    backdrop.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+-    view.insertSubview(backdrop, at: 0)
+-    surfaces.register(surface)
+-    if UIAccessibility.isReduceTransparencyEnabled {
+-      surfaces.setOpaque(true, animated: false)
+-    }
+-    let link = CADisplayLink(target: target, selector: #selector(SheetDisplayLinkTarget.tick))
+-    link.add(to: .main, forMode: .common)
+-    displayLink = link
+-    update()
+-  }
+-
+-  func stop() {
+-    displayLink?.invalidate()
+-    displayLink = nil
+-    surfaces.unregister(surface)
+-    backdrop.removeFromSuperview()
+-  }
+-
+-  deinit {
+-    displayLink?.invalidate()
+-  }
+-
+-  func update() {
+-    guard let sheet, let view = sheet.presentedView, let container = sheet.containerView,
+-      let lower = resolvedHeights[0], let upper = resolvedHeights[1],
+-      lower.isFinite, upper.isFinite, upper > lower else {
+-      return
+-    }
+-    // Capture safe-area attachment geometry once, not at a selected-detent event.
+-    // UIKit's model bounds can still be the full size during initial presentation;
+-    // waiting for them to equal the lower detent would miss the first drag.
+-    if geometrySize != container.bounds.size {
+-      geometryInset = nil
+-      geometrySize = container.bounds.size
+-    }
+-    guard !sheet.presentedViewController.isBeingPresented else {
+-      return
+-    }
+-    if geometryInset == nil {
+-      let windowInset = view.window?.safeAreaInsets.bottom ?? 0
+-      let frame = view.layer.convert(view.layer.bounds, to: container.layer)
+-      let bottomGap = container.bounds.maxY - frame.maxY
+-      let edgeAttached = bottomGap >= -1 && bottomGap <= windowInset + 1
+-      geometryInset = edgeAttached ? windowInset : view.safeAreaInsets.bottom
+-    }
+-    guard let inset = geometryInset else {
+-      return
+-    }
+-    #if targetEnvironment(simulator)
+-    surfaces.probeReversalIfRequested(on: surface)
+-    if surfaces.probingReversal {
+-      return
+-    }
+-    #endif
+-    backdrop.prepareVisibleMaterial()
+-    let layer = view.layer.presentation() ?? view.layer
+-    let height = layer.bounds.height
+-    let ratio = (height - inset) / upper
+-    let reduceTransparency = UIAccessibility.isReduceTransparencyEnabled
+-    let opaque = SheetAppearancePolicy.wantsOpaque(
+-      current: surfaces.isOpaque, heightRatio: ratio, reduceTransparency: reduceTransparency
+-    )
+-    let animated = !UIAccessibility.isReduceMotionEnabled && !reduceTransparency
+-    surfaces.setOpaque(opaque, animated: animated)
+-    #if targetEnvironment(simulator)
+-    if ProcessInfo.processInfo.environment["YEONGDU_SHEET_QA_CONTRAST"] == "1" {
+-      let step = Int(ratio * 100)
+-      if step != lastLoggedProgress {
+-        lastLoggedProgress = step
+-        NSLog("[SheetHeightQA] ratio=%.4f opaque=%@ alpha=%.4f", ratio,
+-              surfaces.isOpaque ? "true" : "false",
+-              surface.layer.presentation()?.opacity ?? Float(surface.alpha))
+-      }
+-    }
+-    #endif
+-  }
+-}
+-
+-private final class SheetDisplayLinkTarget: NSObject {
+-  weak var owner: SheetBackgroundMotion?
+-
+-  @objc func tick() {
+-    owner?.update()
+-  }
+-}
+-
+-#if targetEnvironment(simulator)
+-/// Optical contrast fixture for XCTest recordings, behind the real app's sheet.
+-/// No fixture code is compiled into iPhone/iPad device builds.
+-private final class SheetBackgroundQA {
+-  static var isBaseline: Bool {
+-    ProcessInfo.processInfo.environment["YEONGDU_SHEET_QA_BASELINE"] == "1"
+-  }
+-  private var backdrop: UIView?
+-
+-  func attach(to sheet: UISheetPresentationController) {
+-    guard ProcessInfo.processInfo.environment["YEONGDU_SHEET_QA_CONTRAST"] == "1",
+-      let presenter = sheet.presentingViewController.view else {
+-      return
+-    }
+-    if backdrop?.superview === presenter {
+-      return
+-    }
+-    reset()
+-    let view = ContrastBackdrop(frame: presenter.bounds)
+-    view.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+-    view.isUserInteractionEnabled = false
+-    view.isAccessibilityElement = false
+-    presenter.addSubview(view)
+-    backdrop = view
+-  }
+-
+-  func reset() {
+-    backdrop?.removeFromSuperview()
+-    backdrop = nil
+-  }
+-}
+-
+-private final class ContrastBackdrop: UIView {
+-  override func draw(_ rect: CGRect) {
+-    let colors: [UIColor] = [.systemRed, .systemBlue, .systemTeal, .systemYellow]
+-    for (index, color) in colors.enumerated() {
+-      color.setFill()
+-      UIRectFill(CGRect(x: bounds.width * CGFloat(index) / 4, y: 0,
+-                        width: bounds.width / 4, height: bounds.height))
+-    }
+-  }
+-}
+-#endif
+--- before/modules/yeongdu-sheet-background/package.json
++++ after/modules/yeongdu-sheet-background/package.json
+@@ -1,7 +0,0 @@
+-{
+-  "name": "yeongdu-sheet-background",
+-  "version": "1.0.0",
+-  "private": true,
+-  "description": "Native background effects for the existing iOS settings sheet",
+-  "license": "MIT"
+-}
+--- before/scripts/check-native-settings.cjs
++++ after/scripts/check-native-settings.cjs
+@@ -27,7 +27,6 @@
+   'VStack',
+ ];
+ const boundaries = {
+-  './settings-sheet-background': { usesNativeSettingsSheetBackground: false, settingsGroupBackgroundModifier: null },
+   react: {
+     Children: { toArray: (children) => [children].flat(Infinity).filter(Boolean) },
+     createContext: (value) => ({ value, Provider: 'ContextProvider' }),
+@@ -160,29 +159,10 @@
+   'The native List retains its automatic sheet background',
+ );
+ assert.equal(nodes(systemPage).find((node) => node.type === 'Host').props.seedColor, '#FF5588');
+-boundaries['./settings-sheet-background'].usesNativeSettingsSheetBackground = true;
+-boundaries['./settings-sheet-background'].settingsGroupBackgroundModifier = {
+-  $type: 'yeongduSettingsGroupBackground',
+-};
+-const motionPage = settings.SettingsPage({ children: [] });
+-assert(
+-  nodes(motionPage).find((node) => node.type === 'List').props.modifiers.some(
+-    (mod) => mod.name === 'scrollContentBackground' && mod.args[0] === 'hidden',
+-  ),
+-  'Supported native backdrop remains visible through the List scroll background',
+-);
+-const thresholdSection = settings.SettingsSection({ title: '설정', children: editor });
+-assert.equal(
+-  thresholdSection.props.modifiers[0].$type,
+-  'yeongduSettingsGroupBackground',
+-  'Supported settings sections connect the existing native background slot without wrapping content',
+-);
+-const thresholdRow = settings.SettingsRowContent({ children: editor });
+-assert(!thresholdRow.props.modifiers.some(mod => mod.$type === 'yeongduSettingsGroupBackground'));
+-assert.equal(thresholdRow.props.children.props.children.props.children.props.children, editor,
++assert.equal(nativeSection.props.modifiers, undefined,
++  'Native Section owns its row backgrounds; no custom material is supplied');
++assert.equal(bridge.props.children.props.children.props.children.props.children, editor,
+   'Native row preserves the existing editor and actions');
+-boundaries['./settings-sheet-background'].usesNativeSettingsSheetBackground = false;
+-boundaries['./settings-sheet-background'].settingsGroupBackgroundModifier = null;
+ assert(
+   nodes(systemPage)
+     .find((node) => node.type === 'List')
+--- before/scripts/check-native-sheet-background.cjs
++++ after/scripts/check-native-sheet-background.cjs
+@@ -1,45 +1,25 @@
+ const assert = require('node:assert/strict');
+ const { loadSource } = require('./test-source-loader.cjs');
++
+ const jsx = (type, props) => ({ type, props });
+-const content = jsx('ExistingSettingsStack', {});
+-let loads = 0;
+-function binding(nativeModule) {
+-  return loadSource('src/features/settings/settings-sheet-background.ios.tsx', {
+-    '@/theme/tokens': { useAppColorScheme: () => 'dark' },
+-    '@expo/ui/swift-ui/modifiers': { createModifier: ($type) => ({ $type }) },
+-    'react/jsx-runtime': { jsx, jsxs: jsx },
+-    'react-native': { View: 'View', StyleSheet: { create: (value) => value } },
+-    expo: {
+-      requireOptionalNativeModule: () => nativeModule,
+-      requireNativeView: () => {
+-        loads++;
+-        return 'NativeBackgroundAnchor';
+-      },
+-    },
+-  });
+-}
+-for (const nativeModule of [null, { isSupported: false }, { isSupported: true }]) {
+-  const fallback = binding(nativeModule);
+-  assert.equal(fallback.usesNativeSettingsSheetBackground, false);
+-  assert.equal(fallback.SettingsSheetBackground({ children: content }), content);
+-}
+-assert.equal(loads, 0, 'Older OS / old binaries / Expo Go do not require the native view');
+-const supported = binding({ isSupported: true, supportsThresholdSurfaces: true });
+-const tree = supported.SettingsSheetBackground({ children: content });
+-assert.equal(supported.usesNativeSettingsSheetBackground, true);
+-assert.equal(supported.settingsGroupBackgroundModifier.$type, 'yeongduSettingsGroupBackground');
+-assert.equal(tree.props.children[0], content, 'Keep the native stack and its scroll hierarchy first');
+-const anchor = tree.props.children[1];
+-assert.equal(anchor.type, 'NativeBackgroundAnchor');
+-assert.equal(anchor.props.pointerEvents, 'none');
+-assert.equal(anchor.props.accessible, false);
+-assert.equal(anchor.props.colorScheme, 'dark', 'Native backdrop follows the existing app theme');
+-assert.equal(tree.props.style.opacity, undefined, 'Content is not faded');
+-assert.equal(tree.props.style.backgroundColor, undefined, 'No whole-screen painted layer');
+-const baseline = binding({ isSupported: true, supportsThresholdSurfaces: true, isEnabled: false });
+-assert.equal(baseline.usesNativeSettingsSheetBackground, false, 'QA baseline retains the default List background');
+-assert.equal(baseline.settingsGroupBackgroundModifier, null);
+-const other = loadSource('src/features/settings/settings-sheet-background.tsx');
+-assert.equal(other.usesNativeSettingsSheetBackground, false);
+-assert.equal(other.SettingsSheetBackground({ children: content }), content);
+-console.log('PASS: native capability fallback, Android passthrough, retained content/scroll order, noninteractive anchor and no content opacity. UIKit interpolation/drag is not mocked by this check.');
++let legacyLoads = 0;
++const boundaries = {
++  'react/jsx-runtime': { jsx, jsxs: jsx },
++  '@/features/settings/settings-navigator': { SettingsNavigator: 'ExistingSettingsNavigator' },
++};
++
++// Old native binaries may still contain the retired module. Settings must not
++// load its JS anchor or start its background driver.
++Object.defineProperty(boundaries, '@/features/settings/settings-sheet-background', {
++  get() {
++    legacyLoads++;
++    throw new Error('The retired sheet background must never be mounted');
++  },
++});
++
++const layout = loadSource('src/app/(settings)/_layout.tsx', boundaries);
++assert.equal(layout.default().type, 'ExistingSettingsNavigator');
++assert.equal(layout.unstable_settings.anchor, 'settings/index');
++assert.equal(legacyLoads, 0);
++
++console.log('PASS: settings mount the existing navigator directly without loading a custom background driver, including on old native binaries. UIKit system rendering is not tested by this mocked check.');
+--- before/scripts/ios-sheet-qa/SheetUITests.swift
++++ after/scripts/ios-sheet-qa/SheetUITests.swift
+@@ -40,21 +40,10 @@
+   }
+ 
+   func testNativeSheetGesturesAndNavigation() throws {
+-    try runGestures(baseline: false, contrast: false)
+-  }
+-
+-  func testBaselineSheetGesturesAndNavigation() throws {
+-    try runGestures(baseline: true, contrast: true)
+-  }
+-
+-  func testContrastNativeSheetGesturesAndNavigation() throws {
+-    try runGestures(baseline: false, contrast: true)
++    try runGestures()
+   }
+ 
+   func testMusicSourceAndSettingsReference() {
+-    app.launchEnvironment["YEONGDU_SHEET_QA_CONTRAST"] = "0"
+-    app.launchEnvironment["YEONGDU_SHEET_QA_BASELINE"] = "0"
+-    app.launchEnvironment["YEONGDU_SHEET_QA_REVERSAL"] = "0"
+     app.launch()
+     let source = app.buttons["음악 소스 및 가져오기 메뉴"]
+     XCTAssertTrue(source.waitForExistence(timeout: 20))
+@@ -71,53 +60,7 @@
+     close.tap()
+   }
+ 
+-  func testThresholdBandWithHeldDrags() {
+-    app.launchEnvironment["YEONGDU_SHEET_QA_CONTRAST"] = "1"
+-    app.launchEnvironment["YEONGDU_SHEET_QA_BASELINE"] = "0"
+-    app.launchEnvironment["YEONGDU_SHEET_QA_REVERSAL"] = "0"
+-    app.launch()
+-    openSettings()
+-    for (label, fraction) in [("Below expansion threshold", 0.24),
+-                              ("Cross expansion threshold", 0.17),
+-                              ("Hold inside hysteresis band", 0.24),
+-                              ("Cross collapse threshold", 0.32)] {
+-      XCTContext.runActivity(named: label) { _ in
+-        grabber().press(forDuration: 0.15, thenDragTo: point(fraction),
+-                        withVelocity: XCUIGestureVelocity(rawValue: 70), thenHoldForDuration: 2)
+-      }
+-      capture(label)
+-    }
+-    close.tap()
+-  }
+-
+-  func testNativeRendererReversalProbe() {
+-    app.launchEnvironment["YEONGDU_SHEET_QA_REVERSAL"] = "1"
+-    app.launchEnvironment["YEONGDU_SHEET_QA_CONTRAST"] = "1"
+-    app.launch()
+-    openSettings()
+-    // UIKit sampling is recorded by the app's simulator-only SheetReversalQA log.
+-    // This assertion checks navigation only; the log values must be checked separately.
+-    Thread.sleep(forTimeInterval: 0.7)
+-    XCTAssertTrue(app.buttons["클라우드 연결"].waitForExistence(timeout: 5))
+-    close.tap()
+-  }
+-
+-  func testFirstDragAcrossThreshold() {
+-    app.launchEnvironment["YEONGDU_SHEET_QA_CONTRAST"] = "1"
+-    app.launchEnvironment["YEONGDU_SHEET_QA_BASELINE"] = "0"
+-    app.launchEnvironment["YEONGDU_SHEET_QA_REVERSAL"] = "0"
+-    app.launch()
+-    openSettings()
+-    grabber().press(forDuration: 0.15, thenDragTo: point(0.12),
+-                    withVelocity: XCUIGestureVelocity(rawValue: 70), thenHoldForDuration: 2)
+-    capture("First drag across threshold without prior calibration drag")
+-    close.tap()
+-  }
+-
+-  private func runGestures(baseline: Bool, contrast: Bool) throws {
+-    app.launchEnvironment["YEONGDU_SHEET_QA_CONTRAST"] = contrast ? "1" : "0"
+-    app.launchEnvironment["YEONGDU_SHEET_QA_BASELINE"] = baseline ? "1" : "0"
+-    app.launchEnvironment["YEONGDU_SHEET_QA_REVERSAL"] = "0"
++  private func runGestures() throws {
+     app.launch()
+     openSettings()
+     capture("01-half")
+--- before/scripts/ios-sheet-qa/check-policy.swift
++++ after/scripts/ios-sheet-qa/check-policy.swift
+@@ -1,21 +0,0 @@
+-import Foundation
+-
+-@main struct CheckSheetPolicy {
+-  static func main() {
+-    var opaque = false
+-    let samples: [(CGFloat, Bool)] = [
+-      (0.5, false), (0.84, false), (0.85, true), (0.83, true),
+-      (0.79, true), (0.78, true), (0.779, false), (0.84, false),
+-      (0.86, true), (0.77, false)
+-    ]
+-    for (ratio, expected) in samples {
+-      opaque = SheetAppearancePolicy.wantsOpaque(current: opaque, heightRatio: ratio, reduceTransparency: false)
+-      precondition(opaque == expected, "Incorrect hysteresis at \(ratio)")
+-    }
+-    precondition(SheetAppearancePolicy.wantsOpaque(current: false, heightRatio: 0.5, reduceTransparency: true))
+-    precondition(SheetAppearancePolicy.wantsOpaque(current: true, heightRatio: .nan, reduceTransparency: false))
+-    precondition(!SheetAppearancePolicy.wantsOpaque(current: false, heightRatio: .nan, reduceTransparency: false))
+-    precondition((0.18...0.22).contains(SheetAppearancePolicy.animationDuration))
+-    print("PASS: maximum-height ratios, both thresholds, hysteresis band, fast reversals, invalid geometry and Reduce Transparency policy; UIKit rendering/animation not mocked.")
+-  }
+-}
+--- before/src/app/(settings)/_layout.tsx
++++ after/src/app/(settings)/_layout.tsx
+@@ -1,12 +1,7 @@
+ import { SettingsNavigator } from '@/features/settings/settings-navigator';
+-import { SettingsSheetBackground } from '@/features/settings/settings-sheet-background';
+ 
+ export const unstable_settings = { anchor: 'settings/index' };
+ 
+ export default function SettingsLayout() {
+-  return (
+-    <SettingsSheetBackground>
+-      <SettingsNavigator />
+-    </SettingsSheetBackground>
+-  );
++  return <SettingsNavigator />;
+ }
+--- before/src/features/settings/settings-sheet-background.ios.tsx
++++ after/src/features/settings/settings-sheet-background.ios.tsx
+@@ -1,45 +0,0 @@
+-import { requireNativeView, requireOptionalNativeModule } from 'expo';
+-import { createModifier } from '@expo/ui/swift-ui/modifiers';
+-import { useAppColorScheme } from '@/theme/tokens';
+-import type { ReactNode } from 'react';
+-import { StyleSheet, View, type ViewProps } from 'react-native';
+-
+-const nativeModule = requireOptionalNativeModule<{
+-  isSupported: boolean;
+-  isEnabled?: boolean;
+-  supportsThresholdSurfaces?: boolean;
+-}>(
+-  'YeongduSheetBackground',
+-);
+-
+-const supportsThresholdSurfaces = nativeModule?.isSupported === true &&
+-  nativeModule.supportsThresholdSurfaces === true;
+-
+-export const usesNativeSettingsSheetBackground =
+-  supportsThresholdSurfaces && nativeModule?.isEnabled !== false;
+-
+-export const settingsGroupBackgroundModifier = usesNativeSettingsSheetBackground
+-  ? createModifier('yeongduSettingsGroupBackground')
+-  : null;
+-
+-const NativeBackground = supportsThresholdSurfaces
+-  ? requireNativeView<ViewProps & { colorScheme: 'dark' | 'light' }>('YeongduSheetBackground')
+-  : null;
+-
+-export function SettingsSheetBackground({ children }: { children: ReactNode }) {
+-  const scheme = useAppColorScheme();
+-  if (!NativeBackground) {
+-    return children;
+-  }
+-  return (
+-    <View style={styles.container}>
+-      {children}
+-      <NativeBackground style={styles.anchor} colorScheme={scheme} pointerEvents="none" accessible={false} />
+-    </View>
+-  );
+-}
+-
+-const styles = StyleSheet.create({
+-  container: { flex: 1 },
+-  anchor: { position: 'absolute', width: 1, height: 1 },
+-});
+--- before/src/features/settings/settings-sheet-background.tsx
++++ after/src/features/settings/settings-sheet-background.tsx
+@@ -1,8 +0,0 @@
+-import type { ReactNode } from 'react';
+-
+-export const usesNativeSettingsSheetBackground = false;
+-export const settingsGroupBackgroundModifier = null;
+-
+-export function SettingsSheetBackground({ children }: { children: ReactNode }) {
+-  return children;
+-}
+--- before/src/features/settings/settings-ui.ios.tsx
++++ after/src/features/settings/settings-ui.ios.tsx
+@@ -20,16 +20,11 @@
+   foregroundStyle,
+   listRowInsets,
+   listStyle,
+-  scrollContentBackground,
+ } from '@expo/ui/swift-ui/modifiers';
+ import { router } from 'expo-router';
+ import { Children, createContext, isValidElement, useContext, type ReactNode } from 'react';
+ import { View } from 'react-native';
+ import type { SettingsLinkProps, SettingsPageProps, SettingsSectionProps } from './settings-ui';
+-import {
+-  settingsGroupBackgroundModifier,
+-  usesNativeSettingsSheetBackground,
+-} from './settings-sheet-background';
+ 
+ const NativeSettingsContext = createContext(false);
+ 
+@@ -67,7 +62,6 @@
+             modifiers={[
+               ...(!systemAppearance ? [foregroundStyle('white')] : []),
+               listStyle('insetGrouped'),
+-              ...(usesNativeSettingsSheetBackground ? [scrollContentBackground('hidden')] : []),
+               ...(reordering ? [environment('editMode', 'active')] : []),
+             ]}
+           >
+@@ -98,7 +92,6 @@
+   return (
+     <Section
+       title={title}
+-      modifiers={settingsGroupBackgroundModifier ? [settingsGroupBackgroundModifier] : undefined}
+       footer={
+         description ? (
+           <Text

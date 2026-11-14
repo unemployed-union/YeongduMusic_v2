@@ -20,6 +20,7 @@ import {
   foregroundStyle,
   listRowInsets,
   listStyle,
+  scrollContentBackground,
 } from '@expo/ui/swift-ui/modifiers';
 import { router } from 'expo-router';
 import { Children, createContext, isValidElement, useContext, type ReactNode } from 'react';
@@ -62,6 +63,9 @@ export function SettingsPage({
             modifiers={[
               ...(!systemAppearance ? [foregroundStyle('white')] : []),
               listStyle('insetGrouped'),
+              // Reveal the system sheet's own material transition. Section and
+              // row backgrounds remain native; only the List's backing is hidden.
+              ...(systemAppearance ? [scrollContentBackground('hidden')] : []),
               ...(reordering ? [environment('editMode', 'active')] : []),
             ]}
           >

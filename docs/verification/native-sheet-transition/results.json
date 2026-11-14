@@ -1,0 +1,177 @@
+{
+  "date": "2026-11-15",
+  "decision": "Expose the native sheet transition by hiding only the settings List scroll backing. Keep native Section/Row surfaces and sheet effects.",
+  "productionChange": "src/features/settings/settings-ui.ios.tsx: scrollContentBackground(hidden) for systemAppearance pages",
+  "versions": {
+    "expo": "58.0.23",
+    "expoRouter": "58.0.30",
+    "reactNative": "0.88.1",
+    "screens": "4.30.1",
+    "expoUI": "58.0.27",
+    "reanimated": "4.7.1",
+    "xcode": "27.2",
+    "sdk": "27.2",
+    "deploymentTarget": "16.4"
+  },
+  "runtime": {
+    "simulator": "iPhone 18 Pro / iOS 27.0",
+    "physical": "iPhone 16 Pro / iOS 27.2.1"
+  },
+  "physicalFeedback": {
+    "AandB": "desired transition absent",
+    "Maps": "desired transition present",
+    "G": "no improvement",
+    "F": "acceptable animation",
+    "actualSettingsCandidate": "transition and existing behavior both normal"
+  },
+  "physicalVerificationMethod": "User-operated actual device; no remotely captured device drag video or precise timing measurement.",
+  "finalDeviceBuild": {
+    "build": "passed",
+    "codesign": "passed",
+    "installed": true,
+    "launched": true,
+    "log": "/tmp/yeongdu-native-sheet-device-final.log"
+  },
+  "finalSimulatorBuild": {
+    "build": "passed",
+    "installed": true,
+    "log": "/tmp/yeongdu-native-sheet-simulator-final.log",
+    "installedJsBundleSha256": "826f5a05acec952eb3d0fa07f12590b5059cd9c18d294620779c229ceb2863a0"
+  },
+  "checks": {
+    "lint": "passed",
+    "typecheck": "passed",
+    "existingSourceRegressionScripts": 3,
+    "diffCheck": "passed",
+    "sourceBackupsSha256Verified": true
+  },
+  "unchangedProtectedSources": {
+    "src/features/settings/settings-presentation.tsx": "ab55f7864846c6639c7575f67d43457a9e4ab0819200afe0694540950240067b",
+    "src/features/settings/settings-navigator.ios.tsx": "f92cbad40b1abea024b601f8205ccc1769f82a7ad74136f977645bafbf5e6123",
+    "src/features/library/library-sheet.ios.tsx": "6a781e950e2823beaa86a4e86515e4561ccf72d821d1f491e3d5e4a59e1a3012",
+    "src/features/library/music-source-sheet.ios.tsx": "724aaa75f2ff8be61680ea3964bed47ec36c6c667a4bd79bad5a16a0f4f73122",
+    "src/features/library/music-source-menu-content.ios.tsx": "b936db1f5ab988bf0b893edd062c416aa0224a07a9e6d7951030821bf9b64e37"
+  },
+  "runs": [
+    {
+      "label": "a-light",
+      "passed": true,
+      "log": "a-light-tests.log",
+      "xcresult": "/tmp/yeongdu-native-sheet-probe/a-light/tests.xcresult"
+    },
+    {
+      "label": "b-light",
+      "passed": true,
+      "log": "b-light-tests.log",
+      "xcresult": "/tmp/yeongdu-native-sheet-probe/b-light/tests.xcresult"
+    },
+    {
+      "label": "c-light",
+      "passed": true,
+      "log": "c-light-tests.log",
+      "xcresult": "/tmp/yeongdu-native-sheet-probe/c-light/tests.xcresult"
+    },
+    {
+      "label": "d-light",
+      "passed": true,
+      "log": "d-light-tests.log",
+      "xcresult": "/tmp/yeongdu-native-sheet-probe/d-light/tests.xcresult"
+    },
+    {
+      "label": "e-light",
+      "passed": true,
+      "log": "e-light-tests.log",
+      "xcresult": "/tmp/yeongdu-native-sheet-probe/e-light/tests.xcresult"
+    },
+    {
+      "label": "f-light",
+      "passed": true,
+      "log": "f-light-tests.log",
+      "xcresult": "/tmp/yeongdu-native-sheet-probe/f-light/tests.xcresult"
+    },
+    {
+      "label": "g-light",
+      "passed": true,
+      "log": "g-light-tests.log",
+      "xcresult": "/tmp/yeongdu-native-sheet-probe/g-light/tests.xcresult"
+    },
+    {
+      "label": "a-dark",
+      "passed": true,
+      "log": "a-dark-tests.log",
+      "xcresult": "/tmp/yeongdu-native-sheet-probe/a-dark/tests.xcresult"
+    },
+    {
+      "label": "b-dark",
+      "passed": true,
+      "log": "b-dark-tests.log",
+      "xcresult": "/tmp/yeongdu-native-sheet-probe/b-dark/tests.xcresult"
+    },
+    {
+      "label": "final-app-light",
+      "tests": 2,
+      "passed": true,
+      "log": "final-app-light-tests.log",
+      "xcresult": "/tmp/yeongdu-group-native-transition-final-light/tests.xcresult"
+    },
+    {
+      "label": "final-app-dark",
+      "tests": 2,
+      "passed": true,
+      "log": "final-app-dark-tests.log",
+      "xcresult": "/tmp/yeongdu-group-native-transition-final-dark/tests.xcresult"
+    }
+  ],
+  "mapsReference": {
+    "testDispatchPassed": true,
+    "firstTwoGesturesBlockedByPermissionAlert": true,
+    "verifiedVideoSegment": "36.7-51.7s: later actual expansion/collapse cycle only",
+    "recording": "/tmp/yeongdu-native-sheet-probe/maps-drag-light/recording.mp4"
+  },
+  "qaModuleRemoved": {
+    "activeModuleAbsent": true,
+    "removedFromPods": true,
+    "archive": "physical-qa-module.tar.gz",
+    "archiveSha256": "6f5c2c3a8aaa06203899cc05ff7d26c779305dc74f554c86f320771f8a908fc3"
+  },
+  "limits": [
+    "No iOS 26 runtime available",
+    "No iPad, rotation, VoiceOver or actual accessibility-toggle testing",
+    "No continuous reversal within one held XCTest touch",
+    "No claim of identical Maps timing or internal implementation",
+    "No live NAS login/save/playback validation; QA account errors pre-exist",
+    "Physical confirmation was on the same production source before removal of the inactive diagnostic module; final clean binary was built, installed and launched"
+  ],
+  "videoClips": {
+    "a-swiftui-system.mp4": {
+      "source": "a-light/recording.mp4",
+      "start": 20,
+      "duration": 15
+    },
+    "b-uikit-system.mp4": {
+      "source": "b-light/recording.mp4",
+      "start": 11,
+      "duration": 15
+    },
+    "f-native-list-backing-hidden.mp4": {
+      "source": "f-light/recording.mp4",
+      "start": 11,
+      "duration": 15
+    },
+    "maps-reference.mp4": {
+      "source": "maps-drag-light/recording.mp4",
+      "start": 36.7,
+      "duration": 15
+    },
+    "final-app-light-drag.mp4": {
+      "source": "/tmp/yeongdu-group-native-transition-final-light/recording.mp4",
+      "start": 40,
+      "duration": 28
+    },
+    "final-app-dark-drag.mp4": {
+      "source": "/tmp/yeongdu-group-native-transition-final-dark/recording.mp4",
+      "start": 34,
+      "duration": 32
+    }
+  }
+}

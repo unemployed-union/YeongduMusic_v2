@@ -1,0 +1,32 @@
+Timestamp               Ty Process[PID:TID]
+2026-11-14 18:25:43.012 Df YeongduMusic[37303:48050] (Foundation) [SheetMotionQA] y=272.59 height=609.67 inset=34.00 lower=389.00 upper=778.00 opacity=0.4799
+2026-11-14 18:25:43.045 Df YeongduMusic[37303:48050] (Foundation) [SheetMotionQA] y=294.83 height=587.62 inset=34.00 lower=389.00 upper=778.00 opacity=0.4232
+2026-11-14 18:25:43.061 Df YeongduMusic[37303:48050] (Foundation) [SheetMotionQA] y=314.94 height=567.71 inset=34.00 lower=389.00 upper=778.00 opacity=0.3720
+2026-11-14 18:25:43.078 Df YeongduMusic[37303:48050] (Foundation) [SheetMotionQA] y=335.89 height=546.92 inset=34.00 lower=389.00 upper=778.00 opacity=0.3186
+2026-11-14 18:25:43.095 Df YeongduMusic[37303:48050] (Foundation) [SheetMotionQA] y=355.86 height=527.06 inset=34.00 lower=389.00 upper=778.00 opacity=0.2675
+2026-11-14 18:25:43.111 Df YeongduMusic[37303:48050] (Foundation) [SheetMotionQA] y=373.88 height=509.11 inset=34.00 lower=389.00 upper=778.00 opacity=0.2214
+2026-11-14 18:25:43.128 Df YeongduMusic[37303:48050] (Foundation) [SheetMotionQA] y=389.71 height=493.31 inset=34.00 lower=389.00 upper=778.00 opacity=0.1807
+2026-11-14 18:25:43.145 Df YeongduMusic[37303:48050] (Foundation) [SheetMotionQA] y=403.09 height=479.94 inset=34.00 lower=389.00 upper=778.00 opacity=0.1464
+2026-11-14 18:25:43.179 Df YeongduMusic[37303:48050] (Foundation) [SheetMotionQA] y=423.59 height=459.40 inset=34.00 lower=389.00 upper=778.00 opacity=0.0936
+2026-11-14 18:25:43.229 Df YeongduMusic[37303:48050] (Foundation) [SheetMotionQA] y=441.98 height=440.95 inset=34.00 lower=389.00 upper=778.00 opacity=0.0461
+2026-11-14 18:25:44.633 Df YeongduMusic[37303:48050] (Foundation) [SheetMotionQA] y=440.12 height=443.00 inset=34.00 lower=389.00 upper=778.00 opacity=0.0514
+2026-11-14 18:25:44.918 Df YeongduMusic[37303:48050] (Foundation) [SheetMotionQA] y=421.32 height=462.00 inset=34.00 lower=389.00 upper=778.00 opacity=0.1003
+2026-11-14 18:25:45.201 Df YeongduMusic[37303:48050] (Foundation) [SheetMotionQA] y=400.78 height=482.67 inset=34.00 lower=389.00 upper=778.00 opacity=0.1534
+2026-11-14 18:25:45.452 Df YeongduMusic[37303:48050] (Foundation) [SheetMotionQA] y=382.15 height=501.33 inset=34.00 lower=389.00 upper=778.00 opacity=0.2014
+2026-11-14 18:25:45.700 Df YeongduMusic[37303:48050] (Foundation) [SheetMotionQA] y=362.78 height=520.67 inset=34.00 lower=389.00 upper=778.00 opacity=0.2511
+2026-11-14 18:25:45.952 Df YeongduMusic[37303:48050] (Foundation) [SheetMotionQA] y=342.99 height=540.33 inset=34.00 lower=389.00 upper=778.00 opacity=0.3016
+2026-11-14 18:25:46.201 Df YeongduMusic[37303:48050] (Foundation) [SheetMotionQA] y=323.12 height=560.00 inset=34.00 lower=389.00 upper=778.00 opacity=0.3522
+2026-11-14 18:25:46.435 Df YeongduMusic[37303:48050] (Foundation) [SheetMotionQA] y=303.85 height=579.00 inset=34.00 lower=389.00 upper=778.00 opacity=0.4010
+2026-11-14 18:25:46.685 Df YeongduMusic[37303:48050] (Foundation) [SheetMotionQA] y=283.48 height=599.00 inset=34.00 lower=389.00 upper=778.00 opacity=0.4524
+2026-11-14 18:25:46.918 Df YeongduMusic[37303:48050] (Foundation) [SheetMotionQA] y=264.40 height=617.67 inset=34.00 lower=389.00 upper=778.00 opacity=0.5004
+2026-11-14 18:25:47.168 Df YeongduMusic[37303:48050] (Foundation) [SheetMotionQA] y=244.21 height=637.33 inset=34.00 lower=389.00 upper=778.00 opacity=0.5510
+2026-11-14 18:25:47.418 Df YeongduMusic[37303:48050] (Foundation) [SheetMotionQA] y=223.94 height=657.00 inset=34.00 lower=389.00 upper=778.00 opacity=0.6015
+2026-11-14 18:25:47.668 Df YeongduMusic[37303:48050] (Foundation) [SheetMotionQA] y=204.29 height=676.00 inset=34.00 lower=389.00 upper=778.00 opacity=0.6504
+2026-11-14 18:25:47.934 Df YeongduMusic[37303:48050] (Foundation) [SheetMotionQA] y=183.51 height=696.00 inset=34.00 lower=389.00 upper=778.00 opacity=0.7018
+2026-11-14 18:25:48.202 Df YeongduMusic[37303:48050] (Foundation) [SheetMotionQA] y=163.70 height=715.00 inset=34.00 lower=389.00 upper=778.00 opacity=0.7506
+2026-11-14 18:25:48.501 Df YeongduMusic[37303:48050] (Foundation) [SheetMotionQA] y=142.76 height=735.00 inset=34.00 lower=389.00 upper=778.00 opacity=0.8021
+2026-11-14 18:25:48.818 Df YeongduMusic[37303:48050] (Foundation) [SheetMotionQA] y=122.79 height=754.00 inset=34.00 lower=389.00 upper=778.00 opacity=0.8509
+2026-11-14 18:25:49.235 Df YeongduMusic[37303:48050] (Foundation) [SheetMotionQA] y=102.04 height=773.67 inset=34.00 lower=389.00 upper=778.00 opacity=0.9015
+2026-11-14 18:25:50.395 Df YeongduMusic[37303:48050] (Foundation) [SheetMotionQA] y=81.50 height=793.33 inset=34.00 lower=389.00 upper=778.00 opacity=0.9520
+2026-11-14 18:25:50.812 Df YeongduMusic[37303:48050] (Foundation) [SheetMotionQA] y=62.00 height=812.00 inset=34.00 lower=389.00 upper=778.00 opacity=1.0000
+

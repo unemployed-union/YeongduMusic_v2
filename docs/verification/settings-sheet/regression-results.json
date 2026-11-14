@@ -1,0 +1,52 @@
+[
+  {
+    "name": "native-settings",
+    "exitCode": 0,
+    "output": "PASS: NAS login replaces the settings sheet in the installed SDK 58 stack router; the old partial reset is rejected.\nPASS: SwiftUI List/Section/semantic native rows and native grouped surfaces, preserved routes and disabled/busy states, custom editor sizing/context, overlays, UIKit switches and haptics. Native rendering is mocked.\nPASS: native system-settings row and shared sync-before-open, busy, error and retry behavior. Linking/storage are mocked.\n"
+  },
+  {
+    "name": "navigation",
+    "exitCode": 0,
+    "output": "PASS: actual Expo Router library/playlist stacks, retained detail links and initial routes; library/playlist/search tab order, selected-tab mini player and blur targets; top-right settings action/keyboard dismissal and root settings route; song/queue selection and stale playback guards. Native rendering and playback are not exercised.\n"
+  },
+  {
+    "name": "hidden-music-ios-ui",
+    "exitCode": 0,
+    "output": "PASS: iOS hidden music native header, hierarchical browse/back and independent selection, filters, empty/search states, save/cancel and immutable draft payloads. Native rendering is checked separately.\n"
+  },
+  {
+    "name": "quick-hide",
+    "exitCode": 0,
+    "output": "PASS: five-tap all/selected conceal, mutually exclusive settings, target picker, legacy migration and restart persistence, account isolation/switch during conceal, deleted targets, protected selection and locked conceal, preserved other presets/playlists, single/four taps, focus cleanup, duplicate taps and storage failure/retry. Native UI/biometrics are mocked.\n"
+  },
+  {
+    "name": "ios-settings-controls",
+    "exitCode": 0,
+    "output": "PASS: actual iOS playback/library native Form rows, language swapping and invalid-pair guards, menu visibility/order, explicit color commit/reset, native secure-field clearing, connection busy guard, and protected settings unlock/relock. Native views/network/storage are mocked.\n"
+  },
+  {
+    "name": "playback-recovery",
+    "exitCode": 0,
+    "output": "Playback recovery checks passed.\n"
+  },
+  {
+    "name": "tablet-navigation",
+    "exitCode": 0,
+    "output": "PASS: content-only tablet transitions, cancellation on route/focus changes, reduced motion, retained children, hidden horizontal bars, sidebar back/fallback, custom menus, detail navigation, mini-player insets and phone restoration. Native rendering is mocked.\n"
+  },
+  {
+    "name": "tablet-workspaces",
+    "exitCode": 0,
+    "output": "PASS: responsive library/settings sidebars, pane widths, source filters, favorite scope, hidden menu protection, nested route selection, card columns and selection/sort retention across resizing. Native rendering is mocked.\n"
+  },
+  {
+    "name": "connect-screen",
+    "exitCode": 0,
+    "output": "PASS: native login form, saved address, secure fields, accent, validation, single requests, busy states, HTTP consent, OTP challenges/autofill/secret clearing, failures, cancel/demo and Android presentation. Native rendering/network are mocked.\n"
+  },
+  {
+    "name": "settings-backup",
+    "exitCode": 0,
+    "output": "PASS: settings backup/restore/restart, strict format/version/UTF-8 size, unknown field stripping, default privacy exclusion, authenticated account presets and lock restore, account mismatch, general-only preservation, duplicate actions, rollback/rollback failure, native/web file pick/write/cancel/cache cleanup, preview-before-restore and privacy toggles. Native storage, files, UI and authentication are mocked.\n"
+  }
+]

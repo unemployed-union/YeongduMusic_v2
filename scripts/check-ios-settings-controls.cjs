@@ -176,6 +176,7 @@ function harness(overrides = {}, eagerEffects = false) {
     ];
   }
   const mocks = {
+    './settings-sheet-background': { usesNativeSettingsSheetBackground: false },
     react: {
       Children: { toArray: (children) => [children].flat(Infinity).filter(Boolean) },
       createContext: () => ({ Provider: 'Provider' }),

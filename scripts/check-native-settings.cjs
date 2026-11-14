@@ -153,12 +153,16 @@ assert.equal(
   'The native List owns its background',
 );
 assert(
-  !nodes(systemPage)
+  nodes(systemPage)
     .find((node) => node.type === 'List')
-    .props.modifiers.some((mod) => mod.name === 'scrollContentBackground'),
-  'The native List retains its automatic sheet background',
+    .props.modifiers.some((mod) => mod.name === 'scrollContentBackground' && mod.args[0] === 'hidden'),
+  'Only the List backing is hidden so the system sheet owns its transition',
 );
 assert.equal(nodes(systemPage).find((node) => node.type === 'Host').props.seedColor, '#FF5588');
+assert.equal(nativeSection.props.modifiers, undefined,
+  'Native Section owns its row backgrounds; no custom material is supplied');
+assert.equal(bridge.props.children.props.children.props.children.props.children, editor,
+  'Native row preserves the existing editor and actions');
 assert(
   nodes(systemPage)
     .find((node) => node.type === 'List')
