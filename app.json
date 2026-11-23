@@ -64,7 +64,28 @@
       "expo-secure-store",
       "expo-sqlite",
       "expo-system-ui",
-      "expo-font",
+      [
+        "expo-font",
+        {
+          "android": {
+            "fonts": [
+              {
+                "fontFamily": "Pretendard JP Variable",
+                "path": "./assets/fonts/PretendardJPVariable.ttf",
+                "fontDefinitions": [
+                  { "weight": 400 },
+                  { "weight": 500 },
+                  { "weight": 600 },
+                  { "weight": 700 },
+                  { "weight": 800 },
+                  { "weight": 900 }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "./plugins/with-android-text-theme",
       "expo-status-bar",
       "expo-asset",
       [

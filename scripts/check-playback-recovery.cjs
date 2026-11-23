@@ -98,6 +98,7 @@ async function checkRootRemount({ playing = true, cold = false, theme = 'dark', 
     } },
     '@/services/playback/persistence': { readRestoredPlayback: async () => { savedReads++; return saved; }, startPlaybackPersistence: () => { persistenceStarts++; return () => {}; } },
     '@/theme/tokens': { useColors: () => ({}), useAppColorScheme: () => theme },
+    '@/theme/typography': { androidFontFamily: undefined },
     '@/features/metadata/automatic-metadata': { AutomaticMetadata: 'AutomaticMetadata' },
     '@/features/settings/settings-presentation': { settingsPresentationOptions: () => ({}) },
   };

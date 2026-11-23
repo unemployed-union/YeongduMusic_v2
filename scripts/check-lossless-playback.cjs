@@ -30,6 +30,7 @@ function checkFormats() {
   assert.equal(rules.isLosslessSong({ ...song, source: 's3', s3: { key: 'music/song.flac' } }), true);
   assert.equal(rules.isLosslessPlayback(song, client.streamSource(song)), true);
   assert.equal(rules.isLosslessPlayback(song, client.streamSource(song, 'mp3')), false, 'Lossless originals transcoded to MP3 are lossy playback');
+  assert.equal(client.streamSource(song, 'mp3').lossless, false, 'The MP3 source explicitly identifies the actual lossy stream');
   assert.equal(rules.isLosslessPlayback(song, { assetId: 1 }), false);
   assert.equal(rules.isLosslessPlayback(song, { uri: 'invalid' }), false);
 }
@@ -101,10 +102,12 @@ async function checkController() {
 }
 function checkBadge() {
   const state = { lossless: true, buffering: false, error: null, playing: true };
+  const preferences = { quality: 'original' };
   const jsx = (type, props) => ({ type, props });
   const { LosslessBadge } = load('src/features/playback/lossless-badge.tsx', {
     'react/jsx-runtime': { jsx, jsxs: jsx }, 'react-native': { View: 'View', StyleSheet: { create: value => value } },
     '@/components/text': { Text: 'Text' }, '@/stores/playback': { usePlaybackStore: select => select(state) },
+    '@/stores/streaming-preferences': { useStreamingPreferences: select => select(preferences) },
   });
   const render = () => LosslessBadge({ color: '#FFFFFF' });
   assert.equal(render().props.children.props.children, '고음질 · 무손실');
@@ -115,10 +118,16 @@ function checkBadge() {
     assert.equal(badge.props.accessibilityElementsHidden, true);
     assert.equal(badge.props.importantForAccessibility, 'no-hide-descendants');
   };
+  preferences.quality = 'mp3'; assertHidden();
+  assert.equal(state.lossless, true, 'Hiding the badge must not rewrite the loaded stream or restart playback');
+  preferences.quality = 'original';
+  assert.equal(render().props.accessibilityElementsHidden, false, 'Original mode can show a known lossless stream again');
   state.playing = false; assert.ok(render(), 'Pausing retains known stream quality');
   state.buffering = true; assertHidden();
   state.buffering = false; state.error = 'Failed'; assertHidden();
   state.error = null; state.lossless = false; assertHidden();
+  preferences.quality = 'mp3'; assertHidden();
+  preferences.quality = 'original'; assertHidden();
 }
 async function main() {
   checkFormats(); await checkNasMetadata(); await checkController(); checkBadge();

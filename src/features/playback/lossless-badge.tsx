@@ -1,11 +1,13 @@
 import { StyleSheet, View } from 'react-native';
 import { Text } from '@/components/text';
 import { usePlaybackStore } from '@/stores/playback';
+import { useStreamingPreferences } from '@/stores/streaming-preferences';
 
 export function LosslessBadge({ color }: { color: string }) {
   const lossless = usePlaybackStore((state) => state.lossless);
   const unavailable = usePlaybackStore((state) => !!state.error || state.buffering);
-  const visible = lossless && !unavailable;
+  const originalQuality = useStreamingPreferences((state) => state.quality === 'original');
+  const visible = originalQuality && lossless && !unavailable;
   // Keep the same text metrics and space through track changes and buffering.
   return (
     <View

@@ -550,7 +550,7 @@ export class SynologyClient {
       })),
     };
   }
-  streamSource(song: Song, quality: StreamingQuality = 'original'): { uri: string } {
+  streamSource(song: Song, quality: StreamingQuality = 'original'): { uri: string; lossless?: boolean } {
     if (!isNasSong(song)) {
       throw new Error('로컬 음악과 클라우드 음악은 NAS 스트리밍 API를 사용하지 않습니다.');
     }
@@ -570,6 +570,7 @@ export class SynologyClient {
           { id: song.nasId ?? song.id, library: AUDIO_STATION_LIBRARY, format: 'mp3', position: 0 },
           '/0.mp3',
         ),
+        lossless: false,
       };
     }
     return {

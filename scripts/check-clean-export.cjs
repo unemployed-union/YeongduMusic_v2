@@ -29,6 +29,32 @@ const network = process.argv.includes('--online') ? '' : '--offline ';
 const install = spawnSync('pnpm install ' + network + '--frozen-lockfile --ignore-scripts --side-effects-cache=false', { cwd: project, env, stdio: 'inherit', shell: true });
 if (install.error) throw install.error;
 if (install.status !== 0) process.exit(install.status ?? 1);
+
+// Compare every file touched by a registered patch after a fresh frozen install.
+// Build outputs and upstream Gradle manifest rewrites are deliberately excluded.
+const workspace = fs.readFileSync(path.join(root, 'pnpm-workspace.yaml'), 'utf8');
+const registrations = workspace.split('patchedDependencies:')[1]?.split(/\n(?=\S)/)[0] ?? '';
+let patchedFiles = 0;
+for (const line of registrations.split('\n')) {
+  const registration = line.match(/^\s+['"]?(.+?)['"]?:\s+(patches\/.+?)\s*$/);
+  if (!registration) {
+    continue;
+  }
+
+  const [, identity, patchFile] = registration;
+  const packageName = identity.slice(0, identity.lastIndexOf('@'));
+  const patch = fs.readFileSync(path.join(root, patchFile), 'utf8');
+  for (const match of patch.matchAll(/^\+\+\+ b\/(.+)$/gm)) {
+    const relative = path.join('node_modules', packageName, match[1].trim());
+    const expected = fs.readFileSync(path.join(root, relative), 'utf8');
+    const installed = fs.readFileSync(path.join(project, relative), 'utf8');
+    assert.equal(installed.replace(/\r\n/g, '\n'), expected.replace(/\r\n/g, '\n'), 'Frozen install must preserve patched file: ' + relative);
+    patchedFiles++;
+  }
+}
+assert(patchedFiles > 0, 'The clean install must verify registered dependency patches');
+console.log('PASS: frozen install preserved all ' + patchedFiles + ' patched files.');
+
 function run(entry, args) {
   const result = spawnSync(process.execPath, [entry, ...args], { cwd: project, env, stdio: 'inherit' });
   if (result.error) throw result.error;

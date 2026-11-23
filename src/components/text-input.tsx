@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useColors } from '@/theme/tokens';
+import { androidTextStyle } from '@/theme/typography';
 
 export type TextInputHandle = TextInputInstance;
 const layoutKeys = [
@@ -90,7 +91,11 @@ export const TextInput = forwardRef<TextInputInstance, TextInputProps>(function 
         accessibilityLabel={accessibilityLabel}
         clearButtonMode="never"
         onChangeText={change}
-        style={[field, { flex: 1, paddingRight: canClear ? rightPadding : padding }]}
+        style={[
+          androidTextStyle,
+          field,
+          { flex: 1, paddingRight: canClear ? rightPadding : padding },
+        ]}
       />
       {canClear && (
         <Pressable

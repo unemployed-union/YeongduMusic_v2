@@ -50,6 +50,7 @@ function compileAndLoad(input, version) {
     },
     'react/jsx-runtime': { jsx, jsxs: jsx },
     'react-native': native,
+    '@/theme/tokens': { useColors: () => ({ tint: '#FF5C80' }), useAppColorScheme: () => 'dark' },
     'expo-linking': { openURL: () => assert.fail('Rendering must not open an external URL') },
     '@expo/ui/swift-ui': swift,
     '@expo/ui/swift-ui/modifiers': new Proxy(

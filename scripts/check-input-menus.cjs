@@ -2,7 +2,7 @@
 const fs = require('node:fs'), path = require('node:path'), assert = require('node:assert/strict'), ts = require('typescript');
 const root = path.resolve(__dirname, '..'), jsx = (type, props) => ({ type, props });
 function load(file, modules) {
-  modules = { '@/services/haptics': { playHaptic() {}, prepareHaptics() {} }, './favorite-button': { FavoriteButton: 'FavoriteButton' }, ...modules };
+  modules = { '@/services/haptics': { playHaptic() {}, prepareHaptics() {} }, '@/theme/typography': { androidTextStyle: undefined }, './favorite-button': { FavoriteButton: 'FavoriteButton' }, ...modules };
   if (file !== 'src/theme/layout.ts') modules['@/theme/layout'] = load('src/theme/layout.ts', {});
   const exports = {}, code = ts.transpileModule(fs.readFileSync(path.join(root, file), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX } }).outputText;
   new Function('require', 'exports', code)(name => { if (name in modules) return modules[name]; throw Error(name); }, exports); return exports;
@@ -19,7 +19,7 @@ function hooks() {
     useImperativeHandle: (ref, create) => { if (ref) ref.current = { get native() { return create(); } }; },
   }, render: fn => { index = 0; return fn(); } };
 }
-const ui = { 'react/jsx-runtime': { jsx, jsxs: jsx }, 'react-native': { View: 'View', Pressable: 'Button', TextInput: 'NativeInput', FlatList: 'List', RefreshControl: 'Refresh',
+const ui = { 'react/jsx-runtime': { jsx, jsxs: jsx }, 'react-native': { Platform: { OS: 'android' }, useWindowDimensions: () => ({ width: 390, height: 844, fontScale: 1 }), View: 'View', Pressable: 'Button', TextInput: 'NativeInput', FlatList: 'List', RefreshControl: 'Refresh',
   StyleSheet: { create: value => value, flatten, hairlineWidth: 1 } },
   '@/components/text': { Text: 'Text' }, '@expo/vector-icons/Ionicons': { __esModule: true, default: 'Icon' }, '@/theme/tokens': { useColors: () => ({ text: '#fff', muted: '#888' }) } };
 function checkInput() {

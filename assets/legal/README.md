@@ -21,7 +21,7 @@ Use the installed Expo CLI and current Node version. Do not scan all installed p
 2. In `android/`, set `JAVA_HOME`/`GRADLE_USER_HOME` as appropriate, then capture the current dependency report:
    `./gradlew.bat :app:dependencies --configuration releaseRuntimeClasspath --offline --console plain > ../dist/legal-audit/license-gradle-dependencies.txt`
    PowerShell UTF-16 output is supported by the audit script.
-3. At the repository root, run `node scripts/audit-open-source-dependencies.cjs`, then `./scripts/extract-native-notices.ps1`.
+3. At the repository root, run `node scripts/audit-open-source-dependencies.cjs`, then `./scripts/extract-native-notices.ps1`. If Gradle has retained a binary without its POM, download the exact version's POM from its official Maven repository into `dist/legal-audit/poms/<group>/<artifact>/<version>/<artifact>-<version>.pom`; the audit accepts this metadata without modifying the Gradle cache or installed dependencies. Missing or unreviewed license metadata still stops generation.
 4. Review newly introduced licenses and notices, adding the official missing texts to `assets/legal/upstream/` and provenance to `upstream.json`. Do not invent a copyright holder or silently use a generic MIT text. Check native binaries' additional source dependencies and resolved iOS pods. Any newly introduced license or missing text stops generation for review.
 5. Run `node scripts/generate-open-source-notices.cjs`, `node scripts/check-open-source-notices.cjs`, `pnpm lint`, and `pnpm check-types`. Commit the generated `notices.json`, audit metadata, and upstream sources together.
 

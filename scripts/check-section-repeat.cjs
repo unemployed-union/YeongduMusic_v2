@@ -153,9 +153,9 @@ function checkMenuUI() {
   const menuModule = load('src/features/playback/player-menu.tsx', {
     '@/theme/tokens': { useColors: () => ({ text: '#F7F7FA', muted: '#9B9BA5', separator: '#31313A', tint: '#FF5C80' }), useAppColorScheme: () => 'dark' },
     react: { useEffect: () => {}, useState: initial => { const i = slot++; if (!(i in states)) states[i] = typeof initial === 'function' ? initial() : initial; return [states[i], value => { states[i] = value; }]; } },
-    'react/jsx-runtime': { jsx, jsxs: jsx }, 'react-native': { View: 'View', Pressable: 'Button', ScrollView: 'Scroll', StyleSheet: { create: value => value } },
+    'react/jsx-runtime': { jsx, jsxs: jsx }, 'react-native': { Platform: { OS: 'android' }, View: 'View', Pressable: 'Button', ScrollView: 'Scroll', StyleSheet: { create: value => value } },
     'expo-router': { router: { push: href => navigation.push(href) } }, 'expo-blur': { BlurView: 'Blur' },
-    'react-native-reanimated': { __esModule: true, default: { View: 'AnimatedView' }, Easing: { out: value => value, in: value => value }, FadeIn: animation, FadeOut: animation, FadeInDown: animation, FadeOutDown: animation },
+    'react-native-reanimated': { __esModule: true, default: { View: 'AnimatedView' }, useReducedMotion: () => false, Easing: { out: value => value, in: value => value }, FadeIn: animation, FadeOut: animation, FadeInDown: animation, FadeOutDown: animation },
     '@expo/vector-icons/Ionicons': { __esModule: true, default: 'Icon' }, '@/components/text': { Text: 'Text' },
     '@/stores/playback': { usePlaybackStore: selector => selector({ sleepTimer: null, sectionRepeat: null, playbackRate: 1 }) },
     '@/stores/offline-music': { useOfflineMusicStore: selector => selector(offlineState) },

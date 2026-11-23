@@ -6,6 +6,7 @@ import {
   type TextProps,
   type TextStyle,
 } from 'react-native';
+import { androidTextStyle } from '@/theme/typography';
 import { characterWrap } from './character-wrap';
 
 export type AppTextProps = TextProps & { variant?: TextProps['dynamicTypeRamp'] };
@@ -64,6 +65,8 @@ export const Text = forwardRef<TextInstance, AppTextProps>(function Text(
     resolvedStyle = [style, webWrap];
   } else if (Platform.OS === 'ios' && variant) {
     resolvedStyle = [textRoles[variant], style];
+  } else if (androidTextStyle) {
+    resolvedStyle = [androidTextStyle, style];
   }
   return (
     <NativeText

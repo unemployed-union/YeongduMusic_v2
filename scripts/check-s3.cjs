@@ -98,7 +98,17 @@ async function main() {
   assert.equal(requests.at(-1).options.redirect, 'error');
   network = async () => response(xml([['music/song.mp3']], 'repeated'));
   await assert.rejects(api.loadS3Songs(connection), /반복/);
-  for (const body of ['<html>oops</html>', '<ListBucketResult>', '<!DOCTYPE x><ListBucketResult/>', xml([['outside/song.mp3']])]) {
+  // Untrusted XML must still pass the application's validator and size limit
+  // after parser updates, including declarations hidden behind valid comments.
+  for (const body of [
+    '<html>oops</html>',
+    '<ListBucketResult>',
+    '<!DOCTYPE x><ListBucketResult/>',
+    '<!-- prefix --><!DOCTYPE x [<!ENTITY secret "private">]><ListBucketResult/>',
+    '<ListBucketResult><IsTruncated>false</IsTruncated><Key><![CDATA[unclosed</Key></ListBucketResult>',
+    xml([['music/' + 'x'.repeat(4 * 1024 * 1024) + '.mp3']]),
+    xml([['outside/song.mp3']]),
+  ]) {
     network = async () => response(body); await assert.rejects(api.loadS3Songs(connection));
   }
   network = async () => response('<Error><Code>SignatureDoesNotMatch</Code><Message>do-not-show-private-url</Message></Error>', 403);

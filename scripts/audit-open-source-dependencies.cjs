@@ -34,7 +34,11 @@ const gradleCache = process.env.GRADLE_USER_HOME ?? path.join(os.homedir(), '.gr
 const natives=[...coordinates.values()].map(({group,artifact,version})=>{
   const dir=path.join(gradleCache,'caches/modules-2/files-2.1',group,artifact,version);
   const files=walk(dir),pom=files.find(f=>f.endsWith('.pom'));
-  const text=pom ? fs.readFileSync(pom,'utf8') : '';
+  const downloadedPom = path.join(
+    root, 'dist/legal-audit/poms', group, artifact, version, artifact + '-' + version + '.pom',
+  );
+  const licensePom = pom ?? (fs.existsSync(downloadedPom) ? downloadedPom : undefined);
+  const text = licensePom ? fs.readFileSync(licensePom, 'utf8') : '';
   return { name:group+':'+artifact,version,license:text.match(/<licenses>([\s\S]*?)<\/licenses>/)?.[1].replace(/\s+/g,' ').trim(),files };
 }).filter(n=>n.files.some(f=>/\.(aar|jar)$/.test(f)));
 if (!natives.length) throw new Error('Android runtime artifacts are missing. Check the dependency report and GRADLE_USER_HOME before generating notices.');

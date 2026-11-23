@@ -56,6 +56,8 @@ for (const pkg of packages.values()) {
 }
 add({ id: 'asset:ionicons', name: 'Ionicons · 앱 아이콘 및 로고', license: 'MIT',
   url: 'https://github.com/ionic-team/ionicons', content: [read('assets/branding/LICENSE')] });
+const pretendard = supplemental.get('pretendard-jp');
+add({ ...pretendard, id: 'asset:pretendard-jp', platform: 'android', content: [upstreamText('pretendard-jp')] });
 add({ id: 'vendor:vector-icons', name: 'react-native-vector-icons (Expo에 포함)', license: 'MIT',
   url: 'https://github.com/oblador/react-native-vector-icons', content: [read('node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/LICENSE')] });
 add({ id: 'vendor:react-navigation', name: 'React Navigation (Expo Router에 포함)', license: 'MIT',

@@ -8,6 +8,7 @@ import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { useAppBootstrap } from '@/features/startup/use-app-bootstrap';
 import { usePlaybackRecovery } from '@/features/startup/use-playback-recovery';
 import { useAppColorScheme, useColors } from '@/theme/tokens';
+import { androidFontFamily } from '@/theme/typography';
 import { useEffect, useMemo } from 'react';
 import { useMenuPreferences } from '@/stores/menu-preferences';
 import { useSongMetadataStore } from '@/stores/song-metadata';
@@ -65,12 +66,23 @@ function Navigation() {
   const lightStatusBar = scheme === 'dark' || (Platform.OS === 'ios' && segments[0] === 'player');
   const statusBarStyle = lightStatusBar ? 'light' : 'dark';
   const navigationTheme = useMemo(() => {
-    const base = scheme === 'dark' ? DarkTheme : DefaultTheme;
+    let theme = scheme === 'dark' ? DarkTheme : DefaultTheme;
+    if (androidFontFamily) {
+      theme = {
+        ...theme,
+        fonts: {
+          regular: { fontFamily: androidFontFamily, fontWeight: '400' },
+          medium: { fontFamily: androidFontFamily, fontWeight: '500' },
+          bold: { fontFamily: androidFontFamily, fontWeight: '600' },
+          heavy: { fontFamily: androidFontFamily, fontWeight: '700' },
+        },
+      };
+    }
     return customTheme
       ? {
-          ...base,
+          ...theme,
           colors: {
-            ...base.colors,
+            ...theme.colors,
             primary: colors.tint,
             background: colors.background,
             card: colors.surface,
@@ -79,7 +91,7 @@ function Navigation() {
             notification: colors.tint,
           },
         }
-      : base;
+      : theme;
   }, [scheme, colors, customTheme]);
   const themeReady = useThemePreferences((state) => state.ready);
   const loadTheme = useThemePreferences((state) => state.load);

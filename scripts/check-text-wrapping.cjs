@@ -10,6 +10,7 @@ function load(file, mocks = {}, globals = {}) {
   }).outputText;
   new Function('require', 'exports', ...Object.keys(globals), code)(name => {
     if (name === '@/theme/layout') return load('src/theme/layout.ts');
+    if (name === '@/theme/typography') return { androidTextStyle: undefined };
     if (name in mocks) return mocks[name];
     throw Error('Unexpected module: ' + name);
   }, exports, ...Object.values(globals));
@@ -73,7 +74,7 @@ for (const os of ['android', 'ios', 'web']) {
   const nested = Text({ children: ['첫 ', jsxRuntime.jsx(Text, { children: '강조' }), ' 마지막'] });
   assert.equal(nested.props.accessibilityLabel, '첫 강조 마지막');
 }
-const native = { ActivityIndicator: 'Spinner', Pressable: 'Pressable', View: 'View', StyleSheet: { create: value => value } };
+const native = { Platform: { OS: 'android' }, useWindowDimensions: () => ({ width: 390, height: 844, fontScale: 1 }), ActivityIndicator: 'Spinner', Pressable: 'Pressable', View: 'View', StyleSheet: { create: value => value } };
 const common = { 'react/jsx-runtime': jsxRuntime, 'react-native': native, '@/components/text': { Text: 'Text' }, '@/theme/tokens': { useColors: () => ({ tint: '#f48', muted: '#888' }) } };
 const { ListLoading } = load('src/components/list-loading.tsx', {
   ...common, react: { useContext: () => 82 }, './tab-bar-inset': { TabBarInsetContext: {} },
