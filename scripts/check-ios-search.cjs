@@ -17,6 +17,8 @@ let nextTimer = 0;
 const timers = new Map();
 const queries = [];
 let dismissed = 0;
+let settingsOpened = 0;
+let searchItems = [];
 const leaf = (name) => ({ [name]: name });
 const mocks = {
   react: {
@@ -49,10 +51,12 @@ const mocks = {
     Keyboard: { dismiss: () => dismissed++ },
     StyleSheet: { create: (v) => v },
     ...Object.fromEntries(
-      ['FlatList', 'Pressable', 'RefreshControl', 'View'].map((name) => [name, name]),
+      ['FlatList', 'Pressable', 'RefreshControl', 'ScrollView', 'View'].map((name) => [name, name]),
     ),
   },
-  'expo-router': { Stack: { SearchBar: 'NativeSearch' } },
+  'expo-router': {
+    Stack: { SearchBar: 'NativeSearch', Toolbar: Object.assign('Toolbar', { Button: 'ToolbarButton' }) },
+  },
   'react-native-keyboard-controller': { useKeyboardState: () => false },
   'react-native-safe-area-context': { useSafeAreaInsets: () => ({ left: 0, right: 0 }) },
   '@expo/vector-icons/Ionicons': { __esModule: true, default: 'Icon' },
@@ -62,7 +66,10 @@ const mocks = {
   '@/components/async-state': leaf('AsyncState'),
   '@/components/screen-header': leaf('ScreenHeader'),
   '@/components/list-loading': leaf('ListLoading'),
-  '@/components/settings-button': leaf('SettingsButton'),
+  '@/components/settings-button': {
+    ...leaf('SettingsButton'),
+    useSettingsAction: () => () => settingsOpened++,
+  },
   '@/components/song-row': leaf('SongRow'),
   '@/components/native-tab-frame': leaf('NativeTabFrame'),
   '@/theme/tokens': {
@@ -72,11 +79,15 @@ const mocks = {
   '@/features/library/queries': {
     useSearch(term) {
       queries.push(term);
-      return { data: { items: [], total: 0 }, isPending: false, isError: false };
+      return { data: { items: searchItems, total: searchItems.length }, isPending: false, isError: false };
     },
   },
   '@/features/playback/play-and-open-player': {},
 };
+mocks['@/components/native-settings-toolbar'] = loadSource(
+  'src/components/native-settings-toolbar.tsx',
+  { ...mocks, './settings-button': mocks['@/components/settings-button'] },
+);
 const Screen = loadSource('src/features/library/search-screen.tsx', mocks, {
   setTimeout: (fn, delay) => {
     timers.set(++nextTimer, { fn, delay });
@@ -91,7 +102,12 @@ const render = () => {
 let ui = render();
 let search = ui.find((n) => n.type === 'NativeSearch');
 assert(search && !ui.some((n) => n.type === 'TextInput'), 'Phone search has one native input');
-assert.equal(search.props.hideNavigationBar, false);
+assert(!ui.some((n) => n.type === 'ScreenHeader'), 'Native search has no duplicate content header');
+const toolbar = ui.find((n) => typeof n.type === 'function' && n.type.name === 'NativeSettingsToolbar');
+nodes(toolbar.type()).find((n) => n.type === 'ToolbarButton').props.onPress();
+assert.equal(settingsOpened, 1, 'Native settings button uses the existing settings action');
+assert.equal(ui.find((n) => n.type === 'ScrollView').props.scrollEnabled, false, 'Idle search stays still');
+assert.equal(search.props.hideNavigationBar, true);
 search.props.onChangeText({ nativeEvent: { text: '긴 한국어 검색어' } });
 ui = render();
 assert.equal(queries.at(-1), '');
@@ -99,6 +115,20 @@ assert.equal([...timers.values()].at(-1).delay, 350, 'Preserve the existing debo
 [...timers.values()].at(-1).fn();
 ui = render();
 assert.equal(queries.at(-1), '긴 한국어 검색어');
+assert(!ui.some((n) => n.type === 'FlatList'), 'Zero results do not mount a scrollable list');
+assert.equal(ui.find((n) => n.type === 'ScrollView').props.scrollEnabled, false);
+searchItems = [{ id: 'song' }];
+ui = render();
+const populatedList = ui.find((n) => n.type === 'FlatList');
+assert.notEqual(populatedList.props.scrollEnabled, false, 'Search results remain scrollable');
+assert.equal(populatedList.props.refreshControl.type, 'RefreshControl');
+searchItems = [];
+search = ui.find((n) => n.type === 'NativeSearch');
+search.props.onChangeText({ nativeEvent: { text: '즉시 검색' } });
+render();
+search.props.onSearchButtonPress({ nativeEvent: { text: '즉시 검색' } });
+ui = render();
+assert.equal(queries.at(-1), '즉시 검색', 'Submit searches immediately without waiting for debounce');
 search = ui.find((n) => n.type === 'NativeSearch');
 search.props.onCancelButtonPress();
 ui = render();

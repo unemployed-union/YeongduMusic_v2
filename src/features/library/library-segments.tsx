@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import type { LibraryTab } from './library-page';
 
 export type LibrarySegmentsProps = {
+  contentInset?: number;
   tabs: LibraryTab[];
   selected: LibraryTab;
   onSelect: (tab: LibraryTab) => void;

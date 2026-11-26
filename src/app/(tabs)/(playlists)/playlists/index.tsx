@@ -1,12 +1,13 @@
 import { TabScrollEdgeFade } from '@/components/tab-scroll-edge-fade';
 import { useState } from 'react';
-import { FlatList, Pressable, StyleSheet, View } from 'react-native';
+import { FlatList, Platform, Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { Text } from '@/components/text';
 import { router } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { ScreenHeader } from '@/components/screen-header';
 import { ListLoading } from '@/components/list-loading';
 import { SettingsButton } from '@/components/settings-button';
+import { NativeSettingsToolbar } from '@/components/native-settings-toolbar';
 import { PlaylistNameDialog } from '@/features/playlists/dialogs';
 import { ServerPlaylists } from '@/features/playlists/server-playlists';
 import { visiblePlaylists } from '@/features/playlists/rules';
@@ -15,6 +16,8 @@ import { useHiddenMusicStore } from '@/stores/hidden-music';
 import { useColors } from '@/theme/tokens';
 import { useLiquidGlass } from '@/theme/liquid-glass';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useHeaderHeight } from 'expo-router/react-navigation';
+import { IOS_TAB_CONTENT_INSET, workspaceLayout } from '@/theme/layout';
 
 const description =
   '기분과 상황에 맞는 목록을 여러 개 저장해 보세요. 이 기기에 저장되며 NAS 없이도 사용할 수 있습니다. NAS 연결 중에는 해당 계정의 목록을 사용합니다.';
@@ -22,6 +25,9 @@ const description =
 export default function PlaylistsScreen() {
   const glass = useLiquidGlass();
   const insets = useSafeAreaInsets();
+  const headerHeight = useHeaderHeight();
+  const { width, height, fontScale } = useWindowDimensions();
+  const nativeHeader = Platform.OS === 'ios' && !workspaceLayout(width, height, fontScale).expanded;
   const colors = useColors();
   const store = usePlaylistStore();
   const privacy = useHiddenMusicStore();
@@ -43,19 +49,24 @@ export default function PlaylistsScreen() {
       style={[
         styles.fill,
         { backgroundColor: colors.background },
+        nativeHeader && { paddingTop: headerHeight },
         glass.supported && { paddingLeft: insets.left, paddingRight: insets.right },
       ]}
     >
-      <ScreenHeader title="플레이리스트" action={<SettingsButton />} />
+      {nativeHeader ? (
+        <NativeSettingsToolbar />
+      ) : (
+        <ScreenHeader title="플레이리스트" action={<SettingsButton />} />
+      )}
       {loading ? (
         loadingContent
       ) : (
         <>
-          <TabScrollEdgeFade>
+          <TabScrollEdgeFade topEnabled={!nativeHeader}>
             <FlatList
               data={visiblePlaylists(store.profile.presets, privacy.profile.hiddenPlaylistIds)}
               keyExtractor={(item) => item.id}
-              contentContainerStyle={styles.list}
+              contentContainerStyle={[styles.list, nativeHeader && styles.nativeList]}
               ListFooterComponent={<ServerPlaylists />}
               ListHeaderComponent={
                 <View>
@@ -134,6 +145,7 @@ const styles = StyleSheet.create({
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 22 },
   button: { padding: 16 },
   list: { flexGrow: 1, padding: 22, paddingTop: 0, paddingBottom: 180 },
+  nativeList: { paddingHorizontal: IOS_TAB_CONTENT_INSET, paddingTop: 4 },
   note: { fontSize: 13, lineHeight: 20, marginBottom: 12 },
   create: {
     minHeight: 48,

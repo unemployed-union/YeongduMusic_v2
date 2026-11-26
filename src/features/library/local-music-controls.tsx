@@ -23,9 +23,11 @@ const labels = musicSourceLabels;
 export function LocalMusicControls({
   sortControl,
   menuLabel,
+  contentInset = 22,
 }: {
   sortControl?: ReactNode;
   menuLabel?: string;
+  contentInset?: number;
 }) {
   const colors = useColors();
   const local = useLocalMusicStore();
@@ -60,8 +62,8 @@ export function LocalMusicControls({
     }
   }
   return (
-    <View style={styles.container}>
-      <View style={styles.controlsRow}>
+    <View style={[styles.container, { paddingHorizontal: contentInset }]}>
+      <View style={[styles.controlsRow, Platform.OS === 'ios' && styles.nativeControlsRow]}>
         <MusicSourceTrigger
           selected={local.source}
           label={menuLabel ?? labels[local.source]}
@@ -185,5 +187,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: 12,
   },
-  container: { paddingHorizontal: 22, gap: 8, marginBottom: 8 },
+  nativeControlsRow: { minHeight: 44 },
+  container: { gap: 8, marginBottom: 8 },
 });

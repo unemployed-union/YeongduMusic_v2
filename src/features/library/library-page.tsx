@@ -41,6 +41,7 @@ interface Props
   sortOrder: LibrarySortOrder;
   width?: number;
   spacious?: boolean;
+  contentInset?: number;
   refreshing: boolean;
   onRefresh: () => Promise<void>;
   onListScroll?: (tab: LibraryTab, event: NativeSyntheticEvent<NativeScrollEvent>) => void;
@@ -63,6 +64,7 @@ export const LibraryPage = memo(function LibraryPage({
   active = true,
   keyExtractor,
   spacious = false,
+  contentInset = 22,
 }: Props) {
   const colors = useColors();
   const glass = useLiquidGlass();
@@ -80,7 +82,7 @@ export const LibraryPage = memo(function LibraryPage({
   const [playError, setPlayError] = useState<string | null>(null);
   const sourceItems = data?.items ?? EMPTY_ITEMS;
   const items = useMemo(() => sortLibraryItems(sourceItems, sortOrder), [sourceItems, sortOrder]);
-  const grid = libraryGrid(width ?? 0, tab === 'albums', spacious);
+  const grid = libraryGrid(width ?? 0, tab === 'albums', spacious, contentInset);
   const cardWidth = grid.itemWidth;
   const play = useCallback(
     async (index: number) => {
@@ -237,7 +239,11 @@ export const LibraryPage = memo(function LibraryPage({
             keyExtractor={keyExtractor ?? ((item) => item.id)}
             numColumns={grid.columns}
             columnWrapperStyle={grid.columns > 1 ? { gap: grid.gap } : undefined}
-            contentContainerStyle={spacious ? [styles.list, styles.spaciousList] : styles.list}
+            contentContainerStyle={[
+              styles.list,
+              spacious && styles.spaciousList,
+              { paddingHorizontal: contentInset },
+            ]}
             alwaysBounceVertical
             refreshControl={
               <RefreshControl
@@ -307,7 +313,7 @@ const styles = StyleSheet.create({
   spaciousAlbumTitle: { marginTop: 12 },
   spaciousArtist: { height: 82 },
   fill: { flex: 1 },
-  list: { flexGrow: 1, paddingTop: 12, paddingHorizontal: 22, paddingBottom: 180 },
+  list: { flexGrow: 1, paddingTop: 12, paddingBottom: 180 },
   columns: { justifyContent: 'space-between' },
   album: { marginBottom: 24 },
   albumTitle: { fontSize: 15, fontWeight: '700', marginTop: 9 },

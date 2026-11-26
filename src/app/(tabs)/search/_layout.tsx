@@ -16,7 +16,10 @@ export default function SearchLayout() {
         title: '검색',
         headerTintColor: colors.tint,
         headerTitleStyle: { color: colors.text },
-        headerStyle: { backgroundColor: colors.background },
+        headerLargeTitleEnabled: nativeHeader,
+        headerLargeTitleStyle: { color: colors.text },
+        headerTransparent: nativeHeader,
+        ...(!nativeHeader && { headerStyle: { backgroundColor: colors.background } }),
         headerShadowVisible: false,
       }}
     />

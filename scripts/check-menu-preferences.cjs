@@ -160,12 +160,14 @@ function checkLibraryPager() {
   const controls = { selectPage: id => selections.push(id), show: () => {} };
   const query = { data: { items: [] } };
   const screen = load('src/app/(tabs)/(library)/index.tsx', {
+    'expo-router/react-navigation': { useHeaderHeight: () => 0 },
     'expo-router': { useIsFocused: () => focused },
     '@/theme/liquid-glass': { useLiquidGlass: () => ({ supported: false, enabled: false, reduceTransparency: false }) },
     '@/components/glass-controls': { glassControlStyles: { segments: {}, segment: {} } },
-    react, 'react/jsx-runtime': { jsx, jsxs: jsx }, 'react-native': { ...native, useWindowDimensions: () => ({ width }) },
+    react, 'react/jsx-runtime': { jsx, jsxs: jsx }, 'react-native': { ...native, Platform: { OS: 'android' }, useWindowDimensions: () => ({ width }) },
     'react-native-reanimated': { __esModule: true, default: { View: 'AnimatedView' } },
     '@/components/text': { Text: 'Text' }, '@/components/screen-header': { ScreenHeader: 'Header' }, '@/components/settings-button': { SettingsButton: 'Settings' },
+    '@/components/native-settings-toolbar': { NativeSettingsToolbar: 'NativeSettingsToolbar' },
     '@/features/favorites/liked-songs-screen': { LikedSongsScreen: 'LikedSongsScreen' },
     '@/features/library/library-page': { LibraryPage: 'LibraryPage' }, '@/features/library/local-music-controls': { LocalMusicControls: 'Controls' },
     '@/features/library/library-pager': { LibraryPager: 'LibraryPager' },

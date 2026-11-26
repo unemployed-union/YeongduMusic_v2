@@ -1,3 +1,6 @@
+// The horizontal margin of the compact iOS large-title navigation bar.
+export const IOS_TAB_CONTENT_INSET = 16;
+
 type Insets = { top: number; bottom: number; left: number; right: number };
 
 export function workspaceLayout(width: number, height: number, fontScale = 1) {
@@ -46,7 +49,12 @@ export function playerLayout(width: number, height: number, insets: Insets, font
   };
 }
 
-export function libraryGrid(width: number, albums: boolean, spacious = false) {
+export function libraryGrid(
+  width: number,
+  albums: boolean,
+  spacious = false,
+  contentInset = 22,
+) {
   let gap: 32 | 24 | 8;
   if (spacious) {
     gap = 32;
@@ -56,7 +64,7 @@ export function libraryGrid(width: number, albums: boolean, spacious = false) {
     gap = 8;
   }
 
-  const contentWidth = Math.max(0, width - 44);
+  const contentWidth = Math.max(0, width - contentInset * 2);
   const columns = albums
     ? Math.max(2, Math.min(8, Math.floor((contentWidth + gap) / (180 + gap))))
     : Math.max(1, Math.min(3, Math.floor((contentWidth + gap) / (400 + gap))));

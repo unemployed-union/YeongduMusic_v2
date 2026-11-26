@@ -1,6 +1,6 @@
 import { Stack } from 'expo-router';
 import { useColors } from '@/theme/tokens';
-import { useWindowDimensions } from 'react-native';
+import { Platform, useWindowDimensions } from 'react-native';
 import { workspaceLayout } from '@/theme/layout';
 import { NativeTabFrame } from '@/components/native-tab-frame';
 
@@ -10,6 +10,7 @@ export default function PlaylistsLayout() {
   const colors = useColors();
   const { width, height, fontScale } = useWindowDimensions();
   const tablet = workspaceLayout(width, height, fontScale).expanded;
+  const nativeHeader = Platform.OS === 'ios' && !tablet;
   return (
     <Stack
       layout={({ children, state }) => (
@@ -27,7 +28,21 @@ export default function PlaylistsLayout() {
         ...(tablet && { gestureEnabled: false }),
       }}
     >
-      <Stack.Screen name="playlists/index" options={{ headerShown: false }} />
+      <Stack.Screen
+        name="playlists/index"
+        options={{
+          title: '플레이리스트',
+          headerShown: nativeHeader,
+          headerTransparent: nativeHeader,
+          ...(nativeHeader && { headerStyle: { backgroundColor: 'transparent' } }),
+          headerLargeTitleEnabled: nativeHeader,
+          headerTitleStyle: { color: colors.text },
+          headerLargeTitleStyle: { color: colors.text },
+          headerShadowVisible: false,
+          headerLargeTitleShadowVisible: false,
+          scrollEdgeEffects: { top: 'hidden' },
+        }}
+      />
       <Stack.Screen name="playlists/[id]" options={{ title: '플레이리스트' }} />
     </Stack>
   );

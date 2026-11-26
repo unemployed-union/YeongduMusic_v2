@@ -1,0 +1,166 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -project /tmp/yeongdu-search-ui-tests/SearchUITests.xcodeproj -scheme SearchUITests -configuration Debug -destination "platform=iOS Simulator,id=04674652-9292-47C8-AD25-97A6CDF48FB5" -derivedDataPath /tmp/yeongdu-search-ui-test-build -resultBundlePath /tmp/yeongdu-search-light-complete.xcresult test-without-building CODE_SIGNING_ALLOWED=NO
+
+Build settings from command line:
+    CODE_SIGNING_ALLOWED = NO
+
+Writing result bundle at path:
+	/tmp/yeongdu-search-light-complete.xcresult
+
+2026-11-26 17:33:44.145307+0900 SearchUITests-Runner[23605:172183] [Default] Running tests...
+    t =      nans Interface orientation changed to Portrait
+Test Suite 'All tests' started at 2026-11-26 17:33:47.591.
+Test Suite 'SearchUITests.xctest' started at 2026-11-26 17:33:47.592.
+Test Suite 'SearchUITests' started at 2026-11-26 17:33:47.592.
+Test Case '-[SearchUITests.SearchUITests testSearchKeyboardClearCancelAndSettings]' started.
+    t =     0.01s Start Test at 2026-11-26 17:33:47.598
+    t =     0.04s Set Up
+    t =     0.04s Open xyz.yeongdu.yeongdumusic
+    t =     0.04s     Launch xyz.yeongdu.yeongdumusic
+    t =     0.04s         Terminate xyz.yeongdu.yeongdumusic:23504
+objc[23605]: Class UIAccessibilityLoaderWebShared is implemented in both /private/var/run/com.apple.security.cryptexd/mnt/com.apple.iPhoneOS.SimulatorRuntime-v24.1.434.0.baiba6/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 27.0.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebKit.axbundle/WebKit (0x10265c398) and /private/var/run/com.apple.security.cryptexd/mnt/com.apple.iPhoneOS.SimulatorRuntime-v24.1.434.0.baiba6/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 27.0.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebCore.axbundle/WebCore (0x107028310). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+    t =     1.12s         Setting up automation session
+    t =     3.39s         Wait for xyz.yeongdu.yeongdumusic to idle
+    t =     4.95s Waiting 20.0s for "native-tab-search" Button to exist
+    t =     5.99s     Checking `Expect predicate `existsNoRetry == 1` for object "native-tab-search" Button`
+    t =     5.99s         Checking existence of `"native-tab-search" Button`
+    t =     6.15s Tap "native-tab-search" Button
+    t =     6.15s     Wait for xyz.yeongdu.yeongdumusic to idle
+    t =     6.15s     Find the "native-tab-search" Button
+    t =     6.19s     Check for interrupting elements affecting "native-tab-search" Button
+    t =     6.24s     Synthesize event
+    t =     6.54s     Wait for xyz.yeongdu.yeongdumusic to idle
+    t =     8.33s Waiting 10.0s for SearchField (First Match) to exist
+    t =     9.36s     Checking `Expect predicate `existsNoRetry == 1` for object SearchField (First Match)`
+    t =     9.37s         Checking existence of `SearchField (First Match)`
+    t =     9.42s Get number of matches for: Descendants matching type SearchField
+    t =     9.45s Waiting 5.0s for "듣고 싶은 음악을 찾아보세요." StaticText to exist
+    t =    10.49s     Checking `Expect predicate `existsNoRetry == 1` for object "듣고 싶은 음악을 찾아보세요." StaticText`
+    t =    10.49s         Checking existence of `"듣고 싶은 음악을 찾아보세요." StaticText`
+    t =    10.54s Find the "듣고 싶은 음악을 찾아보세요." StaticText
+    t =    10.58s Find the SearchField (First Match)
+    t =    10.60s Find the Application 'xyz.yeongdu.yeongdumusic'
+    t =    10.73s Added attachment named '01-search-idle'
+    t =    10.73s Find the "노래, 아티스트, 앨범" SearchField
+    t =    10.76s Swipe up Application 'xyz.yeongdu.yeongdumusic'
+    t =    10.76s     Wait for xyz.yeongdu.yeongdumusic to idle
+    t =    10.77s     Find the Application 'xyz.yeongdu.yeongdumusic'
+    t =    10.79s     Check for interrupting elements affecting "YeongduMusic" Application
+    t =    10.82s     Synthesize event
+    t =    11.31s     Wait for xyz.yeongdu.yeongdumusic to idle
+    t =    12.09s Find the "노래, 아티스트, 앨범" SearchField
+    t =    12.13s Find the "노래, 아티스트, 앨범" SearchField
+SEARCH_SCROLL_FIELD_Y 168.0 -> 168.0
+    t =    12.15s Find the Application 'xyz.yeongdu.yeongdumusic'
+    t =    12.28s Added attachment named '01b-scrolled-title'
+    t =    12.28s Swipe down Application 'xyz.yeongdu.yeongdumusic'
+    t =    12.28s     Wait for xyz.yeongdu.yeongdumusic to idle
+    t =    12.28s     Find the Application 'xyz.yeongdu.yeongdumusic'
+    t =    12.30s     Check for interrupting elements affecting "YeongduMusic" Application
+    t =    12.33s     Synthesize event
+    t =    12.82s     Wait for xyz.yeongdu.yeongdumusic to idle
+    t =    13.45s Tap "노래, 아티스트, 앨범" SearchField
+    t =    13.45s     Wait for xyz.yeongdu.yeongdumusic to idle
+    t =    13.45s     Find the "노래, 아티스트, 앨범" SearchField
+    t =    13.49s     Check for interrupting elements affecting "노래, 아티스트, 앨범" SearchField
+    t =    13.52s     Synthesize event
+    t =    13.82s     Wait for xyz.yeongdu.yeongdumusic to idle
+    t =    14.86s Type 'Yeongdu music' into "노래, 아티스트, 앨범" SearchField
+    t =    14.86s     Wait for xyz.yeongdu.yeongdumusic to idle
+    t =    14.87s     Find the "노래, 아티스트, 앨범" SearchField
+    t =    14.92s     Check for interrupting elements affecting "노래, 아티스트, 앨범" SearchField
+    t =    14.97s     Synthesize event
+    t =    15.42s     Wait for xyz.yeongdu.yeongdumusic to idle
+    t =    15.42s Find the "노래, 아티스트, 앨범" SearchField
+    t =    15.47s Checking existence of `Keyboard (First Match)`
+    t =    15.48s Find the "노래, 아티스트, 앨범" SearchField
+    t =    15.51s Find the Application 'xyz.yeongdu.yeongdumusic'
+    t =    15.64s Added attachment named '02-search-keyboard'
+    t =    15.64s Waiting 5.0s for Button (First Match) to exist
+    t =    16.68s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =    16.68s         Checking existence of `Button (First Match)`
+    t =    16.72s Tap Button (First Match)
+    t =    16.72s     Wait for xyz.yeongdu.yeongdumusic to idle
+    t =    16.73s     Find the Button (First Match)
+    t =    16.76s     Check for interrupting elements affecting "Clear text" Button
+    t =    16.79s     Synthesize event
+    t =    17.09s     Wait for xyz.yeongdu.yeongdumusic to idle
+    t =    17.14s Waiting 5.0s for "듣고 싶은 음악을 찾아보세요." StaticText to exist
+    t =    18.18s     Checking `Expect predicate `existsNoRetry == 1` for object "듣고 싶은 음악을 찾아보세요." StaticText`
+    t =    18.18s         Checking existence of `"듣고 싶은 음악을 찾아보세요." StaticText`
+    t =    18.25s Checking existence of `Keyboard (First Match)`
+    t =    18.25s Find the Application 'xyz.yeongdu.yeongdumusic'
+    t =    18.38s Added attachment named '03-search-cleared'
+    t =    18.39s Type 'Yeongdu
+' into "노래, 아티스트, 앨범" SearchField
+    t =    18.39s     Wait for xyz.yeongdu.yeongdumusic to idle
+    t =    18.39s     Find the "노래, 아티스트, 앨범" SearchField
+    t =    18.42s     Check for interrupting elements affecting "노래, 아티스트, 앨범" SearchField
+    t =    18.45s     Synthesize event
+    t =    18.79s     Wait for xyz.yeongdu.yeongdumusic to idle
+    t =    20.06s Checking `Expect predicate `exists == 0` for object Keyboard (First Match)`
+    t =    20.06s     Checking existence of `Keyboard (First Match)`
+    t =    20.12s Find the "노래, 아티스트, 앨범" SearchField
+    t =    20.14s Find the Application 'xyz.yeongdu.yeongdumusic'
+    t =    20.26s Added attachment named '04-search-submitted'
+    t =    20.27s Tap "노래, 아티스트, 앨범" SearchField
+    t =    20.27s     Wait for xyz.yeongdu.yeongdumusic to idle
+    t =    20.27s     Find the "노래, 아티스트, 앨범" SearchField
+    t =    20.30s     Check for interrupting elements affecting "노래, 아티스트, 앨범" SearchField
+    t =    20.32s     Synthesize event
+    t =    20.62s     Wait for xyz.yeongdu.yeongdumusic to idle
+    t =    21.51s Waiting 5.0s for Button (First Match) to exist
+    t =    22.54s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =    22.54s         Checking existence of `Button (First Match)`
+    t =    22.58s Tap Button (First Match)
+    t =    22.58s     Wait for xyz.yeongdu.yeongdumusic to idle
+    t =    22.58s     Find the Button (First Match)
+    t =    22.63s     Check for interrupting elements affecting "Close" Button
+    t =    22.66s     Synthesize event
+    t =    22.96s     Wait for xyz.yeongdu.yeongdumusic to idle
+    t =    24.48s Waiting 5.0s for "듣고 싶은 음악을 찾아보세요." StaticText to exist
+    t =    25.53s     Checking `Expect predicate `existsNoRetry == 1` for object "듣고 싶은 음악을 찾아보세요." StaticText`
+    t =    25.55s         Checking existence of `"듣고 싶은 음악을 찾아보세요." StaticText`
+    t =    25.70s Find the Application 'xyz.yeongdu.yeongdumusic'
+    t =    25.85s Added attachment named '05-search-cancelled'
+    t =    25.85s Waiting 5.0s for "설정 열기" Button to exist
+    t =    26.89s     Checking `Expect predicate `existsNoRetry == 1` for object "설정 열기" Button`
+    t =    26.89s         Checking existence of `"설정 열기" Button`
+    t =    26.93s Tap "설정 열기" Button
+    t =    26.93s     Wait for xyz.yeongdu.yeongdumusic to idle
+    t =    26.94s     Find the "설정 열기" Button
+    t =    26.97s     Check for interrupting elements affecting "설정 열기" Button
+    t =    27.01s     Synthesize event
+    t =    27.36s     Wait for xyz.yeongdu.yeongdumusic to idle
+    t =    28.32s Waiting 5.0s for "설정 닫기" Button to exist
+    t =    29.36s     Checking `Expect predicate `existsNoRetry == 1` for object "설정 닫기" Button`
+    t =    29.36s         Checking existence of `"설정 닫기" Button`
+    t =    29.80s Tap "설정 닫기" Button
+    t =    29.80s     Wait for xyz.yeongdu.yeongdumusic to idle
+    t =    29.80s     Find the "설정 닫기" Button
+    t =    29.86s     Check for interrupting elements affecting "설정 닫기" Button
+    t =    29.91s     Synthesize event
+    t =    30.22s     Wait for xyz.yeongdu.yeongdumusic to idle
+    t =    30.83s Waiting 5.0s for "노래, 아티스트, 앨범" SearchField to exist
+    t =    31.85s     Checking `Expect predicate `existsNoRetry == 1` for object "노래, 아티스트, 앨범" SearchField`
+    t =    31.85s         Checking existence of `"노래, 아티스트, 앨범" SearchField`
+    t =    31.88s Find the Application 'xyz.yeongdu.yeongdumusic'
+    t =    32.01s Added attachment named '06-return-from-settings'
+    t =    32.01s Tear Down
+Test Case '-[SearchUITests.SearchUITests testSearchKeyboardClearCancelAndSettings]' passed (32.275 seconds).
+Test Suite 'SearchUITests' passed at 2026-11-26 17:34:19.873.
+	 Executed 1 test, with 0 failures (0 unexpected) in 32.275 (32.281) seconds
+Test Suite 'SearchUITests.xctest' passed at 2026-11-26 17:34:19.882.
+	 Executed 1 test, with 0 failures (0 unexpected) in 32.275 (32.290) seconds
+Test Suite 'All tests' passed at 2026-11-26 17:34:19.883.
+	 Executed 1 test, with 0 failures (0 unexpected) in 32.275 (32.291) seconds
+2026-11-26 17:34:20.188 xcodebuild[23603:172008] [MT] IDETestOperationsObserverDebug: 37.436 elapsed -- Testing started completed.
+2026-11-26 17:34:20.188 xcodebuild[23603:172008] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-11-26 17:34:20.188 xcodebuild[23603:172008] [MT] IDETestOperationsObserverDebug: 37.436 sec, +37.436 sec -- end
+
+Test session results, code coverage, and logs:
+	/tmp/yeongdu-search-light-complete.xcresult
+
+** TEST EXECUTE SUCCEEDED **
+
+Testing started

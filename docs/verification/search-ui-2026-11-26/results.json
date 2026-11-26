@@ -1,0 +1,67 @@
+{
+  "date": "2026-11-26",
+  "scope": "iPhone/compact iOS search presentation; existing Android and expanded iPad presentation retained",
+  "versions": {
+    "expo": "58.0.26",
+    "router": "58.0.32",
+    "reactNative": "0.88.1",
+    "screens": "4.30.1"
+  },
+  "design": [
+    "One native large title, search field and settings toolbar; no duplicate content header",
+    "Use the existing app accent for native settings control and search caret",
+    "Let native search hide navigation during editing and restore it after cancellation",
+    "Native automatic content insets; preserve FlatList virtualization and existing 350ms query delay"
+  ],
+  "sources": {
+    "src/features/library/search-screen.tsx": "3d10acb1825f1d2bbd394f105311be82312a3c4ebb387e2526f8022ff7dcb909",
+    "src/app/(tabs)/search/_layout.tsx": "5f7206195f6c2aa3b7b0e60323e1c84f48251b444bc5d7178ec0866a2f673144",
+    "scripts/check-ios-search.cjs": "4bf96af3136996840a91dd85bcbaa2e39d46bee5f7c683626680baa60c28a0f1",
+    "scripts/ios-search-qa/SearchUITests.swift": "2bed6d902ab7cfb70b04f2069e06aed08887ae55e1be486040ed22cd93ac14b9",
+    "scripts/ios-search-qa/create-project.rb": "ff27ff83dee8136e846c15c4fd3d0d36969c730703538e8396661d8d71501713"
+  },
+  "checks": {
+    "releaseSimulatorBuild": "passed",
+    "lint": "passed",
+    "typecheck": "passed",
+    "existingSourceRegressions": [
+      "check-ios-search.cjs",
+      "check-ios-hidden-feature-entry.cjs",
+      "check-quick-hide.cjs"
+    ],
+    "diffCheck": "passed"
+  },
+  "runtime": "iPhone 18 Pro / iOS 27.0 Simulator",
+  "actualAppTests": {
+    "light": "passed",
+    "dark": "passed",
+    "scenarios": [
+      "single native input",
+      "prompt below search field",
+      "search remains reachable during scroll",
+      "enter text with visible keyboard",
+      "native editing moves field above its resting position",
+      "clear restores prompt and preserves keyboard",
+      "submit dismisses keyboard and preserves entered term",
+      "cancel clears query and restores prompt",
+      "native settings open and return"
+    ]
+  },
+  "rawResults": {
+    "light": "/tmp/yeongdu-search-light-complete.xcresult",
+    "dark": "/tmp/yeongdu-search-dark-final.xcresult",
+    "buildLog": "/tmp/yeongdu-search-ui-build.log"
+  },
+  "references": [
+    "https://developer.apple.com/design/human-interface-guidelines/search-fields",
+    "https://docs.expo.dev/versions/v58.0.0/sdk/router/stack/"
+  ],
+  "limits": [
+    "Physical iPhone, iOS 26, iPad rendering, rotation, accessibility font sizes and VoiceOver not tested",
+    "Real NAS/provider results and playback not validated; QA environment shows pre-existing connection errors",
+    "Empty landing-page swipe kept the field at the same Y; collapsing the large title with a long populated result list was not verified",
+    "Source regression native/network/storage boundaries are mocked",
+    "Earlier test attempts failed on duplicate RN accessibility text selection and the native Close label; the corrected final tests passed"
+  ],
+  "existingUserChanges": "build-version.json was already modified and was not edited by this task"
+}

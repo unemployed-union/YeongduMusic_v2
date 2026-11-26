@@ -13,13 +13,21 @@ import { useProviderStates } from './use-source-libraries';
 
 type Props = {
   active?: boolean;
+  contentInset?: number;
   refreshing: boolean;
   error: string | null;
   message: string | null;
   onRetry: () => Promise<void>;
 };
 
-export function LibraryLoadStatus({ active = true, refreshing, error, message, onRetry }: Props) {
+export function LibraryLoadStatus({
+  active = true,
+  contentInset = 22,
+  refreshing,
+  error,
+  message,
+  onRetry,
+}: Props) {
   const colors = useColors();
   const mode = useAuthStore((state) => state.mode);
   const session = useAuthStore((state) => state.session);
@@ -52,7 +60,7 @@ export function LibraryLoadStatus({ active = true, refreshing, error, message, o
   }
   const waitingLabel = waiting.length ? waiting.join(' · ') + ' 불러오는 중…' : '음악 목록 확인 중…';
   return (
-    <View style={styles.status}>
+    <View style={[styles.status, { paddingHorizontal: contentInset }]}>
       {task && (
         <View style={styles.progress}>
           <Text style={[styles.label, { color: colors.muted }]}>{nasLabel}</Text>
@@ -82,7 +90,7 @@ export function LibraryLoadStatus({ active = true, refreshing, error, message, o
 }
 
 const styles = StyleSheet.create({
-  status: { paddingHorizontal: 22, paddingTop: 4, paddingBottom: 8, gap: 10 },
+  status: { paddingTop: 4, paddingBottom: 8, gap: 10 },
   progress: { gap: 6 },
   label: { fontSize: 12 },
   notice: { paddingVertical: 4 },

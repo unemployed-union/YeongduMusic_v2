@@ -79,6 +79,7 @@ modules.react.useEffect = () => {};
 modules['react-native'].ScrollView = 'ScrollView'; modules['react-native'].useWindowDimensions = () => ({ width: 400 });
 modules['@/components/screen-header'] = { ScreenHeader: 'ScreenHeader' };
 modules['@/components/settings-button'] = { SettingsButton: 'SettingsButton' };
+modules['@/components/native-settings-toolbar'] = { NativeSettingsToolbar: 'NativeSettingsToolbar' };
 modules['@/features/library/library-page'] = { LIBRARY_TABS: ['albums', 'songs', 'artists'], LibraryPage: 'LibraryPage' };
 modules['@/features/library/library-pager'] = { LibraryPager: 'LibraryPager' };
 modules['@/features/library/local-music-controls'] = { LocalMusicControls: 'LocalMusicControls' };
@@ -94,6 +95,7 @@ const menuRules = load('src/features/settings/menu-layout.ts');
 const menuLayout = menuRules.defaultMenuLayout();
 modules['@/features/settings/menu-layout'] = menuRules;
 modules['@/stores/menu-preferences'] = { useMenuPreferences: selector => selector({ layout: menuLayout }) };
+modules['expo-router/react-navigation'] = { useHeaderHeight: () => 0 };
 const Screen = load('src/app/(tabs)/(library)/index.tsx', modules).default;
 function screen() { stateSlot = 0; refSlot = 0; return Screen(); }
 function sortProps(tree) { return find(tree, 'LocalMusicControls').props.sortControl.props; }

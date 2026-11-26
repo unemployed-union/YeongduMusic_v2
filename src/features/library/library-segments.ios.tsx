@@ -6,7 +6,13 @@ import { controlSize, frame, pickerStyle, tag } from '@expo/ui/swift-ui/modifier
 import type { LibrarySegmentsProps } from './library-segments';
 
 /** SwiftUI owns the lifting, stretching selection lens and its drag gesture. */
-export function LibrarySegments({ tabs, selected, onSelect, fallback }: LibrarySegmentsProps) {
+export function LibrarySegments({
+  tabs,
+  selected,
+  onSelect,
+  fallback,
+  contentInset = 22,
+}: LibrarySegmentsProps) {
   const glass = useLiquidGlass();
   const colors = useColors();
   const scheme = useAppColorScheme();
@@ -19,7 +25,7 @@ export function LibrarySegments({ tabs, selected, onSelect, fallback }: LibraryS
       ignoreSafeArea="all"
       colorScheme={scheme}
       seedColor={colors.tint}
-      style={{ marginHorizontal: 22, marginTop: 5, marginBottom: 16 }}
+      style={{ minHeight: 44, marginHorizontal: contentInset, marginTop: 4, marginBottom: 8 }}
     >
       <Picker
         label="보관함 분류"

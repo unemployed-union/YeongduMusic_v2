@@ -19,7 +19,7 @@ const base = {
   './glass-backdrop': { GlassBackdrop: 'GlassBackdrop' },
   '@/components/native-tab-frame': { NativeTabFrame: 'NativeTabFrame' },
   'react/jsx-runtime': { jsx, jsxs: jsx }, react: { useRef: initial => ({ current: initial }) },
-  'react-native': { View: 'View', ScrollView: 'Scroll', Pressable: 'Button', StyleSheet: { create: value => value, hairlineWidth: 1, absoluteFill: {} }, useWindowDimensions: () => dimensions },
+  'react-native': { Platform: { OS: 'ios' }, View: 'View', ScrollView: 'Scroll', Pressable: 'Button', StyleSheet: { create: value => value, hairlineWidth: 1, absoluteFill: {} }, useWindowDimensions: () => dimensions },
   '@expo/vector-icons/Ionicons': { __esModule: true, default: 'Icon' }, './text': { Text: 'Text' }, '@/components/text': { Text: 'Text' },
   '@/theme/tokens': { useColors: () => ({ tint: '#FF5C80', text: '#FFFFFF', muted: '#999999', surface: '#222222' }), useAppColorScheme: () => 'dark' },
   '@/theme/layout': geometry, '@/services/haptics': { playHaptic() {} },
@@ -85,8 +85,11 @@ assert.equal(tabs.props.tabBar, undefined, 'The legacy layout retains the platfo
 for (const file of ['src/app/(tabs)/(library)/_layout.tsx', 'src/app/(tabs)/(playlists)/_layout.tsx']) {
   const Screen = read(file, base).default;
   assert.equal(Screen().props.screenOptions.headerShown, true);
+  const rootOptions = () => nodes(Screen()).find(node => node.props?.name?.endsWith('index')).props.options;
+  assert.equal(rootOptions().headerLargeTitleEnabled, true);
   assert.equal(Screen().props.screenOptions.animation, 'slide_from_right');
   dimensions = { width: 1280, height: 800, fontScale: 1 }; assert.equal(Screen().props.screenOptions.headerShown, false);
+  assert.equal(rootOptions().headerShown, false);
   assert.equal(Screen().props.screenOptions.animation, 'none', 'Native transitions must not animate the tablet sidebar');
   assert.equal(Screen().props.screenOptions.gestureEnabled, false, 'Native back gestures must not drag the whole tablet screen');
   dimensions = { width: 390, height: 844, fontScale: 1 };

@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { Platform, Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { Text } from '@/components/text';
 import { ScreenHeader } from '@/components/screen-header';
 import { ContentTitleBar } from '@/components/content-title-bar';
 import { ContentTransition } from '@/components/content-transition';
 import { SettingsButton } from '@/components/settings-button';
+import { NativeSettingsToolbar } from '@/components/native-settings-toolbar';
 import { LibraryPage, type LibraryTab } from '@/features/library/library-page';
 import { LocalMusicControls } from '@/features/library/local-music-controls';
 import { LibrarySortControl } from '@/features/library/library-sort-control';
@@ -20,11 +21,12 @@ import { MENU_LABELS, selectedMenuId, visibleMenuIds } from '@/features/settings
 import { LibraryPager } from '@/features/library/library-pager';
 import { LikedSongsScreen } from '@/features/favorites/liked-songs-screen';
 import { LibrarySidebar } from '@/features/library/library-sidebar';
-import { workspaceLayout } from '@/theme/layout';
+import { IOS_TAB_CONTENT_INSET, workspaceLayout } from '@/theme/layout';
 import { useLiquidGlass } from '@/theme/liquid-glass';
 import { glassControlStyles } from '@/components/glass-controls';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useIsFocused } from 'expo-router';
+import { useHeaderHeight } from 'expo-router/react-navigation';
 import { LibrarySegments } from '@/features/library/library-segments';
 
 export default function LibraryScreen() {
@@ -32,12 +34,15 @@ export default function LibraryScreen() {
   const glass = useLiquidGlass();
   const focused = useIsFocused();
   const insets = useSafeAreaInsets();
+  const headerHeight = useHeaderHeight();
   const { width, height, fontScale } = useWindowDimensions();
+  const nativeHeader = Platform.OS === 'ios' && !workspaceLayout(width, height, fontScale).expanded;
   const workspace = workspaceLayout(
     glass.supported ? width - insets.left - insets.right : width,
     height,
     fontScale,
   );
+  const contentInset = nativeHeader ? IOS_TAB_CONTENT_INSET : 22;
   const pageWidth = workspace.expanded
     ? Math.min(1160, workspace.contentWidth) - 48
     : workspace.contentWidth;
@@ -88,6 +93,7 @@ export default function LibraryScreen() {
 
   const tools = (
     <LocalMusicControls
+      contentInset={contentInset}
       menuLabel={workspace.expanded ? '가져오기·연결' : undefined}
       sortControl={
         <LibrarySortControl
@@ -98,17 +104,23 @@ export default function LibraryScreen() {
       }
     />
   );
+  let header = null;
+  if (nativeHeader) {
+    header = <NativeSettingsToolbar />;
+  } else if (!workspace.expanded) {
+    header = <ScreenHeader title="보관함" action={<SettingsButton />} bottomSpacing={8} />;
+  }
+
   return (
     <View
       style={[
         styles.screen,
         { backgroundColor: colors.background },
+        nativeHeader && { paddingTop: headerHeight },
         glass.supported && { paddingLeft: insets.left, paddingRight: insets.right },
       ]}
     >
-      {!workspace.expanded && (
-        <ScreenHeader title="보관함" action={<SettingsButton />} bottomSpacing={8} />
-      )}
+      {header}
       <View style={{ flex: 1, flexDirection: 'row' }}>
         {workspace.expanded && (
           <LibrarySidebar
@@ -121,7 +133,7 @@ export default function LibraryScreen() {
         <ContentTransition enabled={workspace.expanded}>
           <View style={{ flex: 1, width: pageWidth, alignSelf: 'center' }}>
             {workspace.expanded && <ContentTitleBar title="보관함" action={<SettingsButton />} />}
-            {tools}
+            {!nativeHeader && tools}
             {!workspace.expanded && (
               <Animated.View
                 style={[{ overflow: 'hidden', flexShrink: 0 }, controls.frameStyle]}
@@ -138,6 +150,7 @@ export default function LibraryScreen() {
                   ]}
                 >
                   <LibrarySegments
+                    contentInset={contentInset}
                     tabs={tabs}
                     selected={tab}
                     onSelect={selectTab}
@@ -145,6 +158,7 @@ export default function LibraryScreen() {
                       <View
                         style={[
                           styles.segments,
+                          { paddingHorizontal: contentInset },
                           tabs.length > 3 && styles.compactSegments,
                           glass.supported && [
                             glassControlStyles.segments,
@@ -208,7 +222,9 @@ export default function LibraryScreen() {
                 </Animated.View>
               </Animated.View>
             )}
+            {nativeHeader && tools}
             <LibraryLoadStatus
+              contentInset={contentInset}
               active={focused}
               refreshing={refreshState.refreshing}
               error={refreshState.error}
@@ -231,6 +247,7 @@ export default function LibraryScreen() {
                     <LikedSongsScreen
                       key={option}
                       width={pageWidth}
+                      contentInset={contentInset}
                       spacious={workspace.expanded}
                       active={option === tab}
                       sortOrder={sortOrders.favorites}
@@ -251,6 +268,7 @@ export default function LibraryScreen() {
                     error={query.error}
                     isRefetchError={query.isRefetchError}
                     width={pageWidth}
+                    contentInset={contentInset}
                     spacious={workspace.expanded}
                     refreshing={refreshState.refreshing}
                     onRefresh={refreshState.refresh}
@@ -268,7 +286,7 @@ export default function LibraryScreen() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },
-  segments: { flexDirection: 'row', gap: 8, paddingHorizontal: 22, marginTop: 5, marginBottom: 16 },
+  segments: { flexDirection: 'row', gap: 8, marginTop: 5, marginBottom: 16 },
   compactSegments: { gap: 6 },
   segment: { borderWidth: 1, borderRadius: 18, paddingHorizontal: 18, paddingVertical: 8 },
   compactSegment: { flex: 1, paddingHorizontal: 2, alignItems: 'center' },

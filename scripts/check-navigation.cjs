@@ -89,10 +89,14 @@ const ui = {
 };
 const menuRules = renderModule('src/features/settings/menu-layout.ts', {});
 const LibraryLayout = renderModule('src/app/(tabs)/(library)/_layout.tsx', {
+  'react-native': { Platform: { OS: 'ios' } },
   'react/jsx-runtime': { jsx, jsxs: jsx }, 'expo-router': { Stack: { Screen: 'StackScreen' } },
   '@/theme/tokens': { useColors: () => ({ tint: '#f48', background: '#0c0d12' }) },
 }).default;
 const libraryLayout = LibraryLayout(), albumOptions = nodes(libraryLayout).find(node => node.props?.name === 'album/[id]').props.options;
+const libraryHomeOptions = nodes(libraryLayout).find(node => node.props?.name === 'index').props.options;
+assert.equal(libraryHomeOptions.headerShown, true);
+assert.equal(libraryHomeOptions.headerLargeTitleEnabled, true);
 assert.equal(libraryLayout.props.activityEnabled, 1, 'Covered library screens stop rendering during detail navigation');
 assert.equal(albumOptions.headerTransparent, true, 'Album artwork can extend behind the native back button and title');
 assert.equal(albumOptions.headerStyle.backgroundColor, 'transparent', 'The shared stack surface must not override album transparency');

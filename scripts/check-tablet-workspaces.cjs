@@ -21,7 +21,7 @@ const base = {
   '@/features/library/library-segments': { LibrarySegments: 'LibrarySegments' },
   '@/components/glass-backdrop': { GlassBackdrop: 'GlassBackdrop' },
   'react/jsx-runtime': { jsx, jsxs: jsx }, '@/theme/layout': geometry,
-  'react-native': { View: 'View', Pressable: 'Button', ScrollView: 'Scroll', StyleSheet: { create: value => value, hairlineWidth: 1 }, useWindowDimensions: () => dimensions },
+  'react-native': { Platform: { OS: 'ios' }, View: 'View', Pressable: 'Button', ScrollView: 'Scroll', StyleSheet: { create: value => value, hairlineWidth: 1 }, useWindowDimensions: () => dimensions },
   '@expo/vector-icons/Ionicons': { __esModule: true, default: 'Icon' }, '@/components/text': { Text: 'Text' },
   '@/theme/tokens': { useColors: () => colors }, '@/services/haptics': { playHaptic() {} },
   'react-native-safe-area-context': { useSafeAreaInsets: () => ({ left: 0, right: 0, bottom: 20, top: 24 }) },
@@ -111,9 +111,10 @@ const hooks = { useMemo: fn => fn(), useEffect() {}, useCallback: fn => fn, useR
   return [slots[index], value => { slots[index] = typeof value === 'function' ? value(slots[index]) : value; }];
 } };
 const enabledQueries = {}, preferences = menuRules.defaultMenuLayout();
-const leafNames = { '@/components/screen-header': 'ScreenHeader', '@/components/settings-button': 'SettingsButton', '@/features/library/library-sidebar': 'LibrarySidebar', '@/features/library/library-pager': 'LibraryPager', '@/features/library/library-page': 'LibraryPage', '@/features/library/local-music-controls': 'LocalMusicControls', '@/features/library/library-sort-control': 'LibrarySortControl', '@/features/favorites/liked-songs-screen': 'LikedSongsScreen' };
+const leafNames = { '@/components/native-settings-toolbar': 'NativeSettingsToolbar', '@/components/screen-header': 'ScreenHeader', '@/components/settings-button': 'SettingsButton', '@/features/library/library-sidebar': 'LibrarySidebar', '@/features/library/library-pager': 'LibraryPager', '@/features/library/library-page': 'LibraryPage', '@/features/library/local-music-controls': 'LocalMusicControls', '@/features/library/library-sort-control': 'LibrarySortControl', '@/features/favorites/liked-songs-screen': 'LikedSongsScreen' };
 const modules = Object.fromEntries(Object.entries(leafNames).map(([name, component]) => [name, { [component]: component }]));
 const Screen = read('src/app/(tabs)/(library)/index.tsx', { ...base, ...modules, react: hooks,
+  'expo-router/react-navigation': { useHeaderHeight: () => 0 },
   'react-native-reanimated': { __esModule: true, default: { View: 'AnimatedView' } },
   '@/features/library/use-library-controls': { useLibraryControls: () => ({ selectPage() {} }) },
   '@/features/library/use-refresh-library': { useRefreshLibrary: () => ({ refreshing: false }) },

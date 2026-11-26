@@ -14,6 +14,7 @@ type Props = {
   active?: boolean;
   sortOrder?: LibrarySortOrder;
   spacious?: boolean;
+  contentInset?: number;
   onListScroll?: (tab: LibraryTab, event: NativeSyntheticEvent<NativeScrollEvent>) => void;
 };
 
@@ -22,6 +23,7 @@ export function LikedSongsScreen({
   active = true,
   sortOrder = 'default',
   spacious = false,
+  contentInset,
   onListScroll,
 }: Props = {}) {
   const favorites = useFavoritesStore();
@@ -63,6 +65,7 @@ export function LikedSongsScreen({
       active={active}
       sortOrder={sortOrder}
       spacious={spacious}
+      contentInset={contentInset}
       data={data}
       isPending={!favorites.ready || (!favorites.loadError && library.isPending && !library.data)}
       isError={favorites.loadError || library.isError}
